@@ -1197,6 +1197,89 @@
         },
         "scope": "retained short AAC sources and synthetic scenes; no fitted gain/time, physical output or long/4K throughput acceptance"
       }
+    },
+    "picture_retirement_admission": {
+      "base_commit": "43c16a3ccdb3",
+      "status": "integrated build/contracts, 25 affected host tests, actual blocked picture/seek/stop handoff and scoped editor cases passed; first combined browser attempt retained as failed at short-scene pause, complete delivery remains false",
+      "baseline": {
+        "cli_sha256": "3472ba0a0f7b6320f514c5c6a0177f6cde0de7a423a33995599353ca31456c40",
+        "worker_sha256": "d3618b2d3ae7018074bf4d371642a34a403d22220d12b70b2bf0e28c93ef71c7",
+        "owned_sigstop": true,
+        "same_generation_next_frame_status": 429,
+        "seek_next_generation_frame_status": 429,
+        "superseded_child_reaped": true,
+        "project_and_durable_jobs_unchanged": true,
+        "report_sha256": "e0f2ce2026b5516d74c44797c5110ae79bcef4b80b577661c839638cc2e897fb"
+      },
+      "change": "one waiter per original session; wait <= min(policy deadline, 1000ms), live authority/scope checks, no extra renderer or pixel/CAS allocation while waiting; original publication and cancellation fences retained",
+      "delivery_ready": false,
+      "checks": {
+        "architecture_unit_tests": 14,
+        "architecture_and_contract_boundaries": "passed; no dependency or public DTO changes",
+        "integrated_build": "passed; exact explicit CLI generated/canonical checks, 184 operations/12 domains",
+        "affected_host_tests_passed": 25,
+        "manual_or_physical_acceptance": "not performed",
+        "complete_delivery": false
+      },
+      "current_candidate": {
+        "cli_sha256": "7ea10d8429275c9616f08a228e4132c68895c25a7a92ca543b870b7fe4c78fd3",
+        "worker_sha256": "d3618b2d3ae7018074bf4d371642a34a403d22220d12b70b2bf0e28c93ef71c7",
+        "unchanged_worker_and_web": "reuse exact accepted native worker and verified frontend artifact; no repeated export or PCM fixtures",
+        "actual_fault_injection": {
+          "passed": true,
+          "report_sha256": "8f1871df1ed3274b700066efdb5167a4ad98ac4a56f158c817276fd6fa86ffa6",
+          "same_generation_next_frame_status": 200,
+          "seek_next_generation_frame_status": 200,
+          "handoff_seconds": 0.1906192940659821,
+          "seek_seconds": 0.664156146813184,
+          "public_stop_seconds": 0.12198864296078682,
+          "current_and_queued_requests_stopped": true,
+          "old_child_reaped": true,
+          "stopped_child_reaped": true,
+          "project_and_durable_jobs_unchanged": true,
+          "scope": "one retained text scene and verified SIGSTOP visual child; transport hashes checked, no normal throughput claim"
+        },
+        "first_combined_editor_attempt": {
+          "passed": false,
+          "text_pause_positions_passed": [
+            0.05,
+            0.17,
+            0.33,
+            0.5,
+            1.05,
+            1.85,
+            2.05,
+            2.75
+          ],
+          "preview_responses": 4529,
+          "preview_errors": 0,
+          "page_errors": [],
+          "report_sha256": "8e6f134c25e9387c0630f96c040cffaa1557a81110e732f1a1311f372d898f63",
+          "failed_phase": "native-source-art-ui:pause",
+          "observation": "one-second source scene finished before pause assertion; two playing sessions and no pause control observed; failure retained, this attempt did not prove short-scene pause"
+        },
+        "targeted_remaining_editor_cases": {
+          "passed": true,
+          "cases": 2,
+          "actual_pause_click_seconds": [
+            0.3333333333333333,
+            0.3333333333333333
+          ],
+          "actual_seek_start_assertions_passed": 2,
+          "preview_responses": 453,
+          "preview_errors": 0,
+          "source_art_responses": 38,
+          "source_art_errors": 0,
+          "page_errors": [],
+          "report_sha256": "7cae969e01c5122003512258c6100ac1459bb96cc042e79373097fa4d843be7d",
+          "scope": "only previously incomplete source-waveform and original AAC flows repeated with actual click observations; original pause/resume/seek and zero-HTTP-error gates unchanged"
+        }
+      },
+      "remaining": [
+        "historical asset-free text resume stall near 1.87 seconds; successful repetitions do not establish its cause",
+        "short-scene pause timing in first combined UI attempt retained; targeted observed clicks passed",
+        "long/4K residency and throughput, broader media matrix, physical/manual and portable distribution acceptance"
+      ]
     }
   }
 }

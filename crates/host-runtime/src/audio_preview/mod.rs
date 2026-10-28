@@ -128,6 +128,7 @@ struct Actor {
 }
 struct Entry {
     visual: Mutex<Option<visual_owner::VisualOwner>>,
+    visual_waiter: AtomicBool,
     pixels: Arc<pixels::FramePixels>,
     transform_draft_gate: Mutex<()>,
     resource_open_gate: Mutex<()>,
@@ -343,6 +344,7 @@ pub(crate) fn create(
     )?;
     let entry = Arc::new(Entry {
         visual: Mutex::new(None),
+        visual_waiter: AtomicBool::new(false),
         pixels: Arc::new(pixels::FramePixels::default()),
         transform_draft_gate: Mutex::new(()),
         resource_open_gate: Mutex::new(()),

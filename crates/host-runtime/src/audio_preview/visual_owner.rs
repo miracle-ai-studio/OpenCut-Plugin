@@ -13,6 +13,53 @@ pub(super) struct VisualOwner {
     pub resources: VideoResourceCache,
 }
 
+/// Allow one request to wait for an in-flight picture or retiring generation.
+/// The waiter owns no pixels, CAS handles or extra renderer. Do not hold the
+/// sound-state mutex while waiting; the supplied checkpoint briefly reacquires
+/// it to preserve live authority, lease, generation and shutdown fences.
+pub(super) fn acquire<'a, T>(
+    owner: &'a Mutex<T>,
+    waiting: &AtomicBool,
+    timeout: Duration,
+    checkpoint: &mut dyn FnMut() -> Result<(), EditorError>,
+) -> Result<MutexGuard<'a, T>, EditorError> {
+    fn busy() -> EditorError {
+        EditorError::new(
+            "PREVIEW_PICTURE_BUSY",
+            "The previous native picture is still finishing",
+        )
+    }
+    struct Waiter<'a>(&'a AtomicBool);
+    impl Drop for Waiter<'_> {
+        fn drop(&mut self) {
+            self.0.store(false, Ordering::Release);
+        }
+    }
+    checkpoint()?;
+    waiting
+        .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
+        .map_err(|_| busy())?;
+    let _waiter = Waiter(waiting);
+    let began = Instant::now();
+    loop {
+        checkpoint()?;
+        match owner.try_lock() {
+            Ok(owner) => {
+                // The prior renderer may have retired across a control change.
+                checkpoint()?;
+                return Ok(owner);
+            }
+            Err(std::sync::TryLockError::Poisoned(_)) => return Err(error("INTERNAL_ERROR")),
+            Err(std::sync::TryLockError::WouldBlock) => {}
+        }
+        let remaining = timeout.saturating_sub(began.elapsed());
+        if remaining.is_zero() {
+            return Err(busy());
+        }
+        std::thread::sleep(remaining.min(Duration::from_millis(5)));
+    }
+}
+
 /// Maintenance owns a weak session reference. Retiring a stopped, superseded,
 /// revoked or idle worker never waits while holding the sound-state mutex.
 pub(super) fn maintain(entry: &Arc<Entry>) -> Result<(), EditorError> {
@@ -76,4 +123,89 @@ pub(super) fn maintain(entry: &Arc<Entry>) -> Result<(), EditorError> {
         .recv_timeout(Duration::from_secs(5))
         .map_err(|_| error("IO_ERROR"))??;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn retiring_picture_hands_off_to_one_waiter_without_an_extra_owner() {
+        let owner = Mutex::new(7);
+        let waiting = AtomicBool::new(false);
+        let held = owner.lock().unwrap();
+        std::thread::scope(|threads| {
+            let (ready, observed) = std::sync::mpsc::sync_channel(1);
+            let owner = &owner;
+            let waiting = &waiting;
+            let waiter = threads.spawn(move || {
+                let mut announced = false;
+                let mut next = acquire(&owner, &waiting, Duration::from_secs(2), &mut || {
+                    if waiting.load(Ordering::Acquire) && !announced {
+                        ready.send(()).unwrap();
+                        announced = true;
+                    }
+                    Ok(())
+                })
+                .unwrap();
+                assert_eq!(*next, 7);
+                *next = 8;
+            });
+            observed.recv_timeout(Duration::from_secs(2)).unwrap();
+            let excess = acquire(&owner, &waiting, Duration::from_secs(2), &mut || Ok(()));
+            assert_eq!(excess.unwrap_err().code, "PREVIEW_PICTURE_BUSY");
+            drop(held);
+            waiter.join().unwrap();
+        });
+        assert!(!waiting.load(Ordering::Acquire));
+        assert_eq!(*owner.lock().unwrap(), 8);
+    }
+
+    #[test]
+    fn queued_picture_preserves_live_fence_errors_and_releases_its_slot() {
+        let owner = Mutex::new(());
+        let waiting = AtomicBool::new(false);
+        let _held = owner.lock().unwrap();
+        for code in [
+            "PREVIEW_GENERATION_CONFLICT",
+            "PREVIEW_STOPPED",
+            "FORBIDDEN",
+        ] {
+            let mut checks = 0;
+            let result = acquire(&owner, &waiting, Duration::from_secs(2), &mut || {
+                checks += 1;
+                if checks >= 3 {
+                    Err(EditorError::new(code, "live fence"))
+                } else {
+                    Ok(())
+                }
+            });
+            assert_eq!(result.unwrap_err().code, code);
+            assert!(!waiting.load(Ordering::Acquire));
+        }
+    }
+
+    #[test]
+    fn timed_out_waiter_releases_capacity_and_acquisition_rechecks_authority() {
+        let owner = Mutex::new(());
+        let waiting = AtomicBool::new(false);
+        let held = owner.lock().unwrap();
+        let result = acquire(&owner, &waiting, Duration::from_millis(10), &mut || Ok(()));
+        assert_eq!(result.unwrap_err().code, "PREVIEW_PICTURE_BUSY");
+        assert!(!waiting.load(Ordering::Acquire));
+        drop(held);
+        let mut checks = 0;
+        let result = acquire(&owner, &waiting, Duration::from_secs(2), &mut || {
+            checks += 1;
+            if checks >= 3 {
+                Err(error("PREVIEW_GENERATION_CONFLICT"))
+            } else {
+                Ok(())
+            }
+        });
+        assert_eq!(result.unwrap_err().code, "PREVIEW_GENERATION_CONFLICT");
+        assert!(!waiting.load(Ordering::Acquire));
+        assert!(owner.try_lock().is_ok());
+        assert!(acquire(&owner, &waiting, Duration::from_secs(2), &mut || Ok(())).is_ok());
+    }
 }

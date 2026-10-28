@@ -161,17 +161,6 @@ fn scene_picture_inner(
     }
     let length = u32::try_from(u64::from(width) * u64::from(height) * 4)
         .map_err(|_| error("VISUAL_BUDGET_EXCEEDED"))?;
-    let mut owner = e.visual.try_lock().map_err(|failure| match failure {
-        std::sync::TryLockError::WouldBlock => EditorError::new(
-            "PREVIEW_PICTURE_BUSY",
-            "The previous native picture is still finishing",
-        ),
-        std::sync::TryLockError::Poisoned(_) => error("INTERNAL_ERROR"),
-    })?;
-    // A newer frame intent supersedes any unclaimed payload. Claimed readers
-    // remain charged until drop and keep their exact scope fence.
-    e.pixels.clear();
-    let reservation = e.pixels.reserve(length, picture_capacity)?;
     let mut checkpoint = || {
         e.checkpoint(&host.app)?;
         lock(&e.state)?.machine.verify_visual_frame(
@@ -180,7 +169,16 @@ fn scene_picture_inner(
             now(),
         )
     };
-    checkpoint()?;
+    let mut owner = super::visual_owner::acquire(
+        &e.visual,
+        &e.visual_waiter,
+        Duration::from_millis(policy.deadline_ms.min(1_000)),
+        &mut checkpoint,
+    )?;
+    // A newer admitted frame intent supersedes any unclaimed payload. Claimed
+    // readers remain charged until drop and keep their exact scope fence.
+    e.pixels.clear();
+    let reservation = e.pixels.reserve(length, picture_capacity)?;
     if owner.as_ref().is_some_and(|owner| {
         owner.scope != input.session
             || owner.policy != policy

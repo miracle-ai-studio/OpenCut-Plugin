@@ -762,12 +762,10 @@ export class VisualPreview {
             lease_id: session.lease_id,
           },
           time: null,
-          decoded: null,
-          rasters: null,
         };
         const authority = api.sdk.call(
           "opencut_visual_preview_frame",
-          { ...input, captions: null, graphics: null },
+          input,
           { signal: this.abort.signal },
         );
         void authority

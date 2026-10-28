@@ -1,5 +1,6 @@
 //! Static ASS authoring is an ordinary atomic V4 text edit. The parser never
 //! discovers fonts; exact project resources and explicit aliases own binding.
+pub use crate::subtitle_measurement::MeasuredSubtitleAssRequest as SubtitleAssPlanRequest;
 mod parse;
 use opencut_composition::{CompositionScope, scene::*};
 use opencut_contracts::{
@@ -526,6 +527,7 @@ pub fn finish(
         None
     };
     Ok(SubtitleAssPlanResult {
+        measurement: None,
         revision: prepared.snapshot.revision.clone(),
         width: prepared.width,
         height: prepared.height,

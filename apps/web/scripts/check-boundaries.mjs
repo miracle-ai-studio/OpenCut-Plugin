@@ -36,13 +36,14 @@ export function violations(file, code) {
       )
     )
       errors.push(`${file}: renderer imports require the pure mastering bridge`);
-    if (name.includes("classic-visual-renderer") && !(["editor/workspace/scene/visual-preview-renderer.ts", "editor/workspace/scene/surface-worker.ts"].includes(file) && name === "../../../../../../packages/classic-visual-renderer/src/index.mjs"))
-      errors.push(`${file}: visual renderer imports require the bounded preview bridge`);
-    if (file === "editor/workspace/scene/surface-worker.ts" && name === "../../../../../../packages/classic-visual-renderer/src/index.mjs") {
+    if (name.includes("classic-visual-renderer")) {
       const bindings = node && ts.isImportDeclaration(node) && node.importClause?.namedBindings;
-      if (!bindings || !ts.isNamedImports(bindings) || node.importClause.name ||
-          bindings.elements.some(item => !["openGpuRealm", "closeGpuRealm", "gpuSurfacePresenter"].includes((item.propertyName ?? item.name).text)))
-        errors.push(`${file}: presentation worker may import only GPU realm and presenter functions`);
+      if (file !== "editor/workspace/scene/visual-preview-renderer.ts" ||
+          name !== "../../../../../../packages/classic-visual-renderer/src/preview-segment.mjs" ||
+          !bindings || !ts.isNamedImports(bindings) || node.importClause.name ||
+          bindings.elements.length !== 1 ||
+          (bindings.elements[0].propertyName ?? bindings.elements[0].name).text !== "PreviewSegmentDecoder")
+        errors.push(`${file}: visual adapters may import only the derived segment decoder`);
     }
     if (!name.startsWith(".") && !/^(?:@|#)\//.test(name)) return;
     const target = path.posix.normalize(

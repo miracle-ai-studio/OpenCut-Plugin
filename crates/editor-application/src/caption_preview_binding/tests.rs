@@ -1,5 +1,6 @@
 use super::*;
 use crate::classic_text_frame::tests::{graph, policy, proof};
+use crate::visual_preview::VisualFrameObservations;
 use opencut_composition::scene::{SampledContent, prepare_caption_frame};
 use opencut_contracts::scene::*;
 fn fixture() -> PreparedCaptionBindings {
@@ -24,11 +25,12 @@ fn fixture() -> PreparedCaptionBindings {
     let coverage = proof(prepared.execution());
     PreparedCaptionBindings::new(prepared, policy(), coverage).unwrap()
 }
-fn input(prepared: &PreparedCaptionBindings) -> VisualPreviewFrame {
-    VisualPreviewFrame {
+fn input(prepared: &PreparedCaptionBindings) -> VisualFrameObservations {
+    VisualFrameObservations {
         resolution: opencut_contracts::export_video::RasterResolution::Source,
         prepare_ahead: false,
         retained_picture_bytes: 0,
+        hit_query: None,
         session: opencut_api_contracts::audio_preview::AudioPreviewStream {
             session_id: "session".into(),
             generation: "1".into(),

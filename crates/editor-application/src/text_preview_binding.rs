@@ -1,4 +1,5 @@
 //! Fixed sampled text/media facts on the existing sound-consumption clock.
+use crate::visual_preview::VisualFrameObservations;
 use crate::{
     classic_text_frame::{ClassicTextFrameSession, admit_text_frame},
     visual_preview::{VISUAL_PREVIEW_MAX_LAG_MS, validate_preparation_time},
@@ -44,7 +45,7 @@ impl PreparedTextBindings {
     }
     pub fn result(
         &self,
-        input: &VisualPreviewFrame,
+        input: &VisualFrameObservations,
         consumer: &Time,
     ) -> Result<TextPreviewBindings, EditorError> {
         let time = input.time.as_ref().unwrap_or(consumer);

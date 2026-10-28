@@ -1,6 +1,5 @@
 //! Scene frame binding on the original fixed consumer session.
 use super::fonts::CachedTextCoverage;
-use super::fonts::complete_coverage;
 use super::*;
 use opencut_api_contracts::visual_preview::*;
 use opencut_contracts::Time;
@@ -19,10 +18,7 @@ pub(crate) fn scene_picture(
 pub(crate) fn edit_draft_picture(
     host: &mut Automation,
     input: opencut_api_contracts::visual_edit_draft::VisualEditDraftFrame,
-) -> Result<
-    opencut_api_contracts::visual_edit_draft::VisualEditDraftFrameResult,
-    EditorError,
-> {
+) -> Result<opencut_api_contracts::visual_edit_draft::VisualEditDraftFrameResult, EditorError> {
     if input.draft_id.is_empty()
         || input.draft_id.len() > 128
         || input.draft_id.chars().any(char::is_control)
@@ -52,34 +48,22 @@ fn scene_picture_inner(
     draft: Option<&opencut_contracts::project_public::ApplyProject>,
     intent: Option<opencut_contracts::visual_edit_draft::VisualEditDraftIntent>,
 ) -> Result<(VisualPreviewFrameResult, Option<String>), EditorError> {
+    use opencut_editor_application::classic_visual::{
+        ClassicVisualResources, ClassicVisualRgbaSink,
+    };
+    use opencut_native_services::{
+        classic_visual::VideoResourceCache, native_visual::NativeScenePreview,
+    };
+    use std::time::Duration;
     let e = entry(&host.database, &input.session.session_id)?;
     authorize(host, &e, true)?;
-    let (view, cached, coverage) = {
+    let view = {
         let state = lock(&e.state)?;
         state
             .machine
             .verify_visual_frame(&input.session, host.caller.principal_id(), now())?;
-        let cached = state
-            .pictures
-            .iter().rev()
-            .find(|c| {
-                draft.is_none()
-                    && c.resolution == input.resolution
-                    && input.decoded.is_some()
-                    && c.retained_picture_bytes == input.retained_picture_bytes
-                    && c.session == input.session
-                    && input.time.as_ref() == Some(c.prepared.time())
-            })
-            .map(|c| c.prepared.clone());
-        let coverage = state
-            .text_coverage
-            .as_ref()
-            .filter(|c| c.session == input.session)
-            .map(|c| c.coverage.clone());
-        (state.machine.snapshot(now()), cached, coverage)
+        state.machine.snapshot(now())
     };
-    // HTTP cancellation does not cancel spawn_blocking. Never queue unbounded
-    // obsolete draft compiles behind that work or hold the sound-state mutex.
     let _draft_guard = if draft.is_some() {
         Some(
             e.transform_draft_gate
@@ -112,11 +96,7 @@ fn scene_picture_inner(
             ));
         }
     }
-    // Preparation requests name a minimum next time. If consumption caught up,
-    // sample the current authoritative cursor instead of decoding obsolete frames.
-    // Binding requests keep the exact plan time and observations unchanged.
     if input.prepare_ahead
-        && input.decoded.is_none()
         && input.time.as_ref().is_some_and(|time| {
             opencut_time::RationalTime::try_from(time)
                 .ok()
@@ -127,94 +107,161 @@ fn scene_picture_inner(
         input.time = Some(view.presentation_time.clone());
     }
     let time = input.time.as_ref().unwrap_or(&view.presentation_time);
-    let mut digest = None;
     validate_preparation_time(time, &view.presentation_time, input.prepare_ahead)?;
-    let (prepared, new_coverage) = if let Some(cached) = cached {
-        (cached, None)
-    } else {
-        let mut selected = host
-            .app
-            .fixed_scene_text_frame_snapshot(&e.request.project_id, &e.request.revision)?;
-        if let Some(transaction) = draft {
-            let intent = intent.ok_or_else(|| {
+    let mut selected = host
+        .app
+        .fixed_scene_text_frame_snapshot(&e.request.project_id, &e.request.revision)?;
+    let mut digest = None;
+    if let Some(transaction) = draft {
+        let (snapshot, identity) = opencut_editor_application::visual_edit_draft::prepare(
+            &host.app,
+            transaction,
+            &e.request.sequence_id,
+            time,
+            intent.ok_or_else(|| {
                 EditorError::new(
                     "INVALID_ARGUMENT",
                     "Visual edit draft requires its explicit edit intent",
                 )
-            })?;
-            let (snapshot, identity) =
-                opencut_editor_application::visual_edit_draft::prepare(
-                    &host.app,
-                    transaction,
-                    &e.request.sequence_id,
-                    time,
-                    intent,
-                )?;
-            selected.snapshot = snapshot;
-            digest = Some(identity);
-        }
-        let prepare = if input.resolution == opencut_contracts::export_video::RasterResolution::Preview540 {
-            opencut_editor_application::scene_frame_jobs::prepare_preview
-        } else { opencut_editor_application::scene_frame_jobs::prepare };
-        let frame = prepare(
+            })?,
+        )?;
+        selected.snapshot = snapshot;
+        digest = Some(identity);
+    }
+    let frame = if input.resolution == opencut_contracts::export_video::RasterResolution::Preview540
+    {
+        opencut_editor_application::scene_frame_jobs::prepare_preview(
             &selected.snapshot,
             &e.request.sequence_id,
             time,
-        )?;
-        selected.processing_policy =
-            opencut_editor_application::visual_preview::reserve_picture_memory(
-                selected.processing_policy,
-                input.retained_picture_bytes,
-            )?;
-        admit_scene_frame(&frame, &selected.processing_policy)?;
-        let proofs = complete_coverage(
-            frame
-                .execution()
-                .execution()
-                .execution()
-                .texts()
-                .iter()
-                .map(|plan| {
-                    (
-                        plan.identity.element_id.as_str(),
-                        &plan.font,
-                        plan.text.content.as_str(),
-                    )
-                })
-                .chain(frame.mask_texts().iter().map(|mask| {
-                    (
-                        mask.mask_id.as_str(),
-                        &mask.font,
-                        mask.mask.content.as_str(),
-                    )
-                })),
-            coverage.as_deref().unwrap_or_default(),
-            |missing| {
-                VerifiedClassicTextResources::new_scene_fonts_subset(
-                    host.app.asset_store_root(),
-                    &frame,
-                    missing,
-                    &FontImportPolicy::default(),
-                    || e.checkpoint(&host.app),
-                )
-            },
-        )?;
-        let prepared = Arc::new(PreparedPicture::new(
-            frame,
-            selected.processing_policy,
-            proofs.clone(),
-        )?);
-        (prepared, Some(proofs))
+        )?
+    } else {
+        opencut_editor_application::scene_frame_jobs::prepare(
+            &selected.snapshot,
+            &e.request.sequence_id,
+            time,
+        )?
     };
-    let result = prepared.result(&input, &view.presentation_time)?;
+    let (policy, picture_capacity) =
+        opencut_editor_application::visual_preview::reserve_native_picture_memory(
+            selected.processing_policy,
+            input.retained_picture_bytes,
+        )?;
+    admit_scene_frame(&frame, &policy)?;
+    let identity = frame.execution().execution().execution().identity();
+    let (width, height) = (identity.width, identity.height);
+    if input
+        .hit_query
+        .is_some_and(|point| point.x >= width || point.y >= height)
+    {
+        return Err(EditorError::new(
+            "INVALID_ARGUMENT",
+            "Hit point is outside the prepared picture",
+        ));
+    }
+    let length = u32::try_from(u64::from(width) * u64::from(height) * 4)
+        .map_err(|_| error("VISUAL_BUDGET_EXCEEDED"))?;
+    let mut owner = e.visual.try_lock().map_err(|failure| match failure {
+        std::sync::TryLockError::WouldBlock => EditorError::new(
+            "PREVIEW_PICTURE_BUSY",
+            "The previous native picture is still finishing",
+        ),
+        std::sync::TryLockError::Poisoned(_) => error("INTERNAL_ERROR"),
+    })?;
+    // A newer frame intent supersedes any unclaimed payload. Claimed readers
+    // remain charged until drop and keep their exact scope fence.
+    e.pixels.clear();
+    let reservation = e.pixels.reserve(length, picture_capacity)?;
+    let mut checkpoint = || {
+        e.checkpoint(&host.app)?;
+        lock(&e.state)?.machine.verify_visual_frame(
+            &input.session,
+            host.caller.principal_id(),
+            now(),
+        )
+    };
+    checkpoint()?;
+    if owner.as_ref().is_some_and(|owner| {
+        owner.scope != input.session
+            || owner.policy != policy
+            || owner.renderer.idle_expired()
+            || owner.renderer.check().is_err()
+    }) {
+        owner.take();
+        e.pixels.clear();
+    }
+    if owner.is_none() {
+        *owner = Some(super::visual_owner::VisualOwner {
+            scope: input.session.clone(),
+            principal: host.caller.principal_id().into(),
+            policy: policy.clone(),
+            renderer: NativeScenePreview::new(
+                crate::classic_visual_runtime::configured_scene(&policy)?,
+                Duration::from_secs(30),
+                &mut checkpoint,
+            )?,
+            resources: VideoResourceCache::default(),
+        });
+    }
+    let current = owner.as_mut().expect("admitted native picture owner");
+    let mut resources = VerifiedClassicTextResources::new_scene_frame_cached(
+        host.app.asset_store_root(),
+        &frame,
+        &FontImportPolicy::default(),
+        checkpoint,
+        &mut current.resources,
+    )?;
+    let coverage = resources.coverage().to_vec();
+    let prepared = Arc::new(PreparedPicture::new(frame, policy, coverage.clone())?);
+    let handles = resources.handles();
+    let fonts = resources.font_handles();
+    let mut session = prepared.session()?;
+    struct Pixels {
+        bytes: Vec<u8>,
+        length: usize,
+    }
+    impl ClassicVisualRgbaSink for Pixels {
+        fn chunk(&mut self, offset: u64, bytes: &[u8]) -> Result<(), EditorError> {
+            if offset != self.bytes.len() as u64 || bytes.len() > self.length - self.bytes.len() {
+                return Err(error("INVALID_VISUAL_PLAN"));
+            }
+            self.bytes.extend_from_slice(bytes);
+            Ok(())
+        }
+    }
+    let mut pixels = Pixels {
+        bytes: Vec::new(),
+        length: length as usize,
+    };
+    pixels
+        .bytes
+        .try_reserve_exact(length as usize)
+        .map_err(|_| error("VISUAL_BUDGET_EXCEEDED"))?;
+    let execution = current.renderer.render(
+        &mut session,
+        &mut resources,
+        &handles,
+        &fonts,
+        &mut pixels,
+        input.hit_query.map(|p| [p.x, p.y]),
+    )?;
+    resources.checkpoint()?;
+    drop(session);
+    drop(resources);
+    if pixels.bytes.len() != length as usize {
+        return Err(error("INVALID_VISUAL_PLAN"));
+    }
     authorize(host, &e, true)?;
     if let Some(transaction) = draft {
-        // A concurrent commit must not publish an obsolete transform draft.
         host.app.authorize_project(
             opencut_editor_application::scene::SceneCommitIntent::PublicApply(transaction),
         )?;
-        let head = host.app.head_scene_source(&transaction.project_id)?;
-        if head.revision != transaction.expected_revision {
+        if host
+            .app
+            .head_scene_source(&transaction.project_id)?
+            .revision
+            != transaction.expected_revision
+        {
             return Err(EditorError::new(
                 "REVISION_CONFLICT",
                 "The transform draft head changed",
@@ -225,29 +272,55 @@ fn scene_picture_inner(
     state
         .machine
         .verify_visual_frame(&input.session, host.caller.principal_id(), now())?;
-    if draft.is_some() {
-        let current = state.machine.snapshot(now());
-        if current.state != opencut_api_contracts::audio_preview::AudioPreviewState::Paused
-            || !same_consumer_time(&result.plan.identity.time, &current.presentation_time)
-        {
-            return Err(EditorError::new(
-                "PREVIEW_GENERATION_CONFLICT",
-                "The paused transform consumer changed",
-            ));
-        }
+    let consumer = state.machine.snapshot(now());
+    if draft.is_some()
+        && (consumer.state != AudioPreviewState::Paused
+            || !same_consumer_time(prepared.time(), &consumer.presentation_time))
+    {
+        return Err(error("PREVIEW_GENERATION_CONFLICT"));
     }
     validate_preparation_time(
-        &result.plan.identity.time,
-        &state.machine.snapshot(now()).presentation_time,
+        prepared.time(),
+        &consumer.presentation_time,
         input.prepare_ahead,
     )?;
-    if let Some(coverage) = new_coverage {
-        state.text_coverage = Some(CachedTextCoverage {
-            session: input.session.clone(),
-            coverage,
-        });
-    }
-    if draft.is_none() && input.decoded.is_none() {
+    let ticket = reservation.publish(input.session.clone(), pixels.bytes)?;
+    let descriptor = VisualPreviewPicture {
+        picture_id: ticket.id.clone(),
+        width,
+        height,
+        byte_length: ticket.length,
+        content_hash: ticket.hash,
+        max_retained_bytes: picture_capacity,
+        renderer: execution.runtime.identity,
+        peak_worker_rss_bytes: execution.quota.observed_peak_rss_bytes,
+    };
+    let hits = execution
+        .hits
+        .into_iter()
+        .map(|hit| VisualPreviewHit {
+            element_id: hit.element_id,
+            alpha: hit.alpha,
+        })
+        .collect();
+    let result = match prepared.rendered_result(
+        &input,
+        &consumer.presentation_time,
+        &execution.receipt,
+        descriptor,
+        hits,
+    ) {
+        Ok(result) => result,
+        Err(error) => {
+            e.pixels.discard(&ticket.id);
+            return Err(error);
+        }
+    };
+    state.text_coverage = Some(CachedTextCoverage {
+        session: input.session.clone(),
+        coverage,
+    });
+    if draft.is_none() {
         state.remember_picture(CachedPicture {
             resolution: input.resolution,
             retained_picture_bytes: input.retained_picture_bytes,
@@ -274,11 +347,17 @@ mod tests {
 
     #[test]
     fn draft_consumer_fences_accept_equivalent_bases_but_reject_even_one_sample_drift() {
-        let time = |ticks: &str, timebase| Time { ticks: ticks.into(), timebase };
+        let time = |ticks: &str, timebase| Time {
+            ticks: ticks.into(),
+            timebase,
+        };
         for (frame, consumer) in [
             (time("0", 1), time("0", 48000)),
             (time("1", 2), time("24000", 48000)),
-            (time("9223372036854775807", u32::MAX), time("9223372036854775807", u32::MAX)),
+            (
+                time("9223372036854775807", u32::MAX),
+                time("9223372036854775807", u32::MAX),
+            ),
         ] {
             assert!(same_consumer_time(&frame, &consumer));
             assert!(same_consumer_time(&consumer, &frame));

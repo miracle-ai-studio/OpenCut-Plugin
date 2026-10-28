@@ -467,6 +467,23 @@ impl<F: FnMut() -> Result<(), EditorError>> VerifiedClassicTextResources<F> {
     ) -> Result<Self, EditorError> {
         Self::new_scene_inner(root, prepared, font_policy, checkpoint, true, None, None)
     }
+    pub fn new_scene_frame_cached(
+        root: &Path,
+        prepared: &PreparedSceneFrame,
+        font_policy: &FontImportPolicy,
+        checkpoint: F,
+        cache: &mut VideoResourceCache,
+    ) -> Result<Self, EditorError> {
+        Self::new_scene_inner(
+            root,
+            prepared,
+            font_policy,
+            checkpoint,
+            true,
+            None,
+            Some(cache),
+        )
+    }
     pub fn new_scene_fonts_subset(
         root: &Path,
         prepared: &PreparedSceneFrame,

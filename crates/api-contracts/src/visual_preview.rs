@@ -1,13 +1,8 @@
 //! One complete scene preview bound to the existing sound consumer clock.
 use crate::{audio_preview::AudioPreviewStream, scene_frame_plan::SceneFramePlan};
 use opencut_contracts::{
-    Time,
-    blend_frame::BoundBlendFrame,
-    caption_frame::CaptionLayoutReceipt,
-    graphic_frame::{BoundGraphicFrame, GraphicRasterReceipt},
-    scene_frame::BoundSceneFrame,
-    text_frame::{BoundTextFrame, TextRasterReceipt},
-    visual_frame::*,
+    Time, blend_frame::BoundBlendFrame, graphic_frame::BoundGraphicFrame,
+    scene_frame::BoundSceneFrame, text_frame::BoundTextFrame, visual_frame::*,
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -98,14 +93,59 @@ pub struct VisualPreviewFrame {
     /// The client must still present against actual audio consumption.
     #[serde(default)]
     pub prepare_ahead: bool,
-    /// Resident presentation and queued picture bytes, deducted before decode admission.
+    /// Resident presentation and queued picture bytes, checked against the
+    /// fixed presentation envelope reserved before native decode admission.
     #[serde(default)]
     pub retained_picture_bytes: u32,
     pub time: Option<Time>,
-    pub decoded: Option<Vec<DecodedVisualSource>>,
-    pub rasters: Option<Vec<TextRasterReceipt>>,
-    pub captions: Option<Vec<CaptionLayoutReceipt>>,
-    pub graphics: Option<Vec<GraphicRasterReceipt>>,
+    /// Native foreground alpha at one output pixel; no client hit claim.
+    #[serde(default)]
+    pub hit_query: Option<VisualPreviewHitPoint>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct VisualPreviewHitPoint {
+    pub x: u32,
+    pub y: u32,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct VisualPreviewHit {
+    pub element_id: String,
+    pub alpha: u8,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct VisualPreviewHitTest {
+    pub identity: opencut_contracts::text_frame::TextFrameIdentity,
+    pub point: VisualPreviewHitPoint,
+    pub hits: Vec<VisualPreviewHit>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct VisualPreviewPicture {
+    pub picture_id: String,
+    pub width: u32,
+    pub height: u32,
+    pub byte_length: u32,
+    pub content_hash: String,
+    pub max_retained_bytes: u32,
+    pub renderer: opencut_contracts::renderer_identity::NativeVisualIdentity,
+    pub peak_worker_rss_bytes: String,
+}
+
+/// Single-use bounded binary transport; the descriptor comes from the same
+/// native frame request. Identity never comes from a native path or URL.
+/// A newer frame intent retires older unclaimed picture descriptors.
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct VisualPreviewPictureRead {
+    pub session: AudioPreviewStream,
+    pub picture_id: String,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
@@ -125,6 +165,18 @@ pub struct VisualPreviewFrameResult {
     pub time_seconds: f64,
     pub consumer_time_seconds: f64,
     pub max_lag_ms: u32,
+    pub picture: VisualPreviewPicture,
+    pub hit_test: Option<VisualPreviewHitTest>,
+}
+
+pub fn picture_stream_schemas() -> serde_json::Value {
+    serde_json::json!({
+        "input": schemars::schema_for!(VisualPreviewPictureRead),
+        "descriptor": schemars::schema_for!(VisualPreviewPicture),
+        "content_type": "application/vnd.opencut.rgba",
+        "pixel_format": "rgba8",
+        "chunk_bytes": 65536,
+    })
 }
 
 /// Prepare immutable derived pictures through the shared durable render port.

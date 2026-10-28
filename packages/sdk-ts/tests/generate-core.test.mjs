@@ -48,7 +48,8 @@ function assertEquivalent(original, document, ref) {
 function registry() {
   return { tools: [{ name: "opencut_example", input_schema: object("Example"), output_schema: object("Response") }],
     jobs: [], domains: [{ domain: "edit", actions: [{ action: "example", operation: "opencut_example" }] }],
-    eventSchema: object("Event"), audioStream: { input: object("Stream"), header: object("Header") } };
+    eventSchema: object("Event"), audioStream: { input: object("Stream"), header: object("Header") },
+    visualStream: { input: object("PictureRead"), descriptor: object("Picture"), content_type: "application/vnd.opencut.rgba", pixel_format: "rgba8", chunk_bytes: 65536 } };
 }
 test("preflight rejects incomplete routes, collisions, root titles and non-local or dangling refs", () => {
   preflightRegistry(registry());
@@ -60,6 +61,10 @@ test("preflight rejects incomplete routes, collisions, root titles and non-local
     (r) => { r.tools[0].output_schema.$ref = "https://example.test/schema"; },
     (r) => { r.tools[0].input_schema.$ref = "#/$defs/Missing"; },
     (r) => { r.audioStream.header.$ref = "#/~2bad"; },
+    (r) => { r.visualStream.descriptor.$ref = "#/$defs/Missing"; },
+    (r) => { r.visualStream.chunk_bytes = 131072; },
+    (r) => { r.visualStream.content_type = "image/png"; },
+    (r) => { delete r.visualStream; },
     (r) => { r.jobs.push({name:"media.a-b",input_schema:object("Job"),result_schema:object("Result")},
       {name:"media.a_b",input_schema:object("Job"),result_schema:object("Result")}); },
   ]) { const r = registry(); mutate(r); assert.throws(() => preflightRegistry(r)); }
@@ -70,7 +75,7 @@ test("invalid complete registry fails before invoking the compiler or writing ar
   try {
     const r = registry(); r.domains[0].actions = [];
     const runner = join(directory, "schema-runner");
-    writeFileSync(runner, `#!/usr/bin/env node\nconst r=${JSON.stringify(r)};\nconst op=process.argv[3];\nconst data=op==='schema'?r.tools:op==='capabilities'?{job_results:r.jobs}:op==='domains'?r.domains:op==='events-schema'?r.eventSchema:r.audioStream;\nconsole.log(JSON.stringify({data}));\n`, {mode:0o700});
+    writeFileSync(runner, `#!/usr/bin/env node\nconst r=${JSON.stringify(r)};\nconst op=process.argv[3];\nconst data=op==='schema'?r.tools:op==='capabilities'?{job_results:r.jobs}:op==='domains'?r.domains:op==='events-schema'?r.eventSchema:op==='visual-preview-schema'?r.visualStream:r.audioStream;\nconsole.log(JSON.stringify({data}));\n`, {mode:0o700});
     let calls = 0;
     await assert.rejects(generateContracts(() => { calls++; throw new Error("must not compile"); },
       ["--binary", runner, "--skip-build"]), /does not cover/);

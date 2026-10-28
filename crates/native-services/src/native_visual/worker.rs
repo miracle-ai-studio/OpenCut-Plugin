@@ -163,13 +163,27 @@ fn run(channel: &Rc<RefCell<Channel>>) -> Result<(), EditorError> {
             .ok_or_else(|| wire::error("Missing native policy"))?,
     )
     .map_err(|_| wire::error("Invalid native policy"))?;
-    let backend = super::platform_backend()?;
-    let mut engine = NativeFrameEngine::new(backend, &policy)?;
-    let identity = identity::observe(engine.identity())?;
-    validate_native_identity(&identity)?;
+    opencut_editor_application::media_frame_jobs::validate_policy(&policy)?;
+    let purpose = wire::text(&packet.meta, "purpose")?;
+    let mut engine = match purpose {
+        "visual" => Some(NativeFrameEngine::new(super::platform_backend()?, &policy)?),
+        "text_measurement" => None,
+        _ => return Err(wire::error("Unknown native worker purpose")),
+    };
+    let mut text_metrics = opencut_renderer::raster::TextRasterizer::new(policy.max_encoded_bytes);
+    let identity = match &engine {
+        Some(engine) => {
+            let identity = identity::observe(engine.identity())?;
+            validate_native_identity(&identity)?;
+            serde_json::to_value(identity)
+                .map_err(|_| wire::error("Invalid visual identity serialization"))?
+        }
+        None => serde_json::to_value(identity::observe_text()?)
+            .map_err(|_| wire::error("Invalid text identity serialization"))?,
+    };
     wire::send(
         &mut channel.borrow_mut().output,
-        json!({"type":"ready","pid":std::process::id(),"identity":identity}),
+        json!({"type":"ready","purpose":purpose,"pid":std::process::id(),"identity":identity}),
         &[],
     )?;
     let mut next = 0u64;
@@ -205,36 +219,89 @@ fn run(channel: &Rc<RefCell<Channel>>) -> Result<(), EditorError> {
                     plan: packet.meta["plan"].clone(),
                     policy: policy.clone(),
                 };
-                let result = engine.render(
-                    &mut session,
-                    &mut resources,
-                    begin,
-                    &handles,
-                    &fonts,
-                    &mut Output(channel.clone()),
-                    deadline,
-                )?;
+                let result = engine
+                    .as_mut()
+                    .ok_or_else(|| wire::error("A text measurer cannot render pixels"))?
+                    .render(
+                        &mut session,
+                        &mut resources,
+                        begin,
+                        &handles,
+                        &fonts,
+                        &mut Output(channel.clone()),
+                        deadline,
+                        serde_json::from_value(
+                            packet.meta.get("hit_probe").cloned().unwrap_or(Value::Null),
+                        )
+                        .map_err(|_| wire::error("Invalid native hit probe"))?,
+                    )?;
                 wire::send(
                     &mut channel.borrow_mut().output,
                     json!({"type":"frame_complete","frame":next,"receipt":result.receipt,
-                    "encoded_bytes_read":result.encoded_bytes_read,"accounted_gpu_bytes":result.accounting.accounted_gpu_bytes,"accounted_cpu_bytes":result.accounting.accounted_cpu_bytes}),
+                    "encoded_bytes_read":result.encoded_bytes_read,"accounted_gpu_bytes":result.accounting.accounted_gpu_bytes,"accounted_cpu_bytes":result.accounting.accounted_cpu_bytes,"hit_test":result.hit_test}),
                     &[],
                 )?;
                 next = next
                     .checked_add(1)
                     .ok_or_else(|| wire::error("Native frame counter overflow"))?;
             }
+            "measure" => {
+                if purpose != "text_measurement" || wire::integer(&packet.meta, "frame")? != next {
+                    return Err(wire::error("Native text request order or purpose changed"));
+                }
+                let fonts: Vec<ClassicTextFontHandle> =
+                    serde_json::from_value(packet.meta["fonts"].clone())
+                        .map_err(|_| wire::error("Invalid native text handles"))?;
+                let options = serde_json::from_value(packet.meta["options"].clone())
+                    .map_err(|_| wire::error("Invalid native text options"))?;
+                let deadline = Instant::now() + Duration::from_millis(policy.deadline_ms);
+                {
+                    let mut channel = channel.borrow_mut();
+                    channel.frame = next;
+                    channel.request = 0;
+                }
+                let mut resources = Resources {
+                    channel: channel.clone(),
+                    deadline,
+                };
+                let mut session = Session {
+                    channel: channel.clone(),
+                    plan: packet.meta["plan"].clone(),
+                    policy: policy.clone(),
+                };
+                let receipt = super::measurement::measure(
+                    &mut session,
+                    &mut resources,
+                    &fonts,
+                    options,
+                    &mut text_metrics,
+                )?;
+                wire::send(
+                    &mut channel.borrow_mut().output,
+                    json!({"type":"measure_complete","frame":next,"receipt":receipt}),
+                    &[],
+                )?;
+                next = next
+                    .checked_add(1)
+                    .ok_or_else(|| wire::error("Native text counter overflow"))?;
+            }
             "finish" => {
                 if wire::integer(&packet.meta, "frames")? != next {
                     return Err(wire::error("Native completion omitted frames"));
                 }
-                if identity::observe(engine.identity())? != identity {
+                let observed = match &engine {
+                    Some(engine) => serde_json::to_value(identity::observe(engine.identity())?),
+                    None => serde_json::to_value(identity::observe_text()?),
+                }
+                .map_err(|_| wire::error("Invalid final native identity"))?;
+                if observed != identity {
                     return Err(EditorError::new(
                         "VISUAL_ENGINE_CHANGED",
                         "Native runtime changed during execution",
                     ));
                 }
                 drop(engine);
+                drop(text_metrics);
                 wire::send(
                     &mut channel.borrow_mut().output,
                     json!({"type":"complete","frames":next}),

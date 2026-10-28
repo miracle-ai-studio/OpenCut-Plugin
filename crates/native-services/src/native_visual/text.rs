@@ -186,10 +186,22 @@ fn caption(
     height: u32,
     rasterizer: &mut TextRasterizer,
 ) -> Result<CaptionLayoutReceipt, EditorError> {
+    prepare_caption(layer, directive, width, height, rasterizer, None)
+}
+pub(super) fn prepare_caption(
+    layer: &mut TextLayerPlan,
+    directive: &CaptionRasterPlan,
+    width: u32,
+    height: u32,
+    rasterizer: &mut TextRasterizer,
+    placement: Option<&opencut_contracts::subtitle_classic_ass::SubtitleClassicPlacement>,
+) -> Result<CaptionLayoutReceipt, EditorError> {
     if directive.wrap_profile != "classic-v31-greedy-whitespace-v1"
-        || directive.max_width_px <= 0.0
-        || directive.max_width_px > f64::from(width)
-        || directive.bottom_margin_px != f64::from(height) * 0.05
+        || !directive.max_width_px.is_finite()
+        || directive.max_width_px < 0.0
+        || (placement.is_none() && directive.max_width_px == 0.0)
+        || (placement.is_none() && directive.max_width_px > f64::from(width))
+        || (placement.is_none() && directive.bottom_margin_px != f64::from(height) * 0.05)
     {
         return Err(invalid(
             "Native caption directive differs from the fixed canvas",
@@ -206,6 +218,9 @@ fn caption(
         let value = rasterizer
             .measure_width(&layer.font, &layer.text, content)
             .map_err(raster_error)?;
+        if !value.is_finite() || value < 0.0 {
+            return Err(invalid("Invalid native caption candidate width"));
+        }
         measurements.push(CaptionWrapMeasurement {
             content: content.into(),
             width: value,
@@ -213,8 +228,16 @@ fn caption(
         Ok(value)
     };
     let mut paragraphs = Vec::new();
-    for paragraph in layer.text.content.trim().replace("\r\n", "\n").split('\n') {
-        let mut words = paragraph.split_whitespace();
+    for paragraph in layer
+        .text
+        .content
+        .trim_matches(caption_separator)
+        .replace("\r\n", "\n")
+        .split('\n')
+    {
+        let mut words = paragraph
+            .split(caption_separator)
+            .filter(|word| !word.is_empty());
         let Some(first) = words.next() else {
             paragraphs.push(String::new());
             continue;
@@ -256,13 +279,36 @@ fn caption(
     } else {
         (left, -block_height / 2.0, maximum, block_height)
     };
+    use opencut_contracts::subtitle_classic_ass::SubtitleClassicVerticalAlign;
+    let (l, r, margin, vertical) = placement.map_or(
+        (
+            0.0,
+            0.0,
+            directive.bottom_margin_px,
+            SubtitleClassicVerticalAlign::Bottom,
+        ),
+        |p| {
+            (
+                p.left_margin_px,
+                p.right_margin_px,
+                p.vertical_margin_px,
+                p.vertical_align,
+            )
+        },
+    );
+    if [l, r, margin].iter().any(|v| !v.is_finite()) {
+        return Err(invalid("Invalid native subtitle placement"));
+    }
     layer.text.transform.center_x = match layer.text.align.as_str() {
-        "left" => -left,
-        "right" => f64::from(width) - (left + box_width),
-        _ => f64::from(width) / 2.0 - (left + box_width / 2.0),
+        "left" => l - left,
+        "right" => f64::from(width) - r - (left + box_width),
+        _ => l + (f64::from(width) - l - r) / 2.0 - (left + box_width / 2.0),
     };
-    layer.text.transform.center_y =
-        f64::from(height) - directive.bottom_margin_px - (top + box_height);
+    layer.text.transform.center_y = match vertical {
+        SubtitleClassicVerticalAlign::Top => margin - top,
+        SubtitleClassicVerticalAlign::Middle => f64::from(height) / 2.0 - (top + box_height / 2.0),
+        SubtitleClassicVerticalAlign::Bottom => f64::from(height) - margin - (top + box_height),
+    };
     layer.text.content = wrapped.clone();
     layer.font.validated_text_hash = format!("{:x}", Sha256::digest(wrapped.as_bytes()));
     Ok(CaptionLayoutReceipt {
@@ -271,4 +317,12 @@ fn caption(
         wrapped_text: wrapped,
         measurements,
     })
+}
+
+// Match ECMAScript trim and /\s+/ exactly; Rust's Unicode whitespace set
+// differs for FEFF and NEL. The public caption wrap profile remains frozen.
+fn caption_separator(c: char) -> bool {
+    matches!(c, '\u{0009}'..='\u{000d}' | '\u{0020}' | '\u{00a0}' | '\u{1680}' |
+        '\u{2000}'..='\u{200a}' | '\u{2028}' | '\u{2029}' | '\u{202f}' |
+        '\u{205f}' | '\u{3000}' | '\u{feff}')
 }

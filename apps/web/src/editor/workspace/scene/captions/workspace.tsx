@@ -444,7 +444,6 @@ export function CaptionWorkspace({
       source,
       style: text,
       max_width_px: null,
-      observations: null,
     };
     const plan = await planEditableSubtitles(api, request, abort.signal);
     if (!active() || current().expected_revision !== scope.expected_revision)
@@ -607,13 +606,12 @@ export function CaptionWorkspace({
             ]
           : [];
       }),
-      observations: null,
     };
     const frozen: Omit<FrozenClassicAssReview, "plan"> = {
       api,
       connectionIdentity: api.connectionIdentity,
       scope: structuredClone(scope),
-      request: structuredClone({ ...request, observations: null }),
+      request: structuredClone(request),
       trackChoice: trackId,
       aliases: aliasesIdentity(assAliases),
       mode: assMode,
@@ -623,7 +621,7 @@ export function CaptionWorkspace({
       assMode === "classic"
         ? await planClassicAssSubtitles(
             api,
-            { ...request, observations: null },
+            request,
             abort.signal,
           )
         : await planAssSubtitles(api, request, abort.signal);

@@ -1497,7 +1497,7 @@
     "/api/tools/opencut_visual_preview_frame": {
       "post": {
         "operationId": "opencut_visual_preview_frame",
-        "description": "Plan and bind the complete fixed scene on its confirmed sound consumer clock, or prepare up to one second ahead without claiming presentation. Retains full resource observations, current owner/lease/generation and native proof fences; no task or project mutation.",
+        "description": "Render the complete fixed scene through the native worker on its confirmed sound consumer clock, or prepare within the bounded future window without claiming presentation. Returns authoritative layout/hit observations and a single-use bounded RGBA picture descriptor; current owner, lease, generation and resource fences remain live. No task or project mutation.",
         "x-opencut-read-only": true,
         "requestBody": {
           "required": true,
@@ -4617,7 +4617,7 @@
     "/api/tools/opencut_subtitle_text_plan": {
       "post": {
         "operationId": "opencut_subtitle_text_plan",
-        "description": "Plan editable Text subtitles from an authorized fixed-revision transcript or bounded subtitle file. First prepares pinned-font measurements, then validates observations and returns one public editor edit for ordinary atomic apply, recovery and undo. Does not commit or create a job.",
+        "description": "Plan editable Text subtitles from an authorized fixed-revision transcript or bounded subtitle file. Uses bounded native pinned-font measurements and returns one public editor edit for ordinary atomic apply, recovery and undo. Does not commit or create a job.",
         "x-opencut-read-only": true,
         "requestBody": {
           "required": true,
@@ -11471,6 +11471,45 @@
             "description": "OCAP framed PCM; maximum two unconsumed blocks.",
             "content": {
               "application/vnd.opencut.audio-preview": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured OpenCut error envelope; inspect error.code before retrying.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenCutErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/preview/picture/stream": {
+      "post": {
+        "operationId": "opencut_visual_preview_picture_stream",
+        "description": "Claim a single-use native RGBA picture descriptor from the complete scene frame operation. Current owner, lease, generation and authority are checked for every bounded 64 KiB chunk. Active readers remain in the captured residency budget.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VisualPreviewPictureRead"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Exact straight RGBA8 bytes; dimensions, length and SHA-256 are supplied by the generated picture descriptor.",
+            "content": {
+              "application/vnd.opencut.rgba": {
                 "schema": {
                   "type": "string",
                   "format": "binary"
@@ -28790,12 +28829,6 @@
       },
       "OpencutSubtitleClassicAssPlanInput": {
         "$defs": {
-          "CaptionLayoutReceipt": {
-            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/CaptionLayoutReceipt"
-          },
-          "CaptionWrapMeasurement": {
-            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/CaptionWrapMeasurement"
-          },
           "FontStyle": {
             "$ref": "#/components/schemas/OpencutFontCatalogOutput/$defs/FontStyle"
           },
@@ -28825,43 +28858,6 @@
               "font_id"
             ],
             "type": "object"
-          },
-          "SubtitleTextObservation": {
-            "additionalProperties": false,
-            "properties": {
-              "caption": {
-                "$ref": "#/components/schemas/OpencutSubtitleClassicAssPlanInput/$defs/CaptionLayoutReceipt"
-              },
-              "raster": {
-                "$ref": "#/components/schemas/OpencutSubtitleClassicAssPlanInput/$defs/TextRasterReceipt"
-              }
-            },
-            "required": [
-              "caption",
-              "raster"
-            ],
-            "type": "object"
-          },
-          "TextBackgroundRect": {
-            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextBackgroundRect"
-          },
-          "TextBlockMetrics": {
-            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextBlockMetrics"
-          },
-          "TextLayout": {
-            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextLayout"
-          },
-          "TextLineMetrics": {
-            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextLineMetrics"
-          },
-          "TextRasterReceipt": {
-            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextRasterReceipt"
-          },
-          "TextRasterTransform": {
-            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextRasterTransform"
-          },
-          "TextRect": {
-            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextRect"
           },
           "TextTrackTarget": {
             "oneOf": [
@@ -28919,15 +28915,6 @@
           },
           "idempotency_key": {
             "type": "string"
-          },
-          "observations": {
-            "items": {
-              "$ref": "#/components/schemas/OpencutSubtitleClassicAssPlanInput/$defs/SubtitleTextObservation"
-            },
-            "type": [
-              "array",
-              "null"
-            ]
           },
           "project_id": {
             "type": "string"
@@ -29117,6 +29104,30 @@
           "MaskFeather": {
             "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/MaskFeather"
           },
+          "NativePlatformIdentity": {
+            "$ref": "#/components/schemas/OpencutQualityInspectOutput/$defs/NativePlatformIdentity"
+          },
+          "NativeTextRuntimeIdentity": {
+            "additionalProperties": false,
+            "description": "CPU text metrics use the exact verified worker and font platform. They do\nnot claim a GPU device or media-decoder execution that did not occur.",
+            "properties": {
+              "platform": {
+                "$ref": "#/components/schemas/OpencutSubtitleClassicAssPlanOutput/$defs/NativePlatformIdentity"
+              },
+              "rasterizer": {
+                "type": "string"
+              },
+              "worker_sha256": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "worker_sha256",
+              "rasterizer",
+              "platform"
+            ],
+            "type": "object"
+          },
           "ProjectCover": {
             "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/ProjectCover"
           },
@@ -29249,6 +29260,16 @@
                 "format": "uint32",
                 "minimum": 0,
                 "type": "integer"
+              },
+              "measurement": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/OpencutSubtitleClassicAssPlanOutput/$defs/NativeTextRuntimeIdentity"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "revision": {
                 "type": "string"
@@ -30316,213 +30337,59 @@
           "AudioPreviewStream": {
             "$ref": "#/components/schemas/OpencutVisualPreviewResourceOpenInput/$defs/AudioPreviewStream"
           },
-          "CaptionLayoutReceipt": {
-            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/CaptionLayoutReceipt"
-          },
-          "CaptionWrapMeasurement": {
-            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/CaptionWrapMeasurement"
-          },
-          "DecodedVisualSource": {
-            "oneOf": [
-              {
-                "additionalProperties": false,
-                "properties": {
-                  "elementId": {
-                    "type": "string"
-                  },
-                  "height": {
-                    "format": "uint32",
-                    "minimum": 0,
-                    "type": "integer"
-                  },
-                  "kind": {
-                    "const": "readyImage",
-                    "type": "string"
-                  },
-                  "width": {
-                    "format": "uint32",
-                    "minimum": 0,
-                    "type": "integer"
-                  }
-                },
-                "required": [
-                  "kind",
-                  "elementId",
-                  "width",
-                  "height"
-                ],
-                "type": "object"
-              },
-              {
-                "additionalProperties": false,
-                "properties": {
-                  "actualTimestampSeconds": {
-                    "format": "double",
-                    "type": "number"
-                  },
-                  "elementId": {
-                    "type": "string"
-                  },
-                  "eofHeld": {
-                    "description": "The decoder observed the terminal frame; its real interval is not\nextended or relabelled to cover the requested source time.",
-                    "type": "boolean"
-                  },
-                  "frameDurationSeconds": {
-                    "format": "double",
-                    "type": "number"
-                  },
-                  "height": {
-                    "format": "uint32",
-                    "minimum": 0,
-                    "type": "integer"
-                  },
-                  "kind": {
-                    "const": "readyVideo",
-                    "type": "string"
-                  },
-                  "requestedTime": {
-                    "$ref": "#/components/schemas/OpencutVisualPreviewFrameInput/$defs/Time"
-                  },
-                  "selectedVideoStream": {
-                    "description": "None is primary-track selection, not an invented FFmpeg stream index.",
-                    "format": "uint32",
-                    "minimum": 0,
-                    "type": [
-                      "integer",
-                      "null"
-                    ]
-                  },
-                  "width": {
-                    "format": "uint32",
-                    "minimum": 0,
-                    "type": "integer"
-                  }
-                },
-                "required": [
-                  "kind",
-                  "elementId",
-                  "width",
-                  "height",
-                  "requestedTime",
-                  "actualTimestampSeconds",
-                  "frameDurationSeconds"
-                ],
-                "type": "object"
-              },
-              {
-                "additionalProperties": false,
-                "properties": {
-                  "elementId": {
-                    "type": "string"
-                  },
-                  "kind": {
-                    "const": "noFrame",
-                    "type": "string"
-                  },
-                  "reason": {
-                    "$ref": "#/components/schemas/OpencutVisualPreviewFrameInput/$defs/VisualNoFrameReason"
-                  },
-                  "requestedTime": {
-                    "$ref": "#/components/schemas/OpencutVisualPreviewFrameInput/$defs/Time"
-                  }
-                },
-                "required": [
-                  "kind",
-                  "elementId",
-                  "requestedTime",
-                  "reason"
-                ],
-                "type": "object"
-              }
-            ]
-          },
-          "FontStyle": {
-            "$ref": "#/components/schemas/OpencutFontCatalogOutput/$defs/FontStyle"
-          },
-          "GraphicRasterReceipt": {
-            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/GraphicRasterReceipt"
-          },
           "RasterResolution": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/RasterResolution"
-          },
-          "TextBackgroundRect": {
-            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextBackgroundRect"
-          },
-          "TextBlockMetrics": {
-            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextBlockMetrics"
-          },
-          "TextLayout": {
-            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextLayout"
-          },
-          "TextLineMetrics": {
-            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextLineMetrics"
-          },
-          "TextRasterReceipt": {
-            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextRasterReceipt"
-          },
-          "TextRasterTransform": {
-            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextRasterTransform"
-          },
-          "TextRect": {
-            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextRect"
           },
           "Time": {
             "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/Time"
           },
-          "VisualNoFrameReason": {
-            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/MediaFrameNoSourceReason"
+          "VisualPreviewHitPoint": {
+            "additionalProperties": false,
+            "properties": {
+              "x": {
+                "format": "uint32",
+                "minimum": 0,
+                "type": "integer"
+              },
+              "y": {
+                "format": "uint32",
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ],
+            "type": "object"
           }
         },
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "properties": {
-          "captions": {
-            "items": {
-              "$ref": "#/components/schemas/OpencutVisualPreviewFrameInput/$defs/CaptionLayoutReceipt"
-            },
-            "type": [
-              "array",
-              "null"
-            ]
-          },
-          "decoded": {
-            "items": {
-              "$ref": "#/components/schemas/OpencutVisualPreviewFrameInput/$defs/DecodedVisualSource"
-            },
-            "type": [
-              "array",
-              "null"
-            ]
-          },
-          "graphics": {
-            "items": {
-              "$ref": "#/components/schemas/OpencutVisualPreviewFrameInput/$defs/GraphicRasterReceipt"
-            },
-            "type": [
-              "array",
-              "null"
-            ]
+          "hit_query": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OpencutVisualPreviewFrameInput/$defs/VisualPreviewHitPoint"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Native foreground alpha at one output pixel; no client hit claim."
           },
           "prepare_ahead": {
             "default": false,
             "description": "Prepare a bounded future picture without claiming it was presented.\nThe client must still present against actual audio consumption.",
             "type": "boolean"
           },
-          "rasters": {
-            "items": {
-              "$ref": "#/components/schemas/OpencutVisualPreviewFrameInput/$defs/TextRasterReceipt"
-            },
-            "type": [
-              "array",
-              "null"
-            ]
-          },
           "resolution": {
             "$ref": "#/components/schemas/OpencutVisualPreviewFrameInput/$defs/RasterResolution"
           },
           "retained_picture_bytes": {
             "default": 0,
-            "description": "Resident presentation and queued picture bytes, deducted before decode admission.",
+            "description": "Resident presentation and queued picture bytes, checked against the\nfixed presentation envelope reserved before native decode admission.",
             "format": "uint32",
             "minimum": 0,
             "type": "integer"
@@ -30938,7 +30805,118 @@
             "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/ColorEncoding"
           },
           "DecodedVisualSource": {
-            "$ref": "#/components/schemas/OpencutVisualPreviewFrameInput/$defs/DecodedVisualSource"
+            "oneOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "elementId": {
+                    "type": "string"
+                  },
+                  "height": {
+                    "format": "uint32",
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "kind": {
+                    "const": "readyImage",
+                    "type": "string"
+                  },
+                  "width": {
+                    "format": "uint32",
+                    "minimum": 0,
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "elementId",
+                  "width",
+                  "height"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "actualTimestampSeconds": {
+                    "format": "double",
+                    "type": "number"
+                  },
+                  "elementId": {
+                    "type": "string"
+                  },
+                  "eofHeld": {
+                    "description": "The decoder observed the terminal frame; its real interval is not\nextended or relabelled to cover the requested source time.",
+                    "type": "boolean"
+                  },
+                  "frameDurationSeconds": {
+                    "format": "double",
+                    "type": "number"
+                  },
+                  "height": {
+                    "format": "uint32",
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "kind": {
+                    "const": "readyVideo",
+                    "type": "string"
+                  },
+                  "requestedTime": {
+                    "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/Time"
+                  },
+                  "selectedVideoStream": {
+                    "description": "None is primary-track selection, not an invented FFmpeg stream index.",
+                    "format": "uint32",
+                    "minimum": 0,
+                    "type": [
+                      "integer",
+                      "null"
+                    ]
+                  },
+                  "width": {
+                    "format": "uint32",
+                    "minimum": 0,
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "elementId",
+                  "width",
+                  "height",
+                  "requestedTime",
+                  "actualTimestampSeconds",
+                  "frameDurationSeconds"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "elementId": {
+                    "type": "string"
+                  },
+                  "kind": {
+                    "const": "noFrame",
+                    "type": "string"
+                  },
+                  "reason": {
+                    "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/VisualNoFrameReason"
+                  },
+                  "requestedTime": {
+                    "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/Time"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "elementId",
+                  "requestedTime",
+                  "reason"
+                ],
+                "type": "object"
+              }
+            ]
           },
           "EditorError": {
             "$ref": "#/components/schemas/OpencutFontCatalogOutput/$defs/EditorError"
@@ -31200,6 +31178,89 @@
           },
           "MaskQuad": {
             "$ref": "#/components/schemas/OpencutSceneGeometryOutput/$defs/MaskQuad"
+          },
+          "NativeGraphicsApi": {
+            "$ref": "#/components/schemas/OpencutQualityInspectOutput/$defs/NativeGraphicsApi"
+          },
+          "NativeLibraryIdentity": {
+            "$ref": "#/components/schemas/OpencutQualityInspectOutput/$defs/NativeLibraryIdentity"
+          },
+          "NativePlatformIdentity": {
+            "$ref": "#/components/schemas/OpencutQualityInspectOutput/$defs/NativePlatformIdentity"
+          },
+          "NativeVisualIdentity": {
+            "additionalProperties": false,
+            "properties": {
+              "decoder_libraries": {
+                "items": {
+                  "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/NativeLibraryIdentity"
+                },
+                "type": "array"
+              },
+              "decoder_profile": {
+                "type": "string"
+              },
+              "gpu_backend": {
+                "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/NativeGraphicsApi"
+              },
+              "gpu_device": {
+                "type": "string"
+              },
+              "gpu_device_id": {
+                "format": "uint32",
+                "minimum": 0,
+                "type": "integer"
+              },
+              "gpu_driver": {
+                "type": "string"
+              },
+              "gpu_vendor_id": {
+                "format": "uint32",
+                "minimum": 0,
+                "type": "integer"
+              },
+              "platform": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/NativePlatformIdentity"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Absent only in immutable proofs captured before platform observation.\nNew execution requires the observed OS/font/driver platform identity."
+              },
+              "rasterizer": {
+                "type": "string"
+              },
+              "renderer_sha256": {
+                "type": "string"
+              },
+              "shader_sha256": {
+                "type": "string"
+              },
+              "texture_format": {
+                "type": "string"
+              },
+              "wgpu_version": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "renderer_sha256",
+              "shader_sha256",
+              "decoder_libraries",
+              "wgpu_version",
+              "rasterizer",
+              "gpu_backend",
+              "gpu_device",
+              "gpu_driver",
+              "gpu_vendor_id",
+              "gpu_device_id",
+              "texture_format",
+              "decoder_profile"
+            ],
+            "type": "object"
           },
           "SceneBackground": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SceneBackground"
@@ -31649,6 +31710,16 @@
                 },
                 "type": "object"
               },
+              "hit_test": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/VisualPreviewHitTest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
               "max_lag_ms": {
                 "format": "uint32",
                 "minimum": 0,
@@ -31657,6 +31728,9 @@
               "next_time": {
                 "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/Time",
                 "description": "Next sampling time, computed by the application for sequential preparation."
+              },
+              "picture": {
+                "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/VisualPreviewPicture"
               },
               "plan": {
                 "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/SceneFramePlan"
@@ -31677,7 +31751,101 @@
               "decode_admissions",
               "time_seconds",
               "consumer_time_seconds",
-              "max_lag_ms"
+              "max_lag_ms",
+              "picture"
+            ],
+            "type": "object"
+          },
+          "VisualPreviewHit": {
+            "additionalProperties": false,
+            "properties": {
+              "alpha": {
+                "format": "uint8",
+                "maximum": 255,
+                "minimum": 0,
+                "type": "integer"
+              },
+              "elementId": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "elementId",
+              "alpha"
+            ],
+            "type": "object"
+          },
+          "VisualPreviewHitPoint": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameInput/$defs/VisualPreviewHitPoint"
+          },
+          "VisualPreviewHitTest": {
+            "additionalProperties": false,
+            "properties": {
+              "hits": {
+                "items": {
+                  "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/VisualPreviewHit"
+                },
+                "type": "array"
+              },
+              "identity": {
+                "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/TextFrameIdentity"
+              },
+              "point": {
+                "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/VisualPreviewHitPoint"
+              }
+            },
+            "required": [
+              "identity",
+              "point",
+              "hits"
+            ],
+            "type": "object"
+          },
+          "VisualPreviewPicture": {
+            "additionalProperties": false,
+            "properties": {
+              "byte_length": {
+                "format": "uint32",
+                "minimum": 0,
+                "type": "integer"
+              },
+              "content_hash": {
+                "type": "string"
+              },
+              "height": {
+                "format": "uint32",
+                "minimum": 0,
+                "type": "integer"
+              },
+              "max_retained_bytes": {
+                "format": "uint32",
+                "minimum": 0,
+                "type": "integer"
+              },
+              "peak_worker_rss_bytes": {
+                "type": "string"
+              },
+              "picture_id": {
+                "type": "string"
+              },
+              "renderer": {
+                "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/NativeVisualIdentity"
+              },
+              "width": {
+                "format": "uint32",
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "picture_id",
+              "width",
+              "height",
+              "byte_length",
+              "content_hash",
+              "max_retained_bytes",
+              "renderer",
+              "peak_worker_rss_bytes"
             ],
             "type": "object"
           },
@@ -53235,6 +53403,18 @@
           "FontSynthesisRequest": {
             "$ref": "#/components/schemas/OpencutFontSourceOutput/$defs/FontSynthesisRequest"
           },
+          "NativePlatformIdentity": {
+            "$ref": "#/components/schemas/OpencutQualityInspectOutput/$defs/NativePlatformIdentity"
+          },
+          "NativeTextRuntimeIdentity": {
+            "$ref": "#/components/schemas/OpencutSubtitleClassicAssPlanOutput/$defs/NativeTextRuntimeIdentity"
+          },
+          "TextBackgroundRect": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextBackgroundRect"
+          },
+          "TextBlockMetrics": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextBlockMetrics"
+          },
           "TextCanvasPlanResult": {
             "additionalProperties": false,
             "properties": {
@@ -53255,9 +53435,17 @@
               "layer": {
                 "$ref": "#/components/schemas/OpencutTextCanvasPlanOutput/$defs/TextLayerPlan",
                 "description": "Font metadata and coverage always describe the actual source bytes."
+              },
+              "layout": {
+                "$ref": "#/components/schemas/OpencutTextCanvasPlanOutput/$defs/TextLayout"
+              },
+              "measurement": {
+                "$ref": "#/components/schemas/OpencutTextCanvasPlanOutput/$defs/NativeTextRuntimeIdentity"
               }
             },
             "required": [
+              "layout",
+              "measurement",
               "identity",
               "layer"
             ],
@@ -53269,6 +53457,12 @@
           "TextLayerPlan": {
             "$ref": "#/components/schemas/OpencutSubtitleClassicAssPlanOutput/$defs/TextLayerPlan"
           },
+          "TextLayout": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextLayout"
+          },
+          "TextLineMetrics": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextLineMetrics"
+          },
           "TextRasterBackground": {
             "$ref": "#/components/schemas/OpencutSubtitleClassicAssPlanOutput/$defs/TextRasterBackground"
           },
@@ -53277,6 +53471,9 @@
           },
           "TextRasterTransform": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextRasterTransform"
+          },
+          "TextRect": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextRect"
           },
           "Time": {
             "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/Time"
@@ -54062,12 +54259,6 @@
       },
       "OpencutSubtitleTextPlanInput": {
         "$defs": {
-          "CaptionLayoutReceipt": {
-            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/CaptionLayoutReceipt"
-          },
-          "CaptionWrapMeasurement": {
-            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/CaptionWrapMeasurement"
-          },
           "Color": {
             "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/Color"
           },
@@ -54094,9 +54285,6 @@
           },
           "SubtitleFormat": {
             "$ref": "#/components/schemas/OpencutEditRecoveryStageInput/$defs/SubtitleFormat"
-          },
-          "SubtitleTextObservation": {
-            "$ref": "#/components/schemas/OpencutSubtitleClassicAssPlanInput/$defs/SubtitleTextObservation"
           },
           "SubtitleTextSource": {
             "oneOf": [
@@ -54153,29 +54341,8 @@
           "TextBackground": {
             "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/TextBackground"
           },
-          "TextBackgroundRect": {
-            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextBackgroundRect"
-          },
-          "TextBlockMetrics": {
-            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextBlockMetrics"
-          },
           "TextDecoration": {
             "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/TextDecoration"
-          },
-          "TextLayout": {
-            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextLayout"
-          },
-          "TextLineMetrics": {
-            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextLineMetrics"
-          },
-          "TextRasterReceipt": {
-            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextRasterReceipt"
-          },
-          "TextRasterTransform": {
-            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextRasterTransform"
-          },
-          "TextRect": {
-            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextRect"
           },
           "TextTrackTarget": {
             "$ref": "#/components/schemas/OpencutSubtitleClassicAssPlanInput/$defs/TextTrackTarget"
@@ -54196,16 +54363,6 @@
             "minimum": 0,
             "type": [
               "integer",
-              "null"
-            ]
-          },
-          "observations": {
-            "description": "None prepares measurement inputs. Some validates them and returns one edit.",
-            "items": {
-              "$ref": "#/components/schemas/OpencutSubtitleTextPlanInput/$defs/SubtitleTextObservation"
-            },
-            "type": [
-              "array",
               "null"
             ]
           },
@@ -54381,6 +54538,12 @@
           "MaskFeather": {
             "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/MaskFeather"
           },
+          "NativePlatformIdentity": {
+            "$ref": "#/components/schemas/OpencutQualityInspectOutput/$defs/NativePlatformIdentity"
+          },
+          "NativeTextRuntimeIdentity": {
+            "$ref": "#/components/schemas/OpencutSubtitleClassicAssPlanOutput/$defs/NativeTextRuntimeIdentity"
+          },
           "ProjectCover": {
             "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/ProjectCover"
           },
@@ -54477,6 +54640,16 @@
                 "format": "uint32",
                 "minimum": 0,
                 "type": "integer"
+              },
+              "measurement": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/OpencutSubtitleTextPlanOutput/$defs/NativeTextRuntimeIdentity"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "revision": {
                 "type": "string"
@@ -54753,27 +54926,6 @@
           "SubtitleAssFontBinding": {
             "$ref": "#/components/schemas/OpencutSubtitleClassicAssPlanInput/$defs/SubtitleAssFontBinding"
           },
-          "TextBackgroundRect": {
-            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextBackgroundRect"
-          },
-          "TextBlockMetrics": {
-            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextBlockMetrics"
-          },
-          "TextLayout": {
-            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextLayout"
-          },
-          "TextLineMetrics": {
-            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextLineMetrics"
-          },
-          "TextRasterReceipt": {
-            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextRasterReceipt"
-          },
-          "TextRasterTransform": {
-            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextRasterTransform"
-          },
-          "TextRect": {
-            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextRect"
-          },
           "TextTrackTarget": {
             "$ref": "#/components/schemas/OpencutSubtitleClassicAssPlanInput/$defs/TextTrackTarget"
           }
@@ -54796,15 +54948,6 @@
           },
           "idempotency_key": {
             "type": "string"
-          },
-          "observations": {
-            "items": {
-              "$ref": "#/components/schemas/OpencutSubtitleAssPlanInput/$defs/TextRasterReceipt"
-            },
-            "type": [
-              "array",
-              "null"
-            ]
           },
           "project_id": {
             "type": "string"
@@ -54968,6 +55111,12 @@
           "MaskFeather": {
             "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/MaskFeather"
           },
+          "NativePlatformIdentity": {
+            "$ref": "#/components/schemas/OpencutQualityInspectOutput/$defs/NativePlatformIdentity"
+          },
+          "NativeTextRuntimeIdentity": {
+            "$ref": "#/components/schemas/OpencutSubtitleClassicAssPlanOutput/$defs/NativeTextRuntimeIdentity"
+          },
           "ProjectCover": {
             "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/ProjectCover"
           },
@@ -55070,6 +55219,16 @@
                 "format": "uint32",
                 "minimum": 0,
                 "type": "integer"
+              },
+              "measurement": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/OpencutSubtitleAssPlanOutput/$defs/NativeTextRuntimeIdentity"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "revision": {
                 "type": "string"
@@ -65702,14 +65861,8 @@
           "CaptionLayoutProfile": {
             "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/CaptionLayoutProfile"
           },
-          "CaptionLayoutReceipt": {
-            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/CaptionLayoutReceipt"
-          },
           "CaptionSourceAnchor": {
             "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/CaptionSourceAnchor"
-          },
-          "CaptionWrapMeasurement": {
-            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/CaptionWrapMeasurement"
           },
           "ChannelTarget": {
             "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/ChannelTarget"
@@ -65728,9 +65881,6 @@
           },
           "CurveHandle": {
             "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/CurveHandle"
-          },
-          "DecodedVisualSource": {
-            "$ref": "#/components/schemas/OpencutVisualPreviewFrameInput/$defs/DecodedVisualSource"
           },
           "DiscreteKey": {
             "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/DiscreteKey"
@@ -65791,9 +65941,6 @@
           },
           "GraphicGeometry": {
             "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/GraphicGeometry"
-          },
-          "GraphicRasterReceipt": {
-            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/GraphicRasterReceipt"
           },
           "HistoricalVisualCubicBezier": {
             "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/HistoricalVisualCubicBezier"
@@ -65885,32 +66032,11 @@
           "TextBackground": {
             "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/TextBackground"
           },
-          "TextBackgroundRect": {
-            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextBackgroundRect"
-          },
-          "TextBlockMetrics": {
-            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextBlockMetrics"
-          },
           "TextDecoration": {
             "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/TextDecoration"
           },
-          "TextLayout": {
-            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextLayout"
-          },
-          "TextLineMetrics": {
-            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextLineMetrics"
-          },
           "TextMask": {
             "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/TextMask"
-          },
-          "TextRasterReceipt": {
-            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextRasterReceipt"
-          },
-          "TextRasterTransform": {
-            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextRasterTransform"
-          },
-          "TextRect": {
-            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextRect"
           },
           "Time": {
             "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/Time"
@@ -65975,59 +66101,32 @@
               }
             ]
           },
-          "VisualNoFrameReason": {
-            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/MediaFrameNoSourceReason"
-          },
           "VisualPreviewFrame": {
             "additionalProperties": false,
             "properties": {
-              "captions": {
-                "items": {
-                  "$ref": "#/components/schemas/OpencutVisualPreviewEditDraftFrameInput/$defs/CaptionLayoutReceipt"
-                },
-                "type": [
-                  "array",
-                  "null"
-                ]
-              },
-              "decoded": {
-                "items": {
-                  "$ref": "#/components/schemas/OpencutVisualPreviewEditDraftFrameInput/$defs/DecodedVisualSource"
-                },
-                "type": [
-                  "array",
-                  "null"
-                ]
-              },
-              "graphics": {
-                "items": {
-                  "$ref": "#/components/schemas/OpencutVisualPreviewEditDraftFrameInput/$defs/GraphicRasterReceipt"
-                },
-                "type": [
-                  "array",
-                  "null"
-                ]
+              "hit_query": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/OpencutVisualPreviewEditDraftFrameInput/$defs/VisualPreviewHitPoint"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Native foreground alpha at one output pixel; no client hit claim."
               },
               "prepare_ahead": {
                 "default": false,
                 "description": "Prepare a bounded future picture without claiming it was presented.\nThe client must still present against actual audio consumption.",
                 "type": "boolean"
               },
-              "rasters": {
-                "items": {
-                  "$ref": "#/components/schemas/OpencutVisualPreviewEditDraftFrameInput/$defs/TextRasterReceipt"
-                },
-                "type": [
-                  "array",
-                  "null"
-                ]
-              },
               "resolution": {
                 "$ref": "#/components/schemas/OpencutVisualPreviewEditDraftFrameInput/$defs/RasterResolution"
               },
               "retained_picture_bytes": {
                 "default": 0,
-                "description": "Resident presentation and queued picture bytes, deducted before decode admission.",
+                "description": "Resident presentation and queued picture bytes, checked against the\nfixed presentation envelope reserved before native decode admission.",
                 "format": "uint32",
                 "minimum": 0,
                 "type": "integer"
@@ -66050,6 +66149,9 @@
               "session"
             ],
             "type": "object"
+          },
+          "VisualPreviewHitPoint": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameInput/$defs/VisualPreviewHitPoint"
           },
           "VisualProfile": {
             "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/VisualProfile"
@@ -66151,7 +66253,7 @@
             "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/ColorEncoding"
           },
           "DecodedVisualSource": {
-            "$ref": "#/components/schemas/OpencutVisualPreviewFrameInput/$defs/DecodedVisualSource"
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/DecodedVisualSource"
           },
           "EditorError": {
             "$ref": "#/components/schemas/OpencutFontCatalogOutput/$defs/EditorError"
@@ -66224,6 +66326,18 @@
           },
           "MaskQuad": {
             "$ref": "#/components/schemas/OpencutSceneGeometryOutput/$defs/MaskQuad"
+          },
+          "NativeGraphicsApi": {
+            "$ref": "#/components/schemas/OpencutQualityInspectOutput/$defs/NativeGraphicsApi"
+          },
+          "NativeLibraryIdentity": {
+            "$ref": "#/components/schemas/OpencutQualityInspectOutput/$defs/NativeLibraryIdentity"
+          },
+          "NativePlatformIdentity": {
+            "$ref": "#/components/schemas/OpencutQualityInspectOutput/$defs/NativePlatformIdentity"
+          },
+          "NativeVisualIdentity": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/NativeVisualIdentity"
           },
           "SceneBackground": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SceneBackground"
@@ -66340,6 +66454,18 @@
           },
           "VisualPreviewFrameResult": {
             "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/VisualPreviewFrameResult"
+          },
+          "VisualPreviewHit": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/VisualPreviewHit"
+          },
+          "VisualPreviewHitPoint": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameInput/$defs/VisualPreviewHitPoint"
+          },
+          "VisualPreviewHitTest": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/VisualPreviewHitTest"
+          },
+          "VisualPreviewPicture": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/VisualPreviewPicture"
           },
           "VisualQuad": {
             "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/VisualQuad"
@@ -68997,6 +69123,30 @@
           "content_hash"
         ],
         "title": "AudioPreviewPcmHeader",
+        "type": "object"
+      },
+      "VisualPreviewPictureRead": {
+        "$defs": {
+          "AudioPreviewStream": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewResourceOpenInput/$defs/AudioPreviewStream"
+          }
+        },
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": false,
+        "description": "Single-use bounded binary transport; the descriptor comes from the same\nnative frame request. Identity never comes from a native path or URL.\nA newer frame intent retires older unclaimed picture descriptors.",
+        "properties": {
+          "picture_id": {
+            "type": "string"
+          },
+          "session": {
+            "$ref": "#/components/schemas/VisualPreviewPictureRead/$defs/AudioPreviewStream"
+          }
+        },
+        "required": [
+          "session",
+          "picture_id"
+        ],
+        "title": "VisualPreviewPictureRead",
         "type": "object"
       },
       "OpenCutEventStreamRecord": {

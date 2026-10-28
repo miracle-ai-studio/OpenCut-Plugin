@@ -11487,7 +11487,6 @@ export namespace OpencutSubtitleClassicAssPlanInput {
   expected_revision: string;
   font_bindings: SubtitleAssFontBinding[];
   idempotency_key: string;
-  observations?: SubtitleTextObservation[] | null;
   project_id: string;
   sequence_id: string;
   track: TextTrackTarget;
@@ -11497,80 +11496,6 @@ export namespace OpencutSubtitleClassicAssPlanInput {
   font_id: string;
   style: FontStyle;
   weight: FontWeight;
-}
-  export interface SubtitleTextObservation {
-  caption: CaptionLayoutReceipt;
-  raster: TextRasterReceipt;
-}
-  export interface CaptionLayoutReceipt {
-  elementId: string;
-  /**
-   * Every greedy candidate in order, including rejected overflow candidates.
-   * Widths are measured with the same fixed font as the actual raster.
-   */
-  measurements: CaptionWrapMeasurement[];
-  originalTextHash: string;
-  wrappedText: string;
-}
-  export interface CaptionWrapMeasurement {
-  content: string;
-  width: number;
-}
-  export interface TextRasterReceipt {
-  elementId: string;
-  height: number;
-  layout: TextLayout;
-  width: number;
-}
-  export interface TextLayout {
-  align: string;
-  background?: TextBackgroundRect | null;
-  baseline: string;
-  block: TextBlockMetrics;
-  faceIndex: number;
-  fontContentHash: string;
-  fontId: string;
-  fontSizePx: number;
-  fontStyle: FontStyle;
-  fontWeight: number;
-  letterSpacingPx: number;
-  lineHeightPx: number;
-  lines: TextLineMetrics[];
-  transform: TextRasterTransform;
-  validatedTextHash: string;
-}
-  export interface TextBackgroundRect {
-  height: number;
-  left: number;
-  radius: number;
-  top: number;
-  width: number;
-}
-  export interface TextBlockMetrics {
-  height: number;
-  maxWidth: number;
-  visualCenterOffset: number;
-}
-  export interface TextLineMetrics {
-  ascent: number;
-  baselineY: number;
-  content: string;
-  decoration?: TextRect | null;
-  descent: number;
-  width: number;
-}
-  export interface TextRect {
-  height: number;
-  left: number;
-  top: number;
-  width: number;
-}
-  export interface TextRasterTransform {
-  centerX: number;
-  centerY: number;
-  rotationRadians: number;
-  scaleX: number;
-  scaleY: number;
 }
 
 }
@@ -12085,6 +12010,7 @@ export namespace OpencutSubtitleClassicAssPlanOutput {
   cues: SubtitleClassicAssCuePlan[];
   font_requirements: SubtitleAssFontRequirement[];
   height: number;
+  measurement?: NativeTextRuntimeIdentity | null;
   revision: string;
   selection?: TimelineTarget | null;
   skipped_cue_count: number;
@@ -12174,6 +12100,22 @@ export namespace OpencutSubtitleClassicAssPlanOutput {
   resolved_font_id?: string | null;
   style: FontStyle;
   weight: FontWeight;
+}
+/**
+ * CPU text metrics use the exact verified worker and font platform. They do
+ * not claim a GPU device or media-decoder execution that did not occur.
+ */
+  export interface NativeTextRuntimeIdentity {
+  platform: NativePlatformIdentity;
+  rasterizer: string;
+  worker_sha256: string;
+}
+  export interface NativePlatformIdentity {
+  architecture: string;
+  font_backend: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
   export interface TimelineTarget {
   element_id: string;
@@ -12846,142 +12788,33 @@ export namespace OpencutVisualPreviewCachePrepareOutput {
 }
 
 export namespace OpencutVisualPreviewFrameInput {
-  export type DecodedVisualSource =
-  | {
-      elementId: string;
-      height: number;
-      kind: 'readyImage';
-      width: number;
-    }
-  | {
-      actualTimestampSeconds: number;
-      elementId: string;
-      /**
-       * The decoder observed the terminal frame; its real interval is not
-       * extended or relabelled to cover the requested source time.
-       */
-      eofHeld?: boolean;
-      frameDurationSeconds: number;
-      height: number;
-      kind: 'readyVideo';
-      requestedTime: Time;
-      /**
-       * None is primary-track selection, not an invented FFmpeg stream index.
-       */
-      selectedVideoStream?: number | null;
-      width: number;
-    }
-  | {
-      elementId: string;
-      kind: 'noFrame';
-      reason: VisualNoFrameReason;
-      requestedTime: Time;
-    };
-  export type VisualNoFrameReason = 'outside_read_window' | 'eof' | 'timestamp_gap';
-  export type FontStyle = 'normal' | 'italic';
 /**
  * Raster execution size. Source remains byte-compatible with existing receipts.
  */
   export type RasterResolution = 'source' | 'preview540';
 
   export interface VisualPreviewFrame {
-  captions?: CaptionLayoutReceipt[] | null;
-  decoded?: DecodedVisualSource[] | null;
-  graphics?: GraphicRasterReceipt[] | null;
+  /**
+   * Native foreground alpha at one output pixel; no client hit claim.
+   */
+  hit_query?: VisualPreviewHitPoint | null;
   /**
    * Prepare a bounded future picture without claiming it was presented.
    * The client must still present against actual audio consumption.
    */
   prepare_ahead?: boolean;
-  rasters?: TextRasterReceipt[] | null;
   resolution?: RasterResolution;
   /**
-   * Resident presentation and queued picture bytes, deducted before decode admission.
+   * Resident presentation and queued picture bytes, checked against the
+   * fixed presentation envelope reserved before native decode admission.
    */
   retained_picture_bytes?: number;
   session: AudioPreviewStream;
   time?: Time | null;
 }
-  export interface CaptionLayoutReceipt {
-  elementId: string;
-  /**
-   * Every greedy candidate in order, including rejected overflow candidates.
-   * Widths are measured with the same fixed font as the actual raster.
-   */
-  measurements: CaptionWrapMeasurement[];
-  originalTextHash: string;
-  wrappedText: string;
-}
-  export interface CaptionWrapMeasurement {
-  content: string;
-  width: number;
-}
-  export interface Time {
-  ticks: string;
-  timebase: number;
-}
-  export interface GraphicRasterReceipt {
-  elementId: string;
-  height: number;
-  originX: number;
-  originY: number;
-  width: number;
-}
-  export interface TextRasterReceipt {
-  elementId: string;
-  height: number;
-  layout: TextLayout;
-  width: number;
-}
-  export interface TextLayout {
-  align: string;
-  background?: TextBackgroundRect | null;
-  baseline: string;
-  block: TextBlockMetrics;
-  faceIndex: number;
-  fontContentHash: string;
-  fontId: string;
-  fontSizePx: number;
-  fontStyle: FontStyle;
-  fontWeight: number;
-  letterSpacingPx: number;
-  lineHeightPx: number;
-  lines: TextLineMetrics[];
-  transform: TextRasterTransform;
-  validatedTextHash: string;
-}
-  export interface TextBackgroundRect {
-  height: number;
-  left: number;
-  radius: number;
-  top: number;
-  width: number;
-}
-  export interface TextBlockMetrics {
-  height: number;
-  maxWidth: number;
-  visualCenterOffset: number;
-}
-  export interface TextLineMetrics {
-  ascent: number;
-  baselineY: number;
-  content: string;
-  decoration?: TextRect | null;
-  descent: number;
-  width: number;
-}
-  export interface TextRect {
-  height: number;
-  left: number;
-  top: number;
-  width: number;
-}
-  export interface TextRasterTransform {
-  centerX: number;
-  centerY: number;
-  rotationRadians: number;
-  scaleX: number;
-  scaleY: number;
+  export interface VisualPreviewHitPoint {
+  x: number;
+  y: number;
 }
   export interface AudioPreviewStream {
   generation: string;
@@ -12989,6 +12822,10 @@ export namespace OpencutVisualPreviewFrameInput {
   overlay_epoch: string;
   owner_id: string;
   session_id: string;
+}
+  export interface Time {
+  ticks: string;
+  timebase: number;
 }
 
 }
@@ -13173,6 +13010,7 @@ export namespace OpencutVisualPreviewFrameOutput {
       element_id: string;
       kind: 'effect';
     };
+  export type NativeGraphicsApi = 'metal' | 'vulkan' | 'direct_x';
   export type VisualDecodeRequest =
   | {
       kind: 'image';
@@ -13239,8 +13077,10 @@ export namespace OpencutVisualPreviewFrameOutput {
   decode_admissions: {
     [k: string]: VisualDecodeAdmission;
   };
+  hit_test?: VisualPreviewHitTest | null;
   max_lag_ms: number;
   next_time: Time1;
+  picture: VisualPreviewPicture;
   plan: SceneFramePlan;
   prepare_ahead: boolean;
   time_seconds: number;
@@ -13574,12 +13414,67 @@ export namespace OpencutVisualPreviewFrameOutput {
   maxPixels: string;
   maxWidth: number;
 }
+  export interface VisualPreviewHitTest {
+  hits: VisualPreviewHit[];
+  identity: TextFrameIdentity;
+  point: VisualPreviewHitPoint;
+}
+  export interface VisualPreviewHit {
+  alpha: number;
+  elementId: string;
+}
+  export interface VisualPreviewHitPoint {
+  x: number;
+  y: number;
+}
 /**
  * Next sampling time, computed by the application for sequential preparation.
  */
   export interface Time1 {
   ticks: string;
   timebase: number;
+}
+  export interface VisualPreviewPicture {
+  byte_length: number;
+  content_hash: string;
+  height: number;
+  max_retained_bytes: number;
+  peak_worker_rss_bytes: string;
+  picture_id: string;
+  renderer: NativeVisualIdentity;
+  width: number;
+}
+  export interface NativeVisualIdentity {
+  decoder_libraries: NativeLibraryIdentity[];
+  decoder_profile: string;
+  gpu_backend: NativeGraphicsApi;
+  gpu_device: string;
+  gpu_device_id: number;
+  gpu_driver: string;
+  gpu_vendor_id: number;
+  /**
+   * Absent only in immutable proofs captured before platform observation.
+   * New execution requires the observed OS/font/driver platform identity.
+   */
+  platform?: NativePlatformIdentity | null;
+  rasterizer: string;
+  renderer_sha256: string;
+  shader_sha256: string;
+  texture_format: string;
+  wgpu_version: string;
+}
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+  export interface NativePlatformIdentity {
+  architecture: string;
+  font_backend: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
   export interface SceneFramePlan {
   background: SceneBackground;
@@ -37041,6 +36936,8 @@ export namespace OpencutTextCanvasPlanOutput {
   font_synthesis?: FontSynthesisBinding | null;
   identity: TextFrameIdentity;
   layer: TextLayerPlan;
+  layout: TextLayout;
+  measurement: NativeTextRuntimeIdentity;
 }
   export interface FontSynthesisBinding {
   actual: FontCatalogEntry;
@@ -37137,6 +37034,65 @@ export namespace OpencutTextCanvasPlanOutput {
   rotationRadians: number;
   scaleX: number;
   scaleY: number;
+}
+  export interface TextLayout {
+  align: string;
+  background?: TextBackgroundRect | null;
+  baseline: string;
+  block: TextBlockMetrics;
+  faceIndex: number;
+  fontContentHash: string;
+  fontId: string;
+  fontSizePx: number;
+  fontStyle: FontStyle;
+  fontWeight: number;
+  letterSpacingPx: number;
+  lineHeightPx: number;
+  lines: TextLineMetrics[];
+  transform: TextRasterTransform;
+  validatedTextHash: string;
+}
+  export interface TextBackgroundRect {
+  height: number;
+  left: number;
+  radius: number;
+  top: number;
+  width: number;
+}
+  export interface TextBlockMetrics {
+  height: number;
+  maxWidth: number;
+  visualCenterOffset: number;
+}
+  export interface TextLineMetrics {
+  ascent: number;
+  baselineY: number;
+  content: string;
+  decoration?: TextRect | null;
+  descent: number;
+  width: number;
+}
+  export interface TextRect {
+  height: number;
+  left: number;
+  top: number;
+  width: number;
+}
+/**
+ * CPU text metrics use the exact verified worker and font platform. They do
+ * not claim a GPU device or media-decoder execution that did not occur.
+ */
+  export interface NativeTextRuntimeIdentity {
+  platform: NativePlatformIdentity;
+  rasterizer: string;
+  worker_sha256: string;
+}
+  export interface NativePlatformIdentity {
+  architecture: string;
+  font_backend: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
   export interface EditorError {
   code: string;
@@ -38770,7 +38726,6 @@ export namespace OpencutAnalysisSequenceTranscribeCapabilityOutput {
 }
 
 export namespace OpencutSubtitleTextPlanInput {
-  export type FontStyle = 'normal' | 'italic';
   export type SubtitleTextSource =
   | {
       analysis_job_id: string;
@@ -38813,6 +38768,7 @@ export namespace OpencutSubtitleTextPlanInput {
       unit: 'canvas_pixels';
       value: number;
     };
+  export type FontStyle = 'normal' | 'italic';
   export type FontWeight = 'normal' | 'bold';
   export type TextTrackTarget =
   | {
@@ -38831,89 +38787,11 @@ export namespace OpencutSubtitleTextPlanInput {
    * None selects the Classic 80% canvas width. Placement uses its 5% bottom margin.
    */
   max_width_px?: number | null;
-  /**
-   * None prepares measurement inputs. Some validates them and returns one edit.
-   */
-  observations?: SubtitleTextObservation[] | null;
   project_id: string;
   sequence_id: string;
   source: SubtitleTextSource;
   style: Text;
   track: TextTrackTarget;
-}
-  export interface SubtitleTextObservation {
-  caption: CaptionLayoutReceipt;
-  raster: TextRasterReceipt;
-}
-  export interface CaptionLayoutReceipt {
-  elementId: string;
-  /**
-   * Every greedy candidate in order, including rejected overflow candidates.
-   * Widths are measured with the same fixed font as the actual raster.
-   */
-  measurements: CaptionWrapMeasurement[];
-  originalTextHash: string;
-  wrappedText: string;
-}
-  export interface CaptionWrapMeasurement {
-  content: string;
-  width: number;
-}
-  export interface TextRasterReceipt {
-  elementId: string;
-  height: number;
-  layout: TextLayout;
-  width: number;
-}
-  export interface TextLayout {
-  align: string;
-  background?: TextBackgroundRect | null;
-  baseline: string;
-  block: TextBlockMetrics;
-  faceIndex: number;
-  fontContentHash: string;
-  fontId: string;
-  fontSizePx: number;
-  fontStyle: FontStyle;
-  fontWeight: number;
-  letterSpacingPx: number;
-  lineHeightPx: number;
-  lines: TextLineMetrics[];
-  transform: TextRasterTransform;
-  validatedTextHash: string;
-}
-  export interface TextBackgroundRect {
-  height: number;
-  left: number;
-  radius: number;
-  top: number;
-  width: number;
-}
-  export interface TextBlockMetrics {
-  height: number;
-  maxWidth: number;
-  visualCenterOffset: number;
-}
-  export interface TextLineMetrics {
-  ascent: number;
-  baselineY: number;
-  content: string;
-  decoration?: TextRect | null;
-  descent: number;
-  width: number;
-}
-  export interface TextRect {
-  height: number;
-  left: number;
-  top: number;
-  width: number;
-}
-  export interface TextRasterTransform {
-  centerX: number;
-  centerY: number;
-  rotationRadians: number;
-  scaleX: number;
-  scaleY: number;
 }
 /**
  * Content must be empty. Cue content comes exclusively from the source.
@@ -39468,6 +39346,7 @@ export namespace OpencutSubtitleTextPlanOutput {
   export interface SubtitleTextPlanResult {
   cues: SubtitleTextCuePlan[];
   height: number;
+  measurement?: NativeTextRuntimeIdentity | null;
   revision: string;
   selection?: TimelineTarget | null;
   transaction?: ApplyProject | null;
@@ -39543,6 +39422,22 @@ export namespace OpencutSubtitleTextPlanOutput {
   export interface Time {
   ticks: string;
   timebase: number;
+}
+/**
+ * CPU text metrics use the exact verified worker and font platform. They do
+ * not claim a GPU device or media-decoder execution that did not occur.
+ */
+  export interface NativeTextRuntimeIdentity {
+  platform: NativePlatformIdentity;
+  rasterizer: string;
+  worker_sha256: string;
+}
+  export interface NativePlatformIdentity {
+  architecture: string;
+  font_backend: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
   export interface TimelineTarget {
   element_id: string;
@@ -39957,7 +39852,6 @@ export namespace OpencutSubtitleAssPlanInput {
    */
   font_bindings: SubtitleAssFontBinding[];
   idempotency_key: string;
-  observations?: TextRasterReceipt[] | null;
   project_id: string;
   sequence_id: string;
   track: TextTrackTarget;
@@ -39967,62 +39861,6 @@ export namespace OpencutSubtitleAssPlanInput {
   font_id: string;
   style: FontStyle;
   weight: FontWeight;
-}
-  export interface TextRasterReceipt {
-  elementId: string;
-  height: number;
-  layout: TextLayout;
-  width: number;
-}
-  export interface TextLayout {
-  align: string;
-  background?: TextBackgroundRect | null;
-  baseline: string;
-  block: TextBlockMetrics;
-  faceIndex: number;
-  fontContentHash: string;
-  fontId: string;
-  fontSizePx: number;
-  fontStyle: FontStyle;
-  fontWeight: number;
-  letterSpacingPx: number;
-  lineHeightPx: number;
-  lines: TextLineMetrics[];
-  transform: TextRasterTransform;
-  validatedTextHash: string;
-}
-  export interface TextBackgroundRect {
-  height: number;
-  left: number;
-  radius: number;
-  top: number;
-  width: number;
-}
-  export interface TextBlockMetrics {
-  height: number;
-  maxWidth: number;
-  visualCenterOffset: number;
-}
-  export interface TextLineMetrics {
-  ascent: number;
-  baselineY: number;
-  content: string;
-  decoration?: TextRect | null;
-  descent: number;
-  width: number;
-}
-  export interface TextRect {
-  height: number;
-  left: number;
-  top: number;
-  width: number;
-}
-  export interface TextRasterTransform {
-  centerX: number;
-  centerY: number;
-  rotationRadians: number;
-  scaleX: number;
-  scaleY: number;
 }
 
 }
@@ -40539,6 +40377,7 @@ export namespace OpencutSubtitleAssPlanOutput {
    */
   font_requirements: SubtitleAssFontRequirement[];
   height: number;
+  measurement?: NativeTextRuntimeIdentity | null;
   revision: string;
   selection?: TimelineTarget | null;
   transaction?: ApplyProject | null;
@@ -40613,6 +40452,22 @@ export namespace OpencutSubtitleAssPlanOutput {
   resolved_font_id?: string | null;
   style: FontStyle;
   weight: FontWeight;
+}
+/**
+ * CPU text metrics use the exact verified worker and font platform. They do
+ * not claim a GPU device or media-decoder execution that did not occur.
+ */
+  export interface NativeTextRuntimeIdentity {
+  platform: NativePlatformIdentity;
+  rasterizer: string;
+  worker_sha256: string;
+}
+  export interface NativePlatformIdentity {
+  architecture: string;
+  font_backend: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
   export interface TimelineTarget {
   element_id: string;
@@ -59324,39 +59179,6 @@ export namespace OpencutElementTransformSampleOutput {
 }
 
 export namespace OpencutVisualPreviewEditDraftFrameInput {
-  export type DecodedVisualSource =
-  | {
-      elementId: string;
-      height: number;
-      kind: 'readyImage';
-      width: number;
-    }
-  | {
-      actualTimestampSeconds: number;
-      elementId: string;
-      /**
-       * The decoder observed the terminal frame; its real interval is not
-       * extended or relabelled to cover the requested source time.
-       */
-      eofHeld?: boolean;
-      frameDurationSeconds: number;
-      height: number;
-      kind: 'readyVideo';
-      requestedTime: Time;
-      /**
-       * None is primary-track selection, not an invented FFmpeg stream index.
-       */
-      selectedVideoStream?: number | null;
-      width: number;
-    }
-  | {
-      elementId: string;
-      kind: 'noFrame';
-      reason: VisualNoFrameReason;
-      requestedTime: Time;
-    };
-  export type VisualNoFrameReason = 'outside_read_window' | 'eof' | 'timestamp_gap';
-  export type FontStyle = 'normal' | 'italic';
 /**
  * Raster execution size. Source remains byte-compatible with existing receipts.
  */
@@ -59715,6 +59537,7 @@ export namespace OpencutVisualPreviewEditDraftFrameInput {
       timebase: number;
     };
   export type TextDecoration = 'none' | 'underline' | 'line_through';
+  export type FontStyle = 'normal' | 'italic';
   export type FontWeight = 'normal' | 'bold';
   export type GraphicGeometry =
   | {
@@ -59875,103 +59698,27 @@ export namespace OpencutVisualPreviewEditDraftFrameInput {
   transaction: ApplyProject;
 }
   export interface VisualPreviewFrame {
-  captions?: CaptionLayoutReceipt[] | null;
-  decoded?: DecodedVisualSource[] | null;
-  graphics?: GraphicRasterReceipt[] | null;
+  /**
+   * Native foreground alpha at one output pixel; no client hit claim.
+   */
+  hit_query?: VisualPreviewHitPoint | null;
   /**
    * Prepare a bounded future picture without claiming it was presented.
    * The client must still present against actual audio consumption.
    */
   prepare_ahead?: boolean;
-  rasters?: TextRasterReceipt[] | null;
   resolution?: RasterResolution;
   /**
-   * Resident presentation and queued picture bytes, deducted before decode admission.
+   * Resident presentation and queued picture bytes, checked against the
+   * fixed presentation envelope reserved before native decode admission.
    */
   retained_picture_bytes?: number;
   session: AudioPreviewStream;
   time?: Time | null;
 }
-  export interface CaptionLayoutReceipt {
-  elementId: string;
-  /**
-   * Every greedy candidate in order, including rejected overflow candidates.
-   * Widths are measured with the same fixed font as the actual raster.
-   */
-  measurements: CaptionWrapMeasurement[];
-  originalTextHash: string;
-  wrappedText: string;
-}
-  export interface CaptionWrapMeasurement {
-  content: string;
-  width: number;
-}
-  export interface Time {
-  ticks: string;
-  timebase: number;
-}
-  export interface GraphicRasterReceipt {
-  elementId: string;
-  height: number;
-  originX: number;
-  originY: number;
-  width: number;
-}
-  export interface TextRasterReceipt {
-  elementId: string;
-  height: number;
-  layout: TextLayout;
-  width: number;
-}
-  export interface TextLayout {
-  align: string;
-  background?: TextBackgroundRect | null;
-  baseline: string;
-  block: TextBlockMetrics;
-  faceIndex: number;
-  fontContentHash: string;
-  fontId: string;
-  fontSizePx: number;
-  fontStyle: FontStyle;
-  fontWeight: number;
-  letterSpacingPx: number;
-  lineHeightPx: number;
-  lines: TextLineMetrics[];
-  transform: TextRasterTransform;
-  validatedTextHash: string;
-}
-  export interface TextBackgroundRect {
-  height: number;
-  left: number;
-  radius: number;
-  top: number;
-  width: number;
-}
-  export interface TextBlockMetrics {
-  height: number;
-  maxWidth: number;
-  visualCenterOffset: number;
-}
-  export interface TextLineMetrics {
-  ascent: number;
-  baselineY: number;
-  content: string;
-  decoration?: TextRect | null;
-  descent: number;
-  width: number;
-}
-  export interface TextRect {
-  height: number;
-  left: number;
-  top: number;
-  width: number;
-}
-  export interface TextRasterTransform {
-  centerX: number;
-  centerY: number;
-  rotationRadians: number;
-  scaleX: number;
-  scaleY: number;
+  export interface VisualPreviewHitPoint {
+  x: number;
+  y: number;
 }
   export interface AudioPreviewStream {
   generation: string;
@@ -59979,6 +59726,10 @@ export namespace OpencutVisualPreviewEditDraftFrameInput {
   overlay_epoch: string;
   owner_id: string;
   session_id: string;
+}
+  export interface Time {
+  ticks: string;
+  timebase: number;
 }
   export interface ApplyProject {
   /**
@@ -60501,6 +60252,7 @@ export namespace OpencutVisualPreviewEditDraftFrameOutput {
       element_id: string;
       kind: 'effect';
     };
+  export type NativeGraphicsApi = 'metal' | 'vulkan' | 'direct_x';
   export type VisualDecodeRequest =
   | {
       kind: 'image';
@@ -60572,8 +60324,10 @@ export namespace OpencutVisualPreviewEditDraftFrameOutput {
   decode_admissions: {
     [k: string]: VisualDecodeAdmission;
   };
+  hit_test?: VisualPreviewHitTest | null;
   max_lag_ms: number;
   next_time: Time1;
+  picture: VisualPreviewPicture;
   plan: SceneFramePlan;
   prepare_ahead: boolean;
   time_seconds: number;
@@ -60907,12 +60661,67 @@ export namespace OpencutVisualPreviewEditDraftFrameOutput {
   maxPixels: string;
   maxWidth: number;
 }
+  export interface VisualPreviewHitTest {
+  hits: VisualPreviewHit[];
+  identity: TextFrameIdentity;
+  point: VisualPreviewHitPoint;
+}
+  export interface VisualPreviewHit {
+  alpha: number;
+  elementId: string;
+}
+  export interface VisualPreviewHitPoint {
+  x: number;
+  y: number;
+}
 /**
  * Next sampling time, computed by the application for sequential preparation.
  */
   export interface Time1 {
   ticks: string;
   timebase: number;
+}
+  export interface VisualPreviewPicture {
+  byte_length: number;
+  content_hash: string;
+  height: number;
+  max_retained_bytes: number;
+  peak_worker_rss_bytes: string;
+  picture_id: string;
+  renderer: NativeVisualIdentity;
+  width: number;
+}
+  export interface NativeVisualIdentity {
+  decoder_libraries: NativeLibraryIdentity[];
+  decoder_profile: string;
+  gpu_backend: NativeGraphicsApi;
+  gpu_device: string;
+  gpu_device_id: number;
+  gpu_driver: string;
+  gpu_vendor_id: number;
+  /**
+   * Absent only in immutable proofs captured before platform observation.
+   * New execution requires the observed OS/font/driver platform identity.
+   */
+  platform?: NativePlatformIdentity | null;
+  rasterizer: string;
+  renderer_sha256: string;
+  shader_sha256: string;
+  texture_format: string;
+  wgpu_version: string;
+}
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+  export interface NativePlatformIdentity {
+  architecture: string;
+  font_backend: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
   export interface SceneFramePlan {
   background: SceneBackground;
@@ -67892,6 +67701,74 @@ export namespace AudioPreviewPcm {
   revision: string;
   sample_rate: number;
   sequence_id: string;
+}
+
+}
+
+export namespace VisualPreviewTransport {
+/**
+ * Single-use bounded binary transport; the descriptor comes from the same
+ * native frame request. Identity never comes from a native path or URL.
+ * A newer frame intent retires older unclaimed picture descriptors.
+ */
+  export interface VisualPreviewPictureRead {
+  picture_id: string;
+  session: AudioPreviewStream;
+}
+  export interface AudioPreviewStream {
+  generation: string;
+  lease_id: string;
+  overlay_epoch: string;
+  owner_id: string;
+  session_id: string;
+}
+
+}
+
+export namespace VisualPreviewPixels {
+  export type NativeGraphicsApi = 'metal' | 'vulkan' | 'direct_x';
+
+  export interface VisualPreviewPicture {
+  byte_length: number;
+  content_hash: string;
+  height: number;
+  max_retained_bytes: number;
+  peak_worker_rss_bytes: string;
+  picture_id: string;
+  renderer: NativeVisualIdentity;
+  width: number;
+}
+  export interface NativeVisualIdentity {
+  decoder_libraries: NativeLibraryIdentity[];
+  decoder_profile: string;
+  gpu_backend: NativeGraphicsApi;
+  gpu_device: string;
+  gpu_device_id: number;
+  gpu_driver: string;
+  gpu_vendor_id: number;
+  /**
+   * Absent only in immutable proofs captured before platform observation.
+   * New execution requires the observed OS/font/driver platform identity.
+   */
+  platform?: NativePlatformIdentity | null;
+  rasterizer: string;
+  renderer_sha256: string;
+  shader_sha256: string;
+  texture_format: string;
+  wgpu_version: string;
+}
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+  export interface NativePlatformIdentity {
+  architecture: string;
+  font_backend: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
 
 }

@@ -130,6 +130,14 @@ pub trait Execution {
     fn checkpoint(&mut self) -> Result<()>;
     fn deadline(&self) -> Instant;
     fn rgba(&mut self, offset: u64, bytes: &[u8]) -> Result<()>;
+    /// One optional pixel in output coordinates. Hit testing observes each
+    /// isolated foreground after opacity/effects/masks and before blending.
+    fn hit_probe(&self) -> Option<[u32; 2]> {
+        None
+    }
+    fn hit_alpha(&mut self, _layer: usize, _alpha: u8) -> Result<()> {
+        Ok(())
+    }
 }
 
 fn invalid(message: impl Into<String>) -> Error {

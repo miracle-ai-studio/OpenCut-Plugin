@@ -4,6 +4,31 @@ use opencut_job_contracts::media_frame::{MediaFrameExecutionSummary, VisualRunti
 pub const NATIVE_DECODER_PROFILE: &str = "libav-pts-half-open;verified-avio";
 pub const NATIVE_RASTERIZER: &str = "skia-safe=0.153.3;tiny-skia=0.11.4;ttf-parser=0.25.1";
 
+pub fn validate_text_identity(
+    identity: &opencut_contracts::renderer_identity::NativeTextRuntimeIdentity,
+) -> Result<(), EditorError> {
+    use crate::media_frame_jobs::{valid_hash, valid_id};
+    let platform = &identity.platform;
+    if !valid_hash(&identity.worker_sha256)
+        || identity.rasterizer != NATIVE_RASTERIZER
+        || [
+            &platform.os,
+            &platform.architecture,
+            &platform.kernel_release,
+            &platform.system_build,
+            &platform.font_backend,
+        ]
+        .into_iter()
+        .any(|v| !valid_id(v))
+    {
+        return Err(EditorError::new(
+            "VISUAL_ENGINE_CHANGED",
+            "Native text measurement identity is incomplete",
+        ));
+    }
+    Ok(())
+}
+
 pub fn validate_native_identity(identity: &ClassicVisualEngineIdentity) -> Result<(), EditorError> {
     if !valid_native_proof(identity)
         || identity.platform.is_none()

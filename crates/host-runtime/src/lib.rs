@@ -137,6 +137,12 @@ impl Automation {
     ) -> Result<(Vec<u8>, bool), EditorError> {
         audio_preview::resources::read(self, input)
     }
+    pub fn open_visual_preview_picture(
+        &mut self,
+        input: visual_preview_contracts::VisualPreviewPictureRead,
+    ) -> Result<audio_preview::VisualPictureReader, EditorError> {
+        audio_preview::open_picture(self, input)
+    }
     pub fn open_visual_preview_font(
         &mut self,
         input: visual_preview_contracts::VisualPreviewFont,
@@ -435,9 +441,9 @@ impl Automation {
                     &parse(arguments)?,
                 )?)
             }
-            "opencut_visual_preview_edit_draft_frame" => to_value(
-                audio_preview::edit_draft_picture(self, parse(arguments)?)?,
-            ),
+            "opencut_visual_preview_edit_draft_frame" => {
+                to_value(audio_preview::edit_draft_picture(self, parse(arguments)?)?)
+            }
             "opencut_track_remove_plan" => to_value(
                 opencut_editor_application::track_removal::plan(&self.app, &parse(arguments)?)?,
             ),
@@ -521,7 +527,9 @@ impl Automation {
             "opencut_visual_preview_frame" => {
                 to_value(audio_preview::scene_picture(self, parse(arguments)?)?)
             }
-            "opencut_visual_preview_cache_prepare" => to_value(audio_preview::cache::prepare(self,parse(arguments)?)?),
+            "opencut_visual_preview_cache_prepare" => {
+                to_value(audio_preview::cache::prepare(self, parse(arguments)?)?)
+            }
             "opencut_audio_preview_inspect" => {
                 to_value(audio_preview::inspect(self, parse(arguments)?)?)
             }

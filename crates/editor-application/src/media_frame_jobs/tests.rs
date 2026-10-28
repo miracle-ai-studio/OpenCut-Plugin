@@ -1,4 +1,5 @@
 use super::*;
+use crate::visual_preview::VisualFrameObservations;
 use crate::{classic_visual::*, scene::new_document};
 use opencut_contracts::{
     AssetKind, AssetVersion, CreateProject, FrameRate, LockedAsset, TimeRange, scene::*,
@@ -550,14 +551,13 @@ fn per_layer_zero_decode_budget_is_rejected_by_shared_admission_and_callback() {
 #[test]
 fn retained_picture_keeps_fixed_time_policy_and_revalidates_decoder_facts() {
     use crate::visual_preview::PreparedPicture;
-    use opencut_api_contracts::{
-        audio_preview::AudioPreviewStream, visual_preview::VisualPreviewFrame,
-    };
+    use opencut_api_contracts::audio_preview::AudioPreviewStream;
     let original = input();
-    let mut request = VisualPreviewFrame {
+    let mut request = VisualFrameObservations {
         resolution: opencut_contracts::export_video::RasterResolution::Source,
         prepare_ahead: false,
         retained_picture_bytes: 0,
+        hit_query: None,
         session: AudioPreviewStream {
             session_id: "s".into(),
             generation: "1".into(),

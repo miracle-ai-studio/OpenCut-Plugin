@@ -13,7 +13,29 @@ impl Renderer {
         if self.failed {
             return Err(gpu_error("Native GPU session was retired"));
         }
-        let admission = self.admit(frame)?;
+        let mut admission = self.admit(frame)?;
+        let probe = execution.hit_probe();
+        if probe.is_some_and(|[x, y]| x >= frame.width || y >= frame.height) {
+            return Err(invalid("Hit probe is outside the prepared frame"));
+        }
+        if probe.is_some() {
+            let bytes = frame.layers.len() as u64 * 256;
+            admission.receipt.accounted_gpu_bytes = admission
+                .receipt
+                .accounted_gpu_bytes
+                .checked_add(bytes)
+                .ok_or_else(|| budget("Hit probe accounting overflow"))?;
+            admission.receipt.accounted_cpu_bytes = admission
+                .receipt
+                .accounted_cpu_bytes
+                .checked_add(bytes + frame.layers.len() as u64)
+                .ok_or_else(|| budget("Hit probe accounting overflow"))?;
+            if admission.receipt.accounted_gpu_bytes > self.limits.max_gpu_bytes
+                || admission.receipt.accounted_cpu_bytes > self.limits.max_cpu_bytes
+            {
+                return Err(budget("Hit probe exceeds frame admission"));
+            }
+        }
         // Release obsolete storage before allocating replacement scratch. A
         // warm render receives exactly the same budget admission as a cold one.
         if self
@@ -83,6 +105,15 @@ impl Renderer {
             self.targets = Some(self.allocate(&admission.layout));
         }
         let targets = self.targets.as_ref().expect("admitted scratch");
+        let probe = execution.hit_probe();
+        let hit_buffer = probe.filter(|_| !frame.layers.is_empty()).map(|_| {
+            self.device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some("bounded per-layer hit readback"),
+                size: frame.layers.len() as u64 * 256,
+                usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
+                mapped_at_creation: false,
+            })
+        });
         let mut encoder = self
             .device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
@@ -106,6 +137,7 @@ impl Renderer {
                 &mut current,
                 &mut uploads,
                 execution,
+                None,
             )?,
             Background::Color(color) => {
                 let rgba = background_bytes(*color);
@@ -140,6 +172,7 @@ impl Renderer {
                     &mut current,
                     &mut uploads,
                     execution,
+                    None,
                 )?;
             }
         }
@@ -154,6 +187,10 @@ impl Renderer {
                     &mut current,
                     &mut uploads,
                     execution,
+                    hit_buffer
+                        .as_ref()
+                        .zip(probe)
+                        .map(|(buffer, point)| (buffer, *layer as u64 * 256, point)),
                 )?,
                 Step::Effects(_) => {
                     let passes = &admission.adjustments[&index];
@@ -193,7 +230,12 @@ impl Renderer {
         );
         execution.checkpoint()?;
         self.queue.submit([encoder.finish()]);
-        let result = self.readback(targets, execution);
+        let result = self.readback(targets, execution).and_then(|_| {
+            if let Some(buffer) = &hit_buffer {
+                self.read_hits(buffer, frame.layers.len(), execution)?;
+            }
+            Ok(())
+        });
         // All source uploads are retained through queue completion and never
         // survive this execution. Only bounded scratch survives between frames.
         drop(uploads);
@@ -238,6 +280,7 @@ impl Renderer {
         current: &mut usize,
         uploads: &mut Uploads,
         execution: &mut dyn Execution,
+        hit: Option<(&wgpu::Buffer, u64, [u32; 2])>,
     ) -> Result<()> {
         execution.checkpoint()?;
         // Finish every distance field before placing a foreground into shared
@@ -321,6 +364,22 @@ impl Renderer {
                 ],
             );
             foreground = output;
+        }
+        if let Some((buffer, offset, [x, y])) = hit {
+            let mut source = copy_texture(foreground);
+            source.origin = wgpu::Origin3d { x, y, z: 0 };
+            encoder.copy_texture_to_buffer(
+                source,
+                wgpu::TexelCopyBufferInfo {
+                    buffer,
+                    layout: wgpu::TexelCopyBufferLayout {
+                        offset,
+                        bytes_per_row: Some(256),
+                        rows_per_image: Some(1),
+                    },
+                },
+                extent(1, 1),
+            );
         }
         let pipeline = &self.pipelines.blend;
         let mode: Vec<u8> = [blend_index(layer.blend), 0, 0, 0]
@@ -509,35 +568,54 @@ impl Renderer {
         Ok(())
     }
 
-    fn readback(&self, targets: &Targets, execution: &mut dyn Execution) -> Result<()> {
+    fn map_read(&self, buffer: &wgpu::Buffer, execution: &mut dyn Execution) -> Result<()> {
         let (send, receive) = mpsc::sync_channel(1);
-        targets
-            .readback
+        buffer
             .slice(..)
             .map_async(wgpu::MapMode::Read, move |value| {
                 let _ = send.send(value);
             });
-        let result = (|| {
-            loop {
-                execution.checkpoint()?;
-                if Instant::now() >= execution.deadline() {
-                    return Err(Error::new(
-                        "VISUAL_TIME_LIMIT",
-                        "Native GPU readback exceeded deadline",
-                    ));
-                }
-                self.device.poll(wgpu::PollType::Poll).map_err(gpu_error)?;
-                match receive.try_recv() {
-                    Ok(value) => {
-                        value.map_err(gpu_error)?;
-                        break;
-                    }
-                    Err(mpsc::TryRecvError::Disconnected) => {
-                        return Err(gpu_error("GPU readback channel closed"));
-                    }
-                    Err(mpsc::TryRecvError::Empty) => std::thread::sleep(Duration::from_millis(1)),
-                }
+        loop {
+            execution.checkpoint()?;
+            if Instant::now() >= execution.deadline() {
+                return Err(Error::new(
+                    "VISUAL_TIME_LIMIT",
+                    "Native GPU readback exceeded deadline",
+                ));
             }
+            self.device.poll(wgpu::PollType::Poll).map_err(gpu_error)?;
+            match receive.try_recv() {
+                Ok(value) => return value.map_err(gpu_error),
+                Err(mpsc::TryRecvError::Disconnected) => {
+                    return Err(gpu_error("GPU readback channel closed"));
+                }
+                Err(mpsc::TryRecvError::Empty) => std::thread::sleep(Duration::from_millis(1)),
+            }
+        }
+    }
+
+    fn read_hits(
+        &self,
+        buffer: &wgpu::Buffer,
+        layers: usize,
+        execution: &mut dyn Execution,
+    ) -> Result<()> {
+        let result = (|| {
+            self.map_read(buffer, execution)?;
+            let mapped = buffer.slice(..).get_mapped_range().map_err(gpu_error)?;
+            for index in 0..layers {
+                execution.checkpoint()?;
+                execution.hit_alpha(index, mapped[index * 256 + 3])?;
+            }
+            Ok(())
+        })();
+        buffer.unmap();
+        result
+    }
+
+    fn readback(&self, targets: &Targets, execution: &mut dyn Execution) -> Result<()> {
+        let result = (|| {
+            self.map_read(&targets.readback, execution)?;
             let mapped = targets
                 .readback
                 .slice(..)

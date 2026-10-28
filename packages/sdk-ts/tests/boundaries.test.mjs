@@ -2,10 +2,10 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { violations, isTestOnlySource, inspect } from "../scripts/check-boundaries.mjs";
 const web="apps/web/src/lib/example.ts";
-test("TS boundary matches the reviewed visual browser bridge without admitting host or sibling implementations",()=>{
+test("TS boundary matches the reviewed derived segment bridge without admitting host or sibling implementations",()=>{
  const bridge="apps/web/src/editor/workspace/scene/visual-preview-renderer.ts";
- const publicPath="../../../../../../packages/classic-visual-renderer/src/index.mjs";
- assert.deepEqual(violations(bridge,`import {renderClassicFrame} from "${publicPath}";`),[]);
+ const publicPath="../../../../../../packages/classic-visual-renderer/src/preview-segment.mjs";
+ assert.deepEqual(violations(bridge,`import {PreviewSegmentDecoder} from "${publicPath}";`),[]);
  for(const target of ["../../../../../../packages/classic-visual-renderer/host/runner.mjs", "../../../../../../packages/classic-visual-renderer/src/decoder.mjs", "../../../../../../packages/classic-audio-renderer/src/index.mjs"]) assert.equal(violations(bridge,`import "${target}";`).length,1);
  assert.equal(violations("apps/web/src/editor/workspace/scene/audio-preview.ts",`import "${publicPath}";`).length,1);
  assert.equal(violations("packages/sdk-ts/src/index.ts",'import "../../classic-visual-renderer/src/index.mjs";').length,1);
@@ -44,7 +44,7 @@ test("TS boundary rejects alias traversal and excluded runtime imports",()=>{
 test("presentation worker cannot acquire frame execution or native host APIs", () => {
  const file = "apps/web/src/editor/workspace/scene/surface-worker.ts";
  const renderer = "../../../../../../packages/classic-visual-renderer/src/index.mjs";
- assert.deepEqual(violations(file, `import {openGpuRealm, closeGpuRealm, gpuSurfacePresenter} from "${renderer}";`), []);
+ assert.ok(violations(file, `import {openGpuRealm, closeGpuRealm, gpuSurfacePresenter} from "${renderer}";`).length > 0);
  for (const code of [
    `import {renderClassicFrame} from "${renderer}";`,
    `import * as renderer from "${renderer}";`,

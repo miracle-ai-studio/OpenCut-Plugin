@@ -5,6 +5,8 @@ struct Output {
     bytes: Vec<u8>,
     cancel: bool,
     deadline: Instant,
+    probe: Option<[u32; 2]>,
+    hits: Vec<u8>,
 }
 impl Execution for Output {
     fn checkpoint(&mut self) -> Result<()> {
@@ -12,6 +14,14 @@ impl Execution for Output {
     }
     fn deadline(&self) -> Instant {
         self.deadline
+    }
+    fn hit_probe(&self) -> Option<[u32; 2]> {
+        self.probe
+    }
+    fn hit_alpha(&mut self, layer: usize, alpha: u8) -> Result<()> {
+        assert_eq!(layer, self.hits.len());
+        self.hits.push(alpha);
+        Ok(())
     }
     fn rgba(&mut self, offset: u64, bytes: &[u8]) -> Result<()> {
         if self.cancel {
@@ -106,9 +116,16 @@ fn native_blend_masks_adjustment_and_cancellation_have_independent_oracles() {
         bytes: Vec::new(),
         cancel: false,
         deadline: Instant::now() + Duration::from_secs(30),
+        probe: Some([4, 4]),
+        hits: Vec::new(),
     };
     renderer.render(&frame, &mut out).unwrap();
     near(pixel(&out.bytes, 4, 4), [64, 0, 191, 255]);
+    // An opaque composition still has a quarter-alpha isolated foreground.
+    // Reading the final frame's alpha would incorrectly select it as 255.
+    assert_eq!(out.hits, [255, 64]);
+    out.probe = None;
+    out.hits.clear();
     let grey = [128, 128, 128, 255];
     let mut multiply = layer(Raster {
         width: 1,
@@ -159,6 +176,28 @@ fn native_blend_masks_adjustment_and_cancellation_have_independent_oracles() {
     renderer.render(&frame, &mut out).unwrap();
     near(pixel(&out.bytes, 1, 4), [255, 0, 0, 255]);
     near(pixel(&out.bytes, 6, 4), [0, 0, 255, 255]);
+    out.probe = Some([6, 4]);
+    out.bytes.clear();
+    renderer.render(&frame, &mut out).unwrap();
+    assert_eq!(
+        out.hits,
+        [255, 0],
+        "A masked-out foreground must not be selectable"
+    );
+    out.probe = Some([1, 4]);
+    out.bytes.clear();
+    out.hits.clear();
+    renderer.render(&frame, &mut out).unwrap();
+    assert_eq!(out.hits, [255, 255]);
+    out.probe = Some([8, 4]);
+    out.bytes.clear();
+    out.hits.clear();
+    assert_eq!(
+        renderer.render(&frame, &mut out).unwrap_err().code,
+        "INVALID_VISUAL_PLAN"
+    );
+    assert!(out.bytes.is_empty() && out.hits.is_empty());
+    out.probe = None;
     let effect = [SceneEffect {
         id: "blur".into(),
         enabled: true,

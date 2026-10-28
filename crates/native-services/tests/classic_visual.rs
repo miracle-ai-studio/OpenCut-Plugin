@@ -483,3 +483,124 @@ fn actual_gpu_clockwise_rotation_position_background_and_track_source_alpha_mult
         matches!(&bound.decoded[0], DecodedVisualSource::ReadyImage { element_id, width: 8, height: 4 } if element_id == "rotated")
     );
 }
+
+#[test]
+#[ignore = "Requires the integrated native worker; run serially with preview acceptance"]
+fn native_scene_preview_reuses_worker_and_binds_real_foreground_alpha() {
+    use opencut_editor_application::{
+        classic_scene_frame::ClassicSceneFrameSession, font_import::FontImportPolicy,
+    };
+    use opencut_native_services::native_visual::NativeScenePreview;
+    use std::sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    };
+    let directory = tempfile::tempdir().unwrap();
+    let mut snapshot = snapshot();
+    add_png(directory.path(), &mut snapshot, "blue", 16, 16, |_, _| {
+        [0, 0, 255, 255]
+    });
+    add_png(directory.path(), &mut snapshot, "hole", 16, 16, |x, _| {
+        [255, 0, 0, if x < 8 { 0 } else { 255 }]
+    });
+    snapshot.project.sequences[0].tracks[0]
+        .elements
+        .push(element("base", "blue", 1.0, 1.0));
+    let mut track = snapshot.project.sequences[0].tracks[0].clone();
+    track.id = "upper".into();
+    track.elements = vec![element("overlay", "hole", 0.25, 1.0)];
+    snapshot.project.sequences[0].tracks.push(track);
+    let prepared =
+        opencut_editor_application::scene_frame_jobs::prepare(&snapshot, "scene", &time(1, 7))
+            .unwrap();
+    let mut preview =
+        NativeScenePreview::new(config(), Duration::from_secs(30), &mut || Ok(())).unwrap();
+    let allowed = Arc::new(AtomicBool::new(true));
+    let authorize = || {
+        if allowed.load(Ordering::Acquire) {
+            Ok(())
+        } else {
+            Err(EditorError::new(
+                "NOT_AUTHORIZED",
+                "Revoked synthetic scene",
+            ))
+        }
+    };
+    let mut cache = VideoResourceCache::default();
+    let mut pid = None;
+    for point in [[2, 8], [13, 8], [2, 8]] {
+        let mut resources = VerifiedClassicTextResources::new_scene_frame_cached(
+            &directory.path().join("cas"),
+            &prepared,
+            &FontImportPolicy::default(),
+            authorize,
+            &mut cache,
+        )
+        .unwrap();
+        let handles = resources.handles();
+        let fonts = resources.font_handles();
+        let mut session =
+            ClassicSceneFrameSession::new(&prepared, &policy(), resources.coverage()).unwrap();
+        let mut rgba = Rgba::default();
+        let result = preview
+            .render(
+                &mut session,
+                &mut resources,
+                &handles,
+                &fonts,
+                &mut rgba,
+                Some(point),
+            )
+            .unwrap();
+        if let Some(original) = pid {
+            assert_eq!(result.runtime.worker_pid, original);
+        } else {
+            pid = Some(result.runtime.worker_pid);
+        }
+        let hits: Vec<_> = result
+            .hits
+            .iter()
+            .map(|hit| (hit.element_id.as_str(), hit.alpha))
+            .collect();
+        if point[0] < 8 {
+            assert_eq!(hits, [("base", 255)]);
+            assert_eq!(pixel(&rgba, 2, 8), [0, 0, 255, 255]);
+        } else {
+            assert_eq!(hits, [("overlay", 64), ("base", 255)]);
+            assert_eq!(pixel(&rgba, 13, 8), [64, 0, 191, 255]);
+        }
+    }
+    let mut resources = VerifiedClassicTextResources::new_scene_frame_cached(
+        &directory.path().join("cas"),
+        &prepared,
+        &FontImportPolicy::default(),
+        authorize,
+        &mut cache,
+    )
+    .unwrap();
+    let handles = resources.handles();
+    let fonts = resources.font_handles();
+    let mut session =
+        ClassicSceneFrameSession::new(&prepared, &policy(), resources.coverage()).unwrap();
+    allowed.store(false, Ordering::Release);
+    let failure = preview
+        .render(
+            &mut session,
+            &mut resources,
+            &handles,
+            &fonts,
+            &mut Rgba::default(),
+            None,
+        )
+        .err()
+        .expect("revoked preview must fail");
+    assert_eq!(failure.code, "NOT_AUTHORIZED");
+    #[cfg(unix)]
+    unsafe {
+        assert_eq!(
+            libc::kill(pid.unwrap() as i32, 0),
+            -1,
+            "revoked native owner must be reaped"
+        );
+    }
+}

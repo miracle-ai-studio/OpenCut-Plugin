@@ -39,7 +39,6 @@ pub struct SubtitleAssPlanRequest {
     pub content: String,
     /// Explicit aliases; otherwise exact pinned family/weight/style is required.
     pub font_bindings: Vec<SubtitleAssFontBinding>,
-    pub observations: Option<Vec<TextRasterReceipt>>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
@@ -52,6 +51,7 @@ pub struct SubtitleAssCuePlan {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct SubtitleAssPlanResult {
+    pub measurement: Option<crate::renderer_identity::NativeTextRuntimeIdentity>,
     pub revision: String,
     pub width: u32,
     pub height: u32,

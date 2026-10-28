@@ -15,6 +15,7 @@ pub fn error_policy(code: &str) -> ErrorPolicy {
         "UPLOAD_CONTENT_MISMATCH" => (400, 2),
         "UPLOAD_BUSY"
         | "PREVIEW_DRAFT_BUSY"
+        | "PREVIEW_PICTURE_BUSY"
         | "PREVIEW_RESOURCE_BUSY"
         | "PREVIEW_RESOURCE_LIMIT"
         | "STORAGE_SCAN_BUSY"
@@ -40,7 +41,10 @@ pub fn error_policy(code: &str) -> ErrorPolicy {
         | "FONT_FACE_UNAVAILABLE" => (422, 6),
         "FONT_SOURCE_UNAVAILABLE" | "RESOURCE_SOURCE_UNAVAILABLE" => (502, 7),
         "NOT_FOUND" | "PREVIEW_CACHE_MISSING" => (404, 4),
-        "CURSOR_EXPIRED" | "PREVIEW_EXPIRED" | "PREVIEW_RECOVERY_RETIRED" => (410, 4),
+        "CURSOR_EXPIRED"
+        | "PREVIEW_EXPIRED"
+        | "PREVIEW_RECOVERY_RETIRED"
+        | "PREVIEW_PICTURE_UNAVAILABLE" => (410, 4),
         "STORAGE_POLICY_CONFLICT"
         | "GC_PLAN_CONFLICT"
         | "ARTIFACT_ALREADY_RELEASED"

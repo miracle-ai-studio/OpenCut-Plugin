@@ -1,5 +1,7 @@
 //! Source-compatible Classic ASS: parser losses are explicit, fixed-font
 //! measurement is native-authorized, and one ordinary transaction owns all cues.
+pub use crate::subtitle_measurement::MeasuredSubtitleClassicAssRequest as SubtitleClassicAssPlanRequest;
+use crate::subtitle_measurement::MeasuredSubtitleTextRequest as SubtitleTextPlanRequest;
 use crate::subtitle_text::{self as text, SubtitleCueInput, SubtitleCueLayout};
 use opencut_composition::scene::PreparedTextFrame;
 use opencut_contracts::{
@@ -21,6 +23,28 @@ pub struct PreparedSubtitleClassicAss {
     height: u32,
 }
 impl PreparedSubtitleClassicAss {
+    pub fn measurement_directive(
+        &self,
+        index: usize,
+    ) -> Result<
+        (
+            opencut_contracts::caption_frame::CaptionRasterPlan,
+            SubtitleClassicPlacement,
+        ),
+        EditorError,
+    > {
+        let directive = self
+            .inner
+            .as_ref()
+            .ok_or_else(|| invalid("Classic ASS has no resolved cues"))?
+            .measurement_directive(index)?;
+        let placement = self
+            .placements
+            .get(index)
+            .ok_or_else(|| invalid("Classic ASS measurement index is outside prepared cues"))?
+            .clone();
+        Ok((directive, placement))
+    }
     pub fn frames(&self) -> &[PreparedTextFrame] {
         self.inner.as_ref().map(|i| i.frames()).unwrap_or_default()
     }
@@ -329,6 +353,7 @@ pub fn finish(
         return Err(invalid("Classic ASS fixed request or font layers changed"));
     }
     let mut result = SubtitleClassicAssPlanResult {
+        measurement: None,
         revision: request.expected_revision.clone(),
         width: prepared.width,
         height: prepared.height,

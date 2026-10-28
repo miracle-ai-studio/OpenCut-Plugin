@@ -1,4 +1,5 @@
 //! Read-only editable subtitle planning over the complete fixed V4 aggregate.
+pub use crate::subtitle_measurement::MeasuredSubtitleTextRequest as SubtitleTextPlanRequest;
 use opencut_composition::{CompositionScope, scene::*};
 use opencut_contracts::{
     EditorError, Time, TimeRange, caption_frame::CaptionRasterPlan, project_public::*, scene::*,
@@ -37,6 +38,31 @@ pub(crate) struct SubtitleCueInput {
     pub layout: SubtitleCueLayout,
 }
 impl PreparedSubtitleText {
+    pub fn measurement_directive(&self, index: usize) -> Result<CaptionRasterPlan, EditorError> {
+        let frame = self
+            .frames
+            .get(index)
+            .ok_or_else(|| invalid("Subtitle measurement index is outside its prepared cues"))?;
+        let canvas = frame.identity();
+        let placement = &self.layouts[index];
+        let max_width_px = placement
+            .max_width_px
+            .unwrap_or(f64::from(canvas.width) * 0.8);
+        if !max_width_px.is_finite()
+            || max_width_px < 0.
+            || (!placement.allow_zero_width && max_width_px == 0.)
+            || (!placement.allow_zero_width && max_width_px > f64::from(canvas.width))
+        {
+            return Err(invalid("Subtitle wrap width must fit canvas"));
+        }
+        let directive = CaptionRasterPlan {
+            element_id: self.ids[index].clone(),
+            max_width_px,
+            bottom_margin_px: f64::from(canvas.height) * 0.05,
+            wrap_profile: CLASSIC_CAPTION_WRAP_PROFILE.into(),
+        };
+        Ok(directive)
+    }
     pub fn frames(&self) -> &[PreparedTextFrame] {
         &self.frames
     }
@@ -401,22 +427,7 @@ pub fn finish(
         }
         let canvas = frame.identity();
         let placement = &prepared.layouts[i];
-        let max_width_px = placement
-            .max_width_px
-            .unwrap_or(f64::from(canvas.width) * 0.8);
-        if !max_width_px.is_finite()
-            || max_width_px < 0.
-            || (!placement.allow_zero_width && max_width_px == 0.)
-            || (!placement.allow_zero_width && max_width_px > f64::from(canvas.width))
-        {
-            return Err(invalid("Subtitle wrap width must fit canvas"));
-        }
-        let directive = CaptionRasterPlan {
-            element_id: layer.element_id.clone(),
-            max_width_px,
-            bottom_margin_px: f64::from(canvas.height) * 0.05,
-            wrap_profile: CLASSIC_CAPTION_WRAP_PROFILE.into(),
-        };
+        let directive = prepared.measurement_directive(i)?;
         let element = track
             .elements
             .iter_mut()
@@ -543,6 +554,7 @@ pub fn finish(
     };
     let canvas = prepared.frames[0].identity();
     Ok(SubtitleTextPlanResult {
+        measurement: None,
         revision: prepared.snapshot.revision.clone(),
         width: canvas.width,
         height: canvas.height,

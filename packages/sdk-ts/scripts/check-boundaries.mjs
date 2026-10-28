@@ -12,12 +12,9 @@ const bridges = new Map([
   // One pure WebAudio graph definition keeps live preview and the reviewed
   // renderer parameters identical; no decoder, host or execution is imported.
   ["apps/web/src/editor/workspace/scene/audio-preview-mastering.ts",new Set(["packages/classic-audio-renderer/src/mastering"])],
-  // Existing reviewed Web execution adapter (also gated by apps/web/scripts/
-  // check-boundaries.mjs): public browser renderer only, no native host imports.
-  ["apps/web/src/editor/workspace/scene/visual-preview-renderer.ts",new Set(["packages/classic-visual-renderer/src/index"])],
-  // The presentation worker owns only the public GPU realm/presenter; frame
-  // preparation stays in the bounded preview adapter. Native host paths remain forbidden.
-  ["apps/web/src/editor/workspace/scene/surface-worker.ts",new Set(["packages/classic-visual-renderer/src/index"])],
+  // Native composition owns source decoding/rendering. The sole Web exception
+  // decodes already published derived segments; it grants no GPU/host access.
+  ["apps/web/src/editor/workspace/scene/visual-preview-renderer.ts",new Set(["packages/classic-visual-renderer/src/preview-segment"])],
 ]);
 // Historical generator lives under src but is a build entry, never a runtime dependency.
 const buildOnly = "apps/web/src/editor/generate-contracts.mjs";
@@ -53,11 +50,12 @@ export function violations(file, code, dependencies = new Set()) {
     if (stem(resolved) === stem(buildOnly)) return fail("Runtime source cannot import the contract build entry");
     if (resolved.startsWith(owner+"/")) return;
     if (bridges.get(file)?.has(stem(resolved))) {
-      if (file === "apps/web/src/editor/workspace/scene/surface-worker.ts") {
+      if (file === "apps/web/src/editor/workspace/scene/visual-preview-renderer.ts") {
         const bindings = ts.isImportDeclaration(node) && node.importClause?.namedBindings;
         if (!bindings || !ts.isNamedImports(bindings) || node.importClause.name ||
-            bindings.elements.some(item => !["openGpuRealm", "closeGpuRealm", "gpuSurfacePresenter"].includes((item.propertyName ?? item.name).text)))
-          fail("Presentation worker may import only GPU realm and presenter functions");
+            bindings.elements.length !== 1 ||
+            (bindings.elements[0].propertyName ?? bindings.elements[0].name).text !== "PreviewSegmentDecoder")
+          fail("Native picture adapter may import only the derived segment decoder");
       }
       return;
     }

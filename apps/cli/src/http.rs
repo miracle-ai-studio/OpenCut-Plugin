@@ -216,6 +216,10 @@ pub async fn serve(
             "/api/preview/visual-resource/read",
             post(crate::media_http::read_visual_preview_resource),
         )
+        .route(
+            "/api/preview/picture/stream",
+            post(crate::visual_preview_http::stream),
+        )
         .route("/api/media/upload", post(crate::media_http::upload))
         .route(
             "/api/uploads/{upload_id}/chunks/{offset}",

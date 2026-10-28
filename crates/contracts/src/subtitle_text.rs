@@ -46,8 +46,6 @@ pub struct SubtitleTextPlanRequest {
     pub style: Text,
     /// None selects the Classic 80% canvas width. Placement uses its 5% bottom margin.
     pub max_width_px: Option<u32>,
-    /// None prepares measurement inputs. Some validates them and returns one edit.
-    pub observations: Option<Vec<SubtitleTextObservation>>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
@@ -61,6 +59,7 @@ pub struct SubtitleTextCuePlan {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct SubtitleTextPlanResult {
+    pub measurement: Option<crate::renderer_identity::NativeTextRuntimeIdentity>,
     pub revision: String,
     pub width: u32,
     pub height: u32,

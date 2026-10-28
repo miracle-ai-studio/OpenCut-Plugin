@@ -29,6 +29,16 @@ pub struct NativePlatformIdentity {
     pub font_backend: String,
 }
 
+/// CPU text metrics use the exact verified worker and font platform. They do
+/// not claim a GPU device or media-decoder execution that did not occur.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct NativeTextRuntimeIdentity {
+    pub worker_sha256: String,
+    pub rasterizer: String,
+    pub platform: NativePlatformIdentity,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct NativeVisualIdentity {

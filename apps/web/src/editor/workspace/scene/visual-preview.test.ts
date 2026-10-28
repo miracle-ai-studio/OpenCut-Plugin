@@ -413,8 +413,7 @@ it("retains the fixed session for paused authority checks after mutable UI conte
       "opencut_visual_preview_frame",
       expect.objectContaining({
         session: expect.objectContaining({ generation: f.s.generation }),
-        graphics: null,
-        captions: null,
+        time: null,
       }),
       expect.anything(),
     );

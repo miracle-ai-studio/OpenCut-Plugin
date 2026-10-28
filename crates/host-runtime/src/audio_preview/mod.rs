@@ -1,11 +1,11 @@
 //! Process-local host assembly for fixed-revision audio. The application owns
 //! clocks and control semantics; this host owns authorization, CAS and lifetime.
+pub(crate) mod cache;
 mod fonts;
 mod producer;
 pub(crate) mod recovery;
 pub(crate) mod resources;
 mod scene;
-pub(crate) mod cache;
 mod stream;
 use crate::{Automation, Caller, ExecutionContext};
 pub(crate) use fonts::{authorize_font, authorize_font_batch, open_font};
@@ -15,7 +15,7 @@ use opencut_editor_application::audio_preview::*;
 use opencut_editor_application::scene_text_frame_jobs::TextFrameJobSubmissionStore;
 use opencut_job_execution::scene_audio::TrustedJobAuthority;
 use opencut_native_services::classic_audio_preview::new_identity;
-pub(crate) use scene::{scene_picture, edit_draft_picture};
+pub(crate) use scene::{edit_draft_picture, scene_picture};
 use std::{
     collections::HashMap,
     path::{Path, PathBuf},
@@ -30,6 +30,10 @@ use std::{
 mod scheduling;
 pub(crate) use scheduling::yield_to_realtime_audio;
 pub use stream::AudioPreviewReader;
+mod pixels;
+mod visual_owner;
+pub use pixels::VisualPictureReader;
+pub(crate) use pixels::open as open_picture;
 
 pub(super) fn error(code: &str) -> EditorError {
     EditorError::new(
@@ -68,20 +72,39 @@ struct CachedPicture {
 }
 
 impl SessionState {
-    fn font_version(&self,session:&AudioPreviewStream,id:&str)->Option<opencut_contracts::AssetVersion>{
-        self.pictures.iter().rev().filter(|picture|&picture.session==session)
-            .find_map(|picture|picture.prepared.font_version(id))
+    fn font_version(
+        &self,
+        session: &AudioPreviewStream,
+        id: &str,
+    ) -> Option<opencut_contracts::AssetVersion> {
+        self.pictures
+            .iter()
+            .rev()
+            .filter(|picture| &picture.session == session)
+            .find_map(|picture| picture.prepared.font_version(id))
             // Explicit edit drafts already publish complete native coverage;
             // retain that existing authority while their overlay is current.
-            .or_else(||self.text_coverage.as_ref().filter(|proof|&proof.session==session)
-                .and_then(|proof|proof.coverage.iter().find(|p|p.font.id==id).map(|p|p.font.content.clone())))
+            .or_else(|| {
+                self.text_coverage
+                    .as_ref()
+                    .filter(|proof| &proof.session == session)
+                    .and_then(|proof| {
+                        proof
+                            .coverage
+                            .iter()
+                            .find(|p| p.font.id == id)
+                            .map(|p| p.font.content.clone())
+                    })
+            })
     }
-    fn remember_picture(&mut self,picture:CachedPicture){
+    fn remember_picture(&mut self, picture: CachedPicture) {
         // Live bindings and one speculative cut can interleave. Retain exact
         // admitted contexts rather than letting the last request revoke an
         // in-flight resource open. All ownership/lease fences remain external.
         self.pictures.push(picture);
-        if self.pictures.len()>8 {self.pictures.remove(0);}
+        if self.pictures.len() > 8 {
+            self.pictures.remove(0);
+        }
     }
     fn expire(&mut self, at: u64) -> Result<bool, EditorError> {
         let changed = self.machine.expire(at)?;
@@ -104,6 +127,8 @@ struct Actor {
     thread: JoinHandle<()>,
 }
 struct Entry {
+    visual: Mutex<Option<visual_owner::VisualOwner>>,
+    pixels: Arc<pixels::FramePixels>,
     transform_draft_gate: Mutex<()>,
     resource_open_gate: Mutex<()>,
     database: PathBuf,
@@ -125,6 +150,7 @@ impl Entry {
             state.text_coverage = None;
             state.resources.clear();
             self.credit.notify_all();
+            self.pixels.clear();
         }
         Ok(state.machine.snapshot(now()))
     }
@@ -146,6 +172,7 @@ impl Entry {
                 state.text_coverage = None;
                 state.resources.clear();
                 self.credit.notify_all();
+                self.pixels.clear();
             }
             if self.shutdown.load(Ordering::Acquire)
                 || matches!(
@@ -185,6 +212,7 @@ impl Entry {
         state.text_coverage = None;
         state.resources.clear();
         self.shutdown.store(true, Ordering::Release);
+        self.pixels.clear();
         self.credit.notify_all();
         Ok(())
     }
@@ -314,6 +342,8 @@ pub(crate) fn create(
         now(),
     )?;
     let entry = Arc::new(Entry {
+        visual: Mutex::new(None),
+        pixels: Arc::new(pixels::FramePixels::default()),
         transform_draft_gate: Mutex::new(()),
         resource_open_gate: Mutex::new(()),
         database,
@@ -334,6 +364,7 @@ pub(crate) fn create(
         stream_claim: Mutex::new(None),
         shutdown: AtomicBool::new(false),
     });
+    visual_owner::maintain(&entry)?;
     entry.ensure_actor()?;
     let view = entry.view()?;
     registry.entries.insert(id, entry);

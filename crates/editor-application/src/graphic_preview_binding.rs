@@ -1,4 +1,5 @@
 //! One aggregate graphic picture on the existing authorized sound-consumer clock.
+use crate::visual_preview::VisualFrameObservations;
 use crate::{
     caption_preview_binding::PreparedCaptionBindings,
     classic_graphic_frame::{bind_graphic_frame, graphic_execution_policy, plan_frame},
@@ -51,7 +52,7 @@ impl PreparedGraphicBindings {
     }
     pub fn result(
         &self,
-        input: &VisualPreviewFrame,
+        input: &VisualFrameObservations,
         consumer: &Time,
     ) -> Result<GraphicPreviewBindings, EditorError> {
         if input.graphics.is_some()
@@ -63,11 +64,12 @@ impl PreparedGraphicBindings {
             ));
         }
         let child = self.original.result(
-            &VisualPreviewFrame {
+            &VisualFrameObservations {
                 resolution: input.resolution,
                 session: input.session.clone(),
                 prepare_ahead: input.prepare_ahead,
                 retained_picture_bytes: input.retained_picture_bytes,
+                hit_query: None,
                 time: input.time.clone(),
                 decoded: input.decoded.clone(),
                 rasters: input.rasters.clone(),

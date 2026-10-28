@@ -31,7 +31,6 @@ it("returns unresolved source fonts and warnings without acquiring fallback font
     track: { kind: "new", track_id: "subtitles" },
     content: "original ASS",
     font_bindings: [],
-    observations: null,
   } as ClassicAssRequest;
   expect(
     await planClassicAssSubtitles(api, input, new AbortController().signal),

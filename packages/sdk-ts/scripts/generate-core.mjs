@@ -35,7 +35,7 @@ export function validateLocalRefs(schema, label = "schema") {
   visit(schema);
 }
 
-export function preflightRegistry({ tools, jobs, domains, eventSchema, audioStream, uploads }) {
+export function preflightRegistry({ tools, jobs, domains, eventSchema, audioStream, visualStream, uploads }) {
   if (!Array.isArray(tools) || !Array.isArray(jobs) || !Array.isArray(domains)) {
     throw new Error("Invalid registry arrays");
   }
@@ -96,6 +96,14 @@ export function preflightRegistry({ tools, jobs, domains, eventSchema, audioStre
     namespace(name);
     schema(value, name);
     if (!rootTitle(value)) throw new Error(`Unsupported root type in ${name}`);
+  }
+  {
+    for (const [name, value] of [["VisualPreviewTransport", visualStream?.input], ["VisualPreviewPixels", visualStream?.descriptor]]) {
+      namespace(name); schema(value, name);
+      if (!rootTitle(value)) throw new Error(`Unsupported root type in ${name}`);
+    }
+    if (visualStream.content_type !== "application/vnd.opencut.rgba" || visualStream.pixel_format !== "rgba8" || visualStream.chunk_bytes !== 65536)
+      throw new Error("Unsupported native picture byte transport");
   }
   if (uploads && (uploads.chunk_method !== "PUT" || uploads.chunk_path_template !== "/api/uploads/{upload_id}/chunks/{offset}"
       || !Array.isArray(uploads.chunk_query_fields) || uploads.chunk_query_fields.join(",") !== "size_bytes,content_hash")) {
@@ -281,9 +289,13 @@ if (audioStreamEnvelope.error || !audioStreamEnvelope.data ||
     !audioStreamEnvelope.data.input || !audioStreamEnvelope.data.header) {
   throw new Error("Invalid V4 audio stream schema registry");
 }
+const visualStreamEnvelope = JSON.parse(execFileSync(binary,
+  ["system", "visual-preview-schema", "--json"], registryOptions));
+if (visualStreamEnvelope.error || !visualStreamEnvelope.data?.input || !visualStreamEnvelope.data?.descriptor)
+  throw new Error("Invalid native picture stream schema registry");
 preflightRegistry({ tools: envelope.data, jobs: capabilitiesEnvelope.data.job_results,
   domains: domainsEnvelope.data, eventSchema: eventSchemaEnvelope.data,
-  audioStream: audioStreamEnvelope.data, uploads: capabilitiesEnvelope.data.uploads });
+  audioStream: audioStreamEnvelope.data, visualStream: visualStreamEnvelope.data, uploads: capabilitiesEnvelope.data.uploads });
 compile = memoizeSchemaCompiler(compile);
 let output =
   "// Generated from the Rust automation registry. Do not edit.\n\n";
@@ -314,6 +326,8 @@ for (const job of capabilitiesEnvelope.data.job_results) {
 for (const [namespace, schema] of [
   ["AudioPreviewTransport", audioStreamEnvelope.data.input],
   ["AudioPreviewPcm", audioStreamEnvelope.data.header],
+  ["VisualPreviewTransport", visualStreamEnvelope.data.input],
+  ["VisualPreviewPixels", visualStreamEnvelope.data.descriptor],
 ]) {
   const source = await compile(schema, "Schema", {
     bannerComment: "", style: { singleQuote: true }, unknownAny: false,
@@ -444,6 +458,15 @@ paths["/api/preview/audio/stream"] = { post: {
   requestBody: { required: true, content: { "application/json": { schema: audioStreamInput } } },
   responses: { "200": { description: "OCAP framed PCM; maximum two unconsumed blocks.", content: {
     "application/vnd.opencut.audio-preview": { schema: { type: "string", format: "binary" } },
+  } }, default: transportError },
+} };
+const nativePictureInput = component(visualStreamEnvelope.data.input, "VisualPreviewPictureRead");
+paths["/api/preview/picture/stream"] = { post: {
+  operationId: "opencut_visual_preview_picture_stream",
+  description: "Claim a single-use native RGBA picture descriptor from the complete scene frame operation. Current owner, lease, generation and authority are checked for every bounded 64 KiB chunk. Active readers remain in the captured residency budget.",
+  requestBody: { required: true, content: { "application/json": { schema: nativePictureInput } } },
+  responses: { "200": { description: "Exact straight RGBA8 bytes; dimensions, length and SHA-256 are supplied by the generated picture descriptor.", content: {
+    "application/vnd.opencut.rgba": { schema: { type: "string", format: "binary" } },
   } }, default: transportError },
 } };
 const previewFontTool = envelope.data.find(tool => tool.name === "opencut_visual_preview_font_authorize");

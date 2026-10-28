@@ -1,13 +1,15 @@
 use super::*;
 use crate::classic_text_frame::tests::{policy, proof, raster};
+use crate::visual_preview::VisualFrameObservations;
 use opencut_composition::scene::graphic_raster_receipts;
 use opencut_contracts::visual_frame::DecodedVisualSource;
 
-fn input(prepared: &PreparedBlendBindings) -> VisualPreviewFrame {
-    VisualPreviewFrame {
+fn input(prepared: &PreparedBlendBindings) -> VisualFrameObservations {
+    VisualFrameObservations {
         resolution: opencut_contracts::export_video::RasterResolution::Source,
         prepare_ahead: false,
         retained_picture_bytes: 0,
+        hit_query: None,
         session: opencut_api_contracts::audio_preview::AudioPreviewStream {
             session_id: "session".into(),
             generation: "1".into(),

@@ -1,4 +1,5 @@
 //! Blend pictures reuse the D0 consumer-clock checks and all resource admission.
+use crate::visual_preview::VisualFrameObservations;
 use crate::{
     classic_blend_frame::{bind_blend_frame, plan_frame},
     graphic_preview_binding::PreparedGraphicBindings,
@@ -50,7 +51,7 @@ impl PreparedBlendBindings {
     }
     pub fn result(
         &self,
-        input: &VisualPreviewFrame,
+        input: &VisualFrameObservations,
         consumer: &Time,
     ) -> Result<BlendPreviewBindings, EditorError> {
         let child = self.original.result(input, consumer)?;

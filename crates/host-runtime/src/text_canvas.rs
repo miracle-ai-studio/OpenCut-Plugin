@@ -37,17 +37,38 @@ pub(super) fn plan(
         }
         Ok(())
     };
-    let resources = VerifiedClassicTextResources::new_fonts(
+    let mut resources = VerifiedClassicTextResources::new_fonts(
         host.app.asset_store_root(),
         prepared.execution(),
         &FontImportPolicy::default(),
         &checkpoint,
     )?;
-    let result = canvas_plan_result(
+    let facts = canvas_plan_result(
         &prepared,
         request,
         &selected.processing_policy,
         resources.coverage(),
+    )?;
+    let mut session = opencut_editor_application::classic_text_frame::ClassicTextFrameSession::new(
+        prepared.execution(),
+        &selected.processing_policy,
+        resources.coverage(),
+    )?;
+    let options = opencut_native_services::native_visual::NativeTextMeasureOptions::Plain {
+        synthesis: prepared.font_synthesis().cloned(),
+    };
+    let fonts = resources.font_handles();
+    let mut metrics = opencut_native_services::native_visual::NativeTextMeasurements::new(
+        crate::classic_visual_runtime::configured_text(&selected.processing_policy)?,
+        &mut || checkpoint(),
+    )?;
+    let measured = metrics.measure(&mut session, &mut resources, &fonts, &options)?;
+    let identity = metrics.finish(&mut || checkpoint())?;
+    let result = opencut_editor_application::text_canvas::complete_canvas_plan(
+        &prepared,
+        facts,
+        measured.raster,
+        identity,
     )?;
     checkpoint()?;
     Ok(result)

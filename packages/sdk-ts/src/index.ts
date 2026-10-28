@@ -1,7 +1,7 @@
 export { requestEnvelope, OpenCutApiError, OpenCutProtocolError, OpenCutTransportError, type Envelope } from "./transport.js";
 import { requestEnvelope, OpenCutApiError, OpenCutProtocolError, OpenCutTransportError, type Envelope } from "./transport.js";
 export * from "./contracts.generated.js";
-import { toolNames, domainNames, domainActions, type ToolMap, type DomainMap, type JobResultMap, type AudioPreviewPcm, type AudioPreviewTransport } from "./contracts.generated.js";
+import { toolNames, domainNames, domainActions, type ToolMap, type DomainMap, type JobResultMap, type AudioPreviewPcm, type AudioPreviewTransport, type VisualPreviewTransport } from "./contracts.generated.js";
 
 export type AudioPreviewPcmHeader = AudioPreviewPcm.AudioPreviewPcmHeader;
 export type AudioPreviewStreamInput = AudioPreviewTransport.AudioPreviewStream;
@@ -258,6 +258,37 @@ export class OpenCutClient {
     const { session_id, generation, overlay_epoch, owner_id, lease_id } = session;
     return this.#downloadBytes(`${this.baseUrl}/api/preview/audio/stream`, "audio preview stream", options,
       JSON.stringify({ session_id, generation, overlay_epoch, owner_id, lease_id }));
+  }
+  /** Read and verify the one native picture described by the frame result. */
+  async readVisualPreviewPicture(session: ToolInput<"opencut_visual_preview_frame">["session"], picture: ToolOutput<"opencut_visual_preview_frame">["picture"], options: CallOptions = {}): Promise<Uint8ClampedArray<ArrayBuffer>> {
+    const length = picture.byte_length;
+    if (!Number.isInteger(length) || length < 4 || length > 64 * 1024 * 1024 ||
+        !Number.isInteger(picture.width) || picture.width < 1 || picture.width > 16384 ||
+        !Number.isInteger(picture.height) || picture.height < 1 || picture.height > 16384 ||
+        length !== picture.width * picture.height * 4 || !/^[0-9a-f]{64}$/.test(picture.content_hash))
+      throw new TypeError("Invalid native picture descriptor");
+    const input: VisualPreviewTransport.VisualPreviewPictureRead = { session, picture_id: picture.picture_id };
+    const response = await this.#downloadBytes(`${this.baseUrl}/api/preview/picture/stream`, "native preview picture", options, JSON.stringify(input));
+    if (response.headers.get("content-type") !== "application/vnd.opencut.rgba" || response.headers.get("content-length") !== String(length)) {
+      await response.body?.cancel(); throw new TypeError("Native picture transport changed its descriptor");
+    }
+    const reader = response.body?.getReader();
+    if (!reader) throw new TypeError("Native picture bytes unavailable");
+    const bytes = new Uint8ClampedArray(length); let offset = 0;
+    try {
+      for (;;) {
+        options.signal?.throwIfAborted();
+        const chunk = await reader.read();
+        if (chunk.done) break;
+        if (chunk.value.length > length - offset) throw new TypeError("Native picture exceeded its byte bound");
+        bytes.set(chunk.value, offset); offset += chunk.value.length;
+      }
+      if (offset !== length) throw new TypeError("Native picture changed length");
+      const hash = Array.from(new Uint8Array(await globalThis.crypto.subtle.digest("SHA-256", bytes.buffer)), b => b.toString(16).padStart(2, "0")).join("");
+      options.signal?.throwIfAborted();
+      if (hash !== picture.content_hash) throw new TypeError("Native picture changed its content hash");
+      return bytes;
+    } finally { await reader.cancel().catch(() => {}); reader.releaseLock(); }
   }
   /** Download a locked font authorized by the current preview owner and generation. */
   downloadVisualPreviewFont(input: ToolInput<"opencut_visual_preview_font_authorize">, options: CallOptions = {}): Promise<Response> {

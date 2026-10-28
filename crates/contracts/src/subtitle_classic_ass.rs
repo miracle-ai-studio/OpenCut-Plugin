@@ -19,7 +19,6 @@ pub struct SubtitleClassicAssPlanRequest {
     pub track: TextTrackTarget,
     pub content: String,
     pub font_bindings: Vec<SubtitleAssFontBinding>,
-    pub observations: Option<Vec<SubtitleTextObservation>>,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "snake_case")]
@@ -47,6 +46,7 @@ pub struct SubtitleClassicAssCuePlan {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct SubtitleClassicAssPlanResult {
+    pub measurement: Option<crate::renderer_identity::NativeTextRuntimeIdentity>,
     pub revision: String,
     pub width: u32,
     pub height: u32,

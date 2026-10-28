@@ -200,3 +200,5 @@ pub mod catalog_resources;
 pub mod subtitle_classic_ass;
 
 pub mod project_readonly;
+
+pub mod subtitle_measurement;

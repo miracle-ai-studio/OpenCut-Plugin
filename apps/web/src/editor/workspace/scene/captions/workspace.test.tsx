@@ -133,7 +133,6 @@ it("defaults to editable text and applies the original transaction once with 24p
       font: { kind: "locked", font_id: "regular" },
       font_size: { unit: "canvas_pixels", value: 24 },
     },
-    observations: null,
   });
   expect(f.apply).toHaveBeenCalledWith(f.transaction, "scene");
   expect(f.select).toHaveBeenCalledWith("cue-one");

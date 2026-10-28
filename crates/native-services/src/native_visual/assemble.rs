@@ -54,6 +54,7 @@ impl Source {
     }
 }
 struct Layer {
+    element_id: Option<String>,
     source: Source,
     quad: VisualQuad,
     blend: BlendMode,
@@ -228,6 +229,7 @@ pub(super) fn prepare(
         }
         let mut owned = vec![result.layers.len()];
         result.layers.push(Layer {
+            element_id: Some(layer.element_id.clone()),
             source,
             quad: quad.clone(),
             blend,
@@ -238,6 +240,7 @@ pub(super) fn prepare(
         for stroke in strokes {
             owned.push(result.layers.len());
             result.layers.push(Layer {
+                element_id: Some(layer.element_id.clone()),
                 source: Source::Raster(stroke),
                 quad: full(width, height),
                 blend: BlendMode::Normal,
@@ -273,6 +276,7 @@ pub(super) fn prepare(
                 quad.width = (f64::from(w) * scale) as f32;
                 quad.height = (f64::from(h) * scale) as f32;
                 result.background = Some(Layer {
+                    element_id: None,
                     source: source.clone(),
                     quad,
                     blend: BlendMode::Normal,
@@ -383,6 +387,35 @@ fn text_mask(
         None
     };
     Ok((body, stroke))
+}
+
+pub(super) fn hit_test(
+    prepared: &Prepared,
+    alphas: &[u8],
+) -> Result<Vec<NativeVisualHit>, EditorError> {
+    if alphas.len() != prepared.layers.len() {
+        return Err(invalid("Native hit readback omitted a prepared layer"));
+    }
+    let mut seen = std::collections::BTreeSet::new();
+    let mut hits = Vec::new();
+    // Match the existing topmost nontransparent occurrence for each element,
+    // including separate text-mask stroke surfaces. Adjustment layers and the
+    // scene background have no selectable foreground identity.
+    for step in prepared.steps.iter().rev() {
+        if let Step::Layer(index) = step {
+            let alpha = alphas[*index];
+            if alpha != 0
+                && let Some(id) = &prepared.layers[*index].element_id
+                && seen.insert(id.as_str())
+            {
+                hits.push(NativeVisualHit {
+                    element_id: id.clone(),
+                    alpha,
+                });
+            }
+        }
+    }
+    Ok(hits)
 }
 
 pub(super) fn render(

@@ -14,12 +14,12 @@ function fixture(){
  return {source,render,closed,changeRevision:()=>revision="other",changeWidth:()=>width=640};
 }
 it("requests a future authored boundary without waiting for speculative decode or queued cache publication",async()=>{
- const f=fixture(),signal=new AbortController().signal,prewarm=vi.fn((..._args:Parameters<VisualPreviewRenderer["prewarm"]>)=>true),follow=vi.fn();
+ const f=fixture(),signal=new AbortController().signal,follow=vi.fn();
  const cache={rebind:async()=>true,follow,hasFrame:()=>false,state:()=>"preparing"} as unknown as import("./picture-cache").PictureCache;
- const source=new ScenePictureSource({render:f.render,prewarm},{} as VisualPreviewExecutionApi,session,cache,[{ticks:"6",timebase:1}]);
+ const source=new ScenePictureSource({render:f.render},{} as VisualPreviewExecutionApi,session,cache,[{ticks:"6",timebase:1}]);
  await source.initialize(signal);await source.frame(session.presentation_time,signal);
  const picture=await source.frame({ticks:"4",timebase:1},signal,0);
- expect(prewarm.mock.calls[0][2]).toEqual({ticks:"6",timebase:1});expect(picture.runtime.cacheState).toBe("preparing");expect(follow).toHaveBeenCalledOnce();
+ expect(f.render.mock.calls[1][5]?.time).toEqual({ticks:"4",timebase:1});expect(picture.runtime.cacheState).toBe("preparing");expect(follow).toHaveBeenCalledOnce();
 });
 it("uses a completed authorized derived window and rejects a stale revision instead of presenting old pixels",async()=>{
  const f=fixture(),signal=new AbortController().signal;

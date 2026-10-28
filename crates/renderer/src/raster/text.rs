@@ -140,61 +140,37 @@ impl TextRasterizer {
         Ok(shape(face, text, content, false)?.width)
     }
 
-    pub fn rasterize(
+    /// Metrics and rendering share one shaping/layout implementation. This
+    /// path allocates glyph/path work only, without a dummy raster or GPU.
+    pub fn measure_layout(
         &mut self,
         layer: &TextLayerPlan,
-        width: u32,
-        height: u32,
         synthesis: Option<&FontSynthesisBinding>,
-        limits: RasterLimits,
-    ) -> Result<(RasterImage, TextRasterReceipt)> {
-        self.render_text(layer, width, height, synthesis, limits, None)
-    }
-    pub fn mask_stroke(
-        &mut self,
-        layer: &TextLayerPlan,
-        body: &RasterImage,
-        stroke: &opencut_contracts::scene::Stroke,
-        synthesis: Option<&FontSynthesisBinding>,
-        limits: RasterLimits,
-    ) -> Result<RasterImage> {
-        self.render_text(
-            layer,
-            body.width,
-            body.height,
-            synthesis,
-            limits,
-            Some((stroke, body)),
-        )
-        .map(|(image, _)| image)
-    }
-    fn render_text(
-        &mut self,
-        layer: &TextLayerPlan,
-        width: u32,
-        height: u32,
-        synthesis: Option<&FontSynthesisBinding>,
-        limits: RasterLimits,
-        stroke: Option<(&opencut_contracts::scene::Stroke, &RasterImage)>,
-    ) -> Result<(RasterImage, TextRasterReceipt)> {
-        let text = &layer.text;
-        validate(text)?;
+        max_bytes: u64,
+    ) -> Result<TextLayout> {
+        validate(&layer.text)?;
         if !layer.font.glyph_coverage_validated
-            || format!("{:x}", Sha256::digest(text.content.as_bytes()))
+            || format!("{:x}", Sha256::digest(layer.text.content.as_bytes()))
                 != layer.font.validated_text_hash
         {
-            return Err(invalid("Native text differs from its glyph-coverage proof"));
+            return Err(invalid(
+                "Native measurement differs from its glyph-coverage proof",
+            ));
         }
-        let raster = admit(width, height, 4, limits)?;
-        // Account bounded shaping/path work before allocating a glyph buffer.
+        self.layout_lines(layer, synthesis, max_bytes)
+            .map(|(_, layout)| layout)
+    }
+    fn layout_lines(
+        &mut self,
+        layer: &TextLayerPlan,
+        synthesis: Option<&FontSynthesisBinding>,
+        max_bytes: u64,
+    ) -> Result<(Vec<Line>, TextLayout)> {
+        let text = &layer.text;
         let shaping = (text.content.len() as u64 + 1)
             .checked_mul(8192)
             .ok_or_else(|| budget("Native shaping admission overflow"))?;
-        let peak = raster * if stroke.is_some() { 2 } else { 1 };
-        let peak = peak
-            .checked_add(shaping)
-            .ok_or_else(|| budget("Native text admission overflow"))?;
-        if peak > limits.max_bytes {
+        if shaping > max_bytes {
             return Err(budget("Native text shaping exceeds admission"));
         }
         let italic = validate_synthesis(synthesis, &layer.font)?;
@@ -264,6 +240,88 @@ impl TextRasterizer {
                 }
             })
             .collect();
+        let layout = TextLayout {
+            font_id: layer.font.font_id.clone(),
+            font_content_hash: layer.font.content_hash.clone(),
+            validated_text_hash: layer.font.validated_text_hash.clone(),
+            font_weight: layer.font.weight,
+            font_style: layer.font.style,
+            face_index: layer.font.face_index,
+            font_size_px: text.font_size_px,
+            line_height_px: text.line_height_px,
+            letter_spacing_px: text.letter_spacing_px,
+            align: text.align.clone(),
+            baseline: "middle".into(),
+            block,
+            background,
+            lines: metrics,
+            transform: text.transform.clone(),
+        };
+        Ok((lines, layout))
+    }
+
+    pub fn rasterize(
+        &mut self,
+        layer: &TextLayerPlan,
+        width: u32,
+        height: u32,
+        synthesis: Option<&FontSynthesisBinding>,
+        limits: RasterLimits,
+    ) -> Result<(RasterImage, TextRasterReceipt)> {
+        self.render_text(layer, width, height, synthesis, limits, None)
+    }
+    pub fn mask_stroke(
+        &mut self,
+        layer: &TextLayerPlan,
+        body: &RasterImage,
+        stroke: &opencut_contracts::scene::Stroke,
+        synthesis: Option<&FontSynthesisBinding>,
+        limits: RasterLimits,
+    ) -> Result<RasterImage> {
+        self.render_text(
+            layer,
+            body.width,
+            body.height,
+            synthesis,
+            limits,
+            Some((stroke, body)),
+        )
+        .map(|(image, _)| image)
+    }
+    fn render_text(
+        &mut self,
+        layer: &TextLayerPlan,
+        width: u32,
+        height: u32,
+        synthesis: Option<&FontSynthesisBinding>,
+        limits: RasterLimits,
+        stroke: Option<(&opencut_contracts::scene::Stroke, &RasterImage)>,
+    ) -> Result<(RasterImage, TextRasterReceipt)> {
+        let text = &layer.text;
+        validate(text)?;
+        if !layer.font.glyph_coverage_validated
+            || format!("{:x}", Sha256::digest(text.content.as_bytes()))
+                != layer.font.validated_text_hash
+        {
+            return Err(invalid("Native text differs from its glyph-coverage proof"));
+        }
+        let raster = admit(width, height, 4, limits)?;
+        // Account bounded shaping/path work before allocating a glyph buffer.
+        let shaping = (text.content.len() as u64 + 1)
+            .checked_mul(8192)
+            .ok_or_else(|| budget("Native shaping admission overflow"))?;
+        let peak = raster * if stroke.is_some() { 2 } else { 1 };
+        let peak = peak
+            .checked_add(shaping)
+            .ok_or_else(|| budget("Native text admission overflow"))?;
+        if peak > limits.max_bytes {
+            return Err(budget("Native text shaping exceeds admission"));
+        }
+        let (lines, layout) = self.layout_lines(
+            layer,
+            synthesis,
+            limits.max_bytes - raster * if stroke.is_some() { 2 } else { 1 },
+        )?;
         let mut image = pixmap(width, height)?;
         let info = skia::ImageInfo::new(
             (width as i32, height as i32),
@@ -281,7 +339,7 @@ impl TextRasterizer {
             canvas.translate((t.center_x as f32, t.center_y as f32));
             canvas.scale((t.scale_x as f32, t.scale_y as f32));
             canvas.rotate(t.rotation_radians.to_degrees() as f32, None);
-            if let Some(bg) = &background {
+            if let Some(bg) = &layout.background {
                 if bg.width > 0.0 && bg.height > 0.0 {
                     canvas.draw_round_rect(
                         skia::Rect::from_xywh(
@@ -308,7 +366,7 @@ impl TextRasterizer {
                     .set_stroke_cap(skia::paint::Cap::Round)
                     .set_stroke_join(skia::paint::Join::Round);
             }
-            for (line, metric) in lines.iter().zip(&metrics) {
+            for (line, metric) in lines.iter().zip(&layout.lines) {
                 canvas.draw_glyphs_at(
                     &line.glyphs,
                     line.positions.as_slice(),
@@ -355,23 +413,6 @@ impl TextRasterizer {
                 }
             }
         }
-        let layout = TextLayout {
-            font_id: layer.font.font_id.clone(),
-            font_content_hash: layer.font.content_hash.clone(),
-            validated_text_hash: layer.font.validated_text_hash.clone(),
-            font_weight: layer.font.weight,
-            font_style: layer.font.style,
-            face_index: layer.font.face_index,
-            font_size_px: text.font_size_px,
-            line_height_px: text.line_height_px,
-            letter_spacing_px: text.letter_spacing_px,
-            align: text.align.clone(),
-            baseline: "middle".into(),
-            block,
-            background,
-            lines: metrics,
-            transform: text.transform.clone(),
-        };
         Ok((
             finish(image, peak),
             TextRasterReceipt {

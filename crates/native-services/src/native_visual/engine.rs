@@ -26,6 +26,7 @@ pub(crate) struct NativeRenderedFrame<R> {
     pub receipt: R,
     pub accounting: Receipt,
     pub encoded_bytes_read: u64,
+    pub hit_test: Vec<NativeVisualHit>,
 }
 pub(super) struct Bindings {
     pub layers: Vec<BoundVisualLayer>,
@@ -69,12 +70,15 @@ impl NativeFrameEngine {
         fonts: &[ClassicTextFontHandle],
         sink: &mut dyn ClassicVisualRgbaSink,
         deadline: Instant,
+        probe: Option<[u32; 2]>,
     ) -> Result<NativeRenderedFrame<S::Receipt>, EditorError> {
         resources.checkpoint()?;
         if self.failed || session.policy() != &self.policy {
             return Err(invalid("Native frame owner or admission changed"));
         }
-        let result = self.render_inner(session, resources, begin, handles, fonts, sink, deadline);
+        let result = self.render_inner(
+            session, resources, begin, handles, fonts, sink, deadline, probe,
+        );
         if result.is_err() {
             self.failed = true;
             self.media = NativeMediaDecoders::default();
@@ -91,6 +95,7 @@ impl NativeFrameEngine {
         fonts: &[ClassicTextFontHandle],
         sink: &mut dyn ClassicVisualRgbaSink,
         deadline: Instant,
+        probe: Option<[u32; 2]>,
     ) -> Result<NativeRenderedFrame<S::Receipt>, EditorError> {
         let plan = Plan::parse(begin, session.plan()?)?;
         text::authorize_fonts(session, resources, &plan, fonts, &mut self.text)?;
@@ -211,6 +216,8 @@ impl NativeFrameEngine {
             resources,
             sink,
             deadline,
+            probe,
+            hit_alphas: Vec::new(),
         };
         let accounting =
             assemble::render(&mut self.renderer, &plan, &bindings, &prepared, &mut output)?;
@@ -245,6 +252,11 @@ impl NativeFrameEngine {
             receipt,
             accounting,
             encoded_bytes_read: media.encoded_bytes_read,
+            hit_test: if probe.is_some() {
+                assemble::hit_test(&prepared, &output.hit_alphas)?
+            } else {
+                Vec::new()
+            },
         })
     }
 }
@@ -253,6 +265,8 @@ struct Output<'a, R: ClassicVisualResources + ?Sized, S: VisualProcessSession<R>
     resources: &'a mut R,
     sink: &'a mut dyn ClassicVisualRgbaSink,
     deadline: Instant,
+    probe: Option<[u32; 2]>,
+    hit_alphas: Vec<u8>,
 }
 fn output_error(error: EditorError) -> opencut_renderer::Error {
     opencut_renderer::Error::new(error.code, error.message)
@@ -272,6 +286,18 @@ impl<R: ClassicVisualResources + ?Sized, S: VisualProcessSession<R>> Execution
     }
     fn deadline(&self) -> Instant {
         self.deadline
+    }
+    fn hit_probe(&self) -> Option<[u32; 2]> {
+        self.probe
+    }
+    fn hit_alpha(&mut self, layer: usize, alpha: u8) -> opencut_renderer::Result<()> {
+        if self.probe.is_none() || layer != self.hit_alphas.len() {
+            return Err(output_error(invalid(
+                "Native hit observation order changed",
+            )));
+        }
+        self.hit_alphas.push(alpha);
+        Ok(())
     }
     fn rgba(&mut self, offset: u64, bytes: &[u8]) -> opencut_renderer::Result<()> {
         self.session

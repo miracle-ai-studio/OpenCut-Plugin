@@ -242,24 +242,23 @@ test("feedback adapter may persist only its two bounded personal-data keys", () 
     1,
   );
 });
-test("visual preview imports only the bounded execution bridge", () => {
-  const path="../../../../../../packages/classic-visual-renderer/src/index.mjs";
-  assert.deepEqual(violations("editor/workspace/scene/visual-preview-renderer.ts", `import {renderClassicFrame} from "${path}";`), []);
-  for(const [file,name] of [["editor/workspace/scene/session.ts",path],["editor/workspace/scene/visual-preview-renderer.ts","@opencut/classic-visual-renderer"],["editor/workspace/scene/visual-preview-renderer.ts","../../../../../../packages/classic-visual-renderer/host/runner.mjs"]])
-    assert.equal(violations(file, `import x from "${name}";`).length,1);
-});
-
-test("presentation worker imports only GPU realm and presenter functions", () => {
-  const file = "editor/workspace/scene/surface-worker.ts";
+test("native preview permits only the derived segment decoder import", () => {
+  const file = "editor/workspace/scene/visual-preview-renderer.ts";
+  const decoder = "../../../../../../packages/classic-visual-renderer/src/preview-segment.mjs";
+  assert.deepEqual(violations(file, `import {PreviewSegmentDecoder} from "${decoder}";`), []);
   const renderer = "../../../../../../packages/classic-visual-renderer/src/index.mjs";
-  assert.deepEqual(violations(file, `import {openGpuRealm, closeGpuRealm, gpuSurfacePresenter} from "${renderer}";`), []);
   for (const code of [
     `import {renderClassicFrame} from "${renderer}";`,
-    `import * as renderer from "${renderer}";`,
-    `export * from "${renderer}";`,
-    `import("${renderer}");`,
+    `import {openGpuRealm, closeGpuRealm, gpuSurfacePresenter} from "${renderer}";`,
+    `import * as renderer from "${decoder}";`,
+    `export * from "${decoder}";`,
+    `import("${decoder}");`,
+    `import {PreviewSegmentDecoder, renderClassicFrame} from "${decoder}";`,
     'import x from "../../../../../../packages/classic-visual-renderer/host/runner.mjs";',
   ]) assert.ok(violations(file, code).length > 0, code);
+  for (const other of ["editor/workspace/scene/session.ts", "editor/workspace/scene/surface-worker.ts"])
+    for (const name of [decoder, renderer])
+      assert.ok(violations(other, `import {PreviewSegmentDecoder} from "${name}";`).length > 0);
 });
 
 test("shortcut and curve preferences are pinned to exact adapters and literal keys", () => {

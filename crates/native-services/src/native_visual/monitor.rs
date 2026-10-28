@@ -115,6 +115,11 @@ impl Monitor {
             Ok(())
         }
     }
+    pub(super) fn running(&self) -> bool {
+        self.state
+            .lock()
+            .is_ok_and(|state| !state.done && state.fault.is_none())
+    }
     pub fn frame(&self, deadline: Option<Instant>) {
         self.state
             .lock()

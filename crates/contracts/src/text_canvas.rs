@@ -19,6 +19,8 @@ pub struct TextCanvasPlanRequest {
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct TextCanvasPlanResult {
+    pub layout: crate::text_frame::TextLayout,
+    pub measurement: crate::renderer_identity::NativeTextRuntimeIdentity,
     pub identity: TextFrameIdentity,
     /// Font metadata and coverage always describe the actual source bytes.
     pub layer: TextLayerPlan,

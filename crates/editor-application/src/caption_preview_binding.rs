@@ -1,4 +1,5 @@
 //! One bounded immutable caption picture on the existing sound consumer clock.
+use crate::visual_preview::VisualFrameObservations;
 use crate::{
     classic_caption_frame::{bind_caption_frame, plan_caption_frame},
     classic_text_frame::ClassicTextFrameSession,
@@ -43,7 +44,7 @@ impl PreparedCaptionBindings {
     }
     pub fn result(
         &self,
-        input: &VisualPreviewFrame,
+        input: &VisualFrameObservations,
         consumer: &Time,
     ) -> Result<CaptionPreviewBindings, EditorError> {
         if input.rasters.is_some() != input.captions.is_some()
@@ -60,11 +61,12 @@ impl PreparedCaptionBindings {
             self.coverage.clone(),
         )?;
         let media = original.result(
-            &VisualPreviewFrame {
+            &VisualFrameObservations {
                 resolution: input.resolution,
                 session: input.session.clone(),
                 prepare_ahead: input.prepare_ahead,
                 retained_picture_bytes: input.retained_picture_bytes,
+                hit_query: None,
                 time: input.time.clone(),
                 decoded: input.decoded.clone(),
                 rasters: None,

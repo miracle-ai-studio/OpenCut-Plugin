@@ -10,14 +10,27 @@ pub(crate) use process::NativeProcess;
 mod wire;
 mod worker;
 pub use worker::serve;
+mod measurement;
 mod media;
 mod plan;
+mod preview;
 #[cfg(test)]
 mod tests;
 mod text;
 pub use engine::NativeFrameEngine;
+pub use measurement::{NativeTextMeasureOptions, NativeTextMeasurement, NativeTextMeasurements};
 pub use media::{MediaFrameSources, NativeMediaDecoders};
 use opencut_contracts::EditorError;
+pub use preview::{NativePreviewFrame, NativeScenePreview};
+
+/// Native adapter observation. Public preview DTOs bind this to the original
+/// session/frame identity; this value grants no resource authority.
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct NativeVisualHit {
+    pub element_id: String,
+    pub alpha: u8,
+}
 
 pub fn platform_backend() -> Result<opencut_renderer::Backend, EditorError> {
     if cfg!(target_os = "macos") {

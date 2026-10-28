@@ -417,13 +417,14 @@
   ],
   "native_rendering_replacement": {
     "source_base_commit": "74afa429",
-    "execution": "hard cutover in static-frame and export visual hosts; no selectable browser visual backend or fallback; Web continuous preview remains pending",
-    "implementation": "Native GPU/decode/raster worker and static-frame/export visual host integrated; text layout and macOS exit-monitor repairs built and passed scoped acceptance; Web preview, source artwork and native audio still pending",
+    "execution": "hard cutover in static-frame, export visual and Web continuous preview hosts; no selectable browser visual backend or fallback; source artwork and native audio remain pending",
+    "implementation": "Native worker shares GPU/decode/raster and application sessions across static frames, export and live preview; CPU-only text authoring/three subtitle planners use the same shaping/layout implementation",
     "build": {
-      "cli_sha256": "8a571a9c2714dccbb0c7dcd96cfe16921b12ba88b73f403cdedad0c7e415f187",
-      "worker_sha256": "c71a2bd29c1b4aae23a5dca18504fef03c14fe5850f409f6b220a761c4f3fa28",
-      "status": "passed; same explicit production binaries used for generated contracts and serial scoped acceptance",
-      "source_digest": "cd11a75d825375a8f37be1e1a9332343259eca41c755ab181f529009bb0ead9a"
+      "cli_sha256": "93e1f897aff47a41f9beb8d07d9692c083edf3c7d2448758f6a4ad11e02e577e",
+      "worker_sha256": "7fb71710c40e823f28fa64762b52a0538e6ee3f170a598b655f63bcb5e8c70a2",
+      "status": "passed integrated production and selected test builds; exact CLI generated and checked contracts; Web typecheck/build passed",
+      "source_digest": "acff52cae43ecd7c5ab7e637672e2a1af76b4f3e5f40a75e4e1c321d9d156674",
+      "web_files_sha256": "5688c26f44535f4d26f0f357694426a69f0f04bdf9f999131adf0477ddb7ce10"
     },
     "scoped_behavior": {
       "generated_and_canonical_contracts": "passed; 184 operations, 12 domains",
@@ -433,7 +434,8 @@
       "failed_application_regressions_rerun": {
         "passed": 31,
         "failed": 0,
-        "scope": "30 passed on the preceding repair candidate; final graphic budget regression passed on the prior build and reused by identical pure-test executable SHA256"
+        "scope": "30 passed on the preceding repair candidate; final graphic budget regression passed on the prior build and reused by identical pure-test executable SHA256; retained prior candidate scope, current touched paths have the separate 65-check record",
+        "candidate_cli_sha256": "8a571a9c2714dccbb0c7dcd96cfe16921b12ba88b73f403cdedad0c7e415f187"
       },
       "historical_renderer_proof": "passed; stored dependency identities remain exact while current live engines require current dependencies and platform identity",
       "worker_lifecycle": "passed cancellation, revocation, deadline and RSS termination",
@@ -479,39 +481,131 @@
       "public_cancellation": {
         "queue": {
           "passed": true,
-          "job_id": "job_c6dcb992feb24c4094b2b5dd51ca7bef",
+          "job_id": "job_af76bc18c70f478fab096bdaec7d16a3",
           "public_artifacts": 0,
           "project_unchanged": true,
           "original_replay_same_cancelled_job": true
         },
         "render": {
           "passed": true,
-          "job_id": "job_06392ed7c562428794737217524edc6b",
+          "job_id": "job_544dacbc940f49ad98723d8ebeae4550",
           "public_artifacts": 0,
           "project_unchanged": true,
           "original_replay_same_cancelled_job": true
         },
         "before-publication": {
           "passed": true,
-          "job_id": "job_e83195bfc47b439aabe2291987031148",
+          "job_id": "job_b1664b766f3340f59bf860dd783922d7",
           "public_artifacts": 0,
           "project_unchanged": true,
           "original_replay_same_cancelled_job": true
         },
         "scope": "Real public cancellation in each window; publication window delays only completion of an already successful real output probe. Normal-runtime export throughput not remeasured."
       },
-      "verifier_repair": "Initial cancellation verifier read an obsolete JobView field. Corrected only the verifier, retained its failed logs and rechecked the same three cancelled jobs; no replacement tasks or Rust rebuild."
+      "verifier_repair": "Initial cancellation verifier read an obsolete JobView field. Corrected only the verifier, retained its failed logs and rechecked the same three cancelled jobs; no replacement tasks or Rust rebuild.",
+      "current_export": {
+        "frames": 24,
+        "seconds": 10.282631871057674,
+        "baseline_seconds": 15.510829739039764,
+        "independent_pixel_mae_range": [
+          1.7219227430555555,
+          2.429564525462963
+        ],
+        "pixel_gate": 5,
+        "passed": true,
+        "audio": "unchanged browser DSP; identical decoded PCM; native audio remains pending",
+        "scope": "one original 1-second two-source scene; no full-export throughput claim"
+      }
     },
-    "manual_acceptance": "Styled static native PNG and independent reference visually inspected; whole editor walkthrough not yet run",
+    "manual_acceptance": "Static styled PNG/reference and actual paused native editor screenshot visually inspected; automated 4-second editor flow passed; whole editor and physical output acceptance remain open",
     "delivery_ready": false,
     "remaining": [
       "broader native text scripts, fonts, synthesis and platform coverage",
-      "Web continuous preview",
+      "long native continuous video/audio playback and seek/retirement/resource matrix",
       "source artwork",
       "native audio execution and independent PCM",
-      "full pixel and resource lifecycle matrix",
-      "runtime packaging and clean installation",
-      "manual acceptance"
-    ]
+      "large-source and 4K pixel/memory/performance matrix",
+      "runtime dependency/license packaging and clean installation",
+      "broader editor and manual acceptance"
+    ],
+    "previous_static_candidate": {
+      "cli_sha256": "8a571a9c2714dccbb0c7dcd96cfe16921b12ba88b73f403cdedad0c7e415f187",
+      "worker_sha256": "c71a2bd29c1b4aae23a5dca18504fef03c14fe5850f409f6b220a761c4f3fa28",
+      "status": "passed; same explicit production binaries used for generated contracts and serial scoped acceptance",
+      "source_digest": "cd11a75d825375a8f37be1e1a9332343259eca41c755ab181f529009bb0ead9a"
+    },
+    "continuous_preview": {
+      "base_commit": "0e4a87527c9fb99826b9dd24535724ad1f572970",
+      "status": "integrated build and scoped native/HTTP/editor acceptance passed; long-play and complete delivery remain open",
+      "implemented_source": [
+        "persistent native scene preview owner and resource cache",
+        "native per-layer masked/effected alpha hit probe",
+        "fixed native presentation envelope and in-flight binary-reader accounting",
+        "single-use scoped native RGBA picture transport and generated-schema wiring",
+        "browser displays native frame bytes; public preview requests no longer accept client decode/raster observations",
+        "CPU-only native text layout shared with rendering; one measurement process reused across subtitle cues",
+        "single-call native text canvas, plain subtitle, strict ASS and Classic ASS planning; client observations removed from public requests",
+        "Web boundary permits only the existing derived-segment decoder; browser composition/GPU imports rejected"
+      ],
+      "pending_integration": [
+        "long native playback, large/4K sources and resource/retirement matrix",
+        "broader scripts, fonts, synthesis and subtitle import/manual editing coverage"
+      ],
+      "source_checks": {
+        "web_native_adapter_tests": {
+          "passed": 41,
+          "scope": "native result and transport adapter mocks; not a real native playback proof"
+        },
+        "web_playback_and_caption_tests": {
+          "passed": 57,
+          "scope": "existing mocked playback/caption controller checks"
+        },
+        "web_boundary_tests": 22,
+        "architecture_tests": 14,
+        "architecture_modules": 24,
+        "temporary_exception_edges": 0
+      },
+      "build_repair": "Initial integrated host wiring errors repaired; successful build bound to the current source digest. Original failed build logs retained.",
+      "source_digest": "acff52cae43ecd7c5ab7e637672e2a1af76b4f3e5f40a75e4e1c321d9d156674",
+      "application_host_native_tests": 65,
+      "native_check_groups": 15,
+      "real_http": {
+        "completed_frames": 17,
+        "persistent_frames_same_worker": 12,
+        "single_use_and_latest_ticket": true,
+        "generation_worker_retirement": true,
+        "cpu_canvas_and_three_subtitle_planners": true,
+        "project_unchanged": true
+      },
+      "independent_video_frames": {
+        "frames": 24,
+        "source": "original two-source synthetic scene; stock FFmpeg decode oracle",
+        "rgb_mae_upper_bound_range": [
+          0.9703544560185186,
+          1.4731568287037036
+        ],
+        "gate": 5,
+        "same_worker": true,
+        "project_unchanged": true
+      },
+      "independent_preview_text": "three original authored text cases passed unchanged pixel and width/ascent/descent gates; metrics from native CPU authoring port",
+      "actual_editor": {
+        "scene_seconds": 4,
+        "passed": [
+          "play",
+          "pause",
+          "resume to end",
+          "seek and replay to end"
+        ],
+        "preview_http_responses": 312,
+        "http_errors": 0,
+        "page_errors": 0,
+        "runtime": "native Metal",
+        "project_unchanged": true,
+        "scope": "one synthetic text/graphic scene; no physical audio or long-play acceptance"
+      },
+      "public_schema_results": 23,
+      "verifier_repair": "First browser script matched duplicate status text; narrowed the selector and used current ended/seek controls, retaining the failed attempt. No product rebuild or source project edit."
+    }
   }
 }

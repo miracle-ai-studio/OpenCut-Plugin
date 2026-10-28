@@ -21,6 +21,19 @@ pub(crate) fn file_hash(path: &Path) -> Result<String, EditorError> {
     }
     Ok(format!("{:x}", digest.finalize()))
 }
+pub(super) fn observe_text()
+-> Result<opencut_contracts::renderer_identity::NativeTextRuntimeIdentity, EditorError> {
+    Ok(
+        opencut_contracts::renderer_identity::NativeTextRuntimeIdentity {
+            worker_sha256: file_hash(
+                &std::env::current_exe()
+                    .map_err(|_| invalid("Cannot identify native text worker"))?,
+            )?,
+            rasterizer: NATIVE_RASTERIZER.into(),
+            platform: platform()?,
+        },
+    )
+}
 pub(crate) fn observe(
     gpu: &opencut_renderer::Identity,
 ) -> Result<NativeVisualIdentity, EditorError> {

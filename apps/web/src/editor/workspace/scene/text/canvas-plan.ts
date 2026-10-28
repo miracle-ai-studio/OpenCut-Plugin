@@ -1,7 +1,5 @@
-import { measureClassicText } from "../visual-preview-renderer";
 import type { EditorApi } from "../../api";
 import type { CanvasTextPlanning } from "./canvas-types";
-import { loadCanvasFont } from "./canvas-font";
 import {
   checkSynthesisResource,
   synthesisFont,
@@ -11,7 +9,7 @@ import type { FontSynthesisBinding } from "./font-synthesis";
 import type { ToolOutput } from "../../../../lib/editor-sdk";
 
 /** Application owns sampling/geometry and native font coverage. The existing
- * Classic executor owns browser font metrics; DOM never invents a layout. */
+ * native text worker supplies metrics; DOM never invents a layout. */
 export function canvasTextPlanner(api: EditorApi): CanvasTextPlanning {
   let cached: {
     key: string;
@@ -108,33 +106,13 @@ export function canvasTextPlanner(api: EditorApi): CanvasTextPlanning {
         "The Canvas plan omitted its explicit synthesis binding.",
       );
     }
-    const font = await loadCanvasFont(
-      api,
-      scope,
-      layer.font,
-      signal,
-      actualFont,
-    );
-    try {
-      checkConnection();
-      const ctx = document.createElement("canvas").getContext("2d");
-      if (!ctx) throw new Error("Canvas text editing unavailable");
-      const layout = measureClassicText(
-        ctx,
-        layer.text,
-        font.family,
-        layer.font,
-      );
-      return {
-        scope,
-        width: identity.width,
-        height: identity.height,
-        layer,
-        ...(binding ? { actualFont, fontSynthesis: binding } : {}),
-        block: layout.block,
-      };
-    } finally {
-      font.release();
-    }
+    checkConnection();
+    const layout = result.layout;
+    if (!layout || layout.fontId !== actualFont.fontId || layout.fontContentHash !== actualFont.contentHash ||
+        layout.validatedTextHash !== actualFont.validatedTextHash || layout.fontWeight !== actualFont.weight ||
+        layout.fontStyle !== actualFont.style || !/^[0-9a-f]{64}$/.test(result.measurement.worker_sha256))
+      throw Error("The native text layout changed its locked font identity.");
+    return { scope, width: identity.width, height: identity.height, layer,
+      ...(binding ? { actualFont, fontSynthesis: binding } : {}), block: layout.block };
   };
 }

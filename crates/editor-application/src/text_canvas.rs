@@ -13,6 +13,13 @@ use opencut_contracts::font_synthesis::FontSynthesisBinding;
 use opencut_contracts::{EditorError, scene::*, text_canvas::*};
 use opencut_job_execution::media_frame::LocalVisualExecutionPolicy;
 
+#[derive(Clone, Debug)]
+pub struct TextCanvasFacts {
+    pub identity: opencut_contracts::text_frame::TextFrameIdentity,
+    pub layer: opencut_contracts::text_frame::TextLayerPlan,
+    pub font_synthesis: Option<FontSynthesisBinding>,
+}
+
 fn invalid(message: &str) -> EditorError {
     EditorError::new("INVALID_ARGUMENT", message)
 }
@@ -134,15 +141,14 @@ pub(crate) fn prepare_canvas_partition(
     Ok(prepared)
 }
 
-/// Native font capture/inspection supplies coverage after normal frame budget
-/// admission. Browser metrics remain the existing Classic font measurement;
-/// this result deliberately does not invent glyph widths in Rust.
+/// Fixed font capture and coverage prepare the same text execution facts.
+/// The native measurement port supplies glyph metrics after these checks.
 fn canvas_layout(
     prepared: &PreparedTextFrame,
     request: &TextCanvasPlanRequest,
     policy: &LocalVisualExecutionPolicy,
     coverage: &[NativeTextCoverage],
-) -> Result<TextCanvasPlanResult, EditorError> {
+) -> Result<TextCanvasFacts, EditorError> {
     let plan = ClassicTextFrameSession::new(prepared, policy, coverage)?.typed_plan()?;
     if plan.identity.project_id != request.project_id
         || plan.identity.revision != request.revision
@@ -158,7 +164,7 @@ fn canvas_layout(
         .into_iter()
         .find(|layer| layer.element_id == request.element_id)
         .ok_or_else(|| EditorError::new("NOT_FOUND", "Canvas text is inactive"))?;
-    Ok(TextCanvasPlanResult {
+    Ok(TextCanvasFacts {
         font_synthesis: None,
         identity: plan.identity,
         layer,
@@ -247,7 +253,7 @@ pub fn canvas_plan_result(
     request: &TextCanvasPlanRequest,
     policy: &LocalVisualExecutionPolicy,
     coverage: &[NativeTextCoverage],
-) -> Result<TextCanvasPlanResult, EditorError> {
+) -> Result<TextCanvasFacts, EditorError> {
     let mut actual = canvas_layout(&prepared.execution, request, policy, coverage)?;
     if let Some(binding) = &prepared.font_synthesis {
         let font = &actual.layer.font;
@@ -265,6 +271,35 @@ pub fn canvas_plan_result(
     actual.identity.profile = CLASSIC_TEXT_CANVAS_PROFILE.into();
     actual.font_synthesis = prepared.font_synthesis.clone();
     Ok(actual)
+}
+
+/// Bind CPU-only metrics through the same strict layout validator used by
+/// rendered text. The public result contains completed native evidence only.
+pub fn complete_canvas_plan(
+    prepared: &PreparedCanvasPlan,
+    facts: TextCanvasFacts,
+    raster: opencut_contracts::text_frame::TextRasterReceipt,
+    measurement: opencut_contracts::renderer_identity::NativeTextRuntimeIdentity,
+) -> Result<TextCanvasPlanResult, EditorError> {
+    let frame = prepared.execution();
+    if raster.width != frame.identity().width
+        || raster.height != frame.identity().height
+        || frame.texts().len() != 1
+        || raster.element_id != facts.layer.element_id
+    {
+        return Err(invalid(
+            "Canvas measurement differs from its prepared target",
+        ));
+    }
+    crate::classic_text_frame::validate_layout(&frame.texts()[0], &raster)?;
+    crate::classic_visual::validate_text_identity(&measurement)?;
+    Ok(TextCanvasPlanResult {
+        identity: facts.identity,
+        layer: facts.layer,
+        font_synthesis: facts.font_synthesis,
+        layout: raster.layout,
+        measurement,
+    })
 }
 
 #[cfg(test)]

@@ -44620,51 +44620,6 @@
     "description": "Plan Classic-compatible ASS styles, automatic wrapping, defaults and explicit ignored-feature warnings with fixed native fonts and observed raster placement. Existing strict ASS contracts stay frozen.",
     "input_schema": {
       "$defs": {
-        "CaptionLayoutReceipt": {
-          "additionalProperties": false,
-          "properties": {
-            "elementId": {
-              "type": "string"
-            },
-            "measurements": {
-              "description": "Every greedy candidate in order, including rejected overflow candidates.\nWidths are measured with the same fixed font as the actual raster.",
-              "items": {
-                "$ref": "#/$defs/CaptionWrapMeasurement"
-              },
-              "type": "array"
-            },
-            "originalTextHash": {
-              "type": "string"
-            },
-            "wrappedText": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "elementId",
-            "originalTextHash",
-            "wrappedText",
-            "measurements"
-          ],
-          "type": "object"
-        },
-        "CaptionWrapMeasurement": {
-          "additionalProperties": false,
-          "properties": {
-            "content": {
-              "type": "string"
-            },
-            "width": {
-              "format": "double",
-              "type": "number"
-            }
-          },
-          "required": [
-            "content",
-            "width"
-          ],
-          "type": "object"
-        },
         "FontStyle": {
           "enum": [
             "normal",
@@ -44700,294 +44655,6 @@
             "weight",
             "style",
             "font_id"
-          ],
-          "type": "object"
-        },
-        "SubtitleTextObservation": {
-          "additionalProperties": false,
-          "properties": {
-            "caption": {
-              "$ref": "#/$defs/CaptionLayoutReceipt"
-            },
-            "raster": {
-              "$ref": "#/$defs/TextRasterReceipt"
-            }
-          },
-          "required": [
-            "caption",
-            "raster"
-          ],
-          "type": "object"
-        },
-        "TextBackgroundRect": {
-          "additionalProperties": false,
-          "properties": {
-            "height": {
-              "format": "double",
-              "type": "number"
-            },
-            "left": {
-              "format": "double",
-              "type": "number"
-            },
-            "radius": {
-              "format": "double",
-              "type": "number"
-            },
-            "top": {
-              "format": "double",
-              "type": "number"
-            },
-            "width": {
-              "format": "double",
-              "type": "number"
-            }
-          },
-          "required": [
-            "left",
-            "top",
-            "width",
-            "height",
-            "radius"
-          ],
-          "type": "object"
-        },
-        "TextBlockMetrics": {
-          "additionalProperties": false,
-          "properties": {
-            "height": {
-              "format": "double",
-              "type": "number"
-            },
-            "maxWidth": {
-              "format": "double",
-              "type": "number"
-            },
-            "visualCenterOffset": {
-              "format": "double",
-              "type": "number"
-            }
-          },
-          "required": [
-            "maxWidth",
-            "height",
-            "visualCenterOffset"
-          ],
-          "type": "object"
-        },
-        "TextLayout": {
-          "additionalProperties": false,
-          "properties": {
-            "align": {
-              "type": "string"
-            },
-            "background": {
-              "anyOf": [
-                {
-                  "$ref": "#/$defs/TextBackgroundRect"
-                },
-                {
-                  "type": "null"
-                }
-              ]
-            },
-            "baseline": {
-              "type": "string"
-            },
-            "block": {
-              "$ref": "#/$defs/TextBlockMetrics"
-            },
-            "faceIndex": {
-              "format": "uint32",
-              "minimum": 0,
-              "type": "integer"
-            },
-            "fontContentHash": {
-              "type": "string"
-            },
-            "fontId": {
-              "type": "string"
-            },
-            "fontSizePx": {
-              "format": "double",
-              "type": "number"
-            },
-            "fontStyle": {
-              "$ref": "#/$defs/FontStyle"
-            },
-            "fontWeight": {
-              "format": "uint16",
-              "maximum": 65535,
-              "minimum": 0,
-              "type": "integer"
-            },
-            "letterSpacingPx": {
-              "format": "double",
-              "type": "number"
-            },
-            "lineHeightPx": {
-              "format": "double",
-              "type": "number"
-            },
-            "lines": {
-              "items": {
-                "$ref": "#/$defs/TextLineMetrics"
-              },
-              "type": "array"
-            },
-            "transform": {
-              "$ref": "#/$defs/TextRasterTransform"
-            },
-            "validatedTextHash": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "fontId",
-            "fontContentHash",
-            "validatedTextHash",
-            "fontWeight",
-            "fontStyle",
-            "faceIndex",
-            "fontSizePx",
-            "lineHeightPx",
-            "letterSpacingPx",
-            "align",
-            "baseline",
-            "block",
-            "lines",
-            "transform"
-          ],
-          "type": "object"
-        },
-        "TextLineMetrics": {
-          "additionalProperties": false,
-          "properties": {
-            "ascent": {
-              "format": "double",
-              "type": "number"
-            },
-            "baselineY": {
-              "format": "double",
-              "type": "number"
-            },
-            "content": {
-              "type": "string"
-            },
-            "decoration": {
-              "anyOf": [
-                {
-                  "$ref": "#/$defs/TextRect"
-                },
-                {
-                  "type": "null"
-                }
-              ]
-            },
-            "descent": {
-              "format": "double",
-              "type": "number"
-            },
-            "width": {
-              "format": "double",
-              "type": "number"
-            }
-          },
-          "required": [
-            "content",
-            "baselineY",
-            "width",
-            "ascent",
-            "descent"
-          ],
-          "type": "object"
-        },
-        "TextRasterReceipt": {
-          "additionalProperties": false,
-          "properties": {
-            "elementId": {
-              "type": "string"
-            },
-            "height": {
-              "format": "uint32",
-              "minimum": 0,
-              "type": "integer"
-            },
-            "layout": {
-              "$ref": "#/$defs/TextLayout"
-            },
-            "width": {
-              "format": "uint32",
-              "minimum": 0,
-              "type": "integer"
-            }
-          },
-          "required": [
-            "elementId",
-            "width",
-            "height",
-            "layout"
-          ],
-          "type": "object"
-        },
-        "TextRasterTransform": {
-          "additionalProperties": false,
-          "properties": {
-            "centerX": {
-              "format": "double",
-              "type": "number"
-            },
-            "centerY": {
-              "format": "double",
-              "type": "number"
-            },
-            "rotationRadians": {
-              "format": "double",
-              "type": "number"
-            },
-            "scaleX": {
-              "format": "double",
-              "type": "number"
-            },
-            "scaleY": {
-              "format": "double",
-              "type": "number"
-            }
-          },
-          "required": [
-            "centerX",
-            "centerY",
-            "scaleX",
-            "scaleY",
-            "rotationRadians"
-          ],
-          "type": "object"
-        },
-        "TextRect": {
-          "additionalProperties": false,
-          "properties": {
-            "height": {
-              "format": "double",
-              "type": "number"
-            },
-            "left": {
-              "format": "double",
-              "type": "number"
-            },
-            "top": {
-              "format": "double",
-              "type": "number"
-            },
-            "width": {
-              "format": "double",
-              "type": "number"
-            }
-          },
-          "required": [
-            "left",
-            "top",
-            "width",
-            "height"
           ],
           "type": "object"
         },
@@ -45047,15 +44714,6 @@
         },
         "idempotency_key": {
           "type": "string"
-        },
-        "observations": {
-          "items": {
-            "$ref": "#/$defs/SubtitleTextObservation"
-          },
-          "type": [
-            "array",
-            "null"
-          ]
         },
         "project_id": {
           "type": "string"
@@ -46938,6 +46596,55 @@
             }
           ]
         },
+        "NativePlatformIdentity": {
+          "additionalProperties": false,
+          "properties": {
+            "architecture": {
+              "type": "string"
+            },
+            "font_backend": {
+              "type": "string"
+            },
+            "kernel_release": {
+              "type": "string"
+            },
+            "os": {
+              "type": "string"
+            },
+            "system_build": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "os",
+            "architecture",
+            "kernel_release",
+            "system_build",
+            "font_backend"
+          ],
+          "type": "object"
+        },
+        "NativeTextRuntimeIdentity": {
+          "additionalProperties": false,
+          "description": "CPU text metrics use the exact verified worker and font platform. They do\nnot claim a GPU device or media-decoder execution that did not occur.",
+          "properties": {
+            "platform": {
+              "$ref": "#/$defs/NativePlatformIdentity"
+            },
+            "rasterizer": {
+              "type": "string"
+            },
+            "worker_sha256": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "worker_sha256",
+            "rasterizer",
+            "platform"
+          ],
+          "type": "object"
+        },
         "ProjectCover": {
           "oneOf": [
             {
@@ -48124,6 +47831,16 @@
               "format": "uint32",
               "minimum": 0,
               "type": "integer"
+            },
+            "measurement": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/NativeTextRuntimeIdentity"
+                },
+                {
+                  "type": "null"
+                }
+              ]
             },
             "revision": {
               "type": "string"
@@ -50004,7 +49721,7 @@
     "read_only": false
   },
   {
-    "description": "Plan and bind the complete fixed scene on its confirmed sound consumer clock, or prepare up to one second ahead without claiming presentation. Retains full resource observations, current owner/lease/generation and native proof fences; no task or project mutation.",
+    "description": "Render the complete fixed scene through the native worker on its confirmed sound consumer clock, or prepare within the bounded future window without claiming presentation. Returns authoritative layout/hit observations and a single-use bounded RGBA picture descriptor; current owner, lease, generation and resource fences remain live. No task or project mutation.",
     "input_schema": {
       "$defs": {
         "AudioPreviewStream": {
@@ -50035,208 +49752,6 @@
           ],
           "type": "object"
         },
-        "CaptionLayoutReceipt": {
-          "additionalProperties": false,
-          "properties": {
-            "elementId": {
-              "type": "string"
-            },
-            "measurements": {
-              "description": "Every greedy candidate in order, including rejected overflow candidates.\nWidths are measured with the same fixed font as the actual raster.",
-              "items": {
-                "$ref": "#/$defs/CaptionWrapMeasurement"
-              },
-              "type": "array"
-            },
-            "originalTextHash": {
-              "type": "string"
-            },
-            "wrappedText": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "elementId",
-            "originalTextHash",
-            "wrappedText",
-            "measurements"
-          ],
-          "type": "object"
-        },
-        "CaptionWrapMeasurement": {
-          "additionalProperties": false,
-          "properties": {
-            "content": {
-              "type": "string"
-            },
-            "width": {
-              "format": "double",
-              "type": "number"
-            }
-          },
-          "required": [
-            "content",
-            "width"
-          ],
-          "type": "object"
-        },
-        "DecodedVisualSource": {
-          "oneOf": [
-            {
-              "additionalProperties": false,
-              "properties": {
-                "elementId": {
-                  "type": "string"
-                },
-                "height": {
-                  "format": "uint32",
-                  "minimum": 0,
-                  "type": "integer"
-                },
-                "kind": {
-                  "const": "readyImage",
-                  "type": "string"
-                },
-                "width": {
-                  "format": "uint32",
-                  "minimum": 0,
-                  "type": "integer"
-                }
-              },
-              "required": [
-                "kind",
-                "elementId",
-                "width",
-                "height"
-              ],
-              "type": "object"
-            },
-            {
-              "additionalProperties": false,
-              "properties": {
-                "actualTimestampSeconds": {
-                  "format": "double",
-                  "type": "number"
-                },
-                "elementId": {
-                  "type": "string"
-                },
-                "eofHeld": {
-                  "description": "The decoder observed the terminal frame; its real interval is not\nextended or relabelled to cover the requested source time.",
-                  "type": "boolean"
-                },
-                "frameDurationSeconds": {
-                  "format": "double",
-                  "type": "number"
-                },
-                "height": {
-                  "format": "uint32",
-                  "minimum": 0,
-                  "type": "integer"
-                },
-                "kind": {
-                  "const": "readyVideo",
-                  "type": "string"
-                },
-                "requestedTime": {
-                  "$ref": "#/$defs/Time"
-                },
-                "selectedVideoStream": {
-                  "description": "None is primary-track selection, not an invented FFmpeg stream index.",
-                  "format": "uint32",
-                  "minimum": 0,
-                  "type": [
-                    "integer",
-                    "null"
-                  ]
-                },
-                "width": {
-                  "format": "uint32",
-                  "minimum": 0,
-                  "type": "integer"
-                }
-              },
-              "required": [
-                "kind",
-                "elementId",
-                "width",
-                "height",
-                "requestedTime",
-                "actualTimestampSeconds",
-                "frameDurationSeconds"
-              ],
-              "type": "object"
-            },
-            {
-              "additionalProperties": false,
-              "properties": {
-                "elementId": {
-                  "type": "string"
-                },
-                "kind": {
-                  "const": "noFrame",
-                  "type": "string"
-                },
-                "reason": {
-                  "$ref": "#/$defs/VisualNoFrameReason"
-                },
-                "requestedTime": {
-                  "$ref": "#/$defs/Time"
-                }
-              },
-              "required": [
-                "kind",
-                "elementId",
-                "requestedTime",
-                "reason"
-              ],
-              "type": "object"
-            }
-          ]
-        },
-        "FontStyle": {
-          "enum": [
-            "normal",
-            "italic"
-          ],
-          "type": "string"
-        },
-        "GraphicRasterReceipt": {
-          "additionalProperties": false,
-          "properties": {
-            "elementId": {
-              "type": "string"
-            },
-            "height": {
-              "format": "uint32",
-              "minimum": 0,
-              "type": "integer"
-            },
-            "originX": {
-              "format": "uint32",
-              "minimum": 0,
-              "type": "integer"
-            },
-            "originY": {
-              "format": "uint32",
-              "minimum": 0,
-              "type": "integer"
-            },
-            "width": {
-              "format": "uint32",
-              "minimum": 0,
-              "type": "integer"
-            }
-          },
-          "required": [
-            "elementId",
-            "width",
-            "height",
-            "originX",
-            "originY"
-          ],
-          "type": "object"
-        },
         "RasterResolution": {
           "description": "Raster execution size. Source remains byte-compatible with existing receipts.",
           "enum": [
@@ -50244,278 +49759,6 @@
             "preview540"
           ],
           "type": "string"
-        },
-        "TextBackgroundRect": {
-          "additionalProperties": false,
-          "properties": {
-            "height": {
-              "format": "double",
-              "type": "number"
-            },
-            "left": {
-              "format": "double",
-              "type": "number"
-            },
-            "radius": {
-              "format": "double",
-              "type": "number"
-            },
-            "top": {
-              "format": "double",
-              "type": "number"
-            },
-            "width": {
-              "format": "double",
-              "type": "number"
-            }
-          },
-          "required": [
-            "left",
-            "top",
-            "width",
-            "height",
-            "radius"
-          ],
-          "type": "object"
-        },
-        "TextBlockMetrics": {
-          "additionalProperties": false,
-          "properties": {
-            "height": {
-              "format": "double",
-              "type": "number"
-            },
-            "maxWidth": {
-              "format": "double",
-              "type": "number"
-            },
-            "visualCenterOffset": {
-              "format": "double",
-              "type": "number"
-            }
-          },
-          "required": [
-            "maxWidth",
-            "height",
-            "visualCenterOffset"
-          ],
-          "type": "object"
-        },
-        "TextLayout": {
-          "additionalProperties": false,
-          "properties": {
-            "align": {
-              "type": "string"
-            },
-            "background": {
-              "anyOf": [
-                {
-                  "$ref": "#/$defs/TextBackgroundRect"
-                },
-                {
-                  "type": "null"
-                }
-              ]
-            },
-            "baseline": {
-              "type": "string"
-            },
-            "block": {
-              "$ref": "#/$defs/TextBlockMetrics"
-            },
-            "faceIndex": {
-              "format": "uint32",
-              "minimum": 0,
-              "type": "integer"
-            },
-            "fontContentHash": {
-              "type": "string"
-            },
-            "fontId": {
-              "type": "string"
-            },
-            "fontSizePx": {
-              "format": "double",
-              "type": "number"
-            },
-            "fontStyle": {
-              "$ref": "#/$defs/FontStyle"
-            },
-            "fontWeight": {
-              "format": "uint16",
-              "maximum": 65535,
-              "minimum": 0,
-              "type": "integer"
-            },
-            "letterSpacingPx": {
-              "format": "double",
-              "type": "number"
-            },
-            "lineHeightPx": {
-              "format": "double",
-              "type": "number"
-            },
-            "lines": {
-              "items": {
-                "$ref": "#/$defs/TextLineMetrics"
-              },
-              "type": "array"
-            },
-            "transform": {
-              "$ref": "#/$defs/TextRasterTransform"
-            },
-            "validatedTextHash": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "fontId",
-            "fontContentHash",
-            "validatedTextHash",
-            "fontWeight",
-            "fontStyle",
-            "faceIndex",
-            "fontSizePx",
-            "lineHeightPx",
-            "letterSpacingPx",
-            "align",
-            "baseline",
-            "block",
-            "lines",
-            "transform"
-          ],
-          "type": "object"
-        },
-        "TextLineMetrics": {
-          "additionalProperties": false,
-          "properties": {
-            "ascent": {
-              "format": "double",
-              "type": "number"
-            },
-            "baselineY": {
-              "format": "double",
-              "type": "number"
-            },
-            "content": {
-              "type": "string"
-            },
-            "decoration": {
-              "anyOf": [
-                {
-                  "$ref": "#/$defs/TextRect"
-                },
-                {
-                  "type": "null"
-                }
-              ]
-            },
-            "descent": {
-              "format": "double",
-              "type": "number"
-            },
-            "width": {
-              "format": "double",
-              "type": "number"
-            }
-          },
-          "required": [
-            "content",
-            "baselineY",
-            "width",
-            "ascent",
-            "descent"
-          ],
-          "type": "object"
-        },
-        "TextRasterReceipt": {
-          "additionalProperties": false,
-          "properties": {
-            "elementId": {
-              "type": "string"
-            },
-            "height": {
-              "format": "uint32",
-              "minimum": 0,
-              "type": "integer"
-            },
-            "layout": {
-              "$ref": "#/$defs/TextLayout"
-            },
-            "width": {
-              "format": "uint32",
-              "minimum": 0,
-              "type": "integer"
-            }
-          },
-          "required": [
-            "elementId",
-            "width",
-            "height",
-            "layout"
-          ],
-          "type": "object"
-        },
-        "TextRasterTransform": {
-          "additionalProperties": false,
-          "properties": {
-            "centerX": {
-              "format": "double",
-              "type": "number"
-            },
-            "centerY": {
-              "format": "double",
-              "type": "number"
-            },
-            "rotationRadians": {
-              "format": "double",
-              "type": "number"
-            },
-            "scaleX": {
-              "format": "double",
-              "type": "number"
-            },
-            "scaleY": {
-              "format": "double",
-              "type": "number"
-            }
-          },
-          "required": [
-            "centerX",
-            "centerY",
-            "scaleX",
-            "scaleY",
-            "rotationRadians"
-          ],
-          "type": "object"
-        },
-        "TextRect": {
-          "additionalProperties": false,
-          "properties": {
-            "height": {
-              "format": "double",
-              "type": "number"
-            },
-            "left": {
-              "format": "double",
-              "type": "number"
-            },
-            "top": {
-              "format": "double",
-              "type": "number"
-            },
-            "width": {
-              "format": "double",
-              "type": "number"
-            }
-          },
-          "required": [
-            "left",
-            "top",
-            "width",
-            "height"
-          ],
-          "type": "object"
         },
         "Time": {
           "additionalProperties": false,
@@ -50535,65 +49778,53 @@
           ],
           "type": "object"
         },
-        "VisualNoFrameReason": {
-          "enum": [
-            "outside_read_window",
-            "eof",
-            "timestamp_gap"
+        "VisualPreviewHitPoint": {
+          "additionalProperties": false,
+          "properties": {
+            "x": {
+              "format": "uint32",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "y": {
+              "format": "uint32",
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "x",
+            "y"
           ],
-          "type": "string"
+          "type": "object"
         }
       },
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "additionalProperties": false,
       "properties": {
-        "captions": {
-          "items": {
-            "$ref": "#/$defs/CaptionLayoutReceipt"
-          },
-          "type": [
-            "array",
-            "null"
-          ]
-        },
-        "decoded": {
-          "items": {
-            "$ref": "#/$defs/DecodedVisualSource"
-          },
-          "type": [
-            "array",
-            "null"
-          ]
-        },
-        "graphics": {
-          "items": {
-            "$ref": "#/$defs/GraphicRasterReceipt"
-          },
-          "type": [
-            "array",
-            "null"
-          ]
+        "hit_query": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/VisualPreviewHitPoint"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Native foreground alpha at one output pixel; no client hit claim."
         },
         "prepare_ahead": {
           "default": false,
           "description": "Prepare a bounded future picture without claiming it was presented.\nThe client must still present against actual audio consumption.",
           "type": "boolean"
         },
-        "rasters": {
-          "items": {
-            "$ref": "#/$defs/TextRasterReceipt"
-          },
-          "type": [
-            "array",
-            "null"
-          ]
-        },
         "resolution": {
           "$ref": "#/$defs/RasterResolution"
         },
         "retained_picture_bytes": {
           "default": 0,
-          "description": "Resident presentation and queued picture bytes, deducted before decode admission.",
+          "description": "Resident presentation and queued picture bytes, checked against the\nfixed presentation envelope reserved before native decode admission.",
           "format": "uint32",
           "minimum": 0,
           "type": "integer"
@@ -52301,6 +51532,140 @@
           ],
           "type": "object"
         },
+        "NativeGraphicsApi": {
+          "enum": [
+            "metal",
+            "vulkan",
+            "direct_x"
+          ],
+          "type": "string"
+        },
+        "NativeLibraryIdentity": {
+          "additionalProperties": false,
+          "properties": {
+            "binary_sha256": {
+              "type": "string"
+            },
+            "configuration_sha256": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "version": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "version",
+            "configuration_sha256",
+            "binary_sha256"
+          ],
+          "type": "object"
+        },
+        "NativePlatformIdentity": {
+          "additionalProperties": false,
+          "properties": {
+            "architecture": {
+              "type": "string"
+            },
+            "font_backend": {
+              "type": "string"
+            },
+            "kernel_release": {
+              "type": "string"
+            },
+            "os": {
+              "type": "string"
+            },
+            "system_build": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "os",
+            "architecture",
+            "kernel_release",
+            "system_build",
+            "font_backend"
+          ],
+          "type": "object"
+        },
+        "NativeVisualIdentity": {
+          "additionalProperties": false,
+          "properties": {
+            "decoder_libraries": {
+              "items": {
+                "$ref": "#/$defs/NativeLibraryIdentity"
+              },
+              "type": "array"
+            },
+            "decoder_profile": {
+              "type": "string"
+            },
+            "gpu_backend": {
+              "$ref": "#/$defs/NativeGraphicsApi"
+            },
+            "gpu_device": {
+              "type": "string"
+            },
+            "gpu_device_id": {
+              "format": "uint32",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "gpu_driver": {
+              "type": "string"
+            },
+            "gpu_vendor_id": {
+              "format": "uint32",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "platform": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/NativePlatformIdentity"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Absent only in immutable proofs captured before platform observation.\nNew execution requires the observed OS/font/driver platform identity."
+            },
+            "rasterizer": {
+              "type": "string"
+            },
+            "renderer_sha256": {
+              "type": "string"
+            },
+            "shader_sha256": {
+              "type": "string"
+            },
+            "texture_format": {
+              "type": "string"
+            },
+            "wgpu_version": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "renderer_sha256",
+            "shader_sha256",
+            "decoder_libraries",
+            "wgpu_version",
+            "rasterizer",
+            "gpu_backend",
+            "gpu_device",
+            "gpu_driver",
+            "gpu_vendor_id",
+            "gpu_device_id",
+            "texture_format",
+            "decoder_profile"
+          ],
+          "type": "object"
+        },
         "SceneBackground": {
           "oneOf": [
             {
@@ -53404,6 +52769,16 @@
               },
               "type": "object"
             },
+            "hit_test": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/VisualPreviewHitTest"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
             "max_lag_ms": {
               "format": "uint32",
               "minimum": 0,
@@ -53412,6 +52787,9 @@
             "next_time": {
               "$ref": "#/$defs/Time",
               "description": "Next sampling time, computed by the application for sequential preparation."
+            },
+            "picture": {
+              "$ref": "#/$defs/VisualPreviewPicture"
             },
             "plan": {
               "$ref": "#/$defs/SceneFramePlan"
@@ -53432,7 +52810,118 @@
             "decode_admissions",
             "time_seconds",
             "consumer_time_seconds",
-            "max_lag_ms"
+            "max_lag_ms",
+            "picture"
+          ],
+          "type": "object"
+        },
+        "VisualPreviewHit": {
+          "additionalProperties": false,
+          "properties": {
+            "alpha": {
+              "format": "uint8",
+              "maximum": 255,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "elementId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "elementId",
+            "alpha"
+          ],
+          "type": "object"
+        },
+        "VisualPreviewHitPoint": {
+          "additionalProperties": false,
+          "properties": {
+            "x": {
+              "format": "uint32",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "y": {
+              "format": "uint32",
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "x",
+            "y"
+          ],
+          "type": "object"
+        },
+        "VisualPreviewHitTest": {
+          "additionalProperties": false,
+          "properties": {
+            "hits": {
+              "items": {
+                "$ref": "#/$defs/VisualPreviewHit"
+              },
+              "type": "array"
+            },
+            "identity": {
+              "$ref": "#/$defs/TextFrameIdentity"
+            },
+            "point": {
+              "$ref": "#/$defs/VisualPreviewHitPoint"
+            }
+          },
+          "required": [
+            "identity",
+            "point",
+            "hits"
+          ],
+          "type": "object"
+        },
+        "VisualPreviewPicture": {
+          "additionalProperties": false,
+          "properties": {
+            "byte_length": {
+              "format": "uint32",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "content_hash": {
+              "type": "string"
+            },
+            "height": {
+              "format": "uint32",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "max_retained_bytes": {
+              "format": "uint32",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "peak_worker_rss_bytes": {
+              "type": "string"
+            },
+            "picture_id": {
+              "type": "string"
+            },
+            "renderer": {
+              "$ref": "#/$defs/NativeVisualIdentity"
+            },
+            "width": {
+              "format": "uint32",
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "picture_id",
+            "width",
+            "height",
+            "byte_length",
+            "content_hash",
+            "max_retained_bytes",
+            "renderer",
+            "peak_worker_rss_bytes"
           ],
           "type": "object"
         },
@@ -144469,6 +143958,111 @@
           ],
           "type": "object"
         },
+        "NativePlatformIdentity": {
+          "additionalProperties": false,
+          "properties": {
+            "architecture": {
+              "type": "string"
+            },
+            "font_backend": {
+              "type": "string"
+            },
+            "kernel_release": {
+              "type": "string"
+            },
+            "os": {
+              "type": "string"
+            },
+            "system_build": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "os",
+            "architecture",
+            "kernel_release",
+            "system_build",
+            "font_backend"
+          ],
+          "type": "object"
+        },
+        "NativeTextRuntimeIdentity": {
+          "additionalProperties": false,
+          "description": "CPU text metrics use the exact verified worker and font platform. They do\nnot claim a GPU device or media-decoder execution that did not occur.",
+          "properties": {
+            "platform": {
+              "$ref": "#/$defs/NativePlatformIdentity"
+            },
+            "rasterizer": {
+              "type": "string"
+            },
+            "worker_sha256": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "worker_sha256",
+            "rasterizer",
+            "platform"
+          ],
+          "type": "object"
+        },
+        "TextBackgroundRect": {
+          "additionalProperties": false,
+          "properties": {
+            "height": {
+              "format": "double",
+              "type": "number"
+            },
+            "left": {
+              "format": "double",
+              "type": "number"
+            },
+            "radius": {
+              "format": "double",
+              "type": "number"
+            },
+            "top": {
+              "format": "double",
+              "type": "number"
+            },
+            "width": {
+              "format": "double",
+              "type": "number"
+            }
+          },
+          "required": [
+            "left",
+            "top",
+            "width",
+            "height",
+            "radius"
+          ],
+          "type": "object"
+        },
+        "TextBlockMetrics": {
+          "additionalProperties": false,
+          "properties": {
+            "height": {
+              "format": "double",
+              "type": "number"
+            },
+            "maxWidth": {
+              "format": "double",
+              "type": "number"
+            },
+            "visualCenterOffset": {
+              "format": "double",
+              "type": "number"
+            }
+          },
+          "required": [
+            "maxWidth",
+            "height",
+            "visualCenterOffset"
+          ],
+          "type": "object"
+        },
         "TextCanvasPlanResult": {
           "additionalProperties": false,
           "properties": {
@@ -144489,9 +144083,17 @@
             "layer": {
               "$ref": "#/$defs/TextLayerPlan",
               "description": "Font metadata and coverage always describe the actual source bytes."
+            },
+            "layout": {
+              "$ref": "#/$defs/TextLayout"
+            },
+            "measurement": {
+              "$ref": "#/$defs/NativeTextRuntimeIdentity"
             }
           },
           "required": [
+            "layout",
+            "measurement",
             "identity",
             "layer"
           ],
@@ -144559,6 +144161,133 @@
             "text",
             "font",
             "opacity"
+          ],
+          "type": "object"
+        },
+        "TextLayout": {
+          "additionalProperties": false,
+          "properties": {
+            "align": {
+              "type": "string"
+            },
+            "background": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/TextBackgroundRect"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "baseline": {
+              "type": "string"
+            },
+            "block": {
+              "$ref": "#/$defs/TextBlockMetrics"
+            },
+            "faceIndex": {
+              "format": "uint32",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "fontContentHash": {
+              "type": "string"
+            },
+            "fontId": {
+              "type": "string"
+            },
+            "fontSizePx": {
+              "format": "double",
+              "type": "number"
+            },
+            "fontStyle": {
+              "$ref": "#/$defs/FontStyle"
+            },
+            "fontWeight": {
+              "format": "uint16",
+              "maximum": 65535,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "letterSpacingPx": {
+              "format": "double",
+              "type": "number"
+            },
+            "lineHeightPx": {
+              "format": "double",
+              "type": "number"
+            },
+            "lines": {
+              "items": {
+                "$ref": "#/$defs/TextLineMetrics"
+              },
+              "type": "array"
+            },
+            "transform": {
+              "$ref": "#/$defs/TextRasterTransform"
+            },
+            "validatedTextHash": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "fontId",
+            "fontContentHash",
+            "validatedTextHash",
+            "fontWeight",
+            "fontStyle",
+            "faceIndex",
+            "fontSizePx",
+            "lineHeightPx",
+            "letterSpacingPx",
+            "align",
+            "baseline",
+            "block",
+            "lines",
+            "transform"
+          ],
+          "type": "object"
+        },
+        "TextLineMetrics": {
+          "additionalProperties": false,
+          "properties": {
+            "ascent": {
+              "format": "double",
+              "type": "number"
+            },
+            "baselineY": {
+              "format": "double",
+              "type": "number"
+            },
+            "content": {
+              "type": "string"
+            },
+            "decoration": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/TextRect"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "descent": {
+              "format": "double",
+              "type": "number"
+            },
+            "width": {
+              "format": "double",
+              "type": "number"
+            }
+          },
+          "required": [
+            "content",
+            "baselineY",
+            "width",
+            "ascent",
+            "descent"
           ],
           "type": "object"
         },
@@ -144692,6 +144421,34 @@
             "scaleX",
             "scaleY",
             "rotationRadians"
+          ],
+          "type": "object"
+        },
+        "TextRect": {
+          "additionalProperties": false,
+          "properties": {
+            "height": {
+              "format": "double",
+              "type": "number"
+            },
+            "left": {
+              "format": "double",
+              "type": "number"
+            },
+            "top": {
+              "format": "double",
+              "type": "number"
+            },
+            "width": {
+              "format": "double",
+              "type": "number"
+            }
+          },
+          "required": [
+            "left",
+            "top",
+            "width",
+            "height"
           ],
           "type": "object"
         },
@@ -151324,54 +151081,9 @@
     "read_only": true
   },
   {
-    "description": "Plan editable Text subtitles from an authorized fixed-revision transcript or bounded subtitle file. First prepares pinned-font measurements, then validates observations and returns one public editor edit for ordinary atomic apply, recovery and undo. Does not commit or create a job.",
+    "description": "Plan editable Text subtitles from an authorized fixed-revision transcript or bounded subtitle file. Uses bounded native pinned-font measurements and returns one public editor edit for ordinary atomic apply, recovery and undo. Does not commit or create a job.",
     "input_schema": {
       "$defs": {
-        "CaptionLayoutReceipt": {
-          "additionalProperties": false,
-          "properties": {
-            "elementId": {
-              "type": "string"
-            },
-            "measurements": {
-              "description": "Every greedy candidate in order, including rejected overflow candidates.\nWidths are measured with the same fixed font as the actual raster.",
-              "items": {
-                "$ref": "#/$defs/CaptionWrapMeasurement"
-              },
-              "type": "array"
-            },
-            "originalTextHash": {
-              "type": "string"
-            },
-            "wrappedText": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "elementId",
-            "originalTextHash",
-            "wrappedText",
-            "measurements"
-          ],
-          "type": "object"
-        },
-        "CaptionWrapMeasurement": {
-          "additionalProperties": false,
-          "properties": {
-            "content": {
-              "type": "string"
-            },
-            "width": {
-              "format": "double",
-              "type": "number"
-            }
-          },
-          "required": [
-            "content",
-            "width"
-          ],
-          "type": "object"
-        },
         "Color": {
           "additionalProperties": false,
           "properties": {
@@ -151562,22 +151274,6 @@
           ],
           "type": "string"
         },
-        "SubtitleTextObservation": {
-          "additionalProperties": false,
-          "properties": {
-            "caption": {
-              "$ref": "#/$defs/CaptionLayoutReceipt"
-            },
-            "raster": {
-              "$ref": "#/$defs/TextRasterReceipt"
-            }
-          },
-          "required": [
-            "caption",
-            "raster"
-          ],
-          "type": "object"
-        },
         "SubtitleTextSource": {
           "oneOf": [
             {
@@ -151724,62 +151420,6 @@
           ],
           "type": "object"
         },
-        "TextBackgroundRect": {
-          "additionalProperties": false,
-          "properties": {
-            "height": {
-              "format": "double",
-              "type": "number"
-            },
-            "left": {
-              "format": "double",
-              "type": "number"
-            },
-            "radius": {
-              "format": "double",
-              "type": "number"
-            },
-            "top": {
-              "format": "double",
-              "type": "number"
-            },
-            "width": {
-              "format": "double",
-              "type": "number"
-            }
-          },
-          "required": [
-            "left",
-            "top",
-            "width",
-            "height",
-            "radius"
-          ],
-          "type": "object"
-        },
-        "TextBlockMetrics": {
-          "additionalProperties": false,
-          "properties": {
-            "height": {
-              "format": "double",
-              "type": "number"
-            },
-            "maxWidth": {
-              "format": "double",
-              "type": "number"
-            },
-            "visualCenterOffset": {
-              "format": "double",
-              "type": "number"
-            }
-          },
-          "required": [
-            "maxWidth",
-            "height",
-            "visualCenterOffset"
-          ],
-          "type": "object"
-        },
         "TextDecoration": {
           "enum": [
             "none",
@@ -151787,222 +151427,6 @@
             "line_through"
           ],
           "type": "string"
-        },
-        "TextLayout": {
-          "additionalProperties": false,
-          "properties": {
-            "align": {
-              "type": "string"
-            },
-            "background": {
-              "anyOf": [
-                {
-                  "$ref": "#/$defs/TextBackgroundRect"
-                },
-                {
-                  "type": "null"
-                }
-              ]
-            },
-            "baseline": {
-              "type": "string"
-            },
-            "block": {
-              "$ref": "#/$defs/TextBlockMetrics"
-            },
-            "faceIndex": {
-              "format": "uint32",
-              "minimum": 0,
-              "type": "integer"
-            },
-            "fontContentHash": {
-              "type": "string"
-            },
-            "fontId": {
-              "type": "string"
-            },
-            "fontSizePx": {
-              "format": "double",
-              "type": "number"
-            },
-            "fontStyle": {
-              "$ref": "#/$defs/FontStyle"
-            },
-            "fontWeight": {
-              "format": "uint16",
-              "maximum": 65535,
-              "minimum": 0,
-              "type": "integer"
-            },
-            "letterSpacingPx": {
-              "format": "double",
-              "type": "number"
-            },
-            "lineHeightPx": {
-              "format": "double",
-              "type": "number"
-            },
-            "lines": {
-              "items": {
-                "$ref": "#/$defs/TextLineMetrics"
-              },
-              "type": "array"
-            },
-            "transform": {
-              "$ref": "#/$defs/TextRasterTransform"
-            },
-            "validatedTextHash": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "fontId",
-            "fontContentHash",
-            "validatedTextHash",
-            "fontWeight",
-            "fontStyle",
-            "faceIndex",
-            "fontSizePx",
-            "lineHeightPx",
-            "letterSpacingPx",
-            "align",
-            "baseline",
-            "block",
-            "lines",
-            "transform"
-          ],
-          "type": "object"
-        },
-        "TextLineMetrics": {
-          "additionalProperties": false,
-          "properties": {
-            "ascent": {
-              "format": "double",
-              "type": "number"
-            },
-            "baselineY": {
-              "format": "double",
-              "type": "number"
-            },
-            "content": {
-              "type": "string"
-            },
-            "decoration": {
-              "anyOf": [
-                {
-                  "$ref": "#/$defs/TextRect"
-                },
-                {
-                  "type": "null"
-                }
-              ]
-            },
-            "descent": {
-              "format": "double",
-              "type": "number"
-            },
-            "width": {
-              "format": "double",
-              "type": "number"
-            }
-          },
-          "required": [
-            "content",
-            "baselineY",
-            "width",
-            "ascent",
-            "descent"
-          ],
-          "type": "object"
-        },
-        "TextRasterReceipt": {
-          "additionalProperties": false,
-          "properties": {
-            "elementId": {
-              "type": "string"
-            },
-            "height": {
-              "format": "uint32",
-              "minimum": 0,
-              "type": "integer"
-            },
-            "layout": {
-              "$ref": "#/$defs/TextLayout"
-            },
-            "width": {
-              "format": "uint32",
-              "minimum": 0,
-              "type": "integer"
-            }
-          },
-          "required": [
-            "elementId",
-            "width",
-            "height",
-            "layout"
-          ],
-          "type": "object"
-        },
-        "TextRasterTransform": {
-          "additionalProperties": false,
-          "properties": {
-            "centerX": {
-              "format": "double",
-              "type": "number"
-            },
-            "centerY": {
-              "format": "double",
-              "type": "number"
-            },
-            "rotationRadians": {
-              "format": "double",
-              "type": "number"
-            },
-            "scaleX": {
-              "format": "double",
-              "type": "number"
-            },
-            "scaleY": {
-              "format": "double",
-              "type": "number"
-            }
-          },
-          "required": [
-            "centerX",
-            "centerY",
-            "scaleX",
-            "scaleY",
-            "rotationRadians"
-          ],
-          "type": "object"
-        },
-        "TextRect": {
-          "additionalProperties": false,
-          "properties": {
-            "height": {
-              "format": "double",
-              "type": "number"
-            },
-            "left": {
-              "format": "double",
-              "type": "number"
-            },
-            "top": {
-              "format": "double",
-              "type": "number"
-            },
-            "width": {
-              "format": "double",
-              "type": "number"
-            }
-          },
-          "required": [
-            "left",
-            "top",
-            "width",
-            "height"
-          ],
-          "type": "object"
         },
         "TextTrackTarget": {
           "oneOf": [
@@ -152058,16 +151482,6 @@
           "minimum": 0,
           "type": [
             "integer",
-            "null"
-          ]
-        },
-        "observations": {
-          "description": "None prepares measurement inputs. Some validates them and returns one edit.",
-          "items": {
-            "$ref": "#/$defs/SubtitleTextObservation"
-          },
-          "type": [
-            "array",
             "null"
           ]
         },
@@ -153959,6 +153373,55 @@
             }
           ]
         },
+        "NativePlatformIdentity": {
+          "additionalProperties": false,
+          "properties": {
+            "architecture": {
+              "type": "string"
+            },
+            "font_backend": {
+              "type": "string"
+            },
+            "kernel_release": {
+              "type": "string"
+            },
+            "os": {
+              "type": "string"
+            },
+            "system_build": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "os",
+            "architecture",
+            "kernel_release",
+            "system_build",
+            "font_backend"
+          ],
+          "type": "object"
+        },
+        "NativeTextRuntimeIdentity": {
+          "additionalProperties": false,
+          "description": "CPU text metrics use the exact verified worker and font platform. They do\nnot claim a GPU device or media-decoder execution that did not occur.",
+          "properties": {
+            "platform": {
+              "$ref": "#/$defs/NativePlatformIdentity"
+            },
+            "rasterizer": {
+              "type": "string"
+            },
+            "worker_sha256": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "worker_sha256",
+            "rasterizer",
+            "platform"
+          ],
+          "type": "object"
+        },
         "ProjectCover": {
           "oneOf": [
             {
@@ -155110,6 +154573,16 @@
               "minimum": 0,
               "type": "integer"
             },
+            "measurement": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/NativeTextRuntimeIdentity"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
             "revision": {
               "type": "string"
             },
@@ -155959,278 +155432,6 @@
           ],
           "type": "object"
         },
-        "TextBackgroundRect": {
-          "additionalProperties": false,
-          "properties": {
-            "height": {
-              "format": "double",
-              "type": "number"
-            },
-            "left": {
-              "format": "double",
-              "type": "number"
-            },
-            "radius": {
-              "format": "double",
-              "type": "number"
-            },
-            "top": {
-              "format": "double",
-              "type": "number"
-            },
-            "width": {
-              "format": "double",
-              "type": "number"
-            }
-          },
-          "required": [
-            "left",
-            "top",
-            "width",
-            "height",
-            "radius"
-          ],
-          "type": "object"
-        },
-        "TextBlockMetrics": {
-          "additionalProperties": false,
-          "properties": {
-            "height": {
-              "format": "double",
-              "type": "number"
-            },
-            "maxWidth": {
-              "format": "double",
-              "type": "number"
-            },
-            "visualCenterOffset": {
-              "format": "double",
-              "type": "number"
-            }
-          },
-          "required": [
-            "maxWidth",
-            "height",
-            "visualCenterOffset"
-          ],
-          "type": "object"
-        },
-        "TextLayout": {
-          "additionalProperties": false,
-          "properties": {
-            "align": {
-              "type": "string"
-            },
-            "background": {
-              "anyOf": [
-                {
-                  "$ref": "#/$defs/TextBackgroundRect"
-                },
-                {
-                  "type": "null"
-                }
-              ]
-            },
-            "baseline": {
-              "type": "string"
-            },
-            "block": {
-              "$ref": "#/$defs/TextBlockMetrics"
-            },
-            "faceIndex": {
-              "format": "uint32",
-              "minimum": 0,
-              "type": "integer"
-            },
-            "fontContentHash": {
-              "type": "string"
-            },
-            "fontId": {
-              "type": "string"
-            },
-            "fontSizePx": {
-              "format": "double",
-              "type": "number"
-            },
-            "fontStyle": {
-              "$ref": "#/$defs/FontStyle"
-            },
-            "fontWeight": {
-              "format": "uint16",
-              "maximum": 65535,
-              "minimum": 0,
-              "type": "integer"
-            },
-            "letterSpacingPx": {
-              "format": "double",
-              "type": "number"
-            },
-            "lineHeightPx": {
-              "format": "double",
-              "type": "number"
-            },
-            "lines": {
-              "items": {
-                "$ref": "#/$defs/TextLineMetrics"
-              },
-              "type": "array"
-            },
-            "transform": {
-              "$ref": "#/$defs/TextRasterTransform"
-            },
-            "validatedTextHash": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "fontId",
-            "fontContentHash",
-            "validatedTextHash",
-            "fontWeight",
-            "fontStyle",
-            "faceIndex",
-            "fontSizePx",
-            "lineHeightPx",
-            "letterSpacingPx",
-            "align",
-            "baseline",
-            "block",
-            "lines",
-            "transform"
-          ],
-          "type": "object"
-        },
-        "TextLineMetrics": {
-          "additionalProperties": false,
-          "properties": {
-            "ascent": {
-              "format": "double",
-              "type": "number"
-            },
-            "baselineY": {
-              "format": "double",
-              "type": "number"
-            },
-            "content": {
-              "type": "string"
-            },
-            "decoration": {
-              "anyOf": [
-                {
-                  "$ref": "#/$defs/TextRect"
-                },
-                {
-                  "type": "null"
-                }
-              ]
-            },
-            "descent": {
-              "format": "double",
-              "type": "number"
-            },
-            "width": {
-              "format": "double",
-              "type": "number"
-            }
-          },
-          "required": [
-            "content",
-            "baselineY",
-            "width",
-            "ascent",
-            "descent"
-          ],
-          "type": "object"
-        },
-        "TextRasterReceipt": {
-          "additionalProperties": false,
-          "properties": {
-            "elementId": {
-              "type": "string"
-            },
-            "height": {
-              "format": "uint32",
-              "minimum": 0,
-              "type": "integer"
-            },
-            "layout": {
-              "$ref": "#/$defs/TextLayout"
-            },
-            "width": {
-              "format": "uint32",
-              "minimum": 0,
-              "type": "integer"
-            }
-          },
-          "required": [
-            "elementId",
-            "width",
-            "height",
-            "layout"
-          ],
-          "type": "object"
-        },
-        "TextRasterTransform": {
-          "additionalProperties": false,
-          "properties": {
-            "centerX": {
-              "format": "double",
-              "type": "number"
-            },
-            "centerY": {
-              "format": "double",
-              "type": "number"
-            },
-            "rotationRadians": {
-              "format": "double",
-              "type": "number"
-            },
-            "scaleX": {
-              "format": "double",
-              "type": "number"
-            },
-            "scaleY": {
-              "format": "double",
-              "type": "number"
-            }
-          },
-          "required": [
-            "centerX",
-            "centerY",
-            "scaleX",
-            "scaleY",
-            "rotationRadians"
-          ],
-          "type": "object"
-        },
-        "TextRect": {
-          "additionalProperties": false,
-          "properties": {
-            "height": {
-              "format": "double",
-              "type": "number"
-            },
-            "left": {
-              "format": "double",
-              "type": "number"
-            },
-            "top": {
-              "format": "double",
-              "type": "number"
-            },
-            "width": {
-              "format": "double",
-              "type": "number"
-            }
-          },
-          "required": [
-            "left",
-            "top",
-            "width",
-            "height"
-          ],
-          "type": "object"
-        },
         "TextTrackTarget": {
           "oneOf": [
             {
@@ -156288,15 +155489,6 @@
         },
         "idempotency_key": {
           "type": "string"
-        },
-        "observations": {
-          "items": {
-            "$ref": "#/$defs/TextRasterReceipt"
-          },
-          "type": [
-            "array",
-            "null"
-          ]
         },
         "project_id": {
           "type": "string"
@@ -158153,6 +157345,55 @@
             }
           ]
         },
+        "NativePlatformIdentity": {
+          "additionalProperties": false,
+          "properties": {
+            "architecture": {
+              "type": "string"
+            },
+            "font_backend": {
+              "type": "string"
+            },
+            "kernel_release": {
+              "type": "string"
+            },
+            "os": {
+              "type": "string"
+            },
+            "system_build": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "os",
+            "architecture",
+            "kernel_release",
+            "system_build",
+            "font_backend"
+          ],
+          "type": "object"
+        },
+        "NativeTextRuntimeIdentity": {
+          "additionalProperties": false,
+          "description": "CPU text metrics use the exact verified worker and font platform. They do\nnot claim a GPU device or media-decoder execution that did not occur.",
+          "properties": {
+            "platform": {
+              "$ref": "#/$defs/NativePlatformIdentity"
+            },
+            "rasterizer": {
+              "type": "string"
+            },
+            "worker_sha256": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "worker_sha256",
+            "rasterizer",
+            "platform"
+          ],
+          "type": "object"
+        },
         "ProjectCover": {
           "oneOf": [
             {
@@ -159332,6 +158573,16 @@
               "format": "uint32",
               "minimum": 0,
               "type": "integer"
+            },
+            "measurement": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/NativeTextRuntimeIdentity"
+                },
+                {
+                  "type": "null"
+                }
+              ]
             },
             "revision": {
               "type": "string"
@@ -233516,34 +232767,6 @@
           ],
           "type": "string"
         },
-        "CaptionLayoutReceipt": {
-          "additionalProperties": false,
-          "properties": {
-            "elementId": {
-              "type": "string"
-            },
-            "measurements": {
-              "description": "Every greedy candidate in order, including rejected overflow candidates.\nWidths are measured with the same fixed font as the actual raster.",
-              "items": {
-                "$ref": "#/$defs/CaptionWrapMeasurement"
-              },
-              "type": "array"
-            },
-            "originalTextHash": {
-              "type": "string"
-            },
-            "wrappedText": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "elementId",
-            "originalTextHash",
-            "wrappedText",
-            "measurements"
-          ],
-          "type": "object"
-        },
         "CaptionSourceAnchor": {
           "additionalProperties": false,
           "properties": {
@@ -233557,23 +232780,6 @@
           "required": [
             "asset_id",
             "source_range"
-          ],
-          "type": "object"
-        },
-        "CaptionWrapMeasurement": {
-          "additionalProperties": false,
-          "properties": {
-            "content": {
-              "type": "string"
-            },
-            "width": {
-              "format": "double",
-              "type": "number"
-            }
-          },
-          "required": [
-            "content",
-            "width"
           ],
           "type": "object"
         },
@@ -233734,120 +232940,6 @@
             "dv"
           ],
           "type": "object"
-        },
-        "DecodedVisualSource": {
-          "oneOf": [
-            {
-              "additionalProperties": false,
-              "properties": {
-                "elementId": {
-                  "type": "string"
-                },
-                "height": {
-                  "format": "uint32",
-                  "minimum": 0,
-                  "type": "integer"
-                },
-                "kind": {
-                  "const": "readyImage",
-                  "type": "string"
-                },
-                "width": {
-                  "format": "uint32",
-                  "minimum": 0,
-                  "type": "integer"
-                }
-              },
-              "required": [
-                "kind",
-                "elementId",
-                "width",
-                "height"
-              ],
-              "type": "object"
-            },
-            {
-              "additionalProperties": false,
-              "properties": {
-                "actualTimestampSeconds": {
-                  "format": "double",
-                  "type": "number"
-                },
-                "elementId": {
-                  "type": "string"
-                },
-                "eofHeld": {
-                  "description": "The decoder observed the terminal frame; its real interval is not\nextended or relabelled to cover the requested source time.",
-                  "type": "boolean"
-                },
-                "frameDurationSeconds": {
-                  "format": "double",
-                  "type": "number"
-                },
-                "height": {
-                  "format": "uint32",
-                  "minimum": 0,
-                  "type": "integer"
-                },
-                "kind": {
-                  "const": "readyVideo",
-                  "type": "string"
-                },
-                "requestedTime": {
-                  "$ref": "#/$defs/Time"
-                },
-                "selectedVideoStream": {
-                  "description": "None is primary-track selection, not an invented FFmpeg stream index.",
-                  "format": "uint32",
-                  "minimum": 0,
-                  "type": [
-                    "integer",
-                    "null"
-                  ]
-                },
-                "width": {
-                  "format": "uint32",
-                  "minimum": 0,
-                  "type": "integer"
-                }
-              },
-              "required": [
-                "kind",
-                "elementId",
-                "width",
-                "height",
-                "requestedTime",
-                "actualTimestampSeconds",
-                "frameDurationSeconds"
-              ],
-              "type": "object"
-            },
-            {
-              "additionalProperties": false,
-              "properties": {
-                "elementId": {
-                  "type": "string"
-                },
-                "kind": {
-                  "const": "noFrame",
-                  "type": "string"
-                },
-                "reason": {
-                  "$ref": "#/$defs/VisualNoFrameReason"
-                },
-                "requestedTime": {
-                  "$ref": "#/$defs/Time"
-                }
-              },
-              "required": [
-                "kind",
-                "elementId",
-                "requestedTime",
-                "reason"
-              ],
-              "type": "object"
-            }
-          ]
         },
         "DiscreteKey": {
           "additionalProperties": false,
@@ -234655,42 +233747,6 @@
               "type": "object"
             }
           ]
-        },
-        "GraphicRasterReceipt": {
-          "additionalProperties": false,
-          "properties": {
-            "elementId": {
-              "type": "string"
-            },
-            "height": {
-              "format": "uint32",
-              "minimum": 0,
-              "type": "integer"
-            },
-            "originX": {
-              "format": "uint32",
-              "minimum": 0,
-              "type": "integer"
-            },
-            "originY": {
-              "format": "uint32",
-              "minimum": 0,
-              "type": "integer"
-            },
-            "width": {
-              "format": "uint32",
-              "minimum": 0,
-              "type": "integer"
-            }
-          },
-          "required": [
-            "elementId",
-            "width",
-            "height",
-            "originX",
-            "originY"
-          ],
-          "type": "object"
         },
         "HistoricalVisualCubicBezier": {
           "additionalProperties": false,
@@ -236283,62 +235339,6 @@
           ],
           "type": "object"
         },
-        "TextBackgroundRect": {
-          "additionalProperties": false,
-          "properties": {
-            "height": {
-              "format": "double",
-              "type": "number"
-            },
-            "left": {
-              "format": "double",
-              "type": "number"
-            },
-            "radius": {
-              "format": "double",
-              "type": "number"
-            },
-            "top": {
-              "format": "double",
-              "type": "number"
-            },
-            "width": {
-              "format": "double",
-              "type": "number"
-            }
-          },
-          "required": [
-            "left",
-            "top",
-            "width",
-            "height",
-            "radius"
-          ],
-          "type": "object"
-        },
-        "TextBlockMetrics": {
-          "additionalProperties": false,
-          "properties": {
-            "height": {
-              "format": "double",
-              "type": "number"
-            },
-            "maxWidth": {
-              "format": "double",
-              "type": "number"
-            },
-            "visualCenterOffset": {
-              "format": "double",
-              "type": "number"
-            }
-          },
-          "required": [
-            "maxWidth",
-            "height",
-            "visualCenterOffset"
-          ],
-          "type": "object"
-        },
         "TextDecoration": {
           "enum": [
             "none",
@@ -236346,133 +235346,6 @@
             "line_through"
           ],
           "type": "string"
-        },
-        "TextLayout": {
-          "additionalProperties": false,
-          "properties": {
-            "align": {
-              "type": "string"
-            },
-            "background": {
-              "anyOf": [
-                {
-                  "$ref": "#/$defs/TextBackgroundRect"
-                },
-                {
-                  "type": "null"
-                }
-              ]
-            },
-            "baseline": {
-              "type": "string"
-            },
-            "block": {
-              "$ref": "#/$defs/TextBlockMetrics"
-            },
-            "faceIndex": {
-              "format": "uint32",
-              "minimum": 0,
-              "type": "integer"
-            },
-            "fontContentHash": {
-              "type": "string"
-            },
-            "fontId": {
-              "type": "string"
-            },
-            "fontSizePx": {
-              "format": "double",
-              "type": "number"
-            },
-            "fontStyle": {
-              "$ref": "#/$defs/FontStyle"
-            },
-            "fontWeight": {
-              "format": "uint16",
-              "maximum": 65535,
-              "minimum": 0,
-              "type": "integer"
-            },
-            "letterSpacingPx": {
-              "format": "double",
-              "type": "number"
-            },
-            "lineHeightPx": {
-              "format": "double",
-              "type": "number"
-            },
-            "lines": {
-              "items": {
-                "$ref": "#/$defs/TextLineMetrics"
-              },
-              "type": "array"
-            },
-            "transform": {
-              "$ref": "#/$defs/TextRasterTransform"
-            },
-            "validatedTextHash": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "fontId",
-            "fontContentHash",
-            "validatedTextHash",
-            "fontWeight",
-            "fontStyle",
-            "faceIndex",
-            "fontSizePx",
-            "lineHeightPx",
-            "letterSpacingPx",
-            "align",
-            "baseline",
-            "block",
-            "lines",
-            "transform"
-          ],
-          "type": "object"
-        },
-        "TextLineMetrics": {
-          "additionalProperties": false,
-          "properties": {
-            "ascent": {
-              "format": "double",
-              "type": "number"
-            },
-            "baselineY": {
-              "format": "double",
-              "type": "number"
-            },
-            "content": {
-              "type": "string"
-            },
-            "decoration": {
-              "anyOf": [
-                {
-                  "$ref": "#/$defs/TextRect"
-                },
-                {
-                  "type": "null"
-                }
-              ]
-            },
-            "descent": {
-              "format": "double",
-              "type": "number"
-            },
-            "width": {
-              "format": "double",
-              "type": "number"
-            }
-          },
-          "required": [
-            "content",
-            "baselineY",
-            "width",
-            "ascent",
-            "descent"
-          ],
-          "type": "object"
         },
         "TextMask": {
           "additionalProperties": false,
@@ -236533,95 +235406,6 @@
             "center_y",
             "rotation_degrees",
             "scale"
-          ],
-          "type": "object"
-        },
-        "TextRasterReceipt": {
-          "additionalProperties": false,
-          "properties": {
-            "elementId": {
-              "type": "string"
-            },
-            "height": {
-              "format": "uint32",
-              "minimum": 0,
-              "type": "integer"
-            },
-            "layout": {
-              "$ref": "#/$defs/TextLayout"
-            },
-            "width": {
-              "format": "uint32",
-              "minimum": 0,
-              "type": "integer"
-            }
-          },
-          "required": [
-            "elementId",
-            "width",
-            "height",
-            "layout"
-          ],
-          "type": "object"
-        },
-        "TextRasterTransform": {
-          "additionalProperties": false,
-          "properties": {
-            "centerX": {
-              "format": "double",
-              "type": "number"
-            },
-            "centerY": {
-              "format": "double",
-              "type": "number"
-            },
-            "rotationRadians": {
-              "format": "double",
-              "type": "number"
-            },
-            "scaleX": {
-              "format": "double",
-              "type": "number"
-            },
-            "scaleY": {
-              "format": "double",
-              "type": "number"
-            }
-          },
-          "required": [
-            "centerX",
-            "centerY",
-            "scaleX",
-            "scaleY",
-            "rotationRadians"
-          ],
-          "type": "object"
-        },
-        "TextRect": {
-          "additionalProperties": false,
-          "properties": {
-            "height": {
-              "format": "double",
-              "type": "number"
-            },
-            "left": {
-              "format": "double",
-              "type": "number"
-            },
-            "top": {
-              "format": "double",
-              "type": "number"
-            },
-            "width": {
-              "format": "double",
-              "type": "number"
-            }
-          },
-          "required": [
-            "left",
-            "top",
-            "width",
-            "height"
           ],
           "type": "object"
         },
@@ -236798,64 +235582,32 @@
             }
           ]
         },
-        "VisualNoFrameReason": {
-          "enum": [
-            "outside_read_window",
-            "eof",
-            "timestamp_gap"
-          ],
-          "type": "string"
-        },
         "VisualPreviewFrame": {
           "additionalProperties": false,
           "properties": {
-            "captions": {
-              "items": {
-                "$ref": "#/$defs/CaptionLayoutReceipt"
-              },
-              "type": [
-                "array",
-                "null"
-              ]
-            },
-            "decoded": {
-              "items": {
-                "$ref": "#/$defs/DecodedVisualSource"
-              },
-              "type": [
-                "array",
-                "null"
-              ]
-            },
-            "graphics": {
-              "items": {
-                "$ref": "#/$defs/GraphicRasterReceipt"
-              },
-              "type": [
-                "array",
-                "null"
-              ]
+            "hit_query": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/VisualPreviewHitPoint"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Native foreground alpha at one output pixel; no client hit claim."
             },
             "prepare_ahead": {
               "default": false,
               "description": "Prepare a bounded future picture without claiming it was presented.\nThe client must still present against actual audio consumption.",
               "type": "boolean"
             },
-            "rasters": {
-              "items": {
-                "$ref": "#/$defs/TextRasterReceipt"
-              },
-              "type": [
-                "array",
-                "null"
-              ]
-            },
             "resolution": {
               "$ref": "#/$defs/RasterResolution"
             },
             "retained_picture_bytes": {
               "default": 0,
-              "description": "Resident presentation and queued picture bytes, deducted before decode admission.",
+              "description": "Resident presentation and queued picture bytes, checked against the\nfixed presentation envelope reserved before native decode admission.",
               "format": "uint32",
               "minimum": 0,
               "type": "integer"
@@ -236876,6 +235628,26 @@
           },
           "required": [
             "session"
+          ],
+          "type": "object"
+        },
+        "VisualPreviewHitPoint": {
+          "additionalProperties": false,
+          "properties": {
+            "x": {
+              "format": "uint32",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "y": {
+              "format": "uint32",
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "x",
+            "y"
           ],
           "type": "object"
         },
@@ -238646,6 +237418,140 @@
           ],
           "type": "object"
         },
+        "NativeGraphicsApi": {
+          "enum": [
+            "metal",
+            "vulkan",
+            "direct_x"
+          ],
+          "type": "string"
+        },
+        "NativeLibraryIdentity": {
+          "additionalProperties": false,
+          "properties": {
+            "binary_sha256": {
+              "type": "string"
+            },
+            "configuration_sha256": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "version": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "version",
+            "configuration_sha256",
+            "binary_sha256"
+          ],
+          "type": "object"
+        },
+        "NativePlatformIdentity": {
+          "additionalProperties": false,
+          "properties": {
+            "architecture": {
+              "type": "string"
+            },
+            "font_backend": {
+              "type": "string"
+            },
+            "kernel_release": {
+              "type": "string"
+            },
+            "os": {
+              "type": "string"
+            },
+            "system_build": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "os",
+            "architecture",
+            "kernel_release",
+            "system_build",
+            "font_backend"
+          ],
+          "type": "object"
+        },
+        "NativeVisualIdentity": {
+          "additionalProperties": false,
+          "properties": {
+            "decoder_libraries": {
+              "items": {
+                "$ref": "#/$defs/NativeLibraryIdentity"
+              },
+              "type": "array"
+            },
+            "decoder_profile": {
+              "type": "string"
+            },
+            "gpu_backend": {
+              "$ref": "#/$defs/NativeGraphicsApi"
+            },
+            "gpu_device": {
+              "type": "string"
+            },
+            "gpu_device_id": {
+              "format": "uint32",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "gpu_driver": {
+              "type": "string"
+            },
+            "gpu_vendor_id": {
+              "format": "uint32",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "platform": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/NativePlatformIdentity"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Absent only in immutable proofs captured before platform observation.\nNew execution requires the observed OS/font/driver platform identity."
+            },
+            "rasterizer": {
+              "type": "string"
+            },
+            "renderer_sha256": {
+              "type": "string"
+            },
+            "shader_sha256": {
+              "type": "string"
+            },
+            "texture_format": {
+              "type": "string"
+            },
+            "wgpu_version": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "renderer_sha256",
+            "shader_sha256",
+            "decoder_libraries",
+            "wgpu_version",
+            "rasterizer",
+            "gpu_backend",
+            "gpu_device",
+            "gpu_driver",
+            "gpu_vendor_id",
+            "gpu_device_id",
+            "texture_format",
+            "decoder_profile"
+          ],
+          "type": "object"
+        },
         "SceneBackground": {
           "oneOf": [
             {
@@ -239769,6 +238675,16 @@
               },
               "type": "object"
             },
+            "hit_test": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/VisualPreviewHitTest"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
             "max_lag_ms": {
               "format": "uint32",
               "minimum": 0,
@@ -239777,6 +238693,9 @@
             "next_time": {
               "$ref": "#/$defs/Time",
               "description": "Next sampling time, computed by the application for sequential preparation."
+            },
+            "picture": {
+              "$ref": "#/$defs/VisualPreviewPicture"
             },
             "plan": {
               "$ref": "#/$defs/SceneFramePlan"
@@ -239797,7 +238716,118 @@
             "decode_admissions",
             "time_seconds",
             "consumer_time_seconds",
-            "max_lag_ms"
+            "max_lag_ms",
+            "picture"
+          ],
+          "type": "object"
+        },
+        "VisualPreviewHit": {
+          "additionalProperties": false,
+          "properties": {
+            "alpha": {
+              "format": "uint8",
+              "maximum": 255,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "elementId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "elementId",
+            "alpha"
+          ],
+          "type": "object"
+        },
+        "VisualPreviewHitPoint": {
+          "additionalProperties": false,
+          "properties": {
+            "x": {
+              "format": "uint32",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "y": {
+              "format": "uint32",
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "x",
+            "y"
+          ],
+          "type": "object"
+        },
+        "VisualPreviewHitTest": {
+          "additionalProperties": false,
+          "properties": {
+            "hits": {
+              "items": {
+                "$ref": "#/$defs/VisualPreviewHit"
+              },
+              "type": "array"
+            },
+            "identity": {
+              "$ref": "#/$defs/TextFrameIdentity"
+            },
+            "point": {
+              "$ref": "#/$defs/VisualPreviewHitPoint"
+            }
+          },
+          "required": [
+            "identity",
+            "point",
+            "hits"
+          ],
+          "type": "object"
+        },
+        "VisualPreviewPicture": {
+          "additionalProperties": false,
+          "properties": {
+            "byte_length": {
+              "format": "uint32",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "content_hash": {
+              "type": "string"
+            },
+            "height": {
+              "format": "uint32",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "max_retained_bytes": {
+              "format": "uint32",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "peak_worker_rss_bytes": {
+              "type": "string"
+            },
+            "picture_id": {
+              "type": "string"
+            },
+            "renderer": {
+              "$ref": "#/$defs/NativeVisualIdentity"
+            },
+            "width": {
+              "format": "uint32",
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "picture_id",
+            "width",
+            "height",
+            "byte_length",
+            "content_hash",
+            "max_retained_bytes",
+            "renderer",
+            "peak_worker_rss_bytes"
           ],
           "type": "object"
         },

@@ -19,6 +19,7 @@ mod signals;
 mod storage_recovery;
 mod upload_cli;
 mod upload_http;
+mod visual_preview_http;
 mod web_host;
 
 use clap::{Parser, Subcommand};
@@ -163,6 +164,8 @@ enum SystemCommand {
     EventsSchema,
     /// Shared request and frame-header schemas for the binary audio stream.
     AudioPreviewSchema,
+    /// Shared request and descriptor schemas for native RGBA picture bytes.
+    VisualPreviewSchema,
 }
 
 #[derive(Subcommand)]
@@ -706,6 +709,13 @@ fn execute(cli: &Cli, caller: opencut_automation::Caller) -> Result<Response, Ed
             )));
         }
         Command::System {
+            command: SystemCommand::VisualPreviewSchema,
+        } => {
+            return Ok(opencut_automation::response(Ok(
+                opencut_host_runtime::visual_preview_contracts::picture_stream_schemas(),
+            )));
+        }
+        Command::System {
             command: SystemCommand::EventsSchema,
         } => {
             return Ok(opencut_automation::response(Ok(
@@ -902,7 +912,7 @@ fn remote_system(
             ResourcePayload::EventSchema(schema) => schema,
             _ => return Err(mismatch()),
         },
-        SystemCommand::AudioPreviewSchema => {
+        SystemCommand::AudioPreviewSchema | SystemCommand::VisualPreviewSchema => {
             return Err(EditorError::new(
                 "INVALID_ARGUMENT",
                 "Audio stream schema discovery is local; use the connected host render domain for preview operations",

@@ -9,12 +9,10 @@ const compare=(a:Time,b:Time)=>BigInt(a.ticks)*BigInt(b.timebase)-BigInt(b.ticks
 export class ScenePictureSource implements SurfacePictureSource {
   private first:CachedPicture|null=null;
   private plan:ReturnType<SurfacePictureSource["descriptor"]>|null=null;
-  private attempted=new Set<Time>();
-  private cuts:Time[];
+  private pictureCapacity=64*1024*1024;
   private hits=0;
   private usingCache=false;
-  constructor(private renderer:Pick<VisualPreviewRenderer,"render">&Partial<Pick<VisualPreviewRenderer,"surfacePresenter"|"prewarm"|"advanceWarm">>,private api:VisualPreviewExecutionApi,private session:AudioPreviewSession,private cache?:PictureCache,cuts:Time[]=[],private prepareCache?:()=>Promise<void>){
-    this.cuts=[...cuts].sort((a,b)=>Number(compare(a,b))).filter((time,index,all)=>!index||compare(time,all[index-1])!==0n);
+  constructor(private renderer:Pick<VisualPreviewRenderer,"render">&Partial<Pick<VisualPreviewRenderer,"surfacePresenter">>,private api:VisualPreviewExecutionApi,private session:AudioPreviewSession,private cache?:PictureCache,_cuts:Time[]=[],private prepareCache?:()=>Promise<void>){
   }
   async initialize(signal:AbortSignal){
     const picture=await this.render(this.session.presentation_time,signal,0);
@@ -22,6 +20,7 @@ export class ScenePictureSource implements SurfacePictureSource {
       const at=picture.frame.plan.identity.time,next=picture.frame.next_time;
       const delta=compare(next,at);
       if(delta<=0n)throw Error("Invalid native scene frame grid");
+      this.pictureCapacity=Number(picture.runtime.maxRetainedBytes??64*1024*1024);
       this.plan={project_id:this.session.identity.project_id,revision:this.session.identity.revision,sequence_id:this.session.identity.sequence_id,
         width:picture.pixels.width,height:picture.pixels.height,
         duration:{ticks:this.session.total_frames,timebase:this.session.identity.sample_rate},
@@ -36,7 +35,7 @@ export class ScenePictureSource implements SurfacePictureSource {
       signal.throwIfAborted();this.first=picture;
     }catch(error){picture.pixels.close();throw error;}
   }
-  get preparationFrames(){return Math.min(24,Math.max(1,Math.floor(.96/this.descriptor().frame_step_seconds)));}
+  get preparationFrames(){const plan=this.descriptor();return Math.max(1,Math.min(24,Math.floor(.96/plan.frame_step_seconds),Math.floor(this.pictureCapacity/(plan.width*plan.height*4))-4));}
   createPainter(canvas:OffscreenCanvas){return this.renderer.surfacePresenter?.(canvas);}
   descriptor(){if(!this.plan)throw Error("Scene picture source is not initialized");return this.plan;}
   hasFrame(time:Time){return compare(time,{ticks:"0",timebase:1})>=0n&&compare(time,this.descriptor().duration)<0n;}
@@ -45,16 +44,6 @@ export class ScenePictureSource implements SurfacePictureSource {
     if(this.first){const first=this.first;this.first=null;if(compare(time,first.frame.plan.identity.time)<0n||compare(time,first.frame.next_time)>=0n){first.pixels.close();throw Error("Initial scene picture changed requested interval");}return first;}
     this.cache?.follow(time);
     const cached=!!this.cache?.hasFrame(time);
-    await this.renderer.advanceWarm?.(time,signal,!cached);
-    // Keep the live decoder positioned for an unfinished following cache
-    // window. A cache hit must not create a new cold open at the handoff.
-    const boundary=cached?this.cache!.nextWindow(time):null;
-    const next=cached?(boundary&&!this.attempted.has(boundary)?boundary:undefined):this.cuts.find(cut=>!this.attempted.has(cut)&&compare(cut,time)>0n);
-    if(next&&compare(next,this.descriptor().duration)<0n){
-      const delta=compare(next,time),scale=BigInt(next.timebase)*BigInt(time.timebase);
-      const {session_id,generation,overlay_epoch,owner_id,lease_id}=this.session;
-      if(delta<=2n*scale&&this.renderer.prewarm?.(this.api,{session_id,generation,overlay_epoch,owner_id,lease_id},next,signal,cached))this.attempted.add(next);
-    }
     if(cached){
       const plan=this.cache!.descriptor();
       if(plan.project_id!==this.session.identity.project_id||plan.revision!==this.session.identity.revision||plan.sequence_id!==this.session.identity.sequence_id)throw Error("Derived picture changed its fixed session");

@@ -65,8 +65,17 @@ pub struct SourceArtCancelResponse {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(untagged)]
+pub enum SourceArtIdentity {
+    Native(NativeSourceArtIdentity),
+    Browser(BrowserSourceArtIdentity),
+}
+
+/// Exact historical source-art proofs remain readable. New native execution
+/// never constructs a browser identity or selects this runtime as a fallback.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
-pub struct SourceArtIdentity {
+pub struct BrowserSourceArtIdentity {
     /// source-peaks128-v1 or classic-thumbnail-1s-jpeg08-v1.
     pub algorithm: String,
     /// Actual source decoding and resampling path; bound with the module/runtime hashes.
@@ -76,6 +85,39 @@ pub struct SourceArtIdentity {
     pub node_sha256: String,
     /// Hash of the complete pinned source-art renderer module manifest.
     pub module_sha256: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct NativeSourceArtIdentity {
+    pub algorithm: String,
+    pub decode_profile: String,
+    pub worker_sha256: String,
+    pub module_sha256: String,
+    pub decoder_libraries: Vec<crate::renderer_identity::NativeLibraryIdentity>,
+    /// CPU raster/encoding dependency; no GPU or font execution is claimed.
+    pub rasterizer: String,
+    pub platform: crate::renderer_identity::NativeSystemIdentity,
+}
+impl SourceArtIdentity {
+    pub fn algorithm(&self) -> &str {
+        match self {
+            Self::Native(v) => &v.algorithm,
+            Self::Browser(v) => &v.algorithm,
+        }
+    }
+    pub fn decode_profile(&self) -> &str {
+        match self {
+            Self::Native(v) => &v.decode_profile,
+            Self::Browser(v) => &v.decode_profile,
+        }
+    }
+    pub fn set_algorithm(&mut self, algorithm: &str) {
+        match self {
+            Self::Native(v) => v.algorithm = algorithm.into(),
+            Self::Browser(v) => v.algorithm = algorithm.into(),
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
@@ -128,7 +170,7 @@ pub enum SourceArtThumbnailObservation {
         source_width: u32,
         source_height: u32,
         requested_seconds: f64,
-        /// Observed browser seconds, not exact project ticks. Present only
+        /// Observed decoder seconds, not exact project ticks. Present only
         /// when getSample(1) returned a real sample; no synthetic hold frame.
         actual_timestamp_seconds: Option<f64>,
         frame_duration_seconds: Option<f64>,

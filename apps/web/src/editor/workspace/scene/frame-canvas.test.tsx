@@ -159,3 +159,24 @@ it("paints the replacement canvas after hiding pixels from another revision even
   const current=screen.getByRole("img",{name:"Live scene preview"});expect(current).not.toBe(old);expect(current.getAttribute("width")).toBe("1280");expect(drawImage).toHaveBeenCalledWith(second,0,0);
  }finally{cleanup();f.controller.dispose();}
 });
+
+it("hands presentation to the worker without covering it with retained paused pixels and restores the same paused canvas",async()=>{
+ const f=await setupFrame(),visual=f.controller.scene.visualPreview;
+ const bitmap={width:640,height:360,close:vi.fn()} as unknown as ImageBitmap;
+ vi.spyOn(HTMLCanvasElement.prototype,"getContext").mockReturnValue({drawImage:vi.fn()} as unknown as CanvasRenderingContext2D);
+ vi.spyOn(visual,"setPlaybackCanvas").mockImplementation(()=>{});
+ const view={phase:"ready" as const,pixels:bitmap,time:0,generation:"1",error:null,runtime:null,cacheCompleted:0,cacheTotal:0,statistics:null,presentedFrames:1,discardedFrames:0,surfaceGeneration:0,surfaceActive:false};
+ const snapshot=vi.spyOn(visual,"snapshot").mockReturnValue(view),listeners=new Set<()=>void>();
+ vi.spyOn(visual,"subscribe").mockImplementation(listener=>{listeners.add(listener);return()=>{listeners.delete(listener);};});
+ try{
+  render(<WorkspaceProvider controller={f.controller}><Product/></WorkspaceProvider>);
+  const paused=screen.getByRole("img",{name:"Live scene preview"});
+  act(()=>{snapshot.mockReturnValue({...view,surfaceGeneration:1,surfaceActive:true});listeners.forEach(listener=>listener());});
+  expect(screen.getByRole("img",{name:"Live scene preview"}).getAttribute("data-preview-surface")).toBe("worker");
+  expect(paused.style.display).toBe("none");expect(paused.getAttribute("aria-hidden")).toBe("true");
+  expect(bitmap.close).not.toHaveBeenCalled();
+  act(()=>{snapshot.mockReturnValue({...view,surfaceGeneration:1,surfaceActive:false});listeners.forEach(listener=>listener());});
+  expect(screen.getByRole("img",{name:"Live scene preview"})).toBe(paused);
+  expect(paused.style.display).toBe("");expect(paused.getAttribute("aria-hidden")).toBeNull();
+ }finally{cleanup();f.controller.dispose();}
+});

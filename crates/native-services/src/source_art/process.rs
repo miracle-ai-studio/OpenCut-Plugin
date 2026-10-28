@@ -1,68 +1,35 @@
+use super::protocol::{Plan, Receipt};
 use super::*;
 use crate::{
-    browser_process::BrowserProcess, browser_resources::VerifiedBrowserResources,
-    classic_audio::transport,
+    browser_resources::VerifiedBrowserResources,
+    native_process::{Domain, ProcessConfig, WorkerProcess, wire},
 };
 use opencut_composition::scene::CasResource;
 use opencut_contracts::AssetVersion;
-use serde::Deserialize;
 use serde_json::{Value, json};
-use std::{sync::atomic::Ordering, time::Instant};
-fn text<'a>(v: &'a Value, k: &str) -> Result<&'a str, EditorError> {
-    v.get(k)
-        .and_then(Value::as_str)
-        .ok_or_else(|| protocol("Missing source-art text field"))
-}
-fn number(v: &Value, k: &str) -> Result<u64, EditorError> {
-    v.get(k)
-        .and_then(Value::as_u64)
-        .ok_or_else(|| protocol("Missing source-art integer field"))
-}
-fn decimal(v: &str) -> Result<u64, EditorError> {
-    let n = v
+fn decimal(value: &str) -> Result<u64, EditorError> {
+    let number = value
         .parse::<u64>()
-        .map_err(|_| protocol("Invalid source-art decimal"))?;
-    if n.to_string() != v {
-        return Err(protocol("Noncanonical source-art decimal"));
+        .map_err(|_| protocol("Invalid source-art sample counter"))?;
+    if number.to_string() != value {
+        return Err(protocol("Noncanonical source-art sample counter"));
     }
-    Ok(n)
+    Ok(number)
 }
-fn hex(v: &str) -> Result<Vec<u8>, EditorError> {
-    if v.is_empty()
-        || v.len() > 131072
-        || !v.len().is_multiple_of(2)
-        || !v
-            .bytes()
-            .all(|c| c.is_ascii_digit() || (b'a'..=b'f').contains(&c))
-    {
-        return Err(protocol("Invalid bounded source-art byte chunk"));
+fn failure(packet: &wire::Packet) -> Option<EditorError> {
+    if packet.meta["type"] != "failed" {
+        return None;
     }
-    transport::decode_hex(v)
-}
-#[derive(Deserialize)]
-#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
-enum Receipt {
-    Waveform {
-        identity: SourceArtIdentity,
-        sample_rate: u32,
-        channels: u32,
-        total_samples: String,
-        bucket_size: u32,
-        output_bytes: usize,
-    },
-    ThumbnailReady {
-        identity: SourceArtIdentity,
-        width: u32,
-        height: u32,
-        observation: SourceArtThumbnailObservation,
-        output_bytes: usize,
-    },
-    ThumbnailNoFrame {
-        identity: SourceArtIdentity,
-        observation: SourceArtThumbnailObservation,
-        reason: SourceArtNoFrameReason,
-        output_bytes: usize,
-    },
+    let code = packet.meta["error"]["code"]
+        .as_str()
+        .filter(|c| {
+            !c.is_empty()
+                && c.len() <= 64
+                && c.bytes()
+                    .all(|b| b.is_ascii_uppercase() || b.is_ascii_digit() || b == b'_')
+        })
+        .unwrap_or("SOURCE_ART_DECODE_FAILED");
+    Some(Domain::SourceArt.protocol(error(code, "Isolated native source decoding failed")))
 }
 fn decoded(
     receipt: Receipt,
@@ -131,6 +98,7 @@ fn decoded(
         }
     })
 }
+
 #[cfg(unix)]
 pub(super) fn execute(
     executor: &SourceArtProcessExecutor,
@@ -147,6 +115,8 @@ pub(super) fn execute(
         return Err(protocol("Source-art captured admission differs"));
     }
     source_art_decode_key(prepared, &config.identity)?;
+    let plan = Plan::from_prepared(prepared, config.identity.clone())?;
+    plan.validate()?;
     let asset = prepared.asset();
     let resource = CasResource {
         asset_id: asset.id.clone(),
@@ -162,220 +132,161 @@ pub(super) fn execute(
         || checkpoint.checkpoint(),
         "SOURCE_ART_PROTOCOL_ERROR",
     )?;
-    let handles: Vec<_> = resources
+    let handle = resources
         .handles()
-        .map(|(asset_id, handle)| json!({"assetId":asset_id,"handle":handle}))
-        .collect();
-    let query = match prepared.request().query {
-        SourceArtQuery::Waveform { sample_rate, .. } => {
-            json!({"kind":"waveform","sampleRate":sample_rate})
-        }
-        SourceArtQuery::Thumbnail {} => {
-            if let Some(at) = prepared.thumbnail_time() {
-                let at = opencut_time::RationalTime::try_from(at)?;
-                json!({"kind":"source_frame","seconds":at.ticks() as f64/f64::from(at.timebase())})
-            } else {
-                json!({"kind":"thumbnail"})
-            }
-        }
+        .find(|(id, _)| *id == asset.id)
+        .map(|(_, handle)| handle.to_owned())
+        .ok_or_else(|| protocol("Missing source-art authority handle"))?;
+    let (transfer, size) = resources.resolve(
+        &asset.id,
+        &asset.version.content_hash,
+        asset.version.size,
+        &handle,
+    )?;
+    if size != asset.version.size {
+        return Err(protocol("Source-art descriptor extent changed"));
+    }
+    // Declared after the CAS owner: all error paths kill and reap the worker
+    // before the descriptor/collection gate can be released.
+    let mut worker = WorkerProcess::start(ProcessConfig {
+        worker: config.worker.clone(),
+        max_rss_bytes: policy.max_rss_bytes,
+        lifetime_deadline: config.deadline,
+        operation_deadline: config.deadline,
+        progress: None,
+        strict_cgroup: config.strict_cgroup.clone(),
+        domain: Domain::SourceArt,
+    })?;
+    let SourceArtIdentity::Native(expected) = &config.identity else {
+        return Err(protocol("Native source identity required"));
     };
-    let kind = if matches!(prepared.request().query, SourceArtQuery::Waveform { .. }) {
-        "waveform"
-    } else {
-        "thumbnail"
-    };
-    let limit = if kind == "waveform" {
-        prepared.waveform_output_bytes()?
-    } else {
-        SOURCE_ART_MAX_JPEG_BYTES as u64
-    };
-    let waveform_working_bytes = if kind == "waveform" {
-        Some(prepared.waveform_working_bytes()?)
-    } else {
-        None
-    };
-    let max_waveform_bytes = (kind == "waveform").then_some(limit);
-    let execution = uuid::Uuid::new_v4().to_string();
-    let started = Instant::now();
-    let mut process = BrowserProcess::start(&config.node, &config.runner, config.deadline)?;
-    let mut input = process
-        .input
-        .take()
-        .ok_or_else(|| protocol("Missing source-art runner input"))?;
-    let result = (|| {
-        transport::packet(
-            &mut input,
-            &execution,
-            json!({"type":"begin","plan":{"resource":{"assetId":asset.id,"contentHash":asset.version.content_hash,"size":asset.version.size,"kind":asset.kind},"query":query,"identity":config.identity,"rangeCacheBytes":prepared.range_cache_bytes()?,"waveformWorkingBytes":waveform_working_bytes,"maxWaveformBytes":max_waveform_bytes},"resources":handles,"runtime":{"chromiumExecutable":config.chromium},"admission":{"quotaProfile":"monitored-terminate","maxEncodedBytes":policy.max_encoded_bytes,"maxPcmBytes":policy.max_pcm_bytes,"maxRssBytes":policy.max_rss_bytes.to_string(),"deadlineMs":policy.deadline_ms}}),
-        )?;
-        let mut ready = false;
-        let mut bytes = Vec::new();
-        let mut last_request = 0u64;
+    if worker.expected_hash != expected.worker_sha256 {
+        return Err(error(
+            "SOURCE_ART_ENGINE_CHANGED",
+            "Configured source worker changed",
+        ));
+    }
+    worker.send(
+        json!({"type":"initialize","purpose":"source_art","plan":plan}),
+        &[],
+    )?;
+    let receive = |worker: &WorkerProcess,
+                   resources: &mut VerifiedBrowserResources<_>|
+     -> Result<wire::Packet, EditorError> {
         loop {
             resources.checkpoint()?;
-            if started.elapsed() >= config.deadline {
-                return Err(error(
-                    "SOURCE_ART_TIME_LIMIT",
-                    "Source-art decode exceeded deadline",
-                ));
-            }
-            let Some(m) = process.receive()? else {
-                continue;
-            };
-            if text(&m, "executionId")? != execution {
-                return Err(protocol("Source-art execution envelope differs"));
-            }
-            match text(&m, "type")? {
-                "started" => {
-                    let pid = number(&m, "browserPid")?;
-                    if pid == 0
-                        || pid > i32::MAX as u64
-                        || pid == u64::from(process.guard.child.id())
-                        || process.guard.browser_pid.load(Ordering::Acquire) != 0
-                    {
-                        return Err(protocol("Invalid source-art browser PID"));
-                    }
-                    process
-                        .guard
-                        .browser_pid
-                        .store(pid as u32, Ordering::Release);
-                }
-                "ready" => {
-                    if ready
-                        || number(&m, "browserPid")?
-                            != u64::from(process.guard.browser_pid.load(Ordering::Acquire))
-                        || process.guard.browser_pid.load(Ordering::Acquire) == 0
-                    {
-                        return Err(protocol("Invalid source-art readiness"));
-                    }
-                    let observed: SourceArtIdentity =
-                        serde_json::from_value(m["identity"]["sourceArtIdentity"].clone())
-                            .map_err(|_| protocol("Invalid source-art actual identity"))?;
-                    if observed != config.identity {
-                        return Err(error(
-                            "ARTIFACT_VERIFICATION_FAILED",
-                            "Source-art actual runtime differs from captured identity",
-                        ));
-                    }
-                    ready = true;
-                }
-                "request" => {
-                    if !ready {
-                        return Err(protocol("Source-art callback before ready"));
-                    }
-                    let id = text(&m, "id")?;
-                    let sequence = decimal(id)?;
-                    if sequence != last_request + 1 || sequence > 9_007_199_254_740_991 {
-                        return Err(protocol("Invalid source-art callback identity"));
-                    }
-                    last_request = sequence;
-                    let args = &m["args"];
-                    let value = match text(&m, "op")? {
-                        "resolve" => {
-                            let r = &args["resource"];
-                            if text(r, "assetId")? != asset.id
-                                || text(r, "kind")?
-                                    != serde_json::to_value(&asset.kind)
-                                        .map_err(|_| protocol("Invalid asset kind"))?
-                                        .as_str()
-                                        .unwrap_or("")
-                            {
-                                return Err(protocol("Fixed source-art resource differs"));
-                            }
-                            let (id, size) = resources.resolve(
-                                text(r, "assetId")?,
-                                text(r, "contentHash")?,
-                                number(r, "size")?,
-                                text(args, "handle")?,
-                            )?;
-                            json!({"id":id,"size":size,"content_hash":asset.version.content_hash,"max_chunk_bytes":65536})
-                        }
-                        "read" => {
-                            let offset = decimal(text(args, "offset")?)?;
-                            let count = u32::try_from(number(args, "count")?)
-                                .map_err(|_| protocol("Invalid source read count"))?;
-                            let (b, eof) =
-                                resources.read(text(args, "transfer_id")?, offset, count)?;
-                            let encoded: String = b.iter().map(|b| format!("{b:02x}")).collect();
-                            json!({"bytes_hex":encoded,"eof":eof,"offset":offset.to_string()})
-                        }
-                        "release" => {
-                            resources.release(text(args, "transfer_id")?)?;
-                            json!({})
-                        }
-                        _ => return Err(protocol("Unknown source-art resource operation")),
-                    };
-                    transport::reply(&mut input, &execution, id, value)?;
-                }
-                "art_bytes" => {
-                    if !ready
-                        || text(&m, "kind")? != kind
-                        || decimal(text(&m, "offset")?)? != bytes.len() as u64
-                    {
-                        return Err(protocol("Source-art output order differs"));
-                    }
-                    let chunk = hex(text(&m, "bytes_hex")?)?;
-                    if bytes.len() as u64 + chunk.len() as u64 > limit {
-                        return Err(error(
-                            "SOURCE_ART_BUDGET_EXCEEDED",
-                            "Source-art output exceeds byte budget",
-                        ));
-                    }
-                    bytes.extend(chunk);
-                }
-                "complete" => {
-                    if !ready {
-                        return Err(protocol("Source-art completion before ready"));
-                    }
-                    validate_quota(&m["quota"], policy)?;
-                    let r: Receipt = serde_json::from_value(m["receipt"].clone())
-                        .map_err(|_| protocol("Invalid typed source-art receipt"))?;
-                    let output = decoded(r, bytes, asset.version.clone())?;
-                    if output.identity() != &config.identity {
-                        return Err(protocol("Source-art receipt identity changed"));
-                    }
-                    validate_decoded_source_art(prepared, &output)?;
-                    return Ok(output);
-                }
-                "failed" => {
-                    let code = m["error"]["code"]
-                        .as_str()
-                        .filter(|c| {
-                            !c.is_empty()
-                                && c.len() <= 64
-                                && c.bytes().all(|b| {
-                                    b.is_ascii_uppercase() || b.is_ascii_digit() || b == b'_'
-                                })
-                        })
-                        .unwrap_or("SOURCE_ART_DECODE_FAILED");
-                    return Err(error(code, "Isolated source-art decoding failed"));
-                }
-                "cancelled" => return Err(error("CANCELLED", "Source-art decode cancelled")),
-                _ => return Err(protocol("Unknown source-art packet")),
+            if let Some(packet) = worker.receive()? {
+                resources.checkpoint()?;
+                return Ok(packet);
             }
         }
-    })();
-    if result.is_err() {
-        let _ = transport::packet(&mut input, &execution, json!({"type":"cancel"}));
+    };
+    let ready = receive(&worker, &mut resources)?;
+    if let Some(error) = failure(&ready) {
+        return Err(error);
     }
-    drop(input);
-    // Real process exit is acknowledged while the verified CAS read gate is held.
-    process.finish(result.is_ok(), &execution)?;
-    let output = result?;
-    resources.checkpoint()?;
-    Ok(output)
-}
-fn validate_quota(v: &Value, p: &SourceArtPolicy) -> Result<(), EditorError> {
-    if text(v, "profile")? != "monitored-terminate"
-        || decimal(text(v, "maxRssBytes")?)? != p.max_rss_bytes
-        || decimal(text(v, "observedPeakRssBytes")?)? > p.max_rss_bytes
-        || v["hardMemoryEnforced"] != false
-        || !(20..=250).contains(&number(v, "monitorIntervalMs")?)
-        || number(v, "elapsedMs")? > p.deadline_ms
+    if ready.meta["type"] != "ready"
+        || ready.meta["purpose"] != "source_art"
+        || wire::integer(&ready.meta, "pid")? != u64::from(worker.pid())
+        || !ready.data.is_empty()
     {
-        return Err(protocol("Source-art quota receipt differs"));
+        return Err(protocol("Invalid native source-art readiness"));
     }
-    Ok(())
+    let observed: SourceArtIdentity = serde_json::from_value(ready.meta["identity"].clone())
+        .map_err(|_| protocol("Invalid native source identity"))?;
+    if observed != config.identity {
+        return Err(error(
+            "SOURCE_ART_ENGINE_CHANGED",
+            "Actual source worker differs from captured dependencies",
+        ));
+    }
+    let mut sequence = 0u64;
+    let mut bytes = Vec::new();
+    let output = loop {
+        let packet = receive(&worker, &mut resources)?;
+        match wire::text(&packet.meta, "type")? {
+            "source_read" | "source_output" => {
+                sequence = sequence
+                    .checked_add(1)
+                    .ok_or_else(|| protocol("Source callback counter overflow"))?;
+                if wire::integer(&packet.meta, "id")? != sequence || sequence > (1u64 << 53) - 1 {
+                    return Err(protocol("Native source callback order changed"));
+                }
+                if packet.meta["type"] == "source_read" {
+                    if !packet.data.is_empty() {
+                        return Err(protocol("Unexpected source-read request payload"));
+                    }
+                    let offset = wire::integer(&packet.meta, "offset")?;
+                    let count = u32::try_from(wire::integer(&packet.meta, "count")?)
+                        .map_err(|_| protocol("Invalid source read length"))?;
+                    if count == 0 || count > 65536 || offset > size {
+                        return Err(protocol("Native source read exceeds its fixed descriptor"));
+                    }
+                    let (data, eof) = resources.read(&transfer, offset, count)?;
+                    worker.send(
+                        json!({"type":"source_reply","id":sequence,"offset":offset,"eof":eof}),
+                        &data,
+                    )?;
+                } else {
+                    let offset = wire::integer(&packet.meta, "offset")?;
+                    if offset != bytes.len() as u64
+                        || packet.data.is_empty()
+                        || packet.data.len() > 65536
+                        || offset
+                            .checked_add(packet.data.len() as u64)
+                            .is_none_or(|n| n > plan.output_limit())
+                    {
+                        return Err(error(
+                            "SOURCE_ART_BUDGET_EXCEEDED",
+                            "Native source-art output exceeds ordered admission",
+                        ));
+                    }
+                    bytes.try_reserve_exact(packet.data.len()).map_err(|_| {
+                        error(
+                            "SOURCE_ART_BUDGET_EXCEEDED",
+                            "Cannot retain admitted source-art output",
+                        )
+                    })?;
+                    bytes.extend_from_slice(&packet.data);
+                    resources.checkpoint()?;
+                    worker.send(json!({"type":"source_reply","id":sequence}), &[])?;
+                }
+            }
+            "source_complete" => {
+                if !packet.data.is_empty() {
+                    return Err(protocol("Unexpected completion payload"));
+                }
+                let receipt: Receipt = serde_json::from_value(packet.meta["receipt"].clone())
+                    .map_err(|_| protocol("Invalid native source receipt"))?;
+                let output = decoded(receipt, bytes, asset.version.clone())?;
+                if output.identity() != &config.identity {
+                    return Err(protocol("Native source receipt changed identity"));
+                }
+                validate_decoded_source_art(prepared, &output)?;
+                resources.checkpoint()?;
+                worker.send(json!({"type":"finish"}), &[])?;
+                break output;
+            }
+            "failed" => return Err(failure(&packet).expect("matched native failure")),
+            _ => return Err(protocol("Unexpected native source-art packet")),
+        }
+    };
+    let quota = worker.complete()?;
+    if quota
+        .observed_peak_rss_bytes
+        .parse::<u64>()
+        .ok()
+        .is_none_or(|n| n > policy.max_rss_bytes)
+        || quota.elapsed_ms > policy.deadline_ms
+        || quota.hard_memory_enforced != config.strict_cgroup.is_some()
+    {
+        return Err(protocol(
+            "Native source-art quota differs from captured policy",
+        ));
+    }
+    resources.checkpoint()?;
+    resources.release(&transfer)?;
+    Ok(output)
 }
 #[cfg(test)]
 pub(super) fn decode_for_test(

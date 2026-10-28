@@ -2,10 +2,12 @@
 mod graphics;
 mod masks;
 mod text;
+mod thumbnail;
 use crate::{Raster, Result, budget, invalid};
 pub use graphics::graphic;
 pub use masks::{SceneMaskRaster, scene_mask};
 pub use text::TextRasterizer;
+pub use thumbnail::{SOURCE_THUMBNAIL_RASTERIZER, SourceThumbnailImage, SourceThumbnailLimits};
 use tiny_skia::{Paint, Path, PathBuilder, Pixmap};
 
 #[derive(Clone, Copy)]

@@ -67,6 +67,7 @@ export function FrameCanvas({
   const revision = scene && (scene.historical ?? scene.head).revision;
   const target=JSON.stringify([scene?.head.project.id,revision,scene?.sequenceId]);
   const matchesTarget=!live.target||live.target===target;
+  const showingPlaybackSurface=!!live.surfaceGeneration&&!!live.surfaceActive&&matchesTarget;
   const targetRef=useRef(target);targetRef.current=target;
   const canvas = useRef<HTMLCanvasElement>(null);
   const lastCanvasFrame=useRef<{target:string;time:number}|null>(null);
@@ -360,7 +361,7 @@ export function FrameCanvas({
         >
           {!!live.surfaceGeneration&&<canvas key={live.surfaceGeneration} ref={playbackCanvas}
             className="editor-scene-frame" role="img" aria-label={t("Live scene preview")}
-            style={{display:live.surfaceActive&&matchesTarget?"block":"none"}} aria-hidden={!live.surfaceActive||!matchesTarget}
+            style={{display:showingPlaybackSurface?"block":"none"}} aria-hidden={!showingPlaybackSurface}
             data-preview-surface="worker" data-time={live.time??""} data-generation={live.generation??""}/>} 
           {(live.pixels&&matchesTarget)||keepPreparationFrame ? (
             <canvas
@@ -368,6 +369,8 @@ export function FrameCanvas({
               ref={canvas}
               className="editor-scene-frame"
               aria-label={t("Live scene preview")}
+              style={{display:showingPlaybackSurface?"none":undefined}}
+              aria-hidden={showingPlaybackSurface||undefined}
               data-time={live.time ?? ""}
               data-generation={live.generation ?? ""}
               data-runtime={live.runtime ?? ""}

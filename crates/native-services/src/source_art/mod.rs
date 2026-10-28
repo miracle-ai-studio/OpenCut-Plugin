@@ -8,15 +8,17 @@ use std::{
 };
 mod identity;
 mod process;
+mod protocol;
+mod streaming;
 #[cfg(test)]
 mod tests;
-pub use identity::resolve_identity;
+pub(crate) mod worker;
+pub use identity::{resolve_identity, runtime_fingerprint};
 
 #[derive(Clone)]
 pub struct SourceArtProcessConfig {
-    pub node: PathBuf,
-    pub runner: PathBuf,
-    pub chromium: PathBuf,
+    pub worker: PathBuf,
+    pub strict_cgroup: Option<PathBuf>,
     pub deadline: Duration,
     pub max_encoded_bytes: u64,
     pub max_pcm_bytes: u64,
@@ -43,41 +45,17 @@ fn trusted_file(path: &Path) -> Result<(), EditorError> {
     Ok(())
 }
 fn validate_identity(identity: &SourceArtIdentity) -> Result<(), EditorError> {
-    if ![
-        SOURCE_PEAKS_ALGORITHM,
-        THUMBNAIL_ALGORITHM,
-        SOURCE_FRAME_ALGORITHM,
-    ]
-    .contains(&identity.algorithm.as_str())
-        || identity.decode_profile != SOURCE_ART_DECODE_PROFILE
-        || identity.browser_version.is_empty()
-        || identity.browser_version.len() > 128
-        || !identity
-            .browser_version
-            .bytes()
-            .all(|c| c.is_ascii_digit() || c == b'.')
-        || [
-            &identity.browser_sha256,
-            &identity.node_sha256,
-            &identity.module_sha256,
-        ]
-        .iter()
-        .any(|s| {
-            s.len() != 64
-                || !s
-                    .bytes()
-                    .all(|c| c.is_ascii_digit() || (b'a'..=b'f').contains(&c))
-        })
-    {
-        return Err(protocol("Invalid source-art runtime identity"));
+    validate_runtime_identity(identity)?;
+    if !matches!(identity, SourceArtIdentity::Native(_)) {
+        return Err(protocol(
+            "New source-art execution requires the configured native runtime",
+        ));
     }
     Ok(())
 }
 impl SourceArtProcessExecutor {
     pub fn new(config: SourceArtProcessConfig, asset_root: PathBuf) -> Result<Self, EditorError> {
-        for path in [&config.node, &config.runner, &config.chromium] {
-            trusted_file(path)?;
-        }
+        trusted_file(&config.worker)?;
         validate_identity(&config.identity)?;
         let policy = SourceArtPolicy {
             max_encoded_bytes: config.max_encoded_bytes,

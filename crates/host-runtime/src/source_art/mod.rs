@@ -90,7 +90,7 @@ fn execute_projection<T>(
     let mut config =
         crate::source_art_runtime::configured(prepared.policy(), &prepared.request().query)?;
     if prepared.thumbnail_time().is_some() {
-        config.identity.algorithm = SOURCE_FRAME_ALGORITHM.into();
+        config.identity.set_algorithm(SOURCE_FRAME_ALGORITHM);
     }
     let key = source_art_decode_key(&prepared, &config.identity)?;
     let (database, registry) = registry(&host.database)?;

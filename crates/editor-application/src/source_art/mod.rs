@@ -10,7 +10,9 @@ mod ports;
 mod projection;
 mod validation;
 pub use ports::*;
-pub use validation::{validate_cancel, validate_policy, validate_request};
+pub use validation::{
+    thumbnail_size, validate_cancel, validate_policy, validate_request, validate_runtime_identity,
+};
 #[cfg(test)]
 mod tests;
 
@@ -18,6 +20,8 @@ pub const SOURCE_PEAKS_ALGORITHM: &str = "source-peaks128-v1";
 pub const SOURCE_FRAME_ALGORITHM: &str = "source-frame-at-jpeg08-v2";
 pub const THUMBNAIL_ALGORITHM: &str = "classic-thumbnail-1s-jpeg08-v1";
 pub const SOURCE_ART_DECODE_PROFILE: &str = "fixed-cas-streamed-concat-webaudio-canvas";
+pub const NATIVE_SOURCE_ART_DECODE_PROFILE: &str = "fixed-cas-native-libav-concat-linear-skia-jpeg";
+pub const NATIVE_SOURCE_ART_RASTERIZER: &str = "skia-safe-0.153.3-srgb-jpeg80";
 pub const SOURCE_ART_BUCKET_SIZE: u32 = 128;
 pub const SOURCE_ART_MAX_JPEG_BYTES: usize = 1024 * 1024;
 
@@ -80,7 +84,7 @@ impl PreparedSourceArt {
     pub fn waveform_output_bytes(&self) -> Result<u64, EditorError> {
         Ok(self.waveform_working_bytes()? / 3 / 4 * 4)
     }
-    fn encoded_resident_bytes(&self) -> Result<u64, EditorError> {
+    pub fn encoded_resident_bytes(&self) -> Result<u64, EditorError> {
         if let Some(cache) = self.range_cache_bytes()? {
             return Ok(self.asset.version.size.min(cache) * 3 + 6 * 65536);
         }

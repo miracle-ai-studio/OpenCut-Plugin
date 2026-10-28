@@ -43710,6 +43710,42 @@
     "name": "opencut_catalog_resources_list",
     "output_schema": {
       "$defs": {
+        "BrowserSourceArtIdentity": {
+          "additionalProperties": false,
+          "description": "Exact historical source-art proofs remain readable. New native execution\nnever constructs a browser identity or selects this runtime as a fallback.",
+          "properties": {
+            "algorithm": {
+              "description": "source-peaks128-v1 or classic-thumbnail-1s-jpeg08-v1.",
+              "type": "string"
+            },
+            "browser_sha256": {
+              "type": "string"
+            },
+            "browser_version": {
+              "type": "string"
+            },
+            "decode_profile": {
+              "description": "Actual source decoding and resampling path; bound with the module/runtime hashes.",
+              "type": "string"
+            },
+            "module_sha256": {
+              "description": "Hash of the complete pinned source-art renderer module manifest.",
+              "type": "string"
+            },
+            "node_sha256": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "algorithm",
+            "decode_profile",
+            "browser_version",
+            "browser_sha256",
+            "node_sha256",
+            "module_sha256"
+          ],
+          "type": "object"
+        },
         "CatalogResourceCategory": {
           "enum": [
             "shapes",
@@ -43870,6 +43906,95 @@
           ],
           "type": "object"
         },
+        "NativeLibraryIdentity": {
+          "additionalProperties": false,
+          "properties": {
+            "binary_sha256": {
+              "type": "string"
+            },
+            "configuration_sha256": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "version": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "version",
+            "configuration_sha256",
+            "binary_sha256"
+          ],
+          "type": "object"
+        },
+        "NativeSourceArtIdentity": {
+          "additionalProperties": false,
+          "properties": {
+            "algorithm": {
+              "type": "string"
+            },
+            "decode_profile": {
+              "type": "string"
+            },
+            "decoder_libraries": {
+              "items": {
+                "$ref": "#/$defs/NativeLibraryIdentity"
+              },
+              "type": "array"
+            },
+            "module_sha256": {
+              "type": "string"
+            },
+            "platform": {
+              "$ref": "#/$defs/NativeSystemIdentity"
+            },
+            "rasterizer": {
+              "description": "CPU raster/encoding dependency; no GPU or font execution is claimed.",
+              "type": "string"
+            },
+            "worker_sha256": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "algorithm",
+            "decode_profile",
+            "worker_sha256",
+            "module_sha256",
+            "decoder_libraries",
+            "rasterizer",
+            "platform"
+          ],
+          "type": "object"
+        },
+        "NativeSystemIdentity": {
+          "additionalProperties": false,
+          "description": "Audio execution observes its OS/CPU without claiming a graphics or font\nsubsystem. These are runtime facts, independent of saved project formats.",
+          "properties": {
+            "architecture": {
+              "type": "string"
+            },
+            "kernel_release": {
+              "type": "string"
+            },
+            "os": {
+              "type": "string"
+            },
+            "system_build": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "os",
+            "architecture",
+            "kernel_release",
+            "system_build"
+          ],
+          "type": "object"
+        },
         "ResourceCatalog": {
           "additionalProperties": false,
           "properties": {
@@ -43931,39 +44056,14 @@
           "type": "object"
         },
         "SourceArtIdentity": {
-          "additionalProperties": false,
-          "properties": {
-            "algorithm": {
-              "description": "source-peaks128-v1 or classic-thumbnail-1s-jpeg08-v1.",
-              "type": "string"
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NativeSourceArtIdentity"
             },
-            "browser_sha256": {
-              "type": "string"
-            },
-            "browser_version": {
-              "type": "string"
-            },
-            "decode_profile": {
-              "description": "Actual source decoding and resampling path; bound with the module/runtime hashes.",
-              "type": "string"
-            },
-            "module_sha256": {
-              "description": "Hash of the complete pinned source-art renderer module manifest.",
-              "type": "string"
-            },
-            "node_sha256": {
-              "type": "string"
+            {
+              "$ref": "#/$defs/BrowserSourceArtIdentity"
             }
-          },
-          "required": [
-            "algorithm",
-            "decode_profile",
-            "browser_version",
-            "browser_sha256",
-            "node_sha256",
-            "module_sha256"
-          ],
-          "type": "object"
+          ]
         }
       },
       "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -53419,6 +53519,42 @@
           ],
           "type": "object"
         },
+        "BrowserSourceArtIdentity": {
+          "additionalProperties": false,
+          "description": "Exact historical source-art proofs remain readable. New native execution\nnever constructs a browser identity or selects this runtime as a fallback.",
+          "properties": {
+            "algorithm": {
+              "description": "source-peaks128-v1 or classic-thumbnail-1s-jpeg08-v1.",
+              "type": "string"
+            },
+            "browser_sha256": {
+              "type": "string"
+            },
+            "browser_version": {
+              "type": "string"
+            },
+            "decode_profile": {
+              "description": "Actual source decoding and resampling path; bound with the module/runtime hashes.",
+              "type": "string"
+            },
+            "module_sha256": {
+              "description": "Hash of the complete pinned source-art renderer module manifest.",
+              "type": "string"
+            },
+            "node_sha256": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "algorithm",
+            "decode_profile",
+            "browser_version",
+            "browser_sha256",
+            "node_sha256",
+            "module_sha256"
+          ],
+          "type": "object"
+        },
         "EditorError": {
           "additionalProperties": false,
           "properties": {
@@ -53434,6 +53570,95 @@
             "code",
             "message",
             "details"
+          ],
+          "type": "object"
+        },
+        "NativeLibraryIdentity": {
+          "additionalProperties": false,
+          "properties": {
+            "binary_sha256": {
+              "type": "string"
+            },
+            "configuration_sha256": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "version": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "version",
+            "configuration_sha256",
+            "binary_sha256"
+          ],
+          "type": "object"
+        },
+        "NativeSourceArtIdentity": {
+          "additionalProperties": false,
+          "properties": {
+            "algorithm": {
+              "type": "string"
+            },
+            "decode_profile": {
+              "type": "string"
+            },
+            "decoder_libraries": {
+              "items": {
+                "$ref": "#/$defs/NativeLibraryIdentity"
+              },
+              "type": "array"
+            },
+            "module_sha256": {
+              "type": "string"
+            },
+            "platform": {
+              "$ref": "#/$defs/NativeSystemIdentity"
+            },
+            "rasterizer": {
+              "description": "CPU raster/encoding dependency; no GPU or font execution is claimed.",
+              "type": "string"
+            },
+            "worker_sha256": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "algorithm",
+            "decode_profile",
+            "worker_sha256",
+            "module_sha256",
+            "decoder_libraries",
+            "rasterizer",
+            "platform"
+          ],
+          "type": "object"
+        },
+        "NativeSystemIdentity": {
+          "additionalProperties": false,
+          "description": "Audio execution observes its OS/CPU without claiming a graphics or font\nsubsystem. These are runtime facts, independent of saved project formats.",
+          "properties": {
+            "architecture": {
+              "type": "string"
+            },
+            "kernel_release": {
+              "type": "string"
+            },
+            "os": {
+              "type": "string"
+            },
+            "system_build": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "os",
+            "architecture",
+            "kernel_release",
+            "system_build"
           ],
           "type": "object"
         },
@@ -53550,39 +53775,14 @@
           ]
         },
         "SourceArtIdentity": {
-          "additionalProperties": false,
-          "properties": {
-            "algorithm": {
-              "description": "source-peaks128-v1 or classic-thumbnail-1s-jpeg08-v1.",
-              "type": "string"
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NativeSourceArtIdentity"
             },
-            "browser_sha256": {
-              "type": "string"
-            },
-            "browser_version": {
-              "type": "string"
-            },
-            "decode_profile": {
-              "description": "Actual source decoding and resampling path; bound with the module/runtime hashes.",
-              "type": "string"
-            },
-            "module_sha256": {
-              "description": "Hash of the complete pinned source-art renderer module manifest.",
-              "type": "string"
-            },
-            "node_sha256": {
-              "type": "string"
+            {
+              "$ref": "#/$defs/BrowserSourceArtIdentity"
             }
-          },
-          "required": [
-            "algorithm",
-            "decode_profile",
-            "browser_version",
-            "browser_sha256",
-            "node_sha256",
-            "module_sha256"
-          ],
-          "type": "object"
+          ]
         },
         "SourceArtNoFrameReason": {
           "enum": [
@@ -53621,7 +53821,7 @@
               "additionalProperties": false,
               "properties": {
                 "actual_timestamp_seconds": {
-                  "description": "Observed browser seconds, not exact project ticks. Present only\nwhen getSample(1) returned a real sample; no synthetic hold frame.",
+                  "description": "Observed decoder seconds, not exact project ticks. Present only\nwhen getSample(1) returned a real sample; no synthetic hold frame.",
                   "format": "double",
                   "type": [
                     "number",
@@ -54100,6 +54300,42 @@
           ],
           "type": "object"
         },
+        "BrowserSourceArtIdentity": {
+          "additionalProperties": false,
+          "description": "Exact historical source-art proofs remain readable. New native execution\nnever constructs a browser identity or selects this runtime as a fallback.",
+          "properties": {
+            "algorithm": {
+              "description": "source-peaks128-v1 or classic-thumbnail-1s-jpeg08-v1.",
+              "type": "string"
+            },
+            "browser_sha256": {
+              "type": "string"
+            },
+            "browser_version": {
+              "type": "string"
+            },
+            "decode_profile": {
+              "description": "Actual source decoding and resampling path; bound with the module/runtime hashes.",
+              "type": "string"
+            },
+            "module_sha256": {
+              "description": "Hash of the complete pinned source-art renderer module manifest.",
+              "type": "string"
+            },
+            "node_sha256": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "algorithm",
+            "decode_profile",
+            "browser_version",
+            "browser_sha256",
+            "node_sha256",
+            "module_sha256"
+          ],
+          "type": "object"
+        },
         "EditorError": {
           "additionalProperties": false,
           "properties": {
@@ -54139,40 +54375,104 @@
           ],
           "type": "object"
         },
-        "SourceArtIdentity": {
+        "NativeLibraryIdentity": {
+          "additionalProperties": false,
+          "properties": {
+            "binary_sha256": {
+              "type": "string"
+            },
+            "configuration_sha256": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "version": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "version",
+            "configuration_sha256",
+            "binary_sha256"
+          ],
+          "type": "object"
+        },
+        "NativeSourceArtIdentity": {
           "additionalProperties": false,
           "properties": {
             "algorithm": {
-              "description": "source-peaks128-v1 or classic-thumbnail-1s-jpeg08-v1.",
-              "type": "string"
-            },
-            "browser_sha256": {
-              "type": "string"
-            },
-            "browser_version": {
               "type": "string"
             },
             "decode_profile": {
-              "description": "Actual source decoding and resampling path; bound with the module/runtime hashes.",
               "type": "string"
+            },
+            "decoder_libraries": {
+              "items": {
+                "$ref": "#/$defs/NativeLibraryIdentity"
+              },
+              "type": "array"
             },
             "module_sha256": {
-              "description": "Hash of the complete pinned source-art renderer module manifest.",
               "type": "string"
             },
-            "node_sha256": {
+            "platform": {
+              "$ref": "#/$defs/NativeSystemIdentity"
+            },
+            "rasterizer": {
+              "description": "CPU raster/encoding dependency; no GPU or font execution is claimed.",
+              "type": "string"
+            },
+            "worker_sha256": {
               "type": "string"
             }
           },
           "required": [
             "algorithm",
             "decode_profile",
-            "browser_version",
-            "browser_sha256",
-            "node_sha256",
-            "module_sha256"
+            "worker_sha256",
+            "module_sha256",
+            "decoder_libraries",
+            "rasterizer",
+            "platform"
           ],
           "type": "object"
+        },
+        "NativeSystemIdentity": {
+          "additionalProperties": false,
+          "description": "Audio execution observes its OS/CPU without claiming a graphics or font\nsubsystem. These are runtime facts, independent of saved project formats.",
+          "properties": {
+            "architecture": {
+              "type": "string"
+            },
+            "kernel_release": {
+              "type": "string"
+            },
+            "os": {
+              "type": "string"
+            },
+            "system_build": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "os",
+            "architecture",
+            "kernel_release",
+            "system_build"
+          ],
+          "type": "object"
+        },
+        "SourceArtIdentity": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NativeSourceArtIdentity"
+            },
+            {
+              "$ref": "#/$defs/BrowserSourceArtIdentity"
+            }
+          ]
         },
         "SourceArtThumbnailObservation": {
           "oneOf": [
@@ -54205,7 +54505,7 @@
               "additionalProperties": false,
               "properties": {
                 "actual_timestamp_seconds": {
-                  "description": "Observed browser seconds, not exact project ticks. Present only\nwhen getSample(1) returned a real sample; no synthetic hold frame.",
+                  "description": "Observed decoder seconds, not exact project ticks. Present only\nwhen getSample(1) returned a real sample; no synthetic hold frame.",
                   "format": "double",
                   "type": [
                     "number",
@@ -54623,6 +54923,42 @@
           ],
           "type": "object"
         },
+        "BrowserSourceArtIdentity": {
+          "additionalProperties": false,
+          "description": "Exact historical source-art proofs remain readable. New native execution\nnever constructs a browser identity or selects this runtime as a fallback.",
+          "properties": {
+            "algorithm": {
+              "description": "source-peaks128-v1 or classic-thumbnail-1s-jpeg08-v1.",
+              "type": "string"
+            },
+            "browser_sha256": {
+              "type": "string"
+            },
+            "browser_version": {
+              "type": "string"
+            },
+            "decode_profile": {
+              "description": "Actual source decoding and resampling path; bound with the module/runtime hashes.",
+              "type": "string"
+            },
+            "module_sha256": {
+              "description": "Hash of the complete pinned source-art renderer module manifest.",
+              "type": "string"
+            },
+            "node_sha256": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "algorithm",
+            "decode_profile",
+            "browser_version",
+            "browser_sha256",
+            "node_sha256",
+            "module_sha256"
+          ],
+          "type": "object"
+        },
         "EditorError": {
           "additionalProperties": false,
           "properties": {
@@ -54638,6 +54974,95 @@
             "code",
             "message",
             "details"
+          ],
+          "type": "object"
+        },
+        "NativeLibraryIdentity": {
+          "additionalProperties": false,
+          "properties": {
+            "binary_sha256": {
+              "type": "string"
+            },
+            "configuration_sha256": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "version": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "version",
+            "configuration_sha256",
+            "binary_sha256"
+          ],
+          "type": "object"
+        },
+        "NativeSourceArtIdentity": {
+          "additionalProperties": false,
+          "properties": {
+            "algorithm": {
+              "type": "string"
+            },
+            "decode_profile": {
+              "type": "string"
+            },
+            "decoder_libraries": {
+              "items": {
+                "$ref": "#/$defs/NativeLibraryIdentity"
+              },
+              "type": "array"
+            },
+            "module_sha256": {
+              "type": "string"
+            },
+            "platform": {
+              "$ref": "#/$defs/NativeSystemIdentity"
+            },
+            "rasterizer": {
+              "description": "CPU raster/encoding dependency; no GPU or font execution is claimed.",
+              "type": "string"
+            },
+            "worker_sha256": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "algorithm",
+            "decode_profile",
+            "worker_sha256",
+            "module_sha256",
+            "decoder_libraries",
+            "rasterizer",
+            "platform"
+          ],
+          "type": "object"
+        },
+        "NativeSystemIdentity": {
+          "additionalProperties": false,
+          "description": "Audio execution observes its OS/CPU without claiming a graphics or font\nsubsystem. These are runtime facts, independent of saved project formats.",
+          "properties": {
+            "architecture": {
+              "type": "string"
+            },
+            "kernel_release": {
+              "type": "string"
+            },
+            "os": {
+              "type": "string"
+            },
+            "system_build": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "os",
+            "architecture",
+            "kernel_release",
+            "system_build"
           ],
           "type": "object"
         },
@@ -54754,39 +55179,14 @@
           ]
         },
         "SourceArtIdentity": {
-          "additionalProperties": false,
-          "properties": {
-            "algorithm": {
-              "description": "source-peaks128-v1 or classic-thumbnail-1s-jpeg08-v1.",
-              "type": "string"
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NativeSourceArtIdentity"
             },
-            "browser_sha256": {
-              "type": "string"
-            },
-            "browser_version": {
-              "type": "string"
-            },
-            "decode_profile": {
-              "description": "Actual source decoding and resampling path; bound with the module/runtime hashes.",
-              "type": "string"
-            },
-            "module_sha256": {
-              "description": "Hash of the complete pinned source-art renderer module manifest.",
-              "type": "string"
-            },
-            "node_sha256": {
-              "type": "string"
+            {
+              "$ref": "#/$defs/BrowserSourceArtIdentity"
             }
-          },
-          "required": [
-            "algorithm",
-            "decode_profile",
-            "browser_version",
-            "browser_sha256",
-            "node_sha256",
-            "module_sha256"
-          ],
-          "type": "object"
+          ]
         },
         "SourceArtNoFrameReason": {
           "enum": [
@@ -54857,7 +55257,7 @@
               "additionalProperties": false,
               "properties": {
                 "actual_timestamp_seconds": {
-                  "description": "Observed browser seconds, not exact project ticks. Present only\nwhen getSample(1) returned a real sample; no synthetic hold frame.",
+                  "description": "Observed decoder seconds, not exact project ticks. Present only\nwhen getSample(1) returned a real sample; no synthetic hold frame.",
                   "format": "double",
                   "type": [
                     "number",
@@ -55275,26 +55675,9 @@
           ],
           "type": "object"
         },
-        "EditorError": {
+        "BrowserSourceArtIdentity": {
           "additionalProperties": false,
-          "properties": {
-            "code": {
-              "type": "string"
-            },
-            "details": true,
-            "message": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "code",
-            "message",
-            "details"
-          ],
-          "type": "object"
-        },
-        "SourceArtIdentity": {
-          "additionalProperties": false,
+          "description": "Exact historical source-art proofs remain readable. New native execution\nnever constructs a browser identity or selects this runtime as a fallback.",
           "properties": {
             "algorithm": {
               "description": "source-peaks128-v1 or classic-thumbnail-1s-jpeg08-v1.",
@@ -55327,6 +55710,123 @@
             "module_sha256"
           ],
           "type": "object"
+        },
+        "EditorError": {
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "details": true,
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "code",
+            "message",
+            "details"
+          ],
+          "type": "object"
+        },
+        "NativeLibraryIdentity": {
+          "additionalProperties": false,
+          "properties": {
+            "binary_sha256": {
+              "type": "string"
+            },
+            "configuration_sha256": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "version": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "version",
+            "configuration_sha256",
+            "binary_sha256"
+          ],
+          "type": "object"
+        },
+        "NativeSourceArtIdentity": {
+          "additionalProperties": false,
+          "properties": {
+            "algorithm": {
+              "type": "string"
+            },
+            "decode_profile": {
+              "type": "string"
+            },
+            "decoder_libraries": {
+              "items": {
+                "$ref": "#/$defs/NativeLibraryIdentity"
+              },
+              "type": "array"
+            },
+            "module_sha256": {
+              "type": "string"
+            },
+            "platform": {
+              "$ref": "#/$defs/NativeSystemIdentity"
+            },
+            "rasterizer": {
+              "description": "CPU raster/encoding dependency; no GPU or font execution is claimed.",
+              "type": "string"
+            },
+            "worker_sha256": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "algorithm",
+            "decode_profile",
+            "worker_sha256",
+            "module_sha256",
+            "decoder_libraries",
+            "rasterizer",
+            "platform"
+          ],
+          "type": "object"
+        },
+        "NativeSystemIdentity": {
+          "additionalProperties": false,
+          "description": "Audio execution observes its OS/CPU without claiming a graphics or font\nsubsystem. These are runtime facts, independent of saved project formats.",
+          "properties": {
+            "architecture": {
+              "type": "string"
+            },
+            "kernel_release": {
+              "type": "string"
+            },
+            "os": {
+              "type": "string"
+            },
+            "system_build": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "os",
+            "architecture",
+            "kernel_release",
+            "system_build"
+          ],
+          "type": "object"
+        },
+        "SourceArtIdentity": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NativeSourceArtIdentity"
+            },
+            {
+              "$ref": "#/$defs/BrowserSourceArtIdentity"
+            }
+          ]
         },
         "SourceArtWaveformBar": {
           "additionalProperties": false,

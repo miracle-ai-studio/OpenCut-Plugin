@@ -19,6 +19,7 @@ use std::{
 pub(crate) enum Domain {
     Visual,
     Audio,
+    SourceArt,
 }
 impl Domain {
     pub fn protocol(self, e: EditorError) -> EditorError {
@@ -27,6 +28,7 @@ impl Domain {
                 match self {
                     Self::Visual => "VISUAL_PROTOCOL_ERROR",
                     Self::Audio => "AUDIO_PROTOCOL_ERROR",
+                    Self::SourceArt => "SOURCE_ART_PROTOCOL_ERROR",
                 },
                 e.message,
             )
@@ -35,6 +37,7 @@ impl Domain {
                 match self {
                     Self::Visual => "INVALID_VISUAL_PLAN",
                     Self::Audio => "AUDIO_HOST_FAILED",
+                    Self::SourceArt => "SOURCE_ART_DECODE_FAILED",
                 },
                 e.message,
             )
@@ -46,12 +49,14 @@ impl Domain {
         match self {
             Self::Visual => "VISUAL_TIME_LIMIT",
             Self::Audio => "AUDIO_TIME_LIMIT",
+            Self::SourceArt => "SOURCE_ART_TIME_LIMIT",
         }
     }
     pub fn rss_code(self) -> &'static str {
         match self {
             Self::Visual => "VISUAL_BUDGET_EXCEEDED",
             Self::Audio => "AUDIO_BUDGET_EXCEEDED",
+            Self::SourceArt => "SOURCE_ART_BUDGET_EXCEEDED",
         }
     }
     pub fn changed(self) -> EditorError {
@@ -59,6 +64,7 @@ impl Domain {
             match self {
                 Self::Visual => "VISUAL_ENGINE_CHANGED",
                 Self::Audio => "AUDIO_ENGINE_CHANGED",
+                Self::SourceArt => "SOURCE_ART_ENGINE_CHANGED",
             },
             "Configured native worker changed during execution",
         )

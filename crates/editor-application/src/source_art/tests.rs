@@ -23,14 +23,89 @@ fn policy() -> SourceArtPolicy {
     }
 }
 fn identity(algorithm: &str) -> SourceArtIdentity {
-    SourceArtIdentity {
+    SourceArtIdentity::Browser(BrowserSourceArtIdentity {
         algorithm: algorithm.into(),
         decode_profile: SOURCE_ART_DECODE_PROFILE.into(),
         browser_version: "pinned-browser".into(),
         browser_sha256: "a".repeat(64),
         node_sha256: "b".repeat(64),
         module_sha256: "c".repeat(64),
+    })
+}
+fn native_identity(algorithm: &str) -> SourceArtIdentity {
+    use opencut_contracts::renderer_identity::{NativeLibraryIdentity, NativeSystemIdentity};
+    SourceArtIdentity::Native(NativeSourceArtIdentity {
+        algorithm: algorithm.into(),
+        decode_profile: NATIVE_SOURCE_ART_DECODE_PROFILE.into(),
+        worker_sha256: "a".repeat(64),
+        module_sha256: "b".repeat(64),
+        rasterizer: NATIVE_SOURCE_ART_RASTERIZER.into(),
+        platform: NativeSystemIdentity {
+            os: "fixture".into(),
+            architecture: "fixture".into(),
+            kernel_release: "fixture".into(),
+            system_build: "fixture".into(),
+        },
+        decoder_libraries: ["avcodec", "avformat", "avutil", "swscale", "swresample"]
+            .into_iter()
+            .map(|name| NativeLibraryIdentity {
+                name: name.into(),
+                version: "fixture".into(),
+                configuration_sha256: "c".repeat(64),
+                binary_sha256: "d".repeat(64),
+            })
+            .collect(),
+    })
+}
+#[test]
+fn native_source_proofs_are_exact_and_do_not_relabel_historical_browser_facts() {
+    let old = identity(SOURCE_PEAKS_ALGORITHM);
+    let native = native_identity(SOURCE_PEAKS_ALGORITHM);
+    validate_runtime_identity(&old).unwrap();
+    validate_runtime_identity(&native).unwrap();
+    let legacy = serde_json::to_value(&old).unwrap();
+    let current = serde_json::to_value(&native).unwrap();
+    assert_eq!(
+        legacy,
+        serde_json::json!({"algorithm":SOURCE_PEAKS_ALGORITHM,"decode_profile":SOURCE_ART_DECODE_PROFILE,
+        "browser_version":"pinned-browser","browser_sha256":"a".repeat(64),"node_sha256":"b".repeat(64),"module_sha256":"c".repeat(64)})
+    );
+    assert!(current.get("browser_version").is_none());
+    assert!(legacy.get("worker_sha256").is_none());
+    for value in [legacy.clone(), current.clone()] {
+        assert_eq!(
+            serde_json::to_value(
+                serde_json::from_value::<SourceArtIdentity>(value.clone()).unwrap()
+            )
+            .unwrap(),
+            value
+        );
     }
+    let mut mixed = current.clone();
+    mixed["browser_version"] = "153.0.0.0".into();
+    assert!(serde_json::from_value::<SourceArtIdentity>(mixed).is_err());
+    let mut unknown = current;
+    unknown["platform"]["font_backend"] = "invented".into();
+    assert!(serde_json::from_value::<SourceArtIdentity>(unknown).is_err());
+    let mut duplicate = native.clone();
+    let SourceArtIdentity::Native(value) = &mut duplicate else {
+        panic!()
+    };
+    value.decoder_libraries[1] = value.decoder_libraries[0].clone();
+    assert!(validate_runtime_identity(&duplicate).is_err());
+    let fixture = Fixture::new();
+    let prepared = prepare_source_art(
+        &fixture,
+        &fixture.request(WaveformProjection::Source {
+            range: None,
+            bins: 3,
+        }),
+    )
+    .unwrap();
+    assert_ne!(
+        source_art_decode_key(&prepared, &old).unwrap(),
+        source_art_decode_key(&prepared, &native).unwrap()
+    );
 }
 struct Fixture {
     authorized: AuthorizedSourceArt,
@@ -179,7 +254,10 @@ fn waveform(total: u64, amplitudes: Vec<f32>) -> DecodedSourceArt {
 }
 fn projected(prepared: &PreparedSourceArt, decoded: &DecodedSourceArt) -> Vec<f32> {
     let response = project_source_art(prepared, decoded).unwrap();
-    assert_eq!(response.identity.decode_profile, SOURCE_ART_DECODE_PROFILE);
+    assert_eq!(
+        response.identity.decode_profile(),
+        SOURCE_ART_DECODE_PROFILE
+    );
     let SourceArtData::Waveform { amplitudes, .. } = response.data else {
         panic!("waveform expected")
     };
@@ -350,7 +428,12 @@ fn raw_cache_identity_includes_source_facts_policy_and_authority_but_not_viewpor
             2 => other.asset.metadata.audio = AudioPresence::Unknown {},
             3 => other.asset.version.size += 1,
             4 => other.policy.deadline_ms -= 1,
-            _ => runtime.module_sha256 = "e".repeat(64),
+            _ => {
+                let SourceArtIdentity::Browser(value) = &mut runtime else {
+                    panic!()
+                };
+                value.module_sha256 = "e".repeat(64);
+            }
         }
         assert_ne!(source_art_decode_key(&other, &runtime).unwrap(), key);
     }

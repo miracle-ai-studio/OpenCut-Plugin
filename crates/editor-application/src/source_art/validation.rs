@@ -125,16 +125,73 @@ pub(super) fn identity(
             }
         }
     };
-    if value.algorithm != expected
-        || value.decode_profile != SOURCE_ART_DECODE_PROFILE
-        || id(&value.browser_version).is_err()
-        || !hash(&value.browser_sha256)
-        || !hash(&value.node_sha256)
-        || !hash(&value.module_sha256)
-    {
+    if value.algorithm() != expected {
         return Err(receipt(
             "Source-art renderer identity is incomplete or differs from its algorithm",
         ));
+    }
+    validate_runtime_identity(value)
+}
+/// Pure execution-proof validation, shared by live preparation and adapters.
+/// Historical proofs keep their exact shape; live host assembly chooses only
+/// the native variant and binds it to the observed configured worker.
+pub fn validate_runtime_identity(value: &SourceArtIdentity) -> Result<(), EditorError> {
+    if ![
+        SOURCE_PEAKS_ALGORITHM,
+        THUMBNAIL_ALGORITHM,
+        SOURCE_FRAME_ALGORITHM,
+    ]
+    .contains(&value.algorithm())
+    {
+        return Err(receipt("Unknown source-art algorithm"));
+    }
+    match value {
+        SourceArtIdentity::Browser(value) => {
+            if value.decode_profile != SOURCE_ART_DECODE_PROFILE
+                || id(&value.browser_version).is_err()
+                || [
+                    &value.browser_sha256,
+                    &value.node_sha256,
+                    &value.module_sha256,
+                ]
+                .iter()
+                .any(|s| !hash(s))
+            {
+                return Err(receipt("Invalid historical source-art identity"));
+            }
+        }
+        SourceArtIdentity::Native(value) => {
+            if value.decode_profile != NATIVE_SOURCE_ART_DECODE_PROFILE
+                || value.rasterizer != NATIVE_SOURCE_ART_RASTERIZER
+                || !hash(&value.worker_sha256)
+                || !hash(&value.module_sha256)
+                || value.decoder_libraries.len() != 5
+                || [
+                    &value.platform.os,
+                    &value.platform.architecture,
+                    &value.platform.kernel_release,
+                    &value.platform.system_build,
+                ]
+                .iter()
+                .any(|s| id(s).is_err())
+            {
+                return Err(receipt("Invalid native source-art identity"));
+            }
+            let mut names = std::collections::BTreeSet::new();
+            for library in &value.decoder_libraries {
+                if !names.insert(library.name.as_str())
+                    || !matches!(
+                        library.name.as_str(),
+                        "avcodec" | "avformat" | "avutil" | "swscale" | "swresample"
+                    )
+                    || id(&library.version).is_err()
+                    || !hash(&library.configuration_sha256)
+                    || !hash(&library.binary_sha256)
+                {
+                    return Err(receipt("Invalid native source-art decoder libraries"));
+                }
+            }
+        }
     }
     Ok(())
 }
@@ -302,7 +359,7 @@ fn observation_check(
     Ok(dimensions)
 }
 /// Classic thumbnailSize uses two sequential caps and positive Math.round.
-pub(super) fn thumbnail_size(width: u32, height: u32) -> Result<(u32, u32), EditorError> {
+pub fn thumbnail_size(width: u32, height: u32) -> Result<(u32, u32), EditorError> {
     if width == 0 || height == 0 {
         return Err(receipt("Invalid source thumbnail dimensions"));
     }

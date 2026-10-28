@@ -1,14 +1,14 @@
 use super::*;
 use serde_json::json;
 fn identity() -> SourceArtIdentity {
-    SourceArtIdentity {
+    SourceArtIdentity::Browser(BrowserSourceArtIdentity {
         algorithm: SOURCE_PEAKS_ALGORITHM.into(),
         decode_profile: SOURCE_ART_DECODE_PROFILE.into(),
         browser_version: "142.0.0.0".into(),
         browser_sha256: "a".repeat(64),
         node_sha256: "b".repeat(64),
         module_sha256: "c".repeat(64),
-    }
+    })
 }
 #[test]
 fn typed_peaks_keep_actual_extent_and_float_bits() {
@@ -33,7 +33,7 @@ fn typed_peaks_keep_actual_extent_and_float_bits() {
 #[test]
 fn no_sample_at_one_second_is_not_a_fallback_frame() {
     let mut id = identity();
-    id.algorithm = THUMBNAIL_ALGORITHM.into();
+    id.set_algorithm(THUMBNAIL_ALGORITHM);
     let value = json!({"kind":"thumbnail_no_frame","identity":id,"output_bytes":0,"reason":"no_sample_at_one_second","observation":{"kind":"video","track_id":0,"source_width":16,"source_height":9,"requested_seconds":1.0,"actual_timestamp_seconds":null,"frame_duration_seconds":null}});
     assert!(matches!(
         process::decode_for_test(value.clone(), vec![]).unwrap(),
@@ -47,7 +47,10 @@ fn completion_requires_exact_bytes_and_canonical_clock() {
     assert!(process::decode_for_test(value.clone(), vec![0; 4]).is_err());
     assert!(process::decode_for_test(value, vec![0; 3]).is_err());
     let mut id = identity();
-    id.node_sha256 = "A".repeat(64);
+    let SourceArtIdentity::Browser(value) = &mut id else {
+        panic!()
+    };
+    value.node_sha256 = "A".repeat(64);
     assert!(validate_identity(&id).is_err());
 }
 #[path = "tests/real.rs"]

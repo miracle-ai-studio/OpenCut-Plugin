@@ -100,14 +100,14 @@ fn source(bytes: &[u8]) -> (tempfile::TempDir, Automation, SourceArtRequest) {
     )
 }
 fn identity() -> SourceArtIdentity {
-    SourceArtIdentity {
+    SourceArtIdentity::Browser(BrowserSourceArtIdentity {
         algorithm: SOURCE_PEAKS_ALGORITHM.into(),
         decode_profile: SOURCE_ART_DECODE_PROFILE.into(),
         browser_version: "153.0.8010.12".into(),
         browser_sha256: "b".repeat(64),
         node_sha256: "c".repeat(64),
         module_sha256: "d".repeat(64),
-    }
+    })
 }
 fn decoded(size: usize) -> Arc<DecodedSourceArt> {
     Arc::new(DecodedSourceArt::Waveform {

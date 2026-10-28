@@ -28296,6 +28296,42 @@
       },
       "OpencutCatalogResourcesListOutput": {
         "$defs": {
+          "BrowserSourceArtIdentity": {
+            "additionalProperties": false,
+            "description": "Exact historical source-art proofs remain readable. New native execution\nnever constructs a browser identity or selects this runtime as a fallback.",
+            "properties": {
+              "algorithm": {
+                "description": "source-peaks128-v1 or classic-thumbnail-1s-jpeg08-v1.",
+                "type": "string"
+              },
+              "browser_sha256": {
+                "type": "string"
+              },
+              "browser_version": {
+                "type": "string"
+              },
+              "decode_profile": {
+                "description": "Actual source decoding and resampling path; bound with the module/runtime hashes.",
+                "type": "string"
+              },
+              "module_sha256": {
+                "description": "Hash of the complete pinned source-art renderer module manifest.",
+                "type": "string"
+              },
+              "node_sha256": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "algorithm",
+              "decode_profile",
+              "browser_version",
+              "browser_sha256",
+              "node_sha256",
+              "module_sha256"
+            ],
+            "type": "object"
+          },
           "CatalogResourceCategory": {
             "enum": [
               "shapes",
@@ -28441,6 +28477,52 @@
           "EditorError": {
             "$ref": "#/components/schemas/OpencutFontCatalogOutput/$defs/EditorError"
           },
+          "NativeLibraryIdentity": {
+            "$ref": "#/components/schemas/OpencutQualityInspectOutput/$defs/NativeLibraryIdentity"
+          },
+          "NativeSourceArtIdentity": {
+            "additionalProperties": false,
+            "properties": {
+              "algorithm": {
+                "type": "string"
+              },
+              "decode_profile": {
+                "type": "string"
+              },
+              "decoder_libraries": {
+                "items": {
+                  "$ref": "#/components/schemas/OpencutCatalogResourcesListOutput/$defs/NativeLibraryIdentity"
+                },
+                "type": "array"
+              },
+              "module_sha256": {
+                "type": "string"
+              },
+              "platform": {
+                "$ref": "#/components/schemas/OpencutCatalogResourcesListOutput/$defs/NativeSystemIdentity"
+              },
+              "rasterizer": {
+                "description": "CPU raster/encoding dependency; no GPU or font execution is claimed.",
+                "type": "string"
+              },
+              "worker_sha256": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "algorithm",
+              "decode_profile",
+              "worker_sha256",
+              "module_sha256",
+              "decoder_libraries",
+              "rasterizer",
+              "platform"
+            ],
+            "type": "object"
+          },
+          "NativeSystemIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/NativeSystemIdentity"
+          },
           "ResourceCatalog": {
             "additionalProperties": false,
             "properties": {
@@ -28475,39 +28557,14 @@
             "$ref": "#/components/schemas/OpencutBrandResourcesListOutput/$defs/ResourceLicense"
           },
           "SourceArtIdentity": {
-            "additionalProperties": false,
-            "properties": {
-              "algorithm": {
-                "description": "source-peaks128-v1 or classic-thumbnail-1s-jpeg08-v1.",
-                "type": "string"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OpencutCatalogResourcesListOutput/$defs/NativeSourceArtIdentity"
               },
-              "browser_sha256": {
-                "type": "string"
-              },
-              "browser_version": {
-                "type": "string"
-              },
-              "decode_profile": {
-                "description": "Actual source decoding and resampling path; bound with the module/runtime hashes.",
-                "type": "string"
-              },
-              "module_sha256": {
-                "description": "Hash of the complete pinned source-art renderer module manifest.",
-                "type": "string"
-              },
-              "node_sha256": {
-                "type": "string"
+              {
+                "$ref": "#/components/schemas/OpencutCatalogResourcesListOutput/$defs/BrowserSourceArtIdentity"
               }
-            },
-            "required": [
-              "algorithm",
-              "decode_profile",
-              "browser_version",
-              "browser_sha256",
-              "node_sha256",
-              "module_sha256"
-            ],
-            "type": "object"
+            ]
           }
         },
         "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -32256,8 +32313,20 @@
           "AssetVersion": {
             "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/AssetVersion"
           },
+          "BrowserSourceArtIdentity": {
+            "$ref": "#/components/schemas/OpencutCatalogResourcesListOutput/$defs/BrowserSourceArtIdentity"
+          },
           "EditorError": {
             "$ref": "#/components/schemas/OpencutFontCatalogOutput/$defs/EditorError"
+          },
+          "NativeLibraryIdentity": {
+            "$ref": "#/components/schemas/OpencutQualityInspectOutput/$defs/NativeLibraryIdentity"
+          },
+          "NativeSourceArtIdentity": {
+            "$ref": "#/components/schemas/OpencutCatalogResourcesListOutput/$defs/NativeSourceArtIdentity"
+          },
+          "NativeSystemIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/NativeSystemIdentity"
           },
           "SourceArtData": {
             "oneOf": [
@@ -32411,7 +32480,7 @@
                 "additionalProperties": false,
                 "properties": {
                   "actual_timestamp_seconds": {
-                    "description": "Observed browser seconds, not exact project ticks. Present only\nwhen getSample(1) returned a real sample; no synthetic hold frame.",
+                    "description": "Observed decoder seconds, not exact project ticks. Present only\nwhen getSample(1) returned a real sample; no synthetic hold frame.",
                     "format": "double",
                     "type": [
                       "number",
@@ -32790,6 +32859,9 @@
           "AssetVersion": {
             "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/AssetVersion"
           },
+          "BrowserSourceArtIdentity": {
+            "$ref": "#/components/schemas/OpencutCatalogResourcesListOutput/$defs/BrowserSourceArtIdentity"
+          },
           "EditorError": {
             "$ref": "#/components/schemas/OpencutFontCatalogOutput/$defs/EditorError"
           },
@@ -32813,6 +32885,15 @@
               "bytes_hex"
             ],
             "type": "object"
+          },
+          "NativeLibraryIdentity": {
+            "$ref": "#/components/schemas/OpencutQualityInspectOutput/$defs/NativeLibraryIdentity"
+          },
+          "NativeSourceArtIdentity": {
+            "$ref": "#/components/schemas/OpencutCatalogResourcesListOutput/$defs/NativeSourceArtIdentity"
+          },
+          "NativeSystemIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/NativeSystemIdentity"
           },
           "SourceArtIdentity": {
             "$ref": "#/components/schemas/OpencutCatalogResourcesListOutput/$defs/SourceArtIdentity"
@@ -33037,8 +33118,20 @@
           "AssetVersion": {
             "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/AssetVersion"
           },
+          "BrowserSourceArtIdentity": {
+            "$ref": "#/components/schemas/OpencutCatalogResourcesListOutput/$defs/BrowserSourceArtIdentity"
+          },
           "EditorError": {
             "$ref": "#/components/schemas/OpencutFontCatalogOutput/$defs/EditorError"
+          },
+          "NativeLibraryIdentity": {
+            "$ref": "#/components/schemas/OpencutQualityInspectOutput/$defs/NativeLibraryIdentity"
+          },
+          "NativeSourceArtIdentity": {
+            "$ref": "#/components/schemas/OpencutCatalogResourcesListOutput/$defs/NativeSourceArtIdentity"
+          },
+          "NativeSystemIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/NativeSystemIdentity"
           },
           "SourceArtData": {
             "$ref": "#/components/schemas/OpencutSourceArtFrameOutput/$defs/SourceArtData"
@@ -33244,8 +33337,20 @@
           "AssetVersion": {
             "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/AssetVersion"
           },
+          "BrowserSourceArtIdentity": {
+            "$ref": "#/components/schemas/OpencutCatalogResourcesListOutput/$defs/BrowserSourceArtIdentity"
+          },
           "EditorError": {
             "$ref": "#/components/schemas/OpencutFontCatalogOutput/$defs/EditorError"
+          },
+          "NativeLibraryIdentity": {
+            "$ref": "#/components/schemas/OpencutQualityInspectOutput/$defs/NativeLibraryIdentity"
+          },
+          "NativeSourceArtIdentity": {
+            "$ref": "#/components/schemas/OpencutCatalogResourcesListOutput/$defs/NativeSourceArtIdentity"
+          },
+          "NativeSystemIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/NativeSystemIdentity"
           },
           "SourceArtIdentity": {
             "$ref": "#/components/schemas/OpencutCatalogResourcesListOutput/$defs/SourceArtIdentity"

@@ -31,7 +31,11 @@ struct Analysis {
 fn verified_inventory(raw: &str) -> Result<Vec<(String, CatalogSoundAnalysis)>, EditorError> {
     let inventory: Inventory =
         serde_json::from_str(raw).map_err(|_| invalid("Invalid compiled sound analysis"))?;
-    let identity = &inventory.identity;
+    let SourceArtIdentity::Browser(identity) = &inventory.identity else {
+        return Err(invalid(
+            "Compiled sound inventory requires its exact historical proof",
+        ));
+    };
     let hash = |s: &str| {
         s.len() == 64
             && s.bytes()
@@ -101,7 +105,7 @@ fn verified_inventory(raw: &str) -> Result<Vec<(String, CatalogSoundAnalysis)>, 
                 source_size: source.size as u64,
                 audition_duration_seconds: analysis.audition_duration_seconds,
                 producer_sha256: inventory.producer_sha256.clone(),
-                identity: identity.clone(),
+                identity: inventory.identity.clone(),
                 sample_rate: analysis.sample_rate,
                 channels: analysis.channels,
                 total_samples: analysis.total_samples,

@@ -93,12 +93,39 @@ pub(super) enum Admission {
 }
 fn cost(value: &DecodedSourceArt) -> usize {
     let identity = value.identity();
-    let identity_bytes = identity.algorithm.capacity()
-        + identity.decode_profile.capacity()
-        + identity.browser_version.capacity()
-        + identity.browser_sha256.capacity()
-        + identity.node_sha256.capacity()
-        + identity.module_sha256.capacity();
+    let identity_bytes = match identity {
+        SourceArtIdentity::Browser(v) => {
+            v.algorithm.capacity()
+                + v.decode_profile.capacity()
+                + v.browser_version.capacity()
+                + v.browser_sha256.capacity()
+                + v.node_sha256.capacity()
+                + v.module_sha256.capacity()
+        }
+        SourceArtIdentity::Native(v) => {
+            v.algorithm.capacity()
+                + v.decode_profile.capacity()
+                + v.worker_sha256.capacity()
+                + v.module_sha256.capacity()
+                + v.rasterizer.capacity()
+                + v.platform.os.capacity()
+                + v.platform.architecture.capacity()
+                + v.platform.kernel_release.capacity()
+                + v.platform.system_build.capacity()
+                + v.decoder_libraries.capacity()
+                    * std::mem::size_of::<opencut_contracts::renderer_identity::NativeLibraryIdentity>(
+                    )
+                + v.decoder_libraries
+                    .iter()
+                    .map(|l| {
+                        l.name.capacity()
+                            + l.version.capacity()
+                            + l.configuration_sha256.capacity()
+                            + l.binary_sha256.capacity()
+                    })
+                    .sum::<usize>()
+        }
+    };
     let version = value.version();
     identity_bytes
         + version.id.capacity()

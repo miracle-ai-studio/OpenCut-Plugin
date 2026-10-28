@@ -417,7 +417,7 @@
   ],
   "native_rendering_replacement": {
     "source_base_commit": "74afa429",
-    "execution": "hard cutover in static-frame, visual/audio export and Web continuous visual/audio preview hosts; no selectable browser render backend or fallback; source artwork remains pending and realtime audio follow-up acceptance is in progress",
+    "execution": "hard cutover in static-frame, visual/audio export, Web continuous visual/audio preview and source-art hosts; no selectable browser render backend or fallback; broader format, long-play, lifecycle and delivery acceptance remain open",
     "implementation": "Native worker shares GPU/decode/raster and application sessions across static frames, export and live preview; CPU-only text authoring/three subtitle planners use the same shaping/layout implementation",
     "build": {
       "cli_sha256": "93e1f897aff47a41f9beb8d07d9692c083edf3c7d2448758f6a4ad11e02e577e",
@@ -523,7 +523,7 @@
     "remaining": [
       "broader native text scripts, fonts, synthesis and platform coverage",
       "long native continuous video/audio playback and seek/retirement/resource matrix",
-      "source artwork",
+      "broader source artwork format and color/orientation coverage",
       "broader native audio codecs, prepared preview and long-play/device acceptance",
       "large-source and 4K pixel/memory/performance matrix",
       "runtime dependency/license packaging and clean installation",
@@ -950,8 +950,148 @@
             "final_mp4_sha256": "5a2ec9a189b97147a4dde805f97690d5c2229ef5985f2de684c6e45a47d9f969",
             "scope": "same retained one-second AAC two-cut fixture; no long-export throughput claim",
             "verifier_environment_repair": "four jobs succeeded before missing jsonschema halted validation; installed isolated verifier-only dependency and reused those exact completed jobs without rerendering"
+          },
+          "additional_resume_probes": {
+            "case_checks_completed": 9,
+            "pause_positions_seconds": [
+              0.05,
+              0.17,
+              0.33,
+              0.5,
+              1.05,
+              1.85,
+              2.05,
+              2.75,
+              0.05
+            ],
+            "page_errors": [],
+            "overall_original_gate_passed": false,
+            "resume_stall_reproduced": false,
+            "scope": "Eight four-second text pause positions and one one-second AAC flow; all business flows reached their assertions, but the unchanged zero-HTTP-errors gate failed on one 429 read busy. Not evidence that the retained earlier intermittent stall is fixed.",
+            "http_failures": [
+              {
+                "status": 429,
+                "code": "PREVIEW_PICTURE_BUSY",
+                "count": 1
+              }
+            ]
           }
         }
+      }
+    },
+    "source_art_working_tree": {
+      "base_commit": "f9b079d87876",
+      "status": "integrated native source-art hard cutover passed build/contracts, 169 Rust checks, 30 source-art Web checks, 6 canvas checks, independent source/audio HTTP, scoped editor and export acceptance; full delivery remains false",
+      "implemented_source": [
+        "bounded all-channel concatenated waveform stream with actual EOF, accumulated decoder phase, 128-sample peak alignment and summary output cap",
+        "existing native buffer-source resampler generalized to an observed starting offset; original entrypoint delegates to the same implementation",
+        "CPU Skia source image decode, orientation and bounded JPEG80 encoding with explicit pixel/codec/output quotas; caller retains prepared thumbnail size policy",
+        "native video track metadata observations for source-art/no-frame receipts",
+        "typed native execution identity with exact historical browser proof reads; new source execution requires native identity",
+        "binary worker source/output protocol through parent verified CAS, cancellation, timeout, RSS monitoring and reap-before-gate-release",
+        "single host native source-art assembly and runtime-bound cache; current Web receipts require native identity",
+        "budgeted borrowed codec-frame slices for high-channel waveform chunks"
+      ],
+      "regression_source": [
+        "all-channel bucket boundaries, actual EOF, empty source, quota/cancellation and release",
+        "six retained independent browser resampling references with original 1e-6/100dB gates",
+        "authored RGBA orientation/alpha centers and bounded JPEG output",
+        "real primary video at one second, arbitrary source time and last actual sample after EOF; actual absent sample before track start",
+        "4K thumbnail dimensions and independent FFmpeg expected pixels, unchanged MAE gate 5",
+        "actual owned native child SIGSTOP/cancellation and CAS gate lifetime; empty primary audio EOF"
+      ],
+      "source_checks": {
+        "architecture_tests": 14,
+        "architecture_modules": 24,
+        "temporary_exception_edges": 0,
+        "contract_boundaries": "passed",
+        "build": "passed; integrated release CLI and worker",
+        "behavior": "passed scoped native/source-art/cache/auth/lifecycle, actual independent source/audio HTTP, editor and export acceptance",
+        "generated_and_canonical_contracts": "passed against the same immutable CLI; 184 operations and 12 domains",
+        "web_typecheck_and_build": "passed",
+        "web_tests": 30,
+        "native_tests_passed": 169
+      },
+      "new_dependencies": false,
+      "remaining": [
+        "retained intermittent preview resume stall and earlier 429 busy: this successful scoped run does not prove their root causes resolved",
+        "broader source image/codec/color/orientation and multichannel/mixed-rate source coverage",
+        "long/4K playback and export memory/performance matrix, physical devices, dependency/license packaging and clean installation"
+      ],
+      "delivery_ready": false,
+      "candidate": {
+        "cli_sha256": "4e8d329f2389e5e3d00596b8e4c5453094dd0dfa2f842c60c0b6159bd6b74635",
+        "worker_sha256": "5fbe8d5cb712593f101df4b04884de157c7a135a4a6438cab55c3e9c234c730b",
+        "web_source_digest": "0e5e9fbdcb25"
+      },
+      "actual_source_art_http": {
+        "passed": true,
+        "report_sha256": "d7a7f6bf163f25a686e3d6afecb6f7336fff8a851fc6149234e451094f3b8e8e",
+        "waveform_rates": [
+          48000,
+          44100
+        ],
+        "waveform_maximum_absolute_error": 0.0,
+        "waveform_source_native_samples": 192512,
+        "waveform_target_samples_44100": 176871,
+        "waveform_first_and_cached_seconds": {
+          "48000": [
+            0.9360441458411515,
+            0.0025439870078116655
+          ],
+          "44100": [
+            0.7338757999241352,
+            0.001698995940387249
+          ]
+        },
+        "independent_source_frame_count": 4,
+        "independent_source_frame_pixel_mae_range": [
+          1.9427358217592592,
+          2.4528385416666665
+        ],
+        "pixel_gate": 5,
+        "project_and_durable_jobs_unchanged": true,
+        "scope": "retained four-second AAC source, all-source peaks and four source points; no long throughput or physical device claim"
+      },
+      "native_source_art_regressions": {
+        "passed": true,
+        "source_art_tests": 12,
+        "four_k_thumbnail_pixel_mae": 2.1042169415509258,
+        "four_k_pixel_gate": 5,
+        "five_minute_waveform": "all source buckets and partial EOF tail passed",
+        "native_child_cancellation": "actual owned child SIGSTOP, reap and CAS gate release passed",
+        "host_cached_reuse": "100 requests, one decode, original credential scope and revocation passed"
+      },
+      "canvas_handoff": {
+        "first_actual_ui": "failed: retained static canvas and active worker canvas both visible and exposed as live preview; source thumbnails/waveform already visible",
+        "source_fix": "keep retained paused pixels mounted but hide their canvas while the matching worker surface owns presentation",
+        "scoped_canvas_tests_passed": 6,
+        "web_rebuild": "passed; Rust binaries unchanged",
+        "actual_editor_after_fix": "passed; original zero-preview-HTTP-errors gate, three retained text/source-art/AAC flows",
+        "historical_resume_stall": "not proven resolved by this separate display correction"
+      },
+      "actual_editor": {
+        "passed": true,
+        "report_sha256": "b654502ccc691215a9f011b382c439a8be9931715b3d432ae129acc62ce7b575",
+        "scenarios": 3,
+        "source_art_responses": 50,
+        "source_art_errors": 0,
+        "preview_responses": 1023,
+        "preview_errors": 0,
+        "page_errors": [],
+        "timeline_waveform_pixels": "nontransparent actual canvas bars verified",
+        "source_thumbnail": "actual media/timeline thumbnail visible",
+        "project_unchanged": true,
+        "scope": "three short owned synthetic scenes with play/pause/resume/seek, native source receipts and actual device consumption; historical intermittent resume stall remains open"
+      },
+      "shared_audio_regression": {
+        "actual_http_pcm_maximum_absolute_error": 0.0,
+        "same_worker_pause_seek_replay": true,
+        "public_sigstop_stop_seconds": 0.01952780713327229,
+        "actual_export_passed": true,
+        "actual_export_pcm_maximum_absolute_error": 0.0,
+        "actual_export_video_sha256": "5a2ec9a189b97147a4dde805f97690d5c2229ef5985f2de684c6e45a47d9f969",
+        "scope": "retained one-second AAC two-cut fixture, 48k/44.1k/range WAV and 24-frame video; no long throughput claim"
       }
     }
   }

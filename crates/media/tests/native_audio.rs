@@ -53,6 +53,29 @@ fn wave(format: u16, bits: u16, channels: u16, rate: u32, pcm: &[u8]) -> Source 
         reads: 0,
     }
 }
+#[test]
+fn empty_primary_packet_origin_is_an_observed_eof_without_a_synthetic_sample() {
+    let mut source = wave(1, 16, 1, 48000, &[]);
+    let limit = AudioDecodeLimits {
+        max_channels: 2,
+        max_frame_samples: 4096,
+        max_resident_bytes: 1024 * 1024,
+        max_io_bytes_per_operation: 1024 * 1024,
+        max_packets_per_operation: 1024,
+    };
+    let mut decoder = NativeAudioDecoder::open(&mut source, None, limit, deadline()).unwrap();
+    decoder
+        .select_keyframe_at_pts(&mut source, 0, deadline())
+        .unwrap();
+    assert!(
+        decoder
+            .select_keyframe_at_pts(&mut source, 0, deadline())
+            .is_err()
+    );
+    assert!(decoder.read(&mut source, deadline()).unwrap().is_none());
+    assert!(decoder.reached_eof());
+    assert!(decoder.read(&mut source, deadline()).unwrap().is_none());
+}
 fn limits() -> AudioDecodeLimits {
     AudioDecodeLimits {
         max_channels: 4,

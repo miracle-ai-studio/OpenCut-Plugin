@@ -7,7 +7,7 @@ mod video;
 use crate::{MediaError, MediaResult};
 pub use audio::{AudioDecodeLimits, DecodedAudioFrame, NativeAudioDecoder, NativeAudioTrack};
 use std::time::Instant;
-pub use video::{DecodedVideoFrame, NativeVideoDecoder, VideoColorMatrix};
+pub use video::{DecodedVideoFrame, NativeVideoDecoder, NativeVideoTrack, VideoColorMatrix};
 
 pub trait ByteSource {
     fn len(&self) -> u64;

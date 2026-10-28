@@ -184,9 +184,11 @@ impl NativeAudioDecoder {
                         self.pending.push_back(packet);
                         return Ok(());
                     }
-                    return Err(invalid(
-                        "Native audio has no independent packet at the requested origin",
-                    ));
+                    // A primary track may contain no encoded samples. Bind
+                    // that observed EOF once; consumers decide whether empty
+                    // PCM is an error (export) or a zero summary (source art).
+                    self.started = true;
+                    return Ok(());
                 };
                 if !packet.is_key() {
                     return Err(MediaError::Unsupported(

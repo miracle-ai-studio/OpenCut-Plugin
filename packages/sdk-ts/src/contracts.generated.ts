@@ -11264,18 +11264,50 @@ export namespace OpencutCatalogResourcesListOutput {
   audition_duration_seconds: number;
   bucket_size: number;
   channels: number;
-  identity: SourceArtIdentity;
+  /**
+   * Producer identity retained with the fixed analysis; not this host's
+   * current decoder identity.
+   */
+  identity: NativeSourceArtIdentity | BrowserSourceArtIdentity;
   producer_sha256: string;
   sample_rate: number;
   source_sha256: string;
   source_size: number;
   total_samples: string;
 }
+  export interface NativeSourceArtIdentity {
+  algorithm: string;
+  decode_profile: string;
+  decoder_libraries: NativeLibraryIdentity[];
+  module_sha256: string;
+  platform: NativeSystemIdentity;
+  /**
+   * CPU raster/encoding dependency; no GPU or font execution is claimed.
+   */
+  rasterizer: string;
+  worker_sha256: string;
+}
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
 /**
- * Producer identity retained with the fixed analysis; not this host's
- * current decoder identity.
+ * Audio execution observes its OS/CPU without claiming a graphics or font
+ * subsystem. These are runtime facts, independent of saved project formats.
  */
-  export interface SourceArtIdentity {
+  export interface NativeSystemIdentity {
+  architecture: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
+}
+/**
+ * Exact historical source-art proofs remain readable. New native execution
+ * never constructs a browser identity or selects this runtime as a fallback.
+ */
+  export interface BrowserSourceArtIdentity {
   /**
    * source-peaks128-v1 or classic-thumbnail-1s-jpeg08-v1.
    */
@@ -13802,7 +13834,7 @@ export namespace OpencutSourceArtFrameOutput {
     }
   | {
       /**
-       * Observed browser seconds, not exact project ticks. Present only
+       * Observed decoder seconds, not exact project ticks. Present only
        * when getSample(1) returned a real sample; no synthetic hold frame.
        */
       actual_timestamp_seconds?: number | null;
@@ -13814,6 +13846,7 @@ export namespace OpencutSourceArtFrameOutput {
       track_id: number;
     };
   export type SourceArtNoFrameReason = 'no_sample_at_one_second';
+  export type SourceArtIdentity = NativeSourceArtIdentity | BrowserSourceArtIdentity;
 
   export interface Response {
   data?: SourceFrameResponse | null;
@@ -13854,7 +13887,39 @@ export namespace OpencutSourceArtFrameOutput {
   duration: Time;
   start: Time;
 }
-  export interface SourceArtIdentity {
+  export interface NativeSourceArtIdentity {
+  algorithm: string;
+  decode_profile: string;
+  decoder_libraries: NativeLibraryIdentity[];
+  module_sha256: string;
+  platform: NativeSystemIdentity;
+  /**
+   * CPU raster/encoding dependency; no GPU or font execution is claimed.
+   */
+  rasterizer: string;
+  worker_sha256: string;
+}
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+/**
+ * Audio execution observes its OS/CPU without claiming a graphics or font
+ * subsystem. These are runtime facts, independent of saved project formats.
+ */
+  export interface NativeSystemIdentity {
+  architecture: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
+}
+/**
+ * Exact historical source-art proofs remain readable. New native execution
+ * never constructs a browser identity or selects this runtime as a fallback.
+ */
+  export interface BrowserSourceArtIdentity {
   /**
    * source-peaks128-v1 or classic-thumbnail-1s-jpeg08-v1.
    */
@@ -13953,7 +14018,7 @@ export namespace OpencutSourceArtEvidenceOutput {
     }
   | {
       /**
-       * Observed browser seconds, not exact project ticks. Present only
+       * Observed decoder seconds, not exact project ticks. Present only
        * when getSample(1) returned a real sample; no synthetic hold frame.
        */
       actual_timestamp_seconds?: number | null;
@@ -13964,6 +14029,7 @@ export namespace OpencutSourceArtEvidenceOutput {
       source_width: number;
       track_id: number;
     };
+  export type SourceArtIdentity = NativeSourceArtIdentity | BrowserSourceArtIdentity;
 
   export interface Response {
   data?: SourceEvidenceResult | null;
@@ -13999,7 +14065,39 @@ export namespace OpencutSourceArtEvidenceOutput {
   requested_time?: Time | null;
   version: AssetVersion;
 }
-  export interface SourceArtIdentity {
+  export interface NativeSourceArtIdentity {
+  algorithm: string;
+  decode_profile: string;
+  decoder_libraries: NativeLibraryIdentity[];
+  module_sha256: string;
+  platform: NativeSystemIdentity;
+  /**
+   * CPU raster/encoding dependency; no GPU or font execution is claimed.
+   */
+  rasterizer: string;
+  worker_sha256: string;
+}
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+/**
+ * Audio execution observes its OS/CPU without claiming a graphics or font
+ * subsystem. These are runtime facts, independent of saved project formats.
+ */
+  export interface NativeSystemIdentity {
+  architecture: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
+}
+/**
+ * Exact historical source-art proofs remain readable. New native execution
+ * never constructs a browser identity or selects this runtime as a fallback.
+ */
+  export interface BrowserSourceArtIdentity {
   /**
    * source-peaks128-v1 or classic-thumbnail-1s-jpeg08-v1.
    */
@@ -14165,7 +14263,7 @@ export namespace OpencutSourceArtGetOutput {
     }
   | {
       /**
-       * Observed browser seconds, not exact project ticks. Present only
+       * Observed decoder seconds, not exact project ticks. Present only
        * when getSample(1) returned a real sample; no synthetic hold frame.
        */
       actual_timestamp_seconds?: number | null;
@@ -14177,6 +14275,7 @@ export namespace OpencutSourceArtGetOutput {
       track_id: number;
     };
   export type SourceArtNoFrameReason = 'no_sample_at_one_second';
+  export type SourceArtIdentity = NativeSourceArtIdentity | BrowserSourceArtIdentity;
 
   export interface Response {
   data?: SourceArtResponse | null;
@@ -14216,7 +14315,39 @@ export namespace OpencutSourceArtGetOutput {
   duration: Time;
   start: Time;
 }
-  export interface SourceArtIdentity {
+  export interface NativeSourceArtIdentity {
+  algorithm: string;
+  decode_profile: string;
+  decoder_libraries: NativeLibraryIdentity[];
+  module_sha256: string;
+  platform: NativeSystemIdentity;
+  /**
+   * CPU raster/encoding dependency; no GPU or font execution is claimed.
+   */
+  rasterizer: string;
+  worker_sha256: string;
+}
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+/**
+ * Audio execution observes its OS/CPU without claiming a graphics or font
+ * subsystem. These are runtime facts, independent of saved project formats.
+ */
+  export interface NativeSystemIdentity {
+  architecture: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
+}
+/**
+ * Exact historical source-art proofs remain readable. New native execution
+ * never constructs a browser identity or selects this runtime as a fallback.
+ */
+  export interface BrowserSourceArtIdentity {
   /**
    * source-peaks128-v1 or classic-thumbnail-1s-jpeg08-v1.
    */
@@ -14305,6 +14436,8 @@ export namespace OpencutSourceArtWaveformDisplayGetInput {
 }
 
 export namespace OpencutSourceArtWaveformDisplayGetOutput {
+  export type SourceArtIdentity = NativeSourceArtIdentity | BrowserSourceArtIdentity;
+
   export interface Response {
   data?: SourceArtWaveformDisplayResponse | null;
   error?: EditorError | null;
@@ -14367,7 +14500,39 @@ export namespace OpencutSourceArtWaveformDisplayGetOutput {
    */
   width: number;
 }
-  export interface SourceArtIdentity {
+  export interface NativeSourceArtIdentity {
+  algorithm: string;
+  decode_profile: string;
+  decoder_libraries: NativeLibraryIdentity[];
+  module_sha256: string;
+  platform: NativeSystemIdentity;
+  /**
+   * CPU raster/encoding dependency; no GPU or font execution is claimed.
+   */
+  rasterizer: string;
+  worker_sha256: string;
+}
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+/**
+ * Audio execution observes its OS/CPU without claiming a graphics or font
+ * subsystem. These are runtime facts, independent of saved project formats.
+ */
+  export interface NativeSystemIdentity {
+  architecture: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
+}
+/**
+ * Exact historical source-art proofs remain readable. New native execution
+ * never constructs a browser identity or selects this runtime as a fallback.
+ */
+  export interface BrowserSourceArtIdentity {
   /**
    * source-peaks128-v1 or classic-thumbnail-1s-jpeg08-v1.
    */

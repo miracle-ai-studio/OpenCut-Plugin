@@ -154,10 +154,26 @@ pub fn resample_preparation(
     target_rate: u32,
     checkpoint: &mut dyn FnMut() -> Result<()>,
 ) -> Result<()> {
+    resample_preparation_at(source, target, source_rate, target_rate, 0.0, checkpoint)
+}
+
+/// The same buffer-source sampler with an observed fractional starting offset.
+/// Streamed source summaries keep a guarded native block and its accumulated
+/// decoder phase; they do not author a placement clock or allocate the source.
+pub fn resample_preparation_at(
+    source: &[f32],
+    target: &mut [f32],
+    source_rate: u32,
+    target_rate: u32,
+    source_offset: f64,
+    checkpoint: &mut dyn FnMut() -> Result<()>,
+) -> Result<()> {
     if source_rate == 0
         || target_rate == 0
         || source_rate > 384000
         || target_rate > 192000
+        || !source_offset.is_finite()
+        || source_offset < 0.0
         || source.iter().any(|v| !v.is_finite())
     {
         return Err(invalid(
@@ -165,7 +181,7 @@ pub fn resample_preparation(
         ));
     }
     target.fill(0.0);
-    let mut position = 0.0;
+    let mut position = source_offset;
     let step = f64::from(source_rate) / f64::from(target_rate);
     for (at, value) in target.iter_mut().enumerate() {
         if at % 4096 == 0 {

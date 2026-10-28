@@ -34,6 +34,15 @@ fn prepare(
     kind: AssetKind,
     query: SourceArtQuery,
 ) -> (PathBuf, PreparedSourceArt) {
+    prepare_at(directory, path, kind, query, None)
+}
+fn prepare_at(
+    directory: &Path,
+    path: &Path,
+    kind: AssetKind,
+    query: SourceArtQuery,
+    at: Option<Time>,
+) -> (PathBuf, PreparedSourceArt) {
     let root = directory.join("cas");
     let old = Asset {
         id: "source".into(),
@@ -96,33 +105,45 @@ fn prepare(
             deadline_ms: 60000,
         },
     });
-    let prepared = prepare_source_art(
-        &store,
-        &SourceArtRequest {
-            project_id: "project".into(),
-            revision: "fixed".into(),
-            asset_id: "source".into(),
-            request_id: "waiter".into(),
-            query,
-        },
-    )
-    .unwrap();
+    let prepared = if let Some(time) = at {
+        prepare_source_frame(
+            &store,
+            &opencut_contracts::source_evidence::SourceFrameRequest {
+                project_id: "project".into(),
+                revision: "fixed".into(),
+                asset_id: "source".into(),
+                request_id: "source-point".into(),
+                time,
+            },
+        )
+        .unwrap()
+    } else {
+        let prepared = prepare_source_art(
+            &store,
+            &SourceArtRequest {
+                project_id: "project".into(),
+                revision: "fixed".into(),
+                asset_id: "source".into(),
+                request_id: "waiter".into(),
+                query,
+            },
+        )
+        .unwrap();
+        prepared
+    };
     (root, prepared)
 }
 fn config(thumbnail: bool) -> SourceArtProcessConfig {
-    let node = PathBuf::from(std::env::var_os("OPENCUT_NODE").expect("Set absolute OPENCUT_NODE"));
-    let chromium =
-        PathBuf::from(std::env::var_os("OPENCUT_CHROME").expect("Set absolute OPENCUT_CHROME"));
-    let runner = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../packages/classic-source-art-renderer/host/runner.mjs");
-    let mut identity = resolve_identity(&node, &runner, &chromium).unwrap();
+    let worker = PathBuf::from(
+        std::env::var_os("OPENCUT_RENDER_WORKER").expect("Set explicit native worker"),
+    );
+    let mut identity = resolve_identity(&worker).unwrap();
     if thumbnail {
-        identity.algorithm = THUMBNAIL_ALGORITHM.into();
+        identity.set_algorithm(THUMBNAIL_ALGORITHM);
     }
     SourceArtProcessConfig {
-        node,
-        runner,
-        chromium,
+        worker,
+        strict_cgroup: None,
         deadline: Duration::from_secs(60),
         max_encoded_bytes: 32 * 1024 * 1024,
         max_pcm_bytes: 256 * 1024 * 1024,
@@ -162,7 +183,7 @@ fn wav(path: &Path) {
     std::fs::write(path, out).unwrap();
 }
 #[test]
-#[ignore = "Requires absolute OPENCUT_NODE/OPENCUT_CHROME and pinned local runtime"]
+#[ignore = "Requires explicit integrated OPENCUT_RENDER_WORKER; run serially"]
 fn actual_multichannel_streamed_peaks_use_decoded_extent() {
     let temp = tempfile::tempdir().unwrap();
     let path = temp.path().join("four-channel.wav");
@@ -203,7 +224,7 @@ fn actual_multichannel_streamed_peaks_use_decoded_extent() {
     drop(Gate::exclusive(&root).unwrap());
 }
 #[test]
-#[ignore = "Requires absolute OPENCUT_NODE/OPENCUT_CHROME and pinned local runtime"]
+#[ignore = "Requires explicit integrated OPENCUT_RENDER_WORKER; run serially"]
 fn actual_five_minute_source_preserves_every_bucket_and_partial_tail() {
     use std::io::Write;
     let temp = tempfile::tempdir().unwrap();
@@ -288,7 +309,7 @@ fn actual_five_minute_source_preserves_every_bucket_and_partial_tail() {
     drop(Gate::exclusive(&root).unwrap());
 }
 #[test]
-#[ignore = "Requires absolute OPENCUT_NODE/OPENCUT_CHROME and pinned local runtime"]
+#[ignore = "Requires explicit integrated OPENCUT_RENDER_WORKER; run serially"]
 fn actual_image_jpeg_has_observed_dimensions_and_independent_color() {
     let temp = tempfile::tempdir().unwrap();
     let path = temp.path().join("red.png");
@@ -349,7 +370,7 @@ fn actual_image_jpeg_has_observed_dimensions_and_independent_color() {
     }
 }
 #[test]
-#[ignore = "Requires OPENCUT_NODE/OPENCUT_CHROME, pinned runtime and FFmpeg"]
+#[ignore = "Requires explicit integrated native worker and FFmpeg; run serially"]
 fn actual_primary_video_selects_one_second_and_no_sample_is_explicit() {
     let temp = tempfile::tempdir().unwrap();
     let path = temp.path().join("color.mp4");
@@ -418,6 +439,61 @@ fn actual_primary_video_selects_one_second_and_no_sample_is_explicit() {
     for px in decoded.stdout.chunks_exact(3) {
         assert!(px[2] > 220 && px[0] < 35 && px[1] < 35);
     }
+    // Reuse the same encoded source through the actual arbitrary-time
+    // application preparation. The source clock is independent of the fixture's
+    // nominal 4-second metadata; getSample keeps the last real prior sample.
+    for (ticks, actual, red) in [(5u32, 0.5, true), (30, 1.9, false)] {
+        let (root, point) = prepare_at(
+            temp.path(),
+            &path,
+            AssetKind::Video,
+            SourceArtQuery::Thumbnail {},
+            Some(Time {
+                ticks: ticks.to_string(),
+                timebase: 10,
+            }),
+        );
+        let mut configuration = config(true);
+        configuration.identity.set_algorithm(SOURCE_FRAME_ALGORITHM);
+        let result = SourceArtProcessExecutor::new(configuration, root)
+            .unwrap()
+            .execute(&point, &mut Live)
+            .unwrap();
+        let DecodedSourceArt::ThumbnailReady {
+            observation,
+            jpeg_bytes,
+            ..
+        } = result
+        else {
+            panic!()
+        };
+        let SourceArtThumbnailObservation::Video {
+            requested_seconds,
+            actual_timestamp_seconds,
+            ..
+        } = observation
+        else {
+            panic!()
+        };
+        assert_eq!(requested_seconds, f64::from(ticks) / 10.0);
+        assert!((actual_timestamp_seconds.unwrap() - actual).abs() < 1e-6);
+        let jpeg = temp.path().join(format!("source-point-{ticks}.jpg"));
+        std::fs::write(&jpeg, jpeg_bytes).unwrap();
+        let pixels = std::process::Command::new("ffmpeg")
+            .args(["-v", "error", "-i"])
+            .arg(&jpeg)
+            .args(["-f", "rawvideo", "-pix_fmt", "rgb24", "pipe:1"])
+            .output()
+            .unwrap();
+        assert!(pixels.status.success());
+        for pixel in pixels.stdout.chunks_exact(3) {
+            if red {
+                assert!(pixel[0] > 220 && pixel[1] < 35 && pixel[2] < 35);
+            } else {
+                assert!(pixel[2] > 220 && pixel[0] < 35 && pixel[1] < 35);
+            }
+        }
+    }
     // getSample(1) is null when the real primary track starts at 2s.
     // This tests absence at the requested timestamp, without redefining short
     // nonempty tracks as half-open (Mediabunny retains their last sample).
@@ -475,10 +551,120 @@ fn actual_primary_video_selects_one_second_and_no_sample_is_explicit() {
     assert_eq!(actual_timestamp_seconds, None);
     assert_eq!(frame_duration_seconds, None);
 }
+#[test]
+#[ignore = "Requires explicit integrated native worker and ffmpeg; run serially"]
+fn actual_4k_primary_thumbnail_preserves_extent_and_independent_pixels() {
+    let temp = tempfile::tempdir().unwrap();
+    let path = temp.path().join("four-k.mp4");
+    let generated = std::process::Command::new("ffmpeg")
+        .args([
+            "-v",
+            "error",
+            "-f",
+            "lavfi",
+            "-i",
+            "testsrc2=s=3840x2160:r=2:d=1",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "ultrafast",
+            "-refs",
+            "1",
+            "-pix_fmt",
+            "yuv420p",
+        ])
+        .arg(&path)
+        .output()
+        .unwrap();
+    assert!(
+        generated.status.success(),
+        "{}",
+        String::from_utf8_lossy(&generated.stderr)
+    );
+    let (root, prepared) = prepare(
+        temp.path(),
+        &path,
+        AssetKind::Video,
+        SourceArtQuery::Thumbnail {},
+    );
+    let result = SourceArtProcessExecutor::new(config(true), root)
+        .unwrap()
+        .execute(&prepared, &mut Live)
+        .unwrap();
+    let DecodedSourceArt::ThumbnailReady {
+        width,
+        height,
+        jpeg_bytes,
+        observation,
+        ..
+    } = result
+    else {
+        panic!()
+    };
+    assert_eq!((width, height), (1280, 720));
+    let SourceArtThumbnailObservation::Video {
+        source_width,
+        source_height,
+        requested_seconds,
+        actual_timestamp_seconds,
+        ..
+    } = observation
+    else {
+        panic!()
+    };
+    assert_eq!((source_width, source_height), (3840, 2160));
+    assert_eq!(requested_seconds, 1.0);
+    assert_eq!(actual_timestamp_seconds, Some(0.5));
+    let jpeg = temp.path().join("thumbnail.jpg");
+    std::fs::write(&jpeg, jpeg_bytes).unwrap();
+    let actual = std::process::Command::new("ffmpeg")
+        .args(["-v", "error", "-i"])
+        .arg(&jpeg)
+        .args(["-f", "rawvideo", "-pix_fmt", "rgb24", "pipe:1"])
+        .output()
+        .unwrap();
+    // Independently decode the observed source sample and scale with libswscale.
+    // Expected pixels never use the native thumbnail implementation or its JPEG.
+    let expected = std::process::Command::new("ffmpeg")
+        .args(["-v", "error", "-i"])
+        .arg(&path)
+        .args([
+            "-vf",
+            "select=eq(n\\,1),scale=1280:720:flags=bilinear",
+            "-frames:v",
+            "1",
+            "-f",
+            "rawvideo",
+            "-pix_fmt",
+            "rgb24",
+            "pipe:1",
+        ])
+        .output()
+        .unwrap();
+    assert!(
+        actual.status.success() && expected.status.success(),
+        "{}",
+        String::from_utf8_lossy(&expected.stderr)
+    );
+    assert_eq!(actual.stdout.len(), 1280 * 720 * 3);
+    assert_eq!(actual.stdout.len(), expected.stdout.len());
+    let mae = actual
+        .stdout
+        .iter()
+        .zip(&expected.stdout)
+        .map(|(a, b)| (f64::from(*a) - f64::from(*b)).abs())
+        .sum::<f64>()
+        / actual.stdout.len() as f64;
+    eprintln!("4K source thumbnail independent pixel MAE: {mae}");
+    assert!(
+        mae <= 5.0,
+        "Independent source thumbnail pixel MAE {mae} exceeds 5"
+    );
+}
 #[cfg(unix)]
 #[test]
-#[ignore = "Requires absolute OPENCUT_NODE; real isolated child teardown test"]
-fn cancellation_reaps_actual_detached_child_before_releasing_cas() {
+#[ignore = "Requires explicit integrated native worker; actual SIGSTOP/cancellation/gate test"]
+fn cancellation_reaps_actual_native_child_before_releasing_cas() {
     let temp = tempfile::tempdir().unwrap();
     let path = temp.path().join("small.wav");
     wav(&path);
@@ -494,57 +680,67 @@ fn cancellation_reaps_actual_detached_child_before_releasing_cas() {
             },
         },
     );
-    let pid_path = temp.path().join("child.pid");
-    let runner = temp.path().join("runner.mjs");
-    let script = format!(
-        "import{{spawn}}from'node:child_process';import fs from'node:fs';import readline from'node:readline';let child,execution;const r=readline.createInterface({{input:process.stdin}});r.on('line',line=>{{const p=JSON.parse(line);if(p.type==='begin'){{execution=p.executionId;child=spawn('/bin/sleep',['60'],{{detached:true,stdio:'ignore'}});fs.writeFileSync({},String(child.pid));process.stdout.write(JSON.stringify({{executionId:execution,type:'started',browserPid:child.pid}})+'\\n');}}else if(p.type==='cancel'){{child.kill('SIGKILL');child.once('exit',()=>{{r.close();process.exit(0)}});}}}});",
-        serde_json::to_string(&pid_path.to_string_lossy()).unwrap()
-    );
-    std::fs::write(&runner, script).unwrap();
-    let node: PathBuf = std::env::var_os("OPENCUT_NODE")
-        .expect("Set absolute OPENCUT_NODE")
-        .into();
-    let mut id = super::identity();
-    id.algorithm = SOURCE_PEAKS_ALGORITHM.into();
-    let config = SourceArtProcessConfig {
-        node: node.clone(),
-        runner,
-        chromium: node,
-        deadline: Duration::from_secs(60),
-        max_encoded_bytes: 32 * 1024 * 1024,
-        max_pcm_bytes: 256 * 1024 * 1024,
-        max_rss_bytes: 2 * 1024 * 1024 * 1024,
-        identity: id,
-    };
+    let config = config(false);
+    let worker = config.worker.clone();
     struct Cancel {
         root: PathBuf,
-        pid: PathBuf,
-        observed: bool,
+        worker: PathBuf,
+        observed: Option<u32>,
     }
     impl SourceArtCheckpoint for Cancel {
         fn checkpoint(&mut self) -> Result<(), EditorError> {
-            if self.pid.exists() {
+            if self.observed.is_some() {
+                return Err(error("CANCELLED", "Synthetic native cancellation"));
+            }
+            let output = std::process::Command::new("ps")
+                .args(["-axo", "pid=,ppid=,comm="])
+                .output()
+                .unwrap();
+            for row in std::str::from_utf8(&output.stdout).unwrap().lines() {
+                // Preserve the executable path, including spaces, after the
+                // two numeric ps columns.
+                let row = row.trim_start();
+                let Some((pid, rest)) = row.split_once(char::is_whitespace) else {
+                    continue;
+                };
+                let rest = rest.trim_start();
+                let Some((parent, command)) = rest.split_once(char::is_whitespace) else {
+                    continue;
+                };
+                if parent.parse::<u32>().ok() != Some(std::process::id())
+                    || Path::new(command.trim_start()) != self.worker
+                {
+                    continue;
+                }
+                let pid = pid.parse::<u32>().unwrap();
+                assert_eq!(unsafe { libc::getpgid(pid as i32) }, pid as i32);
                 assert_eq!(
                     Gate::exclusive(&self.root).err().unwrap().code,
                     "STORAGE_BUSY"
                 );
-                self.observed = true;
-                return Err(error("CANCELLED", "Synthetic actual cancellation"));
+                assert_eq!(unsafe { libc::kill(pid as i32, libc::SIGSTOP) }, 0);
+                self.observed = Some(pid);
+                return Err(error("CANCELLED", "Synthetic native cancellation"));
             }
             Ok(())
         }
     }
     let mut cancel = Cancel {
         root: root.clone(),
-        pid: pid_path.clone(),
-        observed: false,
+        worker,
+        observed: None,
     };
     let result = SourceArtProcessExecutor::new(config, root.clone())
         .unwrap()
         .execute(&prepared, &mut cancel);
     assert_eq!(result.unwrap_err().code, "CANCELLED");
-    assert!(cancel.observed);
-    let pid = std::fs::read_to_string(pid_path).unwrap().parse().unwrap();
-    assert!(!crate::classic_audio::lifecycle::group_exists(pid));
+    let pid = cancel
+        .observed
+        .expect("Owned native child must be observed");
+    assert_eq!(unsafe { libc::kill(pid as i32, 0) }, -1);
+    assert_eq!(
+        std::io::Error::last_os_error().raw_os_error(),
+        Some(libc::ESRCH)
+    );
     drop(Gate::exclusive(&root).unwrap());
 }

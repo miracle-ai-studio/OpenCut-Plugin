@@ -11,6 +11,18 @@ pub enum VideoColorMatrix {
     Rgb,
     Unspecified,
 }
+/// Container/codec observations for source artwork, including no-frame results.
+/// These are decoded source facts; they never replace an authored scene clock.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct NativeVideoTrack {
+    pub stream_index: u32,
+    pub track_id: i32,
+    pub coded_width: u32,
+    pub coded_height: u32,
+    pub rotation_degrees: u16,
+    pub pixel_aspect_numerator: i32,
+    pub pixel_aspect_denominator: i32,
+}
 #[derive(Debug)]
 pub struct DecodedVideoFrame {
     pub width: u32,
@@ -151,6 +163,25 @@ impl NativeVideoDecoder {
 
     pub fn stream_index(&self) -> usize {
         self.stream
+    }
+    pub fn track(&self) -> MediaResult<NativeVideoTrack> {
+        if self.retired {
+            return Err(invalid("Native video decoder was retired"));
+        }
+        let stream = self
+            .input
+            .stream(self.stream)
+            .ok_or_else(|| invalid("Selected native video stream disappeared"))?;
+        let aspect = self.decoder.aspect_ratio();
+        Ok(NativeVideoTrack {
+            stream_index: self.stream as u32,
+            track_id: stream.id(),
+            coded_width: self.decoder.width(),
+            coded_height: self.decoder.height(),
+            rotation_degrees: self.rotation,
+            pixel_aspect_numerator: aspect.numerator(),
+            pixel_aspect_denominator: aspect.denominator(),
+        })
     }
     pub fn encoded_bytes_read(&self) -> u64 {
         self.bridge.bytes_read()

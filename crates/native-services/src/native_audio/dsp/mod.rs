@@ -6,7 +6,7 @@ mod soundtouch;
 pub use compressor::{ClassicCompressor, clip_export, mastering_required};
 pub use memory::{PcmArray, PcmMemory, PcmReservation};
 use opencut_contracts::EditorError;
-pub use resample::{DecodeResampler, resample_preparation};
+pub use resample::{DecodeResampler, resample_preparation, resample_preparation_at};
 pub use soundtouch::{SoundTouch, render_preserved_pitch};
 type Result<T> = std::result::Result<T, EditorError>;
 fn invalid(message: &str) -> EditorError {

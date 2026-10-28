@@ -190,14 +190,14 @@ impl Fixture {
     }
     fn decoded(&self, peak: f32) -> DecodedSourceArt {
         DecodedSourceArt::Waveform {
-            identity: SourceArtIdentity {
+            identity: SourceArtIdentity::Browser(BrowserSourceArtIdentity {
                 algorithm: SOURCE_PEAKS_ALGORITHM.into(),
                 decode_profile: SOURCE_ART_DECODE_PROFILE.into(),
                 browser_version: "pinned".into(),
                 browser_sha256: "b".repeat(64),
                 node_sha256: "c".repeat(64),
                 module_sha256: "d".repeat(64),
-            },
+            }),
             version: self.captured.snapshot.project.assets[0].version.clone(),
             sample_rate: 48000,
             channels: 3,

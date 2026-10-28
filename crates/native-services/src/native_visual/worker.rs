@@ -160,6 +160,11 @@ fn run(channel: &Rc<RefCell<Channel>>) -> Result<(), EditorError> {
         let Channel { input, output, .. } = &mut *channel;
         return crate::native_audio::worker::serve_initialized(packet, input, output);
     }
+    if packet.meta["purpose"] == "source_art" {
+        let mut channel = channel.borrow_mut();
+        let Channel { input, output, .. } = &mut *channel;
+        return crate::source_art::worker::serve(packet, input, output);
+    }
     let policy: LocalVisualExecutionPolicy = serde_json::from_value(
         packet
             .meta

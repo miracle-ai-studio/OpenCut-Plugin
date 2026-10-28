@@ -17,8 +17,10 @@ import { bytesToHex } from "@noble/hashes/utils.js";
 const asset = { id: "source", version: { id: "pinned", content_hash: "a".repeat(64), size: 4 } } as Asset;
 const selection: ArtSelection = { projectId: "project", revision: "fixed", asset,
   query: { kind: "waveform", sample_rate: 48000, projection: { kind: "source", range: null, bins: 3 } } };
-const identity = { algorithm: "source-peaks128-v1", decode_profile: "fixed-cas-streamed-concat-webaudio-canvas", browser_version: "pinned-browser",
-  browser_sha256: "b".repeat(64), node_sha256: "c".repeat(64), module_sha256: "d".repeat(64) };
+const identity = { algorithm: "source-peaks128-v1", decode_profile: "fixed-cas-native-libav-concat-linear-skia-jpeg",
+  worker_sha256: "a".repeat(64), module_sha256: "c".repeat(64), rasterizer: "skia-safe-0.153.3-srgb-jpeg80",
+  platform: { os: "test", architecture: "test", kernel_release: "test", system_build: "test" },
+  decoder_libraries: ["avcodec", "avformat", "avutil", "swscale", "swresample"].map(name => ({name, version: "test", configuration_sha256: "d".repeat(64), binary_sha256: "e".repeat(64)})) };
 const response = (request: SourceArtRequest): SourceArtResponse => ({ 
   project_id: request.project_id, revision: request.revision, asset_id: request.asset_id, version: asset.version, identity,
   data: { kind: "waveform", sample_rate: 48000, channels: 3, total_samples: "384", bucket_size: 128,
@@ -65,6 +67,13 @@ it("rejects changed receipts and checksum bytes, budgets decoded JPEG pixels and
   expect(() => allocateArt({ ...base, revision: "other" }, selection)).toThrow("invalid");
   const changed = structuredClone(base); changed.identity.module_sha256 = "missing";
   expect(() => allocateArt(changed, selection)).toThrow("invalid");
+  const mixed = structuredClone(base) as SourceArtResponse & { identity: { browser_version?: string } };
+  mixed.identity.browser_version = "153.0.0.0";
+  expect(() => allocateArt(mixed, selection)).toThrow("invalid");
+  const duplicate = structuredClone(base);
+  if (!("decoder_libraries" in duplicate.identity)) throw Error("Native fixture required");
+  duplicate.identity.decoder_libraries[1] = duplicate.identity.decoder_libraries[0];
+  expect(() => allocateArt(duplicate, selection)).toThrow("invalid");
   const thumbnailSelection: ArtSelection = { ...selection, query: { kind: "thumbnail" } };
   const jpeg = Uint8Array.from([255, 216, 255, 217]);
   const thumbnail: SourceArtResponse = { ...base, identity: { ...identity, algorithm: "classic-thumbnail-1s-jpeg08-v1" }, data: {

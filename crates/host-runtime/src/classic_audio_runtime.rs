@@ -52,33 +52,6 @@ struct RuntimePaths {
     chromium: PathBuf,
     runner: PathBuf,
 }
-/// Remaining source-art observation assets share the pinned media package.
-/// This resolves installation data only; audio execution never selects it.
-pub(crate) struct SourceArtDependencies {
-    pub node: PathBuf,
-    pub chromium: PathBuf,
-    pub audio_package: PathBuf,
-}
-pub(crate) fn source_art_dependencies() -> Result<SourceArtDependencies, EditorError> {
-    let paths = resolve(&HostConfiguration::capture())
-        .map_err(|reason| EditorError::new("CAPABILITY_UNAVAILABLE", reason.reason()))?;
-    let audio_package = paths
-        .runner
-        .parent()
-        .and_then(Path::parent)
-        .ok_or_else(|| {
-            EditorError::new(
-                "CAPABILITY_UNAVAILABLE",
-                "Source-art media package is unavailable",
-            )
-        })?
-        .to_path_buf();
-    Ok(SourceArtDependencies {
-        node: paths.node,
-        chromium: paths.chromium,
-        audio_package,
-    })
-}
 impl Unavailable {
     fn reason(&self) -> &str {
         match self {

@@ -12,8 +12,10 @@ import type { SourceArtRequest, SourceArtResponse } from "./service";
 import { ArtDisplay, useSourceArt } from "./view";
 
 const asset = initialSnapshot().project.assets[0];
-const identity = { algorithm: "source-peaks128-v1", decode_profile: "fixed-cas-streamed-concat-webaudio-canvas", browser_version: "pinned-browser",
-  browser_sha256: "b".repeat(64), node_sha256: "c".repeat(64), module_sha256: "d".repeat(64) };
+const identity = { algorithm: "source-peaks128-v1", decode_profile: "fixed-cas-native-libav-concat-linear-skia-jpeg",
+  worker_sha256: "a".repeat(64), module_sha256: "c".repeat(64), rasterizer: "skia-safe-0.153.3-srgb-jpeg80",
+  platform: { os: "test", architecture: "test", kernel_release: "test", system_build: "test" },
+  decoder_libraries: ["avcodec", "avformat", "avutil", "swscale", "swresample"].map(name => ({name, version: "test", configuration_sha256: "d".repeat(64), binary_sha256: "e".repeat(64)})) };
 const selection: WaveformDisplaySelection = { projectId: "project", revision: "fixed", asset, display: {
   sequence_id: "scene", track_id: "audio", element_id: "clip", sample_rate: 48000, temporary_gain: null,
   viewport: { clip_left_px: .25, clip_right_px: 4.25, pixels_per_second: 80, css_height: 3.5, device_pixel_ratio: 2 } } };

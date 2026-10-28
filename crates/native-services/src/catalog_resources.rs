@@ -18,6 +18,7 @@ pub struct NativeCatalogSound {
     pub root: PathBuf,
     pub runtime: Option<CatalogArchiveRuntime>,
     pub allow_download: bool,
+    pub probe: fn() -> Result<opencut_media::FfmpegBackend, EditorError>,
 }
 fn error(message: &str) -> EditorError {
     EditorError::new("RESOURCE_SOURCE_INVALID", message)
@@ -382,7 +383,7 @@ impl CatalogSoundAcquire for NativeCatalogSound {
             .write_all(&bytes)
             .and_then(|_| temporary.as_file().sync_all())
             .map_err(|_| error("Cannot stage pinned audio bytes"))?;
-        let backend = opencut_media::FfmpegBackend::discover().map_err(|_| {
+        let backend = (self.probe)().map_err(|_| {
             EditorError::new(
                 "CAPABILITY_UNAVAILABLE",
                 "Pinned sound probe is unavailable",
@@ -637,6 +638,10 @@ mod tests {
             root: temp.path().join("missing"),
             runtime: None,
             allow_download: false,
+            probe: || {
+                opencut_media::FfmpegBackend::discover()
+                    .map_err(|e| EditorError::new(e.code(), e.to_string()))
+            },
         };
         assert_eq!(
             source
@@ -830,6 +835,10 @@ mod tests {
                 root: self.root.clone(),
                 runtime: None,
                 allow_download: false,
+                probe: || {
+                    opencut_media::FfmpegBackend::discover()
+                        .map_err(|e| EditorError::new(e.code(), e.to_string()))
+                },
             }
             .generate(recipe, checkpoint)
         }

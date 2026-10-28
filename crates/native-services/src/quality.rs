@@ -117,6 +117,7 @@ pub fn measure(
     database: &Path,
     artifact_root: &Path,
     input: &PreparedQuality,
+    resolve_tools: impl FnOnce() -> Result<(PathBuf, PathBuf), EditorError>,
     mut checkpoint: impl FnMut() -> Result<(), EditorError> + Send,
 ) -> Result<MeasuredQuality, EditorError> {
     checkpoint()?;
@@ -175,16 +176,9 @@ pub fn measure(
     }
     copy.sync()?;
     drop(source);
-    let ffmpeg = crate::classic_video::resolve_tool(
-        std::env::var_os("OPENCUT_FFMPEG")
-            .map(Into::into)
-            .unwrap_or_else(|| "ffmpeg".into()),
-    )?;
-    let ffprobe = crate::classic_video::resolve_tool(
-        std::env::var_os("OPENCUT_FFPROBE")
-            .map(Into::into)
-            .unwrap_or_else(|| "ffprobe".into()),
-    )?;
+    let (ffmpeg, ffprobe) = resolve_tools()?;
+    let ffmpeg = crate::classic_video::resolve_tool(ffmpeg)?;
+    let ffprobe = crate::classic_video::resolve_tool(ffprobe)?;
     let ffmpeg_path = ffmpeg.clone();
     let ffprobe_path = ffprobe.clone();
     let ffmpeg_sha256 = hash_file(&ffmpeg)?;
@@ -263,6 +257,7 @@ pub fn measure(
     _: &Path,
     _: &Path,
     _: &PreparedQuality,
+    _: impl FnOnce() -> Result<(PathBuf, PathBuf), EditorError>,
     _: impl FnMut() -> Result<(), EditorError> + Send,
 ) -> Result<MeasuredQuality, EditorError> {
     Err(EditorError::new(

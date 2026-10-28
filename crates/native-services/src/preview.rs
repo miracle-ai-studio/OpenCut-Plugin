@@ -6,8 +6,7 @@ use opencut_editor_application::{
     preview::{Effect, Machine},
 };
 use opencut_media::{
-    CancellationToken, ContinuousPreviewProducer, FfmpegBackend, PreviewStreamLimits,
-    PreviewStreamRead,
+    CancellationToken, ContinuousPreviewProducer, PreviewStreamLimits, PreviewStreamRead,
 };
 use opencut_project_render::{
     ProjectRenderAdapter, ResolvedProjectRenderRequest, ResolvedProjectSnapshot,
@@ -435,7 +434,12 @@ pub fn events(database: &Path, input: &EventsInput) -> Result<Events, EditorErro
     refresh(entry, now());
     entry.machine.events(input.cursor.as_deref())
 }
-pub fn control(database: &Path, principal: &str, input: &Control) -> Result<Session, EditorError> {
+pub fn control(
+    database: &Path,
+    principal: &str,
+    input: &Control,
+    probe: &crate::media::ProbeFactory,
+) -> Result<Session, EditorError> {
     let database = root(database)?;
     let key = (database.clone(), input.session_id.clone());
     let prepared = {
@@ -484,7 +488,7 @@ pub fn control(database: &Path, principal: &str, input: &Control) -> Result<Sess
             .tempdir_in(inputs.path())
             .map_err(|_| err("STORAGE_ERROR"))?;
         let output = directory.path().to_path_buf();
-        let backend = FfmpegBackend::discover().map_err(media)?;
+        let backend = probe()?;
         #[cfg(unix)]
         let backend = backend.with_output_admission(Arc::new(PreviewAdmission {
             budget: opencut_storage_budget::Budget::new(

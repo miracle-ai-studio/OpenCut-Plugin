@@ -55,7 +55,7 @@ pub(super) fn runtime() -> Result<CatalogArchiveRuntime, EditorError> {
     {
         return Err(unavailable());
     }
-    opencut_media::FfmpegBackend::discover().map_err(|_| unavailable())?;
+    crate::media_tool_runtime::backend().map_err(|_| unavailable())?;
     Ok(CatalogArchiveRuntime { node, runner })
 }
 fn allowed() -> bool {
@@ -107,6 +107,7 @@ pub(super) fn import(
         None
     };
     let native = NativeCatalogSound {
+        probe: crate::media_tool_runtime::backend,
         root: host.app.asset_store_root().to_path_buf(),
         runtime,
         allow_download: allowed(),
@@ -138,6 +139,7 @@ pub(super) fn generate(
     host.app
         .authorize_project(SceneCommitIntent::CatalogGenerate(request))?;
     let native = NativeCatalogSound {
+        probe: crate::media_tool_runtime::backend,
         root: host.app.asset_store_root().to_path_buf(),
         runtime: None,
         allow_download: false,
@@ -204,6 +206,7 @@ pub(super) fn preview(
     // resource policy is defined. No project/CAS selector is accepted.
     host.app.package_require_owner()?;
     let native = NativeCatalogSound {
+        probe: crate::media_tool_runtime::backend,
         root: host.app.asset_store_root().to_path_buf(),
         runtime: runtime().ok(),
         allow_download: allowed(),

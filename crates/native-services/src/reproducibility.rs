@@ -9,7 +9,7 @@ use opencut_editor_application::reproducibility::{PackageObservation, Reproducib
 use sha2::{Digest, Sha256};
 use std::{fs, io::Read, path::Path};
 
-pub struct NativeReproducibility;
+pub struct NativeReproducibility(pub fn() -> Result<opencut_media::FfmpegBackend, EditorError>);
 impl ReproducibilityProbe for NativeReproducibility {
     fn observe(
         &self,
@@ -45,8 +45,8 @@ impl ReproducibilityProbe for NativeReproducibility {
         if document.base.id != manifest.source_project_id {
             return Err(common::invalid("Project identity differs from manifest"));
         }
-        let backend = opencut_media::FfmpegBackend::discover()
-            .map_err(|e| EditorError::new("PACKAGE_TOOL_UNAVAILABLE", e.to_string()))?;
+        let backend =
+            (self.0)().map_err(|e| EditorError::new("PACKAGE_TOOL_UNAVAILABLE", e.to_string()))?;
         let native_tools = backend
             .tool_fingerprints()
             .map_err(|e| EditorError::new("PACKAGE_TOOL_UNAVAILABLE", e.to_string()))?

@@ -76,9 +76,7 @@ pub(super) fn execute(
             let executable = std::env::var_os("OPENCUT_WHISPER_CLI")
                 .filter(|value| !value.is_empty())
                 .unwrap_or_else(|| "whisper-cli".into());
-            let ffmpeg = std::env::var_os("OPENCUT_FFMPEG")
-                .filter(|value| !value.is_empty())
-                .unwrap_or_else(|| "ffmpeg".into());
+            let ffmpeg = crate::media_tool_runtime::ffmpeg()?;
             let engine = WhisperBackend::new(executable, model, ffmpeg).map_err(media_error)?;
             #[cfg(unix)]
             let engine = if let Some(admission) = backend.output_admission() {

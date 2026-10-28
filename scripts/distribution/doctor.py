@@ -16,7 +16,7 @@ FILTERS = {
     'visual': {'geq', 'eq', 'gblur'},
     'audio': {'anullsrc', 'atrim', 'asetpts', 'aresample', 'aformat', 'asetrate', 'volume', 'adelay', 'apad', 'amix'},
 }
-ENCODERS = {'libx264', 'aac', 'png'}
+ENCODERS = {'libx264', 'libx265', 'libvpx-vp9', 'libopus', 'aac', 'png'}
 CATALOG_FILES = {'bin/libexec/classic-visual-renderer/package.json',
                  'bin/libexec/classic-visual-renderer/host/catalog-archive.mjs'}
 
@@ -66,10 +66,12 @@ def declared_runtime(root, outer):
     return runtime
 
 
-def runtime_executable(root, runtime, component, variables, path_fallback=False):
+def runtime_executable(root, runtime, component, variables, path_fallback=False, configured_relative=False):
     for variable in variables:
         if variable in os.environ:
             value = os.environ[variable]
+            if value and configured_relative and not Path(value).is_absolute():
+                value = shutil.which(value) if '/' not in value else str(Path(value).resolve())
             break
     else:
         bundled = runtime.get('components', {}).get(component) if runtime else None
@@ -202,24 +204,17 @@ def inspect(root):
     needs_node = 'classic_packet_rate_runtime' in manifest or 'catalog_archive_runtime' in manifest or 'node' in manifest.get('external_dependencies', [])
     for name in ['ffmpeg', 'ffprobe'] + (['node'] if needs_node else []):
         node_variable = 'OPENCUT_CLASSIC_VISUAL_NODE' if 'catalog_archive_runtime' in manifest and 'classic_packet_rate_runtime' not in manifest else 'OPENCUT_CLASSIC_AUDIO_NODE'
-        override = os.environ.get(node_variable) if name == 'node' else None
-        path = override if override is not None else shutil.which(name)
+        variables = (node_variable,) if name == 'node' else ('OPENCUT_' + name.upper(),)
         try:
-            if name == 'node' and override is None and 'runtime_bundle' in manifest:
-                if runtime_invalid:
-                    raise ValueError('Bundled runtime is damaged; external fallback refused')
-                path = str(runtime_executable(root, runtime, 'node', (), True))
-            if override is not None:
-                configured = Path(override)
-                if not configured.is_absolute() or not configured.is_file() or not os.access(configured, os.X_OK):
-                    raise FileNotFoundError('Configured Node executable is unavailable')
-                path = str(configured.resolve())
-            if not path:
-                raise FileNotFoundError(f'{name} not found on PATH')
+            if runtime_invalid and not any(variable in os.environ for variable in variables):
+                raise ValueError('Bundled runtime is damaged; external fallback refused')
+            path = str(runtime_executable(root, runtime, name, variables, True, configured_relative=name != 'node'))
             value = run([path, '--version' if name == 'node' else '-version'])
             installed[name] = path
             checks.append({'check': 'external_tool', 'tool': name, 'passed': True,
-                           'path': path, 'version': value.stdout.splitlines()[0]})
+                           'path': path, 'version': value.stdout.splitlines()[0],
+                           'sha256': sha(Path(path)),
+                           'bundled_executable_used': Path(path).is_relative_to((root / 'bin/libexec/runtimes' / name).resolve())})
         except (OSError, subprocess.SubprocessError, IndexError, ValueError) as error:
             checks.append({'check': 'external_tool', 'tool': name, 'passed': False, 'error': str(error)})
     try:
@@ -262,6 +257,7 @@ def inspect(root):
                 checks.append({'check': 'media_capabilities', 'profile': profile, 'passed': not missing, 'missing': missing})
             checks.append({'check': 'configurable_export_codec_inventory', 'passed': True,
                            'video_formats': [format for format, encoder in [('mp4', 'libx264'), ('webm', 'libvpx-vp9')] if encoder in encoders],
+                           'video_codecs': [codec for codec, encoder in [('h264','libx264'), ('hevc','libx265'), ('vp9','libvpx-vp9')] if encoder in encoders],
                            'audio_formats': [format for format, video, audio in [('mp4', 'libx264', 'aac'), ('webm', 'libvpx-vp9', 'libopus')] if {video, audio} <= encoders],
                            'scope': 'codec inventory only; native renderer execution and fixed project admission remain required'})
         except (OSError, subprocess.SubprocessError) as error:

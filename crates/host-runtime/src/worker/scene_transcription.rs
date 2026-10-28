@@ -38,12 +38,7 @@ pub(super) fn execute(
             "Local Whisper executable is unavailable",
         )
     })?;
-    let ffmpeg = executable("OPENCUT_FFMPEG", "ffmpeg").ok_or_else(|| {
-        error(
-            "CAPABILITY_UNAVAILABLE",
-            "Local FFmpeg executable is unavailable",
-        )
-    })?;
+    let ffmpeg = crate::media_tool_runtime::ffmpeg()?;
     let engine = WhisperBackend::new(cli, model, ffmpeg).map_err(media_error)?;
     let mut audio_job = job.clone();
     audio_job.kind = audio::AUDIO_WAV_KIND.into();
@@ -166,7 +161,7 @@ pub(super) fn capability() -> SceneTranscriptionCapability {
             .is_some_and(|m| m.is_file() && m.len() > 0)
     });
     let whisper = executable("OPENCUT_WHISPER_CLI", "whisper-cli");
-    let ffmpeg = executable("OPENCUT_FFMPEG", "ffmpeg");
+    let ffmpeg = crate::media_tool_runtime::ffmpeg().ok();
     let reason = if !cfg!(unix) {
         Some("Bounded local transcription is unavailable on this host".into())
     } else if !audio.available {

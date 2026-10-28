@@ -172,8 +172,8 @@ pub(super) fn execute(
                 return Err(error("Fixed asset hash changed"));
             }
             copy.sync()?;
-            let ffmpeg = std::env::var_os("OPENCUT_FFMPEG").unwrap_or_else(|| "ffmpeg".into());
-            let ffprobe = std::env::var_os("OPENCUT_FFPROBE").unwrap_or_else(|| "ffprobe".into());
+            let ffmpeg = crate::media_tool_runtime::ffmpeg()?;
+            let ffprobe = crate::media_tool_runtime::ffprobe()?;
             let engine = FfmpegAnalysisBackend::new(ffmpeg.clone(), ffprobe)
                 .with_output_admission(admission.clone(), directory.clone());
             let data = match &input.options {

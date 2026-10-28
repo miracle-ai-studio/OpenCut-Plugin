@@ -74,12 +74,12 @@ pub fn import_uploaded_media(
     hash: &str,
     size: u64,
 ) -> Result<Asset, EditorError> {
-    use opencut_media::{FfmpegBackend, ProbeRequest};
-    let metadata = FfmpegBackend::discover()
-        .and_then(|backend| {
-            backend.probe(&ProbeRequest {
-                input: staging.into(),
-            })
+    use opencut_media::ProbeRequest;
+    let backend = crate::media_tool_runtime::backend()
+        .map_err(|e| EditorError::new("INVALID_ARGUMENT", e.message))?;
+    let metadata = backend
+        .probe(&ProbeRequest {
+            input: staging.into(),
         })
         .map_err(|e| EditorError::new("INVALID_ARGUMENT", e.to_string()))?;
     let canonical = std::fs::canonicalize(root)

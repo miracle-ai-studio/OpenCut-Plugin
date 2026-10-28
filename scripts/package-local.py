@@ -277,7 +277,7 @@ def package_with_web_root(output, skip_build, supplied_binary, web_root, runtime
                          'bin/libexec contains the fixed catalog adapter and three font derivation implementations and locks. '
                          'runtime-bundle.json records every auxiliary file, executable bit and permitted internal link. '
                          'Runtime state: ' + runtime['delivery'] + '. '
-                         'Optional --runtime-spec supplies explicit Node and standalone Python installations with redistribution licenses. '
+                         'Optional --runtime-spec supplies explicit FFmpeg/ffprobe, Node and standalone Python installations with redistribution licenses and corresponding source where required. '
                          'Node catalog extraction, Python/fontTools and FFmpeg/ffprobe export tools remain external when not explicitly bundled. '
                          'Run doctor.py after extracting elsewhere, then run actual project acceptance. No runtime is downloaded automatically. '
                          'Catalog downloads remain disabled unless OPENCUT_ALLOW_PUBLIC_RESOURCE_DOWNLOAD=1; no source archive, user media or font cache is bundled.\n')
@@ -334,7 +334,7 @@ if __name__ == '__main__':
     parser.add_argument('--output', type=Path, default=ROOT / 'dist/local')
     parser.add_argument('--skip-build', action='store_true')
     parser.add_argument('--binary', type=Path, help='Package an already-built local CLI instead of building release')
-    parser.add_argument('--runtime-spec', type=Path, help='Trusted explicit Node/standalone-Python installation and license spec; never downloads runtimes')
+    parser.add_argument('--runtime-spec', type=Path, help='Trusted FFmpeg/ffprobe/Node/standalone-Python installation, license and source spec; never downloads runtimes')
     parser.add_argument('--web-root', type=Path, help='Reuse an already-built public Web tree with --binary; skip Web install/build, retain contract and delivery-file checks')
     parser.add_argument('--reuse-sdk-dist', action='store_true', help='Reuse the already-built local TypeScript SDK dist; public contents and generated contracts are still checked')
     parser.add_argument('--render-worker', type=Path, help='Explicit native worker built with the CLI; defaults to its adjacent worker')

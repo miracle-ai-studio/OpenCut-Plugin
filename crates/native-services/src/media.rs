@@ -16,7 +16,12 @@ pub(crate) fn execution_error(error: opencut_media::MediaError) -> EditorError {
         other => EditorError::new(other.code(), other.to_string()),
     }
 }
-pub struct NativeMediaCatalog<'a>(pub &'a Path, pub Option<&'a dyn PublicationJournal>);
+pub type ProbeFactory = dyn Fn() -> Result<FfmpegBackend, EditorError>;
+pub struct NativeMediaCatalog<'a>(
+    pub &'a Path,
+    pub Option<&'a dyn PublicationJournal>,
+    pub Option<&'a ProbeFactory>,
+);
 fn utf8(path: &Path) -> Result<String, EditorError> {
     path.to_str()
         .map(str::to_owned)
@@ -35,8 +40,11 @@ impl application::MediaCatalog for NativeMediaCatalog<'_> {
             &input.content_hash,
             input.expected_metadata_hash.as_deref(),
             |path, name, size| {
-                let metadata = FfmpegBackend::discover()
-                    .and_then(|backend| backend.probe(&ProbeRequest { input: path.into() }))
+                let backend = self.2.ok_or_else(|| {
+                    EditorError::new("CAPABILITY_UNAVAILABLE", "Media probe is not configured")
+                })?()?;
+                let metadata = backend
+                    .probe(&ProbeRequest { input: path.into() })
                     .map_err(|e| EditorError::new("CAPABILITY_UNAVAILABLE", e.to_string()))?;
                 let uri = utf8(path)?;
                 let metadata = metadata.try_map_paths(|path| utf8(&path))?;
@@ -60,10 +68,14 @@ impl application::MediaCatalog for NativeMediaCatalog<'_> {
     }
 }
 pub fn inspect(root: &Path, input: InspectMediaInput) -> Result<CatalogEntry, EditorError> {
-    application::inspect(&NativeMediaCatalog(root, None), input)
+    application::inspect(&NativeMediaCatalog(root, None, None), input)
 }
-pub fn repair(root: &Path, input: RepairMediaInput) -> Result<CatalogEntry, EditorError> {
-    application::repair(&NativeMediaCatalog(root, None), input)
+pub fn repair(
+    root: &Path,
+    input: RepairMediaInput,
+    probe: &ProbeFactory,
+) -> Result<CatalogEntry, EditorError> {
+    application::repair(&NativeMediaCatalog(root, None, Some(probe)), input)
 }
 pub fn describe(
     metadata: &MediaMetadata,
@@ -75,14 +87,15 @@ pub fn describe(
     application::describe(metadata, &utf8(path)?, name, hash, size)
 }
 pub fn publish(root: &Path, hash: &str, asset: &Asset) -> Result<(), EditorError> {
-    application::publish(&NativeMediaCatalog(root, None), hash, asset)
+    application::publish(&NativeMediaCatalog(root, None, None), hash, asset)
 }
 pub fn repair_observed(
     root: &Path,
     input: RepairMediaInput,
     journal: &dyn PublicationJournal,
+    probe: &ProbeFactory,
 ) -> Result<CatalogEntry, EditorError> {
-    application::repair(&NativeMediaCatalog(root, Some(journal)), input)
+    application::repair(&NativeMediaCatalog(root, Some(journal), Some(probe)), input)
 }
 pub fn import_observed(
     root: &Path,

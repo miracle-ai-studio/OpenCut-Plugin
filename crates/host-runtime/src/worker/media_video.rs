@@ -33,9 +33,7 @@ use opencut_job_contracts::{
 use opencut_media::{CancellationToken, ProgressStage, ProgressUpdate};
 use opencut_native_services::{
     classic_audio::{ClassicAudioWavSink, VerifiedClassicAudioResources},
-    classic_video::{
-        ClassicVideoEncoder, ClassicVideoEncoderConfig, ClassicVideoProcess, resolve_tool,
-    },
+    classic_video::{ClassicVideoEncoder, ClassicVideoEncoderConfig, ClassicVideoProcess},
     classic_visual::VerifiedClassicTextResources,
     native_audio::NativeAudioProcess,
 };
@@ -377,16 +375,8 @@ fn execute_kernel(
             (None, None, None, None)
         };
     checkpoint()?;
-    let ffmpeg = resolve_tool(
-        std::env::var_os("OPENCUT_FFMPEG")
-            .map(Into::into)
-            .unwrap_or_else(|| "ffmpeg".into()),
-    )?;
-    let ffprobe = resolve_tool(
-        std::env::var_os("OPENCUT_FFPROBE")
-            .map(Into::into)
-            .unwrap_or_else(|| "ffprobe".into()),
-    )?;
+    let ffmpeg = crate::media_tool_runtime::ffmpeg()?;
+    let ffprobe = crate::media_tool_runtime::ffprobe()?;
     let runtime_config = export_input
         .as_ref()
         .and_then(|v| v.options.runtime_fingerprint.as_ref())

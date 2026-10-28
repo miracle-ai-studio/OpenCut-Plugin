@@ -833,7 +833,7 @@ fn execute(
         }
     }
     let directory = fs::canonicalize(directory).map_err(io_error)?;
-    let backend = FfmpegBackend::discover().map_err(media_error)?;
+    let backend = crate::media_tool_runtime::backend()?;
     #[cfg(unix)]
     let admission = {
         let attempt =
@@ -900,12 +900,8 @@ fn execute(
                     .ok_or_else(|| {
                         EditorError::new("ASSET_LOCK_INVALID", "Analysis asset missing")
                     })?;
-                let ffmpeg = std::env::var_os("OPENCUT_FFMPEG")
-                    .filter(|v| !v.is_empty())
-                    .unwrap_or_else(|| "ffmpeg".into());
-                let ffprobe = std::env::var_os("OPENCUT_FFPROBE")
-                    .filter(|v| !v.is_empty())
-                    .unwrap_or_else(|| "ffprobe".into());
+                let ffmpeg = crate::media_tool_runtime::ffmpeg()?;
+                let ffprobe = crate::media_tool_runtime::ffprobe()?;
                 let engine = FfmpegAnalysisBackend::new(ffmpeg, ffprobe);
                 #[cfg(unix)]
                 let engine = engine.with_output_admission(admission.clone(), directory.clone());
@@ -1006,9 +1002,7 @@ fn execute(
                 let executable = std::env::var_os("OPENCUT_WHISPER_CLI")
                     .filter(|value| !value.is_empty())
                     .unwrap_or_else(|| "whisper-cli".into());
-                let ffmpeg = std::env::var_os("OPENCUT_FFMPEG")
-                    .filter(|value| !value.is_empty())
-                    .unwrap_or_else(|| "ffmpeg".into());
+                let ffmpeg = crate::media_tool_runtime::ffmpeg()?;
                 let engine =
                     TinydiarizeBackend::new(executable, model, ffmpeg).map_err(media_error)?;
                 #[cfg(unix)]
@@ -1083,9 +1077,7 @@ fn execute(
                 let executable = std::env::var_os("OPENCUT_WHISPER_CLI")
                     .filter(|value| !value.is_empty())
                     .unwrap_or_else(|| "whisper-cli".into());
-                let ffmpeg = std::env::var_os("OPENCUT_FFMPEG")
-                    .filter(|value| !value.is_empty())
-                    .unwrap_or_else(|| "ffmpeg".into());
+                let ffmpeg = crate::media_tool_runtime::ffmpeg()?;
                 let engine = WhisperBackend::new(executable, model, ffmpeg).map_err(media_error)?;
                 #[cfg(unix)]
                 let engine = engine.with_output_admission(admission.clone(), directory.clone());

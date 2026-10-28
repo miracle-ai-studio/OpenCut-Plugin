@@ -25,6 +25,7 @@ mod font_derived;
 mod font_import;
 mod font_named;
 mod font_synthesis;
+mod media_tool_runtime;
 mod native_worker_runtime;
 mod source_art;
 mod source_art_runtime;
@@ -639,6 +640,7 @@ impl Automation {
                     &self.database,
                     self.caller.principal_id(),
                     &input,
+                    &media_tool_runtime::backend,
                 )?)
             }
             "opencut_database_inspect" => {
@@ -940,7 +942,9 @@ impl Automation {
                 to_value(opencut_editor_application::reproducibility::inspect(
                     &parse(arguments)?,
                     &self.caller,
-                    &opencut_native_services::reproducibility::NativeReproducibility,
+                    &opencut_native_services::reproducibility::NativeReproducibility(
+                        media_tool_runtime::backend,
+                    ),
                 )?)
             }
             "opencut_project_package_choose_location" => {
@@ -963,12 +967,14 @@ impl Automation {
                     &source,
                     self.app.asset_store_root(),
                     &self.plugin_root,
+                    &media_tool_runtime::backend,
                 )?)
             }
             "opencut_project_package_inspect" => {
                 self.app.package_require_owner()?;
                 to_value(opencut_native_services::project_exchange::inspect_package(
                     &parse(arguments)?,
+                    &media_tool_runtime::backend,
                 )?)
             }
             "opencut_project_package_import" => {
@@ -981,6 +987,7 @@ impl Automation {
                 let prepared = opencut_native_services::project_exchange::read_package(
                     &input,
                     self.app.asset_store_root(),
+                    &media_tool_runtime::backend,
                 )?;
                 to_value(self.app.project_package_commit(&input, &prepared)?)
             }
@@ -1001,6 +1008,7 @@ impl Automation {
                 &self.media_root,
                 parse(arguments)?,
                 &self.app,
+                &media_tool_runtime::backend,
             )?),
             "opencut_project_media_remove" => {
                 to_value(self.app.remove_project_media(&parse(arguments)?)?)

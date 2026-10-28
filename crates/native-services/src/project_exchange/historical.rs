@@ -38,11 +38,14 @@ fn classify(
         tag,
     ))
 }
-pub fn inspect_package(input: &InspectPackage) -> Result<PackageInspection, EditorError> {
+pub fn inspect_package(
+    input: &InspectPackage,
+    probe: &crate::media::ProbeFactory,
+) -> Result<PackageInspection, EditorError> {
     let (path, hash, tag) = classify(&input.package_path, None)?;
     let unused = Path::new("");
     let prepared = match tag {
-        None => PreparedImport::Current(verified(&path, Some(&hash))?.1),
+        None => PreparedImport::Current(verified(&path, Some(&hash), probe)?.1),
         Some(1) => PreparedImport::Media(common::read_package_mode(
             &opencut_api_contracts::project_package::ImportPackage {
                 package_path: path,
@@ -62,6 +65,7 @@ pub fn inspect_package(input: &InspectPackage) -> Result<PackageInspection, Edit
             },
             unused,
             false,
+            probe,
         )?),
         Some(6) => PreparedImport::Snapshot(
             crate::historical_snapshot_package::verified_package(&path, Some(&hash))?.1,
@@ -78,6 +82,7 @@ pub fn inspect_package(input: &InspectPackage) -> Result<PackageInspection, Edit
 pub fn read_package(
     input: &ImportPackage,
     asset_root: &Path,
+    probe: &crate::media::ProbeFactory,
 ) -> Result<PreparedImport, EditorError> {
     let (path, hash, tag) = classify(&input.package_path, Some(&input.expected_manifest_sha256))?;
     match tag {
@@ -87,6 +92,7 @@ pub fn read_package(
                 ..input.clone()
             },
             asset_root,
+            probe,
         )?)),
         Some(1) => Ok(PreparedImport::Media(common::read_package(
             &opencut_api_contracts::project_package::ImportPackage {
@@ -106,6 +112,7 @@ pub fn read_package(
                     idempotency_key: input.idempotency_key.clone(),
                 },
                 asset_root,
+                probe,
             )?,
         )),
         Some(6) => Ok(PreparedImport::Snapshot(

@@ -145,6 +145,10 @@ class RuntimeBundleTest(unittest.TestCase):
             self.write(directory / 'LICENSE', b'explicit upstream license')
             components[name] = {'root': str(directory), 'entry': 'bin/tool', 'version': '3.14.7',
                                 'license_spdx': 'MIT', 'license_files': ['LICENSE'], 'redistributable': True}
+            if name in {'ffmpeg', 'ffprobe'}:
+                self.write(directory / 'source/archive.tar.gz', b'corresponding source fixture')
+                self.write(directory / 'source/build.json', b'build recipe fixture')
+                components[name]['corresponding_sources'] = ['source/archive.tar.gz', 'source/build.json']
         spec = {'format': 'opencut.native-runtime-input', 'target': 'x86_64-apple-darwin', 'components': components}
         filename = root / 'runtime-spec.json'; filename.write_text(json.dumps(spec))
         return filename, spec
@@ -160,6 +164,8 @@ class RuntimeBundleTest(unittest.TestCase):
                          lambda value: value.update(env={'TOKEN': 'not permitted'}),
                          lambda value: value['components']['node'].update(cache='/private/cache'),
                          lambda value: value['components']['node'].update(redistributable=False),
+                         lambda value: value['components']['ffmpeg'].pop('corresponding_sources'),
+                         lambda value: value['components']['ffprobe'].update(corresponding_sources=['../outside','source/build.json']),
                          lambda value: value['components']['python'].update(license_files=[]),
                          lambda value: value['components']['node'].update(entry='../outside')]:
                 candidate = json.loads(json.dumps(spec)); edit(candidate); filename.write_text(json.dumps(candidate))
@@ -207,7 +213,7 @@ class RuntimeBundleTest(unittest.TestCase):
             target = root / 'relocated/bin/libexec'
             manifest = runtime.bundle(repository, target, spec['target'], filename)
             self.assertEqual(manifest['delivery'], 'bundled_unverified')
-            self.assertEqual(manifest['external_dependencies'], ['ffmpeg', 'ffprobe'])
+            self.assertEqual(manifest['external_dependencies'], [])
             self.assertEqual(runtime.verify(target), manifest)
             serialized = (target / 'runtime-bundle.json').read_text()
             self.assertNotIn(str(root), serialized)
@@ -247,6 +253,19 @@ class RuntimeBundleTest(unittest.TestCase):
             outer['links'] = {'bin/libexec/unregistered': 'some-target'}
             with self.assertRaisesRegex(ValueError, 'links'):
                 doctor.declared_runtime(host, outer)
+
+    def test_media_tools_choose_bundle_without_path_and_honor_explicit_configuration(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            binary = self.write(root / 'bin/libexec/runtimes/ffmpeg/bin/ffmpeg', b'fixture', 0o755)
+            configured = self.write(root / 'explicit-ffmpeg', b'configured', 0o755)
+            manifest = {'components': {'ffmpeg': {'entry': 'runtimes/ffmpeg/bin/ffmpeg'}}}
+            with patch.dict(doctor.os.environ, {'PATH': ''}, clear=True):
+                self.assertEqual(doctor.runtime_executable(root, manifest, 'ffmpeg', ('OPENCUT_FFMPEG',), True, True), binary.resolve())
+            with patch.dict(doctor.os.environ, {'OPENCUT_FFMPEG': str(configured)}, clear=True):
+                self.assertEqual(doctor.runtime_executable(root, manifest, 'ffmpeg', ('OPENCUT_FFMPEG',), True, True), configured.resolve())
+            with patch.dict(doctor.os.environ, {'OPENCUT_FFMPEG': ''}, clear=True), self.assertRaisesRegex(ValueError, 'unavailable'):
+                doctor.runtime_executable(root, manifest, 'ffmpeg', ('OPENCUT_FFMPEG',), True, True)
 
     def test_explicit_invalid_environment_never_falls_back_to_bundled_executable(self):
         with tempfile.TemporaryDirectory() as temp:

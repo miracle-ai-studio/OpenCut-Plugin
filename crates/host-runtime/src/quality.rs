@@ -20,6 +20,12 @@ impl QualityNative for Native {
             &self.database,
             &self.artifacts,
             input,
+            || {
+                Ok((
+                    crate::media_tool_runtime::ffmpeg()?,
+                    crate::media_tool_runtime::ffprobe()?,
+                ))
+            },
             move || {
                 let mut app = opencut_sqlite_store::EditorApplication::open_managed(&database)?;
                 app.set_execution_context(context.clone());

@@ -5,7 +5,6 @@ use opencut_contracts::EditorError;
 use opencut_job_execution::media_frame::LocalVisualExecutionPolicy;
 use opencut_native_services::classic_visual::ClassicVisualProcessConfig;
 use std::{
-    env,
     path::{Path, PathBuf},
     time::Duration,
 };
@@ -38,13 +37,8 @@ fn video_runtime() -> Result<(), EditorError> {
                 .unwrap_or_else(|| "AUDIO_RUNTIME_UNAVAILABLE".into()),
         ));
     }
-    for (variable, default) in [("OPENCUT_FFMPEG", "ffmpeg"), ("OPENCUT_FFPROBE", "ffprobe")] {
-        opencut_native_services::classic_video::resolve_tool(
-            env::var_os(variable)
-                .map(Into::into)
-                .unwrap_or_else(|| default.into()),
-        )?;
-    }
+    crate::media_tool_runtime::ffmpeg()?;
+    crate::media_tool_runtime::ffprobe()?;
     Ok(())
 }
 pub(crate) fn configured_text(

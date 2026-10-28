@@ -20,7 +20,7 @@ MAX_FILE = 512 * 1024 * 1024
 MAX_TOTAL = 8 * 1024 * 1024 * 1024
 MAX_MANIFEST = 16 * 1024 * 1024
 COMPONENTS = {'node', 'chromium', 'python'}
-NATIVE_COMPONENTS = {'node', 'python'}
+NATIVE_COMPONENTS = {'ffmpeg', 'ffprobe', 'node', 'python'}
 SCRIPTS = ('run_derived.py', 'run_derived_v2.py', 'derive_static.py',
            'derive_renamed_v2.py', 'generate.py', 'fonttools-lock.json',
            'derived-runtime-lock.json', 'derived-v2-runtime-lock.json',
@@ -264,12 +264,12 @@ def validate_spec(path, target):
     if (set(spec) != {'format', 'target', 'components'}
             or spec['format'] != 'opencut.native-runtime-input' or spec['target'] != target
             or not isinstance(spec['components'], dict) or not set(spec['components']) <= NATIVE_COMPONENTS):
-        raise ValueError('Native runtime spec must name the target and only Node/Python components')
+        raise ValueError('Native runtime spec must name the target and only FFmpeg/ffprobe/Node/Python components')
     if target not in ('x86_64-apple-darwin', 'aarch64-apple-darwin'):
         raise ValueError('Bundled executable linkage validation currently supports macOS only; use explicit external runtimes on this target')
     for name, component in spec['components'].items():
         if (not isinstance(component, dict)
-                or set(component) != {'root', 'entry', 'version', 'license_spdx', 'license_files', 'redistributable'}
+                or set(component) != {'root', 'entry', 'version', 'license_spdx', 'license_files', 'redistributable'} | ({'corresponding_sources'} if name in {'ffmpeg', 'ffprobe'} else set())
                 or component['redistributable'] is not True
                 or not isinstance(component['version'], str) or not 0 < len(component['version']) <= 128
                 or not isinstance(component['license_spdx'], str) or not 0 < len(component['license_spdx']) <= 128
@@ -290,6 +290,14 @@ def validate_spec(path, target):
             if (not notice.resolve(strict=True).is_relative_to(root) or not notice.is_file()
                     or not 0 < notice.stat().st_size <= 8 * 1024 * 1024):
                 raise ValueError('Runtime license missing or invalid')
+        if name in {'ffmpeg', 'ffprobe'}:
+            sources = component['corresponding_sources']
+            if not isinstance(sources, list) or not 2 <= len(sources) <= 128 or len(set(sources)) != len(sources):
+                raise ValueError('Media tools require corresponding source archives and a build recipe')
+            for source in sources:
+                source = root / relative(source)
+                if not source.resolve(strict=True).is_relative_to(root) or not source.is_file() or not 0 < source.stat().st_size <= MAX_FILE:
+                    raise ValueError('Media tool corresponding source is missing or invalid')
         if name == 'python' and any(root.rglob('pyvenv.cfg')):
             raise ValueError('A virtual environment is not a standalone Python distribution')
     return spec
@@ -346,6 +354,8 @@ def bundle(repository, destination, target, spec_path=None):
             components[name] = {'entry': prefix + '/' + component['entry'],
                                 'version': component['version'], 'license_spdx': component['license_spdx'],
                                 'licenses': [prefix + '/' + p for p in component['license_files']]}
+            if name in {'ffmpeg', 'ffprobe'}:
+                components[name]['corresponding_sources'] = [prefix + '/' + p for p in component['corresponding_sources']]
             if name == 'python':
                 if component['version'] != lock['python_version']:
                     raise ValueError('Python version declaration differs from derivation lock')
@@ -354,7 +364,7 @@ def bundle(repository, destination, target, spec_path=None):
               'delivery': 'bundled_unverified' if components else 'external_executables',
               'components': components,
               'scripts': {name: 'font-catalog/' + name for name in WORKERS},
-              'external_dependencies': ['ffmpeg', 'ffprobe'] + sorted(NATIVE_COMPONENTS - set(components)),
+              'external_dependencies': sorted(NATIVE_COMPONENTS - set(components)),
               'files': inventory(destination)}
     serialized = json.dumps(result, indent=2) + '\n'
     if len(serialized.encode()) > MAX_MANIFEST:
@@ -373,7 +383,7 @@ def verify(root):
     native = version == (NATIVE_FORMAT, 1)
     components = set(manifest.get('components', {}))
     allowed_components = components <= NATIVE_COMPONENTS if native else components in (set(), COMPONENTS)
-    dependencies = (['ffmpeg', 'ffprobe'] + sorted(NATIVE_COMPONENTS - components) if native
+    dependencies = (sorted(NATIVE_COMPONENTS - components) if native
                     else ['ffmpeg', 'ffprobe'] + ([] if components else sorted(COMPONENTS)))
     workers = WORKERS_V1 if version == (FORMAT_V1, 1) else WORKERS
     if (set(manifest) != {'format', 'schema_version', 'target', 'delivery', 'components', 'scripts', 'external_dependencies', 'files'}
@@ -388,7 +398,7 @@ def verify(root):
     if inventory(root, ('runtime-bundle.json',)) != manifest['files']:
         raise ValueError('Runtime mirror differs from manifest')
     for name, component in manifest['components'].items():
-        expected_keys = {'entry', 'version', 'license_spdx', 'licenses'} | ({'fonttools'} if name == 'python' else set())
+        expected_keys = {'entry', 'version', 'license_spdx', 'licenses'} | ({'fonttools'} if name == 'python' else set()) | ({'corresponding_sources'} if name in {'ffmpeg', 'ffprobe'} else set())
         if (not isinstance(component, dict) or set(component) != expected_keys
                 or any(not isinstance(component[key], str) or not 0 < len(component[key]) <= 128
                        or any(ord(c) < 32 for c in component[key]) for key in ('version', 'license_spdx'))
@@ -403,6 +413,14 @@ def verify(root):
             if (not (root / relative(license)).resolve(strict=True).is_relative_to(prefix)
                     or not (root / license).is_file()):
                 raise ValueError('Runtime license escapes its component')
+        if name in {'ffmpeg', 'ffprobe'}:
+            sources = component['corresponding_sources']
+            if not isinstance(sources, list) or not 2 <= len(sources) <= 128 or len(set(sources)) != len(sources):
+                raise ValueError('Media tools require corresponding source archives and a build recipe')
+            for source in sources:
+                path = root / relative(source)
+                if not path.resolve(strict=True).is_relative_to(prefix) or not path.is_file() or not 0 < path.stat().st_size <= MAX_FILE:
+                    raise ValueError('Media tool corresponding source escapes its component or is empty')
         for path in manifest['files']:
             if path.startswith('runtimes/' + name + '/') and not (root / path).resolve(strict=True).is_relative_to(prefix):
                 raise ValueError('Runtime link escapes its component')

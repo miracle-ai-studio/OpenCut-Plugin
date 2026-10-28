@@ -223,13 +223,15 @@ fn sync_package_directories(root: &Path) -> Result<(), EditorError> {
 pub fn read_historical_visual(
     input: &HistoricalVisualImport,
     asset_store_root: &Path,
+    probe: &crate::media::ProbeFactory,
 ) -> Result<PreparedHistoricalVisual, EditorError> {
-    read_package_mode(input, asset_store_root, true)
+    read_package_mode(input, asset_store_root, true, probe)
 }
 pub(crate) fn read_package_mode(
     input: &HistoricalVisualImport,
     asset_store_root: &Path,
     capture: bool,
+    probe: &crate::media::ProbeFactory,
 ) -> Result<PreparedHistoricalVisual, EditorError> {
     let root = Path::new(&input.package_path);
     if !root.is_absolute()
@@ -274,9 +276,11 @@ pub(crate) fn read_package_mode(
     let fonts_missing =
         opencut_media::missing_system_font_families(&manifest.dependencies.fonts_not_bundled);
     let font_environment_checked = true;
-    let tool_lock_mismatches = match opencut_media::FfmpegBackend::discover()
-        .and_then(|backend| backend.tool_fingerprints())
-    {
+    let tool_lock_mismatches = match probe().and_then(|backend| {
+        backend
+            .tool_fingerprints()
+            .map_err(|e| EditorError::new(e.code(), e.to_string()))
+    }) {
         Ok(_) if manifest.schema_version == 2 => manifest.dependencies.tools_not_locked.clone(),
         Ok(actual) => manifest
             .tool_locks

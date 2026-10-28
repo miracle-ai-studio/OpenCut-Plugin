@@ -32,9 +32,10 @@ fn asset(version: &AssetVersion, uri: String) -> Asset {
         metadata: Default::default(),
     }
 }
-fn tools() -> Result<Vec<PackageToolLock>, EditorError> {
-    let mut locks = opencut_media::FfmpegBackend::discover()
-        .and_then(|b| b.tool_fingerprints())
+fn tools(probe: &crate::media::ProbeFactory) -> Result<Vec<PackageToolLock>, EditorError> {
+    let mut locks = probe()
+        .map_err(|e| EditorError::new("PACKAGE_TOOL_UNAVAILABLE", e.to_string()))?
+        .tool_fingerprints()
         .map_err(|e| {
             EditorError::new(
                 "PACKAGE_TOOL_UNAVAILABLE",
@@ -51,8 +52,8 @@ fn tools() -> Result<Vec<PackageToolLock>, EditorError> {
     locks.sort_by(|a, b| a.name.cmp(&b.name));
     Ok(locks)
 }
-fn mismatches(expected: &[PackageToolLock]) -> Vec<String> {
-    let actual = tools().unwrap_or_default();
+fn mismatches(expected: &[PackageToolLock], probe: &crate::media::ProbeFactory) -> Vec<String> {
+    let actual = tools(probe).unwrap_or_default();
     ["ffmpeg", "ffprobe"]
         .into_iter()
         .filter(|name| {
@@ -101,6 +102,7 @@ pub fn export_package(
     source: &PackageSource,
     asset_root: &Path,
     plugin_root: &Path,
+    probe: &crate::media::ProbeFactory,
 ) -> Result<ExportReceipt, EditorError> {
     if source.content.archive.source_project_id != input.project_id
         || source.content.archive.main_head_revision != input.revision
@@ -199,7 +201,7 @@ pub fn export_package(
         input.mode.clone(),
         blobs,
         bundles,
-        tools().unwrap_or_default(),
+        tools(probe).unwrap_or_default(),
     )?;
     let archive = app::archive_bytes(&source.content.archive)?;
     let bytes = app::canonical_bytes(&manifest, history::MAX_MANIFEST_BYTES)?;
@@ -444,6 +446,7 @@ fn validate_tree(root: &PackageDirectory, m: &PackageManifest) -> Result<(), Edi
 fn verified(
     path: &str,
     expected: Option<&str>,
+    probe: &crate::media::ProbeFactory,
 ) -> Result<(PackageDirectory, PreparedPackage), EditorError> {
     let canonical = package_io::root(path)?;
     let root = PackageDirectory::open(&canonical)?;
@@ -470,7 +473,7 @@ fn verified(
     let install_plan = verify_plugins(&root, &canonical, &manifest.plugin_bundles)?;
     let prepared = PreparedPackage {
         manifest_sha256: hash,
-        tool_lock_mismatches: mismatches(&manifest.tool_locks),
+        tool_lock_mismatches: mismatches(&manifest.tool_locks, probe),
         fonts_missing: opencut_media::missing_system_font_families(
             &manifest.external_font_families,
         ),
@@ -491,8 +494,16 @@ fn verified(
     }
     Ok((root, prepared))
 }
-fn read_current(input: &ImportPackage, asset_root: &Path) -> Result<PreparedPackage, EditorError> {
-    let (root, prepared) = verified(&input.package_path, Some(&input.expected_manifest_sha256))?;
+fn read_current(
+    input: &ImportPackage,
+    asset_root: &Path,
+    probe: &crate::media::ProbeFactory,
+) -> Result<PreparedPackage, EditorError> {
+    let (root, prepared) = verified(
+        &input.package_path,
+        Some(&input.expected_manifest_sha256),
+        probe,
+    )?;
     app::prepare_import(&prepared, &input.target_project_id)?;
     let total = prepared
         .manifest

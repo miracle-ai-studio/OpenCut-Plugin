@@ -45,6 +45,7 @@ struct Runtime {
     license_spdx: String,
     licenses: Vec<String>,
     fonttools: Option<FontTools>,
+    corresponding_sources: Option<Vec<String>>,
 }
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -229,8 +230,8 @@ fn load_uncached(root: &Path) -> Result<Option<(PathBuf, Manifest)>, EditorError
         .eq(["chromium", "node", "python"]);
     let native = manifest.format == "opencut.native-runtime-bundle" && manifest.schema_version == 1;
     let dependencies: Vec<&str> = if native {
-        let mut dependencies = vec!["ffmpeg", "ffprobe"];
-        for component in ["node", "python"] {
+        let mut dependencies = Vec::new();
+        for component in ["ffmpeg", "ffprobe", "node", "python"] {
             if !manifest.components.contains_key(component) {
                 dependencies.push(component);
             }
@@ -265,7 +266,7 @@ fn load_uncached(root: &Path) -> Result<Option<(PathBuf, Manifest)>, EditorError
             manifest
                 .components
                 .keys()
-                .any(|name| !matches!(name.as_str(), "node" | "python"))
+                .any(|name| !matches!(name.as_str(), "ffmpeg" | "ffprobe" | "node" | "python"))
         } else {
             !complete && !manifest.components.is_empty()
         }
@@ -364,6 +365,30 @@ fn load_uncached(root: &Path) -> Result<Option<(PathBuf, Manifest)>, EditorError
             if !path.starts_with(&prefix) || !path.is_file() {
                 return Err(invalid());
             }
+        }
+        if matches!(name.as_str(), "ffmpeg" | "ffprobe") {
+            let sources = component
+                .corresponding_sources
+                .as_ref()
+                .ok_or_else(invalid)?;
+            if !(2..=128).contains(&sources.len())
+                || sources.iter().collect::<BTreeSet<_>>().len() != sources.len()
+            {
+                return Err(invalid());
+            }
+            for source in sources {
+                let path = inside(&root, source)?;
+                let metadata = fs::metadata(&path).map_err(|_| invalid())?;
+                if !path.starts_with(&prefix)
+                    || !metadata.is_file()
+                    || metadata.len() == 0
+                    || metadata.len() > MAX_FILE
+                {
+                    return Err(invalid());
+                }
+            }
+        } else if component.corresponding_sources.is_some() {
+            return Err(invalid());
         }
         if name == "python" {
             let fonttools = component.fonttools.as_ref().ok_or_else(invalid)?;
@@ -553,11 +578,17 @@ fn load(root: &Path) -> Result<Option<(PathBuf, Arc<Manifest>)>, EditorError> {
 }
 
 pub(super) fn executable(component: &str) -> Result<Option<PathBuf>, EditorError> {
-    if !matches!(component, "node" | "chromium" | "python") {
+    let exe = std::env::current_exe().map_err(|_| invalid())?;
+    executable_at(&exe, component)
+}
+pub(super) fn executable_at(exe: &Path, component: &str) -> Result<Option<PathBuf>, EditorError> {
+    if !matches!(
+        component,
+        "ffmpeg" | "ffprobe" | "node" | "chromium" | "python"
+    ) {
         return Err(invalid());
     }
-    let exe = std::env::current_exe().map_err(|_| invalid())?;
-    resolve(&exe, component, false)
+    resolve(exe, component, false)
 }
 pub(super) fn script(name: &str) -> Result<Option<PathBuf>, EditorError> {
     if !matches!(

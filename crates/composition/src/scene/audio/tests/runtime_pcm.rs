@@ -1,5 +1,76 @@
 use super::*;
 
+#[test]
+fn compiled_audio_wire_keeps_wide_indices_rationals_and_every_float64_gain_bit() {
+    let amplitudes: Vec<f64> = (0..4096u64)
+        .map(|n| {
+            if n == 0 {
+                -0.0
+            } else {
+                f64::from_bits(
+                    0x3f00_0000_0000_0000
+                        | ((n.wrapping_mul(6364136223846793005)) & 0x000f_ffff_ffff_ffff),
+                )
+            }
+        })
+        .collect();
+    let block = RuntimeAudioBlock {
+        identity: AudioIdentity {
+            project_id: "p".into(),
+            revision: "fixed".into(),
+            sequence_id: "s".into(),
+            profile: AudioExecutionProfile::ClassicV31,
+            format: PcmFormat {
+                sample_rate: 48000,
+                channels: 2,
+            },
+        },
+        start_sample: u64::MAX - 4096,
+        frame_count: 4096,
+        voices: vec![RuntimeAudioVoiceBlock {
+            element_id: "voice".into(),
+            block_offset: 0,
+            frame_count: 4096,
+            positions: vec![
+                ExactSourceSample {
+                    lower: u64::MAX,
+                    fraction_numerator: u128::MAX - 1,
+                    fraction_denominator: u128::MAX
+                };
+                4096
+            ],
+            amplitudes,
+        }],
+        receipts: vec![AudioReceipt {
+            track_id: "track".into(),
+            element_id: "voice".into(),
+            decision: AudioParticipation::Ready,
+        }],
+    };
+    let encoded = serde_json::to_vec(&block).unwrap();
+    let decoded: RuntimeAudioBlock = serde_json::from_slice(&encoded).unwrap();
+    assert_eq!(decoded, block);
+    assert!(
+        decoded.voices[0]
+            .amplitudes
+            .iter()
+            .zip(&block.voices[0].amplitudes)
+            .all(|(a, b)| a.to_bits() == b.to_bits())
+    );
+    for (field, value) in [
+        ("lower", serde_json::json!(17)),
+        ("fractionNumerator", serde_json::json!("01")),
+        (
+            "fractionDenominator",
+            serde_json::json!("340282366920938463463374607431768211456"),
+        ),
+    ] {
+        let mut point = serde_json::to_value(block.voices[0].positions[0]).unwrap();
+        point[field] = value;
+        assert!(serde_json::from_value::<ExactSourceSample>(point).is_err());
+    }
+}
+
 fn retime(s: &mut EditorSnapshot, pitch: bool, numerator: u32, denominator: u32) {
     let ElementContent::Audio { retime, .. } =
         &mut s.project.sequences[0].tracks[1].elements[0].content

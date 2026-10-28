@@ -148,7 +148,7 @@ struct Pcm {
 impl ClassicAudioPcmSink for Pcm {
     fn chunk(&mut self, c: u32, offset: u64, samples: &[f32]) -> Result<(), EditorError> {
         assert_eq!(offset, self.channels[c as usize].len() as u64);
-        assert!(samples.len() <= 16384 && samples.iter().all(|v| v.is_finite()));
+        assert!(samples.len() <= AUDIO_PCM_CHUNK_FRAMES && samples.iter().all(|v| v.is_finite()));
         self.channels[c as usize].extend_from_slice(samples);
         Ok(())
     }
@@ -309,10 +309,15 @@ fn native_pcm_missing_window_and_noncanonical_fraction_are_rejected() {
         100,
         1,
         true,
-        vec![pcm::Window {
-            start: 10,
-            samples: pcm::Samples::Planar(vec![memory.array(20).unwrap()]),
-        }],
+        vec![
+            pcm::Window::new(
+                10,
+                pcm::Samples::Planar(vec![memory.array(20).unwrap()]),
+                &memory,
+            )
+            .unwrap(),
+        ],
+        &memory,
     )
     .unwrap();
     assert!(input.value(0, 9).is_err());
@@ -321,6 +326,121 @@ fn native_pcm_missing_window_and_noncanonical_fraction_are_rejected() {
     assert!(input.linear(0, 10, 1, 0).is_err());
     assert!(input.linear(0, 10, 2, 2).is_err());
     assert_eq!(input.linear(0, u64::MAX, 0, 1).unwrap(), 0.0);
+}
+#[test]
+fn native_window_metadata_is_admitted_with_its_owner_and_released_on_failure() {
+    let memory = dsp::PcmMemory::new(128).unwrap();
+    let samples = pcm::Samples::Planar(vec![memory.array(16).unwrap()]);
+    assert!(pcm::Window::new(0, samples, &memory).is_err());
+    assert_eq!(memory.live_bytes(), 0);
+    let memory = dsp::PcmMemory::new(4096).unwrap();
+    let samples = pcm::Samples::Planar(vec![memory.array(16).unwrap()]);
+    let window = pcm::Window::new(0, samples, &memory).unwrap();
+    assert!(memory.live_bytes() > 64);
+    drop(window);
+    assert_eq!(memory.live_bytes(), 0);
+}
+#[test]
+#[ignore = "requires the integrated OPENCUT_RENDER_WORKER; run serially"]
+fn native_audio_worker_executes_large_typed_blocks_without_browser_and_reaps_before_success() {
+    use opencut_editor_application::scene_audio_jobs::{
+        LocalAudioExecutionPolicy, LocalAudioProcessingProfile,
+    };
+    use std::io::{Read, Seek, SeekFrom};
+    let worker = PathBuf::from(
+        std::env::var_os("OPENCUT_RENDER_WORKER").expect("explicit integrated native worker"),
+    );
+    let dir = tempfile::tempdir().unwrap();
+    let input = vec![0.25; 8192];
+    let (root, mut snapshot) = fixture(dir.path(), &input, 1, 48000, AssetKind::Audio, true);
+    let mut template = snapshot.project.sequences[0].tracks[1].clone();
+    let ElementContent::Audio { audio, .. } = &mut template.elements[0].content else {
+        panic!()
+    };
+    audio.gain = Gain::LinearLegacy { value: 1.0 / 64.0 };
+    snapshot.project.sequences[0].tracks.truncate(1);
+    for n in 0..32 {
+        let mut track = template.clone();
+        track.id = format!("sound-{n}");
+        track.elements[0].id = format!("voice-{n}");
+        snapshot.project.sequences[0].tracks.push(track);
+    }
+    let prepared = prepare_audio_scene(
+        &snapshot,
+        "s",
+        AudioExecutionProfile::ClassicV31,
+        PcmFormat {
+            sample_rate: 48000,
+            channels: 2,
+        },
+    )
+    .unwrap();
+    let mut resources = VerifiedClassicAudioResources::new(&root, &prepared, || Ok(())).unwrap();
+    let handles = resources.handles();
+    let mut session =
+        ClassicAudioSession::new(&prepared, 64 * 1024 * 1024, 32 * 1024 * 1024).unwrap();
+    let mut sink =
+        crate::classic_audio::ClassicAudioWavSink::new(tempfile::tempfile().unwrap(), 48000, 8192)
+            .unwrap();
+    let execution = NativeAudioProcess {
+        config: NativeAudioProcessConfig {
+            worker,
+            strict_cgroup: None,
+            policy: LocalAudioExecutionPolicy {
+                profile: LocalAudioProcessingProfile::LocalClassicAudioV1,
+                max_pcm_bytes: 64 * 1024 * 1024,
+                max_encoded_bytes: 32 * 1024 * 1024,
+                max_rss_bytes: 2 * 1024 * 1024 * 1024,
+                deadline_ms: 30000,
+            },
+        },
+    }
+    .execute(&mut session, &mut resources, &handles, &mut sink)
+    .unwrap();
+    assert_eq!(execution.receipt.preparation.len(), 32);
+    assert_eq!(execution.receipt.decoders.len(), 1);
+    let mut file = sink.finalize().unwrap();
+    let layout = ClassicAudioWavLayout::new(48000, 8192).unwrap();
+    assert_eq!(file.metadata().unwrap().len(), layout.total_bytes);
+    file.seek(SeekFrom::Start(layout.header_bytes)).unwrap();
+    let mut bytes = vec![0; 8192 * 2 * 4];
+    file.read_exact(&mut bytes).unwrap();
+    assert!(
+        bytes
+            .chunks_exact(4)
+            .all(|b| f32::from_le_bytes(b.try_into().unwrap()) == 0.125)
+    );
+    assert_eq!(
+        execution.receipt.engine_identity,
+        execution.runtime_identity.identity.worker_sha256
+    );
+    assert!(
+        execution
+            .quota
+            .observed_peak_rss_bytes
+            .parse::<u64>()
+            .unwrap()
+            > 0
+    );
+    assert!(
+        session
+            .native_decoder_evidence(&execution.receipt)
+            .unwrap()
+            .sources
+            .len()
+            == 1
+    );
+    #[cfg(unix)]
+    {
+        assert_eq!(
+            unsafe { libc::kill(execution.runtime_identity.worker_pid as i32, 0) },
+            -1
+        );
+        assert_eq!(
+            std::io::Error::last_os_error().raw_os_error(),
+            Some(libc::ESRCH)
+        );
+    }
 }
 struct RevokeAfterRead<R> {
     inner: R,

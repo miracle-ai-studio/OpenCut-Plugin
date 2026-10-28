@@ -1,4 +1,4 @@
-//! Actual fixed-revision Classic browser PCM -> private WAV worker execution.
+//! Fixed-revision native PCM -> private WAV, behind the original publication fence.
 use super::output_attempt::{
     attempt_directory, cancelled, check_attempt, check_output_name, error, file_hash, io_error,
 };
@@ -7,18 +7,15 @@ use opencut_composition::scene::ClassicAudioPreparationMode;
 use opencut_contracts::EditorError;
 use opencut_editor_application::{
     budget::Writer,
-    classic_audio::{
-        ClassicAudioExecutor, ClassicAudioRange, ClassicAudioResources, ClassicAudioSession,
-    },
+    classic_audio::{ClassicAudioRange, ClassicAudioResources, ClassicAudioSession},
     scene_audio_jobs::{
         self as audio, PreparedAudioWav, StoredAudioRangeWavResult, StoredAudioWavResult,
     },
 };
 use opencut_job_contracts::{ArtifactDescriptor, scene_audio::*};
 use opencut_media::CancellationToken;
-use opencut_native_services::classic_audio::{
-    ClassicAudioProcess, ClassicAudioWavSink, VerifiedClassicAudioResources,
-};
+use opencut_native_services::classic_audio::{ClassicAudioWavSink, VerifiedClassicAudioResources};
+use opencut_native_services::native_audio::{NativeAudioExecutionReceipt, NativeAudioProcess};
 use opencut_sqlite_store::{EditorApplication, JobRecord};
 use opencut_storage_budget::{AttemptLease, Budget};
 use serde_json::Value;
@@ -97,7 +94,7 @@ pub(super) fn execute_with_checkpoint(
         *guard = Some(attempt.clone());
     }
     // The original caller, current lease, captured policy and cancellation are
-    // checked on every CAS operation and after browser termination. The CAS
+    // checked on every CAS operation and after native worker termination. The CAS
     // collection gate remains held until all private output verification ends.
     let mut resources =
         VerifiedClassicAudioResources::new(app.asset_store_root(), &prepared, || {
@@ -113,12 +110,8 @@ pub(super) fn execute_with_checkpoint(
     let host_sha256 =
         opencut_native_services::reproducibility::execution_identity(vec![])?.process_binary_sha256;
     resources.checkpoint()?;
-    let execution = ClassicAudioProcess { config }.execute(
-        &mut session,
-        &mut resources,
-        &handles,
-        &mut sink,
-    )?;
+    let execution =
+        NativeAudioProcess { config }.execute(&mut session, &mut resources, &handles, &mut sink)?;
     resources.checkpoint()?;
     let mut file = sink.finalize()?;
     let content_hash = file_hash(&mut file, expected_bytes, cancel, || Ok(()))?;
@@ -126,57 +119,8 @@ pub(super) fn execute_with_checkpoint(
     check_output_name(&attempt, filename, &file)?;
     resources.checkpoint()?;
 
-    let audio_decoder_evidence_v1 = session.decoder_evidence(&execution.receipt)?;
-    let decoder_profiles = execution
-        .receipt
-        .decoders
-        .iter()
-        .map(|decoder| match decoder.profile.as_str() {
-            "web-audio-decode-at-target-rate" => {
-                Ok(AudioDecoderProfile::WebAudioDecodeAtTargetRate)
-            }
-            // V1 windows change residency, not concatenation/resampling semantics.
-            // The actual implementation is pinned by the module SHA.
-            "mediabunny-1.41.0-concatenate-offline-resample"
-            | "mediabunny-1.41.0-windowed-concatenate-offline-resample-v1" => {
-                Ok(AudioDecoderProfile::Mediabunny141ConcatenateOfflineResample)
-            }
-            _ => Err(error(
-                "ARTIFACT_VERIFICATION_FAILED",
-                "Unknown actual audio decoder profile",
-            )),
-        })
-        .collect::<Result<BTreeSet<_>, _>>()?
-        .into_iter()
-        .collect();
-    let pitch_profiles = execution
-        .receipt
-        .preparation
-        .iter()
-        .map(|receipt| match receipt.facts.mode {
-            ClassicAudioPreparationMode::UnpreparedLinear => AudioPitchProfile::UnpreparedLinear,
-            ClassicAudioPreparationMode::PreparedLinear => AudioPitchProfile::PreparedLinear,
-            ClassicAudioPreparationMode::PreparedSoundtouch => {
-                AudioPitchProfile::PreparedSoundtouch
-            }
-        })
-        .collect::<BTreeSet<_>>()
-        .into_iter()
-        .collect();
-    let identity = execution.runtime_identity.identity;
-    let summary = AudioExecutionSummary {
-        host_sha256: host_sha256.clone(),
-        browser_version: identity.browser_version,
-        browser_sha256: identity.browser_sha256,
-        module_sha256: identity.module_sha256,
-        playwright_version: identity.playwright_version,
-        mediabunny_version: identity.mediabunny_version,
-        soundtouch_version: "0.3.0".into(),
-        decoder_profiles,
-        pitch_profiles,
-        mastering_profile: AudioMasteringProfile::ClassicExportWholeSceneWebAudioV31,
-        mastering_applied: execution.receipt.mastering.applied,
-    };
+    let audio_decoder_evidence_v1 = Some(session.native_decoder_evidence(&execution.receipt)?);
+    let summary = execution_summary(&execution, host_sha256.clone())?;
     let public_artifact = AudioArtifactMetadata {
         mime_type: "audio/wav".into(),
         size_bytes: expected_bytes.to_string(),
@@ -279,4 +223,55 @@ pub(super) fn execute_with_checkpoint(
     check_output_name(&attempt, filename, &file)?;
     Ok(value)
     // `held` owns a cloned inode lease after return, through queue publication.
+}
+
+/// One projection of actual native audio receipts for WAV and video exports.
+pub(super) fn execution_summary(
+    execution: &NativeAudioExecutionReceipt,
+    host_sha256: String,
+) -> Result<AudioExecutionSummary, EditorError> {
+    let decoder_profiles = execution
+        .receipt
+        .decoders
+        .iter()
+        .map(|decoder| match decoder.profile.as_str() {
+            "native-libav-sinc-at-target-rate" => {
+                Ok(AudioDecoderProfile::NativeLibavSincAtTargetRate)
+            }
+            "native-libav-concatenate-linear-resample" => {
+                Ok(AudioDecoderProfile::NativeLibavConcatenateLinearResample)
+            }
+            "native-libav-windowed-concatenate-linear-resample" => {
+                Ok(AudioDecoderProfile::NativeLibavWindowedConcatenateLinearResample)
+            }
+            _ => Err(error(
+                "ARTIFACT_VERIFICATION_FAILED",
+                "Unknown actual audio decoder profile",
+            )),
+        })
+        .collect::<Result<BTreeSet<_>, _>>()?
+        .into_iter()
+        .collect();
+    let pitch_profiles = execution
+        .receipt
+        .preparation
+        .iter()
+        .map(|receipt| match receipt.facts.mode {
+            ClassicAudioPreparationMode::UnpreparedLinear => AudioPitchProfile::UnpreparedLinear,
+            ClassicAudioPreparationMode::PreparedLinear => AudioPitchProfile::PreparedLinear,
+            ClassicAudioPreparationMode::PreparedSoundtouch => {
+                AudioPitchProfile::PreparedSoundtouch
+            }
+        })
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .collect();
+    Ok(AudioExecutionSummary {
+        host_sha256,
+        runtime: AudioRuntimeIdentity::Native(execution.runtime_identity.identity.clone()),
+        decoder_profiles,
+        pitch_profiles,
+        mastering_profile: AudioMasteringProfile::ClassicExportWholeSceneWebAudioV31,
+        mastering_applied: execution.receipt.mastering.applied,
+    })
 }

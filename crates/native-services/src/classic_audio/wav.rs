@@ -7,7 +7,7 @@ use std::{
 
 const MAX_HEADER_BYTES: usize = 94;
 const FRAME_BYTES: u64 = 8;
-const BLOCK_FRAMES: usize = 4096;
+const BLOCK_FRAMES: usize = opencut_editor_application::classic_audio::AUDIO_PCM_CHUNK_FRAMES;
 
 /// Private attempt WAV output. The host creates/admit-leases the read-write
 /// file before constructing this sink and owns cleanup on every failure.

@@ -269,12 +269,17 @@ fn legal_result(job: &JobRecord) -> Value {
             .unwrap(),
             execution: AudioExecutionSummary {
                 host_sha256: "b".repeat(64),
-                browser_version: "fixture-browser".into(),
-                browser_sha256: "c".repeat(64),
-                module_sha256: "d".repeat(64),
-                playwright_version: "1.63.0".into(),
-                mediabunny_version: "1.41.0".into(),
-                soundtouch_version: "0.3.0".into(),
+                runtime:
+                    opencut_job_contracts::scene_audio::AudioRuntimeIdentity::HistoricalBrowser(
+                        opencut_job_contracts::scene_audio::HistoricalBrowserAudioIdentity {
+                            browser_version: "fixture-browser".into(),
+                            browser_sha256: "c".repeat(64),
+                            module_sha256: "d".repeat(64),
+                            playwright_version: "1.63.0".into(),
+                            mediabunny_version: "1.41.0".into(),
+                            soundtouch_version: "0.3.0".into(),
+                        },
+                    ),
                 decoder_profiles: vec![AudioDecoderProfile::WebAudioDecodeAtTargetRate],
                 pitch_profiles: vec![AudioPitchProfile::UnpreparedLinear],
                 mastering_profile: AudioMasteringProfile::ClassicExportWholeSceneWebAudioV31,

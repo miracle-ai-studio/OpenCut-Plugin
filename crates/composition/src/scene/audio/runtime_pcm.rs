@@ -37,8 +37,8 @@ impl BoundAudioPcm<'_> {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct RuntimeAudioVoiceBlock {
     pub element_id: String,
     pub block_offset: u32,
@@ -48,21 +48,103 @@ pub struct RuntimeAudioVoiceBlock {
     /// tap, as Classic does; these facts never authorize an out-of-buffer read.
     pub positions: Vec<ExactSourceSample>,
     /// Physical amplitudes; gain clocks never switch to a prepared source clock.
+    #[serde(deserialize_with = "deserialize_amplitudes")]
     pub amplitudes: Vec<f64>,
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize)]
-#[serde(rename_all = "camelCase")]
+fn deserialize_amplitudes<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Vec<f64>, D::Error> {
+    struct Amplitudes;
+    impl<'de> serde::de::Visitor<'de> for Amplitudes {
+        type Value = Vec<f64>;
+        fn expecting(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            f.write_str("bounded exact Float64 amplitude facts")
+        }
+        fn visit_seq<A: serde::de::SeqAccess<'de>>(
+            self,
+            mut seq: A,
+        ) -> Result<Self::Value, A::Error> {
+            let mut out = Vec::new();
+            while let Some(raw) = seq.next_element::<Box<serde_json::value::RawValue>>()? {
+                if out.len() >= MAX_AUDIO_BLOCK_GAIN_SAMPLES {
+                    return Err(serde::de::Error::custom(
+                        "Audio amplitude work budget exceeded",
+                    ));
+                }
+                let value = raw.get().parse::<f64>().map_err(serde::de::Error::custom)?;
+                if !value.is_finite() {
+                    return Err(serde::de::Error::custom("Non-finite audio amplitude"));
+                }
+                out.push(value);
+            }
+            Ok(out)
+        }
+    }
+    deserializer.deserialize_seq(Amplitudes)
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct RuntimeAudioBlock {
-    #[serde(serialize_with = "serialize_identity")]
+    #[serde(
+        serialize_with = "serialize_identity",
+        deserialize_with = "deserialize_identity"
+    )]
     pub identity: AudioIdentity,
-    #[serde(serialize_with = "serialize_u64")]
+    #[serde(with = "decimal_u64")]
     pub start_sample: u64,
     pub frame_count: u32,
     pub voices: Vec<RuntimeAudioVoiceBlock>,
     /// Original participation and per-block OutsideBlock decisions, unchanged
     /// by runtime format binding; no resource locator is exposed.
     pub receipts: Vec<AudioReceipt>,
+}
+
+fn deserialize_identity<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<AudioIdentity, D::Error> {
+    #[derive(Deserialize)]
+    #[serde(rename_all = "camelCase", deny_unknown_fields)]
+    struct Identity {
+        project_id: String,
+        revision: String,
+        sequence_id: String,
+        profile: String,
+        sample_rate: u32,
+        channels: u32,
+    }
+    let value = Identity::deserialize(deserializer)?;
+    let profile = match value.profile.as_str() {
+        "classic-export-v31-web-audio" => AudioExecutionProfile::ClassicV31,
+        "legacy-ffmpeg-v3" => AudioExecutionProfile::LegacyFfmpegV3,
+        _ => return Err(serde::de::Error::custom("Unknown compiled audio profile")),
+    };
+    Ok(AudioIdentity {
+        project_id: value.project_id,
+        revision: value.revision,
+        sequence_id: value.sequence_id,
+        profile,
+        format: PcmFormat {
+            sample_rate: value.sample_rate,
+            channels: value.channels,
+        },
+    })
+}
+pub(super) fn deserialize_u128<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<u128, D::Error> {
+    let value = String::deserialize(deserializer)?;
+    if value.is_empty()
+        || value.len() > 39
+        || (value.len() > 1 && value.starts_with('0'))
+        || !value.bytes().all(|b| b.is_ascii_digit())
+    {
+        return Err(serde::de::Error::custom(
+            "Expected canonical unsigned decimal u128",
+        ));
+    }
+    value.parse().map_err(serde::de::Error::custom)
 }
 
 fn classic(prepared: &PreparedAudio) -> Result<(), CompositionError> {

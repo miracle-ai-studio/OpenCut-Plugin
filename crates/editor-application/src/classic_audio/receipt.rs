@@ -107,8 +107,8 @@ pub struct ClassicAudioPreviewReceipt {
     pub preparation: Vec<ClassicAudioPreparationReceipt>,
     pub peak_accounted_bytes: u64,
 }
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ClassicAudioResourceHandle {
     pub asset_id: String,
     pub handle: String,

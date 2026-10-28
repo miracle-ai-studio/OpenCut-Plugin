@@ -14,7 +14,7 @@ struct State {
     peak: u64,
     frame_deadline: Option<Instant>,
 }
-pub(super) struct Monitor {
+pub(crate) struct Monitor {
     state: Arc<Mutex<State>>,
     thread: Option<JoinHandle<()>>,
     started: Instant,
@@ -25,6 +25,15 @@ impl Monitor {
         max_rss: u64,
         deadline: Duration,
         progress: Option<Arc<Mutex<Instant>>>,
+    ) -> Self {
+        Self::new_for(child, max_rss, deadline, progress, Domain::Visual)
+    }
+    pub fn new_for(
+        child: Child,
+        max_rss: u64,
+        deadline: Duration,
+        progress: Option<Arc<Mutex<Instant>>>,
+        domain: Domain,
     ) -> Self {
         let started = Instant::now();
         let state = Arc::new(Mutex::new(State {
@@ -56,7 +65,7 @@ impl Monitor {
                         || state.frame_deadline.is_some_and(|at| Instant::now() >= at)
                     {
                         Some(EditorError::new(
-                            "VISUAL_TIME_LIMIT",
+                            domain.time_code(),
                             "Native rendering exceeded its captured deadline",
                         ))
                     } else {
@@ -65,7 +74,7 @@ impl Monitor {
                                 state.peak = state.peak.max(bytes);
                                 (bytes > max_rss).then(|| {
                                     EditorError::new(
-                                        "VISUAL_BUDGET_EXCEEDED",
+                                        domain.rss_code(),
                                         "Native worker exceeded its RSS admission",
                                     )
                                 })
@@ -115,7 +124,7 @@ impl Monitor {
             Ok(())
         }
     }
-    pub(super) fn running(&self) -> bool {
+    pub(crate) fn running(&self) -> bool {
         self.state
             .lock()
             .is_ok_and(|state| !state.done && state.fault.is_none())
@@ -126,12 +135,8 @@ impl Monitor {
             .unwrap_or_else(|e| e.into_inner())
             .frame_deadline = deadline;
     }
-    pub fn quota(
-        &self,
-        maximum: u64,
-        strict: bool,
-    ) -> opencut_editor_application::classic_visual::VisualQuotaReceipt {
-        opencut_editor_application::classic_visual::VisualQuotaReceipt {
+    pub fn quota(&self, maximum: u64, strict: bool) -> NativeQuota {
+        NativeQuota {
             profile: if strict {
                 "strict-hard"
             } else {

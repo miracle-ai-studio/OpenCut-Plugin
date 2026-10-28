@@ -437,12 +437,17 @@ fn stored_video_projection_validates_identity_codec_counts_hashes_and_private_ar
                 },
                 audio: AudioExecutionSummary {
                     host_sha256: digest.clone(),
-                    browser_version: "test-browser".into(),
-                    browser_sha256: digest.clone(),
-                    module_sha256: digest.clone(),
-                    playwright_version: "1.63.0".into(),
-                    mediabunny_version: "1.41.0".into(),
-                    soundtouch_version: "0.3.0".into(),
+                    runtime:
+                        opencut_job_contracts::scene_audio::AudioRuntimeIdentity::HistoricalBrowser(
+                            opencut_job_contracts::scene_audio::HistoricalBrowserAudioIdentity {
+                                browser_version: "test-browser".into(),
+                                browser_sha256: digest.clone(),
+                                module_sha256: digest.clone(),
+                                playwright_version: "1.63.0".into(),
+                                mediabunny_version: "1.41.0".into(),
+                                soundtouch_version: "0.3.0".into(),
+                            },
+                        ),
                     decoder_profiles: vec![],
                     pitch_profiles: vec![],
                     mastering_profile: AudioMasteringProfile::ClassicExportWholeSceneWebAudioV31,

@@ -31,6 +31,24 @@ impl Samples {
 pub(crate) struct Window {
     pub start: u64,
     pub samples: Samples,
+    _metadata: PcmReservation,
+}
+impl Window {
+    pub fn new(start: u64, samples: Samples, memory: &PcmMemory) -> Result<Self> {
+        // Vec's first allocation can hold four windows, then grows by doubling.
+        // Charge its complete upper bound before pushing this owner. Channel
+        // descriptors are charged in addition to every owned Float32 array.
+        let planes = match &samples {
+            Samples::Planar(p) => p.capacity() * std::mem::size_of::<PcmArray>(),
+            Samples::Stereo(_) => 0,
+        };
+        let metadata = memory.reserve((4 * std::mem::size_of::<Self>() + planes) as u64)?;
+        Ok(Self {
+            start,
+            samples,
+            _metadata: metadata,
+        })
+    }
 }
 pub(crate) struct PcmSource {
     pub sample_rate: u32,
@@ -38,6 +56,7 @@ pub(crate) struct PcmSource {
     pub channels: u32,
     pub sparse: bool,
     windows: Vec<Window>,
+    _metadata: PcmReservation,
 }
 impl PcmSource {
     pub fn new(
@@ -46,6 +65,7 @@ impl PcmSource {
         channels: u32,
         sparse: bool,
         windows: Vec<Window>,
+        memory: &PcmMemory,
     ) -> Result<Self> {
         if rate == 0
             || rate > 384000
@@ -82,15 +102,26 @@ impl PcmSource {
             channels,
             sparse,
             windows,
+            _metadata: memory.reserve(
+                std::mem::size_of::<Self>() as u64 + 2 * std::mem::size_of::<usize>() as u64,
+            )?,
         })
     }
     pub fn dense(rate: u32, samples: Samples) -> Result<Self> {
+        let memory = match &samples {
+            Samples::Planar(p) => p
+                .first()
+                .map(PcmArray::memory)
+                .ok_or_else(|| invalid("Dense PCM has no channel owner"))?,
+            Samples::Stereo(p) => p.memory(),
+        };
         Self::new(
             rate,
             samples.frames() as u64,
             samples.channels(),
             false,
-            vec![Window { start: 0, samples }],
+            vec![Window::new(0, samples, &memory)?],
+            &memory,
         )
     }
     pub fn resident_frames(&self) -> u64 {

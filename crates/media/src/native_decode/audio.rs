@@ -61,6 +61,9 @@ pub struct NativeAudioDecoder {
     ended: bool,
     retired: bool,
     last_pts: Option<i64>,
+    pending: std::collections::VecDeque<av::Packet>,
+    started: bool,
+    demux_eof: bool,
 }
 impl NativeAudioDecoder {
     pub fn open(
@@ -124,6 +127,9 @@ impl NativeAudioDecoder {
             ended: false,
             retired: false,
             last_pts: None,
+            pending: std::collections::VecDeque::new(),
+            started: false,
+            demux_eof: false,
         })
     }
     pub fn track(&self) -> &NativeAudioTrack {
@@ -135,6 +141,63 @@ impl NativeAudioDecoder {
     pub fn reached_eof(&self) -> bool {
         self.ended
     }
+    /// Begin at the last independent encoded packet at/before an observed
+    /// stream PTS, or its first packet when the target precedes the stream.
+    /// No pre-roll packet is decoded and then discarded: for codecs such as
+    /// AAC that would change overlap/noise state of every subsequent frame.
+    /// The caller chooses this source-consumer behavior, not an authored clock.
+    pub fn select_keyframe_at_pts(
+        &mut self,
+        source: &mut dyn ByteSource,
+        pts: i64,
+        deadline: Instant,
+    ) -> MediaResult<()> {
+        if self.retired || self.started || !self.pending.is_empty() {
+            return Err(invalid("Native audio packet origin is already bound"));
+        }
+        let first = self.bridge.bytes_read();
+        let mut packets = 0;
+        let mut candidate = None;
+        let result = (|| {
+            loop {
+                checkpoint(source, deadline)?;
+                let Some(packet) = self.next_packet(source, deadline, first, &mut packets)? else {
+                    if let Some(packet) = candidate.take() {
+                        self.pending.push_back(packet);
+                        return Ok(());
+                    }
+                    return Err(invalid(
+                        "Native audio has no independent packet at the requested origin",
+                    ));
+                };
+                if !packet.is_key() {
+                    return Err(MediaError::Unsupported(
+                        "Native audio origin requires independently addressable packets".into(),
+                    ));
+                }
+                let observed = packet.pts().ok_or_else(|| {
+                    MediaError::Unsupported(
+                        "Native audio packet has no observed presentation timestamp".into(),
+                    )
+                })?;
+                if observed <= pts {
+                    candidate = Some(packet);
+                    continue;
+                }
+                if let Some(packet) = candidate.take() {
+                    self.pending.push_back(packet);
+                }
+                self.pending.push_back(packet);
+                return Ok(());
+            }
+        })();
+        if result.is_err() {
+            self.retired = true;
+            self.pending.clear();
+            self.decoder.flush();
+        }
+        result
+    }
     pub fn read(
         &mut self,
         source: &mut dyn ByteSource,
@@ -143,6 +206,7 @@ impl NativeAudioDecoder {
         if self.retired {
             return Err(invalid("Native audio decoder was retired"));
         }
+        self.started = true;
         let result = self.read_inner(source, deadline).and_then(|frame| {
             checkpoint(source, deadline)?;
             Ok(frame)
@@ -180,8 +244,32 @@ impl NativeAudioDecoder {
                     "Native audio decoder requested packets after draining EOF",
                 ));
             }
-            let input = &mut self.input;
-            let mut packet = av::Packet::empty();
+            let packet = if let Some(packet) = self.pending.pop_front() {
+                Some(packet)
+            } else {
+                self.next_packet(source, deadline, first_byte, &mut packets)?
+            };
+            match packet {
+                Some(packet) => self.decoder.send_packet(&packet).map_err(failed)?,
+                None => {
+                    self.decoder.send_eof().map_err(failed)?;
+                    self.draining = true;
+                }
+            }
+        }
+    }
+    fn next_packet(
+        &mut self,
+        source: &mut dyn ByteSource,
+        deadline: Instant,
+        first_byte: u64,
+        packets: &mut usize,
+    ) -> MediaResult<Option<av::Packet>> {
+        if self.demux_eof {
+            return Ok(None);
+        }
+        loop {
+            checkpoint(source, deadline)?;
             let remaining = self
                 .limits
                 .max_io_bytes_per_operation
@@ -189,13 +277,15 @@ impl NativeAudioDecoder {
                 .ok_or(MediaError::OutputLimit {
                     limit_bytes: self.limits.max_io_bytes_per_operation,
                 })?;
+            let input = &mut self.input;
+            let mut packet = av::Packet::empty();
             let read = self
                 .bridge
                 .run(source, deadline, remaining, || Ok(packet.read(input)))?;
             match read {
                 Ok(()) => {
-                    packets += 1;
-                    if packets > self.limits.max_packets_per_operation {
+                    *packets += 1;
+                    if *packets > self.limits.max_packets_per_operation {
                         return Err(MediaError::OutputLimit {
                             limit_bytes: self.limits.max_io_bytes_per_operation,
                         });
@@ -203,13 +293,20 @@ impl NativeAudioDecoder {
                     if packet.stream() != self.track.stream_index as usize {
                         continue;
                     }
-                    self.decoder.send_packet(&packet).map_err(failed)?;
+                    // Origin selection owns at most two packets. Their complete
+                    // bound remains inside the caller's codec work reservation.
+                    if packet.size() as u64 > self.limits.max_resident_bytes / 4 {
+                        return Err(MediaError::OutputLimit {
+                            limit_bytes: self.limits.max_resident_bytes,
+                        });
+                    }
+                    return Ok(Some(packet));
                 }
                 Err(av::Error::Eof) => {
-                    self.decoder.send_eof().map_err(failed)?;
-                    self.draining = true;
+                    self.demux_eof = true;
+                    return Ok(None);
                 }
-                Err(error) => return Err(failed(error)),
+                Err(e) => return Err(failed(e)),
             }
         }
     }
@@ -368,6 +465,9 @@ impl NativeAudioDecoder {
         self.draining = false;
         self.ended = false;
         self.last_pts = None;
+        self.pending.clear();
+        self.started = false;
+        self.demux_eof = false;
         result
     }
 }

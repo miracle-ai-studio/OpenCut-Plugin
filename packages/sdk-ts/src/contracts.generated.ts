@@ -3031,7 +3031,40 @@ export namespace OpencutAnalysisAssetOutput {
   | {
       kind: 'speaker_turns';
     };
-  export type AudioDecoderProfile = 'web-audio-decode-at-target-rate' | 'mediabunny-1.41.0-concatenate-offline-resample';
+  export type AudioExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      decoder_profiles: AudioDecoderProfile[];
+      dsp_profile: string;
+      dsp_sha256: string;
+      host_sha256: string;
+      mastering_applied: boolean;
+      mastering_profile: AudioMasteringProfile;
+      pitch_profiles: AudioPitchProfile[];
+      platform: NativeSystemIdentity;
+      soundtouch_source_sha256: string;
+      worker_sha256: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profiles: AudioDecoderProfile[];
+      host_sha256: string;
+      mastering_applied: boolean;
+      mastering_profile: AudioMasteringProfile;
+      mediabunny_version: string;
+      module_sha256: string;
+      pitch_profiles: AudioPitchProfile[];
+      playwright_version: string;
+      soundtouch_version: string;
+    };
+  export type AudioDecoderProfile =
+  | 'web-audio-decode-at-target-rate'
+  | 'mediabunny-1.41.0-concatenate-offline-resample'
+  | 'native-libav-sinc-at-target-rate'
+  | 'native-libav-concatenate-linear-resample'
+  | 'native-libav-windowed-concatenate-linear-resample';
   export type AudioMasteringProfile = 'classic-export-whole-scene-web-audio-v31';
   export type AudioPitchProfile = 'unprepared-linear' | 'prepared-linear' | 'prepared-soundtouch';
   export type AudioProfile = 'classic-export-v31-web-audio';
@@ -3601,21 +3634,21 @@ export namespace OpencutAnalysisAssetOutput {
   mime_type: string;
   size_bytes: string;
 }
-  export interface AudioExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  /**
-   * Unique profiles used by this fixed scene, not claims about unused engines.
-   */
-  decoder_profiles: AudioDecoderProfile[];
-  host_sha256: string;
-  mastering_applied: boolean;
-  mastering_profile: AudioMasteringProfile;
-  mediabunny_version: string;
-  module_sha256: string;
-  pitch_profiles: AudioPitchProfile[];
-  playwright_version: string;
-  soundtouch_version: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+/**
+ * Audio execution observes its OS/CPU without claiming a graphics or font
+ * subsystem. These are runtime facts, independent of saved project formats.
+ */
+  export interface NativeSystemIdentity {
+  architecture: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
   export interface AudioRangeWavIdentity {
   channels: number;
@@ -3641,12 +3674,6 @@ export namespace OpencutAnalysisAssetOutput {
   content_hash: string;
   mime_type: string;
   size_bytes: string;
-}
-  export interface NativeLibraryIdentity {
-  binary_sha256: string;
-  configuration_sha256: string;
-  name: string;
-  version: string;
 }
   export interface NativePlatformIdentity {
   architecture: string;
@@ -17942,7 +17969,40 @@ export namespace OpencutResourceReadOutput {
   | {
       kind: 'speaker_turns';
     };
-  export type AudioDecoderProfile = 'web-audio-decode-at-target-rate' | 'mediabunny-1.41.0-concatenate-offline-resample';
+  export type AudioExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      decoder_profiles: AudioDecoderProfile[];
+      dsp_profile: string;
+      dsp_sha256: string;
+      host_sha256: string;
+      mastering_applied: boolean;
+      mastering_profile: AudioMasteringProfile;
+      pitch_profiles: AudioPitchProfile[];
+      platform: NativeSystemIdentity;
+      soundtouch_source_sha256: string;
+      worker_sha256: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profiles: AudioDecoderProfile[];
+      host_sha256: string;
+      mastering_applied: boolean;
+      mastering_profile: AudioMasteringProfile;
+      mediabunny_version: string;
+      module_sha256: string;
+      pitch_profiles: AudioPitchProfile[];
+      playwright_version: string;
+      soundtouch_version: string;
+    };
+  export type AudioDecoderProfile =
+  | 'web-audio-decode-at-target-rate'
+  | 'mediabunny-1.41.0-concatenate-offline-resample'
+  | 'native-libav-sinc-at-target-rate'
+  | 'native-libav-concatenate-linear-resample'
+  | 'native-libav-windowed-concatenate-linear-resample';
   export type AudioMasteringProfile = 'classic-export-whole-scene-web-audio-v31';
   export type AudioPitchProfile = 'unprepared-linear' | 'prepared-linear' | 'prepared-soundtouch';
   export type AudioProfile = 'classic-export-v31-web-audio';
@@ -19233,21 +19293,21 @@ export namespace OpencutResourceReadOutput {
   mime_type: string;
   size_bytes: string;
 }
-  export interface AudioExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  /**
-   * Unique profiles used by this fixed scene, not claims about unused engines.
-   */
-  decoder_profiles: AudioDecoderProfile[];
-  host_sha256: string;
-  mastering_applied: boolean;
-  mastering_profile: AudioMasteringProfile;
-  mediabunny_version: string;
-  module_sha256: string;
-  pitch_profiles: AudioPitchProfile[];
-  playwright_version: string;
-  soundtouch_version: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+/**
+ * Audio execution observes its OS/CPU without claiming a graphics or font
+ * subsystem. These are runtime facts, independent of saved project formats.
+ */
+  export interface NativeSystemIdentity {
+  architecture: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
   export interface AudioRangeWavIdentity {
   channels: number;
@@ -19273,12 +19333,6 @@ export namespace OpencutResourceReadOutput {
   content_hash: string;
   mime_type: string;
   size_bytes: string;
-}
-  export interface NativeLibraryIdentity {
-  binary_sha256: string;
-  configuration_sha256: string;
-  name: string;
-  version: string;
 }
   export interface NativePlatformIdentity {
   architecture: string;
@@ -20167,7 +20221,40 @@ export namespace OpencutJobViewOutput {
   | {
       kind: 'speaker_turns';
     };
-  export type AudioDecoderProfile = 'web-audio-decode-at-target-rate' | 'mediabunny-1.41.0-concatenate-offline-resample';
+  export type AudioExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      decoder_profiles: AudioDecoderProfile[];
+      dsp_profile: string;
+      dsp_sha256: string;
+      host_sha256: string;
+      mastering_applied: boolean;
+      mastering_profile: AudioMasteringProfile;
+      pitch_profiles: AudioPitchProfile[];
+      platform: NativeSystemIdentity;
+      soundtouch_source_sha256: string;
+      worker_sha256: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profiles: AudioDecoderProfile[];
+      host_sha256: string;
+      mastering_applied: boolean;
+      mastering_profile: AudioMasteringProfile;
+      mediabunny_version: string;
+      module_sha256: string;
+      pitch_profiles: AudioPitchProfile[];
+      playwright_version: string;
+      soundtouch_version: string;
+    };
+  export type AudioDecoderProfile =
+  | 'web-audio-decode-at-target-rate'
+  | 'mediabunny-1.41.0-concatenate-offline-resample'
+  | 'native-libav-sinc-at-target-rate'
+  | 'native-libav-concatenate-linear-resample'
+  | 'native-libav-windowed-concatenate-linear-resample';
   export type AudioMasteringProfile = 'classic-export-whole-scene-web-audio-v31';
   export type AudioPitchProfile = 'unprepared-linear' | 'prepared-linear' | 'prepared-soundtouch';
   export type AudioProfile = 'classic-export-v31-web-audio';
@@ -20737,21 +20824,21 @@ export namespace OpencutJobViewOutput {
   mime_type: string;
   size_bytes: string;
 }
-  export interface AudioExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  /**
-   * Unique profiles used by this fixed scene, not claims about unused engines.
-   */
-  decoder_profiles: AudioDecoderProfile[];
-  host_sha256: string;
-  mastering_applied: boolean;
-  mastering_profile: AudioMasteringProfile;
-  mediabunny_version: string;
-  module_sha256: string;
-  pitch_profiles: AudioPitchProfile[];
-  playwright_version: string;
-  soundtouch_version: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+/**
+ * Audio execution observes its OS/CPU without claiming a graphics or font
+ * subsystem. These are runtime facts, independent of saved project formats.
+ */
+  export interface NativeSystemIdentity {
+  architecture: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
   export interface AudioRangeWavIdentity {
   channels: number;
@@ -20777,12 +20864,6 @@ export namespace OpencutJobViewOutput {
   content_hash: string;
   mime_type: string;
   size_bytes: string;
-}
-  export interface NativeLibraryIdentity {
-  binary_sha256: string;
-  configuration_sha256: string;
-  name: string;
-  version: string;
 }
   export interface NativePlatformIdentity {
   architecture: string;
@@ -21655,7 +21736,40 @@ export namespace OpencutJobQueryOutput {
   | {
       kind: 'speaker_turns';
     };
-  export type AudioDecoderProfile = 'web-audio-decode-at-target-rate' | 'mediabunny-1.41.0-concatenate-offline-resample';
+  export type AudioExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      decoder_profiles: AudioDecoderProfile[];
+      dsp_profile: string;
+      dsp_sha256: string;
+      host_sha256: string;
+      mastering_applied: boolean;
+      mastering_profile: AudioMasteringProfile;
+      pitch_profiles: AudioPitchProfile[];
+      platform: NativeSystemIdentity;
+      soundtouch_source_sha256: string;
+      worker_sha256: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profiles: AudioDecoderProfile[];
+      host_sha256: string;
+      mastering_applied: boolean;
+      mastering_profile: AudioMasteringProfile;
+      mediabunny_version: string;
+      module_sha256: string;
+      pitch_profiles: AudioPitchProfile[];
+      playwright_version: string;
+      soundtouch_version: string;
+    };
+  export type AudioDecoderProfile =
+  | 'web-audio-decode-at-target-rate'
+  | 'mediabunny-1.41.0-concatenate-offline-resample'
+  | 'native-libav-sinc-at-target-rate'
+  | 'native-libav-concatenate-linear-resample'
+  | 'native-libav-windowed-concatenate-linear-resample';
   export type AudioMasteringProfile = 'classic-export-whole-scene-web-audio-v31';
   export type AudioPitchProfile = 'unprepared-linear' | 'prepared-linear' | 'prepared-soundtouch';
   export type AudioProfile = 'classic-export-v31-web-audio';
@@ -22230,21 +22344,21 @@ export namespace OpencutJobQueryOutput {
   mime_type: string;
   size_bytes: string;
 }
-  export interface AudioExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  /**
-   * Unique profiles used by this fixed scene, not claims about unused engines.
-   */
-  decoder_profiles: AudioDecoderProfile[];
-  host_sha256: string;
-  mastering_applied: boolean;
-  mastering_profile: AudioMasteringProfile;
-  mediabunny_version: string;
-  module_sha256: string;
-  pitch_profiles: AudioPitchProfile[];
-  playwright_version: string;
-  soundtouch_version: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+/**
+ * Audio execution observes its OS/CPU without claiming a graphics or font
+ * subsystem. These are runtime facts, independent of saved project formats.
+ */
+  export interface NativeSystemIdentity {
+  architecture: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
   export interface AudioRangeWavIdentity {
   channels: number;
@@ -22270,12 +22384,6 @@ export namespace OpencutJobQueryOutput {
   content_hash: string;
   mime_type: string;
   size_bytes: string;
-}
-  export interface NativeLibraryIdentity {
-  binary_sha256: string;
-  configuration_sha256: string;
-  name: string;
-  version: string;
 }
   export interface NativePlatformIdentity {
   architecture: string;
@@ -23410,7 +23518,40 @@ export namespace OpencutJobSubmitOutput {
   | {
       kind: 'speaker_turns';
     };
-  export type AudioDecoderProfile = 'web-audio-decode-at-target-rate' | 'mediabunny-1.41.0-concatenate-offline-resample';
+  export type AudioExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      decoder_profiles: AudioDecoderProfile[];
+      dsp_profile: string;
+      dsp_sha256: string;
+      host_sha256: string;
+      mastering_applied: boolean;
+      mastering_profile: AudioMasteringProfile;
+      pitch_profiles: AudioPitchProfile[];
+      platform: NativeSystemIdentity;
+      soundtouch_source_sha256: string;
+      worker_sha256: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profiles: AudioDecoderProfile[];
+      host_sha256: string;
+      mastering_applied: boolean;
+      mastering_profile: AudioMasteringProfile;
+      mediabunny_version: string;
+      module_sha256: string;
+      pitch_profiles: AudioPitchProfile[];
+      playwright_version: string;
+      soundtouch_version: string;
+    };
+  export type AudioDecoderProfile =
+  | 'web-audio-decode-at-target-rate'
+  | 'mediabunny-1.41.0-concatenate-offline-resample'
+  | 'native-libav-sinc-at-target-rate'
+  | 'native-libav-concatenate-linear-resample'
+  | 'native-libav-windowed-concatenate-linear-resample';
   export type AudioMasteringProfile = 'classic-export-whole-scene-web-audio-v31';
   export type AudioPitchProfile = 'unprepared-linear' | 'prepared-linear' | 'prepared-soundtouch';
   export type AudioProfile = 'classic-export-v31-web-audio';
@@ -23980,21 +24121,21 @@ export namespace OpencutJobSubmitOutput {
   mime_type: string;
   size_bytes: string;
 }
-  export interface AudioExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  /**
-   * Unique profiles used by this fixed scene, not claims about unused engines.
-   */
-  decoder_profiles: AudioDecoderProfile[];
-  host_sha256: string;
-  mastering_applied: boolean;
-  mastering_profile: AudioMasteringProfile;
-  mediabunny_version: string;
-  module_sha256: string;
-  pitch_profiles: AudioPitchProfile[];
-  playwright_version: string;
-  soundtouch_version: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+/**
+ * Audio execution observes its OS/CPU without claiming a graphics or font
+ * subsystem. These are runtime facts, independent of saved project formats.
+ */
+  export interface NativeSystemIdentity {
+  architecture: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
   export interface AudioRangeWavIdentity {
   channels: number;
@@ -24020,12 +24161,6 @@ export namespace OpencutJobSubmitOutput {
   content_hash: string;
   mime_type: string;
   size_bytes: string;
-}
-  export interface NativeLibraryIdentity {
-  binary_sha256: string;
-  configuration_sha256: string;
-  name: string;
-  version: string;
 }
   export interface NativePlatformIdentity {
   architecture: string;
@@ -25008,7 +25143,40 @@ export namespace OpencutRenderSubmitOutput {
   | {
       kind: 'speaker_turns';
     };
-  export type AudioDecoderProfile = 'web-audio-decode-at-target-rate' | 'mediabunny-1.41.0-concatenate-offline-resample';
+  export type AudioExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      decoder_profiles: AudioDecoderProfile[];
+      dsp_profile: string;
+      dsp_sha256: string;
+      host_sha256: string;
+      mastering_applied: boolean;
+      mastering_profile: AudioMasteringProfile;
+      pitch_profiles: AudioPitchProfile[];
+      platform: NativeSystemIdentity;
+      soundtouch_source_sha256: string;
+      worker_sha256: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profiles: AudioDecoderProfile[];
+      host_sha256: string;
+      mastering_applied: boolean;
+      mastering_profile: AudioMasteringProfile;
+      mediabunny_version: string;
+      module_sha256: string;
+      pitch_profiles: AudioPitchProfile[];
+      playwright_version: string;
+      soundtouch_version: string;
+    };
+  export type AudioDecoderProfile =
+  | 'web-audio-decode-at-target-rate'
+  | 'mediabunny-1.41.0-concatenate-offline-resample'
+  | 'native-libav-sinc-at-target-rate'
+  | 'native-libav-concatenate-linear-resample'
+  | 'native-libav-windowed-concatenate-linear-resample';
   export type AudioMasteringProfile = 'classic-export-whole-scene-web-audio-v31';
   export type AudioPitchProfile = 'unprepared-linear' | 'prepared-linear' | 'prepared-soundtouch';
   export type AudioProfile = 'classic-export-v31-web-audio';
@@ -25578,21 +25746,21 @@ export namespace OpencutRenderSubmitOutput {
   mime_type: string;
   size_bytes: string;
 }
-  export interface AudioExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  /**
-   * Unique profiles used by this fixed scene, not claims about unused engines.
-   */
-  decoder_profiles: AudioDecoderProfile[];
-  host_sha256: string;
-  mastering_applied: boolean;
-  mastering_profile: AudioMasteringProfile;
-  mediabunny_version: string;
-  module_sha256: string;
-  pitch_profiles: AudioPitchProfile[];
-  playwright_version: string;
-  soundtouch_version: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+/**
+ * Audio execution observes its OS/CPU without claiming a graphics or font
+ * subsystem. These are runtime facts, independent of saved project formats.
+ */
+  export interface NativeSystemIdentity {
+  architecture: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
   export interface AudioRangeWavIdentity {
   channels: number;
@@ -25618,12 +25786,6 @@ export namespace OpencutRenderSubmitOutput {
   content_hash: string;
   mime_type: string;
   size_bytes: string;
-}
-  export interface NativeLibraryIdentity {
-  binary_sha256: string;
-  configuration_sha256: string;
-  name: string;
-  version: string;
 }
   export interface NativePlatformIdentity {
   architecture: string;
@@ -37390,7 +37552,40 @@ export namespace OpencutAnalysisSequenceTranscribeOutput {
   | {
       kind: 'speaker_turns';
     };
-  export type AudioDecoderProfile = 'web-audio-decode-at-target-rate' | 'mediabunny-1.41.0-concatenate-offline-resample';
+  export type AudioExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      decoder_profiles: AudioDecoderProfile[];
+      dsp_profile: string;
+      dsp_sha256: string;
+      host_sha256: string;
+      mastering_applied: boolean;
+      mastering_profile: AudioMasteringProfile;
+      pitch_profiles: AudioPitchProfile[];
+      platform: NativeSystemIdentity;
+      soundtouch_source_sha256: string;
+      worker_sha256: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profiles: AudioDecoderProfile[];
+      host_sha256: string;
+      mastering_applied: boolean;
+      mastering_profile: AudioMasteringProfile;
+      mediabunny_version: string;
+      module_sha256: string;
+      pitch_profiles: AudioPitchProfile[];
+      playwright_version: string;
+      soundtouch_version: string;
+    };
+  export type AudioDecoderProfile =
+  | 'web-audio-decode-at-target-rate'
+  | 'mediabunny-1.41.0-concatenate-offline-resample'
+  | 'native-libav-sinc-at-target-rate'
+  | 'native-libav-concatenate-linear-resample'
+  | 'native-libav-windowed-concatenate-linear-resample';
   export type AudioMasteringProfile = 'classic-export-whole-scene-web-audio-v31';
   export type AudioPitchProfile = 'unprepared-linear' | 'prepared-linear' | 'prepared-soundtouch';
   export type AudioProfile = 'classic-export-v31-web-audio';
@@ -37960,21 +38155,21 @@ export namespace OpencutAnalysisSequenceTranscribeOutput {
   mime_type: string;
   size_bytes: string;
 }
-  export interface AudioExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  /**
-   * Unique profiles used by this fixed scene, not claims about unused engines.
-   */
-  decoder_profiles: AudioDecoderProfile[];
-  host_sha256: string;
-  mastering_applied: boolean;
-  mastering_profile: AudioMasteringProfile;
-  mediabunny_version: string;
-  module_sha256: string;
-  pitch_profiles: AudioPitchProfile[];
-  playwright_version: string;
-  soundtouch_version: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+/**
+ * Audio execution observes its OS/CPU without claiming a graphics or font
+ * subsystem. These are runtime facts, independent of saved project formats.
+ */
+  export interface NativeSystemIdentity {
+  architecture: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
   export interface AudioRangeWavIdentity {
   channels: number;
@@ -38000,12 +38195,6 @@ export namespace OpencutAnalysisSequenceTranscribeOutput {
   content_hash: string;
   mime_type: string;
   size_bytes: string;
-}
-  export interface NativeLibraryIdentity {
-  binary_sha256: string;
-  configuration_sha256: string;
-  name: string;
-  version: string;
 }
   export interface NativePlatformIdentity {
   architecture: string;
@@ -46035,7 +46224,40 @@ export namespace OpencutAnalysisSpeakerTurnsOutput {
   | {
       kind: 'speaker_turns';
     };
-  export type AudioDecoderProfile = 'web-audio-decode-at-target-rate' | 'mediabunny-1.41.0-concatenate-offline-resample';
+  export type AudioExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      decoder_profiles: AudioDecoderProfile[];
+      dsp_profile: string;
+      dsp_sha256: string;
+      host_sha256: string;
+      mastering_applied: boolean;
+      mastering_profile: AudioMasteringProfile;
+      pitch_profiles: AudioPitchProfile[];
+      platform: NativeSystemIdentity;
+      soundtouch_source_sha256: string;
+      worker_sha256: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profiles: AudioDecoderProfile[];
+      host_sha256: string;
+      mastering_applied: boolean;
+      mastering_profile: AudioMasteringProfile;
+      mediabunny_version: string;
+      module_sha256: string;
+      pitch_profiles: AudioPitchProfile[];
+      playwright_version: string;
+      soundtouch_version: string;
+    };
+  export type AudioDecoderProfile =
+  | 'web-audio-decode-at-target-rate'
+  | 'mediabunny-1.41.0-concatenate-offline-resample'
+  | 'native-libav-sinc-at-target-rate'
+  | 'native-libav-concatenate-linear-resample'
+  | 'native-libav-windowed-concatenate-linear-resample';
   export type AudioMasteringProfile = 'classic-export-whole-scene-web-audio-v31';
   export type AudioPitchProfile = 'unprepared-linear' | 'prepared-linear' | 'prepared-soundtouch';
   export type AudioProfile = 'classic-export-v31-web-audio';
@@ -46605,21 +46827,21 @@ export namespace OpencutAnalysisSpeakerTurnsOutput {
   mime_type: string;
   size_bytes: string;
 }
-  export interface AudioExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  /**
-   * Unique profiles used by this fixed scene, not claims about unused engines.
-   */
-  decoder_profiles: AudioDecoderProfile[];
-  host_sha256: string;
-  mastering_applied: boolean;
-  mastering_profile: AudioMasteringProfile;
-  mediabunny_version: string;
-  module_sha256: string;
-  pitch_profiles: AudioPitchProfile[];
-  playwright_version: string;
-  soundtouch_version: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+/**
+ * Audio execution observes its OS/CPU without claiming a graphics or font
+ * subsystem. These are runtime facts, independent of saved project formats.
+ */
+  export interface NativeSystemIdentity {
+  architecture: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
   export interface AudioRangeWavIdentity {
   channels: number;
@@ -46645,12 +46867,6 @@ export namespace OpencutAnalysisSpeakerTurnsOutput {
   content_hash: string;
   mime_type: string;
   size_bytes: string;
-}
-  export interface NativeLibraryIdentity {
-  binary_sha256: string;
-  configuration_sha256: string;
-  name: string;
-  version: string;
 }
   export interface NativePlatformIdentity {
   architecture: string;
@@ -47530,7 +47746,40 @@ export namespace OpencutAnalysisTranscribeOutput {
   | {
       kind: 'speaker_turns';
     };
-  export type AudioDecoderProfile = 'web-audio-decode-at-target-rate' | 'mediabunny-1.41.0-concatenate-offline-resample';
+  export type AudioExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      decoder_profiles: AudioDecoderProfile[];
+      dsp_profile: string;
+      dsp_sha256: string;
+      host_sha256: string;
+      mastering_applied: boolean;
+      mastering_profile: AudioMasteringProfile;
+      pitch_profiles: AudioPitchProfile[];
+      platform: NativeSystemIdentity;
+      soundtouch_source_sha256: string;
+      worker_sha256: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profiles: AudioDecoderProfile[];
+      host_sha256: string;
+      mastering_applied: boolean;
+      mastering_profile: AudioMasteringProfile;
+      mediabunny_version: string;
+      module_sha256: string;
+      pitch_profiles: AudioPitchProfile[];
+      playwright_version: string;
+      soundtouch_version: string;
+    };
+  export type AudioDecoderProfile =
+  | 'web-audio-decode-at-target-rate'
+  | 'mediabunny-1.41.0-concatenate-offline-resample'
+  | 'native-libav-sinc-at-target-rate'
+  | 'native-libav-concatenate-linear-resample'
+  | 'native-libav-windowed-concatenate-linear-resample';
   export type AudioMasteringProfile = 'classic-export-whole-scene-web-audio-v31';
   export type AudioPitchProfile = 'unprepared-linear' | 'prepared-linear' | 'prepared-soundtouch';
   export type AudioProfile = 'classic-export-v31-web-audio';
@@ -48100,21 +48349,21 @@ export namespace OpencutAnalysisTranscribeOutput {
   mime_type: string;
   size_bytes: string;
 }
-  export interface AudioExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  /**
-   * Unique profiles used by this fixed scene, not claims about unused engines.
-   */
-  decoder_profiles: AudioDecoderProfile[];
-  host_sha256: string;
-  mastering_applied: boolean;
-  mastering_profile: AudioMasteringProfile;
-  mediabunny_version: string;
-  module_sha256: string;
-  pitch_profiles: AudioPitchProfile[];
-  playwright_version: string;
-  soundtouch_version: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+/**
+ * Audio execution observes its OS/CPU without claiming a graphics or font
+ * subsystem. These are runtime facts, independent of saved project formats.
+ */
+  export interface NativeSystemIdentity {
+  architecture: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
   export interface AudioRangeWavIdentity {
   channels: number;
@@ -48140,12 +48389,6 @@ export namespace OpencutAnalysisTranscribeOutput {
   content_hash: string;
   mime_type: string;
   size_bytes: string;
-}
-  export interface NativeLibraryIdentity {
-  binary_sha256: string;
-  configuration_sha256: string;
-  name: string;
-  version: string;
 }
   export interface NativePlatformIdentity {
   architecture: string;
@@ -49099,7 +49342,40 @@ export namespace OpencutAnalysisSilenceOutput {
   | {
       kind: 'speaker_turns';
     };
-  export type AudioDecoderProfile = 'web-audio-decode-at-target-rate' | 'mediabunny-1.41.0-concatenate-offline-resample';
+  export type AudioExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      decoder_profiles: AudioDecoderProfile[];
+      dsp_profile: string;
+      dsp_sha256: string;
+      host_sha256: string;
+      mastering_applied: boolean;
+      mastering_profile: AudioMasteringProfile;
+      pitch_profiles: AudioPitchProfile[];
+      platform: NativeSystemIdentity;
+      soundtouch_source_sha256: string;
+      worker_sha256: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profiles: AudioDecoderProfile[];
+      host_sha256: string;
+      mastering_applied: boolean;
+      mastering_profile: AudioMasteringProfile;
+      mediabunny_version: string;
+      module_sha256: string;
+      pitch_profiles: AudioPitchProfile[];
+      playwright_version: string;
+      soundtouch_version: string;
+    };
+  export type AudioDecoderProfile =
+  | 'web-audio-decode-at-target-rate'
+  | 'mediabunny-1.41.0-concatenate-offline-resample'
+  | 'native-libav-sinc-at-target-rate'
+  | 'native-libav-concatenate-linear-resample'
+  | 'native-libav-windowed-concatenate-linear-resample';
   export type AudioMasteringProfile = 'classic-export-whole-scene-web-audio-v31';
   export type AudioPitchProfile = 'unprepared-linear' | 'prepared-linear' | 'prepared-soundtouch';
   export type AudioProfile = 'classic-export-v31-web-audio';
@@ -49669,21 +49945,21 @@ export namespace OpencutAnalysisSilenceOutput {
   mime_type: string;
   size_bytes: string;
 }
-  export interface AudioExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  /**
-   * Unique profiles used by this fixed scene, not claims about unused engines.
-   */
-  decoder_profiles: AudioDecoderProfile[];
-  host_sha256: string;
-  mastering_applied: boolean;
-  mastering_profile: AudioMasteringProfile;
-  mediabunny_version: string;
-  module_sha256: string;
-  pitch_profiles: AudioPitchProfile[];
-  playwright_version: string;
-  soundtouch_version: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+/**
+ * Audio execution observes its OS/CPU without claiming a graphics or font
+ * subsystem. These are runtime facts, independent of saved project formats.
+ */
+  export interface NativeSystemIdentity {
+  architecture: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
   export interface AudioRangeWavIdentity {
   channels: number;
@@ -49709,12 +49985,6 @@ export namespace OpencutAnalysisSilenceOutput {
   content_hash: string;
   mime_type: string;
   size_bytes: string;
-}
-  export interface NativeLibraryIdentity {
-  binary_sha256: string;
-  configuration_sha256: string;
-  name: string;
-  version: string;
 }
   export interface NativePlatformIdentity {
   architecture: string;
@@ -50590,7 +50860,40 @@ export namespace OpencutAnalysisShotsOutput {
   | {
       kind: 'speaker_turns';
     };
-  export type AudioDecoderProfile = 'web-audio-decode-at-target-rate' | 'mediabunny-1.41.0-concatenate-offline-resample';
+  export type AudioExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      decoder_profiles: AudioDecoderProfile[];
+      dsp_profile: string;
+      dsp_sha256: string;
+      host_sha256: string;
+      mastering_applied: boolean;
+      mastering_profile: AudioMasteringProfile;
+      pitch_profiles: AudioPitchProfile[];
+      platform: NativeSystemIdentity;
+      soundtouch_source_sha256: string;
+      worker_sha256: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profiles: AudioDecoderProfile[];
+      host_sha256: string;
+      mastering_applied: boolean;
+      mastering_profile: AudioMasteringProfile;
+      mediabunny_version: string;
+      module_sha256: string;
+      pitch_profiles: AudioPitchProfile[];
+      playwright_version: string;
+      soundtouch_version: string;
+    };
+  export type AudioDecoderProfile =
+  | 'web-audio-decode-at-target-rate'
+  | 'mediabunny-1.41.0-concatenate-offline-resample'
+  | 'native-libav-sinc-at-target-rate'
+  | 'native-libav-concatenate-linear-resample'
+  | 'native-libav-windowed-concatenate-linear-resample';
   export type AudioMasteringProfile = 'classic-export-whole-scene-web-audio-v31';
   export type AudioPitchProfile = 'unprepared-linear' | 'prepared-linear' | 'prepared-soundtouch';
   export type AudioProfile = 'classic-export-v31-web-audio';
@@ -51160,21 +51463,21 @@ export namespace OpencutAnalysisShotsOutput {
   mime_type: string;
   size_bytes: string;
 }
-  export interface AudioExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  /**
-   * Unique profiles used by this fixed scene, not claims about unused engines.
-   */
-  decoder_profiles: AudioDecoderProfile[];
-  host_sha256: string;
-  mastering_applied: boolean;
-  mastering_profile: AudioMasteringProfile;
-  mediabunny_version: string;
-  module_sha256: string;
-  pitch_profiles: AudioPitchProfile[];
-  playwright_version: string;
-  soundtouch_version: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+/**
+ * Audio execution observes its OS/CPU without claiming a graphics or font
+ * subsystem. These are runtime facts, independent of saved project formats.
+ */
+  export interface NativeSystemIdentity {
+  architecture: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
   export interface AudioRangeWavIdentity {
   channels: number;
@@ -51200,12 +51503,6 @@ export namespace OpencutAnalysisShotsOutput {
   content_hash: string;
   mime_type: string;
   size_bytes: string;
-}
-  export interface NativeLibraryIdentity {
-  binary_sha256: string;
-  configuration_sha256: string;
-  name: string;
-  version: string;
 }
   export interface NativePlatformIdentity {
   architecture: string;
@@ -52081,7 +52378,40 @@ export namespace OpencutAnalysisWaveformOutput {
   | {
       kind: 'speaker_turns';
     };
-  export type AudioDecoderProfile = 'web-audio-decode-at-target-rate' | 'mediabunny-1.41.0-concatenate-offline-resample';
+  export type AudioExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      decoder_profiles: AudioDecoderProfile[];
+      dsp_profile: string;
+      dsp_sha256: string;
+      host_sha256: string;
+      mastering_applied: boolean;
+      mastering_profile: AudioMasteringProfile;
+      pitch_profiles: AudioPitchProfile[];
+      platform: NativeSystemIdentity;
+      soundtouch_source_sha256: string;
+      worker_sha256: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profiles: AudioDecoderProfile[];
+      host_sha256: string;
+      mastering_applied: boolean;
+      mastering_profile: AudioMasteringProfile;
+      mediabunny_version: string;
+      module_sha256: string;
+      pitch_profiles: AudioPitchProfile[];
+      playwright_version: string;
+      soundtouch_version: string;
+    };
+  export type AudioDecoderProfile =
+  | 'web-audio-decode-at-target-rate'
+  | 'mediabunny-1.41.0-concatenate-offline-resample'
+  | 'native-libav-sinc-at-target-rate'
+  | 'native-libav-concatenate-linear-resample'
+  | 'native-libav-windowed-concatenate-linear-resample';
   export type AudioMasteringProfile = 'classic-export-whole-scene-web-audio-v31';
   export type AudioPitchProfile = 'unprepared-linear' | 'prepared-linear' | 'prepared-soundtouch';
   export type AudioProfile = 'classic-export-v31-web-audio';
@@ -52651,21 +52981,21 @@ export namespace OpencutAnalysisWaveformOutput {
   mime_type: string;
   size_bytes: string;
 }
-  export interface AudioExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  /**
-   * Unique profiles used by this fixed scene, not claims about unused engines.
-   */
-  decoder_profiles: AudioDecoderProfile[];
-  host_sha256: string;
-  mastering_applied: boolean;
-  mastering_profile: AudioMasteringProfile;
-  mediabunny_version: string;
-  module_sha256: string;
-  pitch_profiles: AudioPitchProfile[];
-  playwright_version: string;
-  soundtouch_version: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+/**
+ * Audio execution observes its OS/CPU without claiming a graphics or font
+ * subsystem. These are runtime facts, independent of saved project formats.
+ */
+  export interface NativeSystemIdentity {
+  architecture: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
   export interface AudioRangeWavIdentity {
   channels: number;
@@ -52691,12 +53021,6 @@ export namespace OpencutAnalysisWaveformOutput {
   content_hash: string;
   mime_type: string;
   size_bytes: string;
-}
-  export interface NativeLibraryIdentity {
-  binary_sha256: string;
-  configuration_sha256: string;
-  name: string;
-  version: string;
 }
   export interface NativePlatformIdentity {
   architecture: string;
@@ -53568,7 +53892,40 @@ export namespace OpencutJobRequestCancelOutput {
   | {
       kind: 'speaker_turns';
     };
-  export type AudioDecoderProfile = 'web-audio-decode-at-target-rate' | 'mediabunny-1.41.0-concatenate-offline-resample';
+  export type AudioExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      decoder_profiles: AudioDecoderProfile[];
+      dsp_profile: string;
+      dsp_sha256: string;
+      host_sha256: string;
+      mastering_applied: boolean;
+      mastering_profile: AudioMasteringProfile;
+      pitch_profiles: AudioPitchProfile[];
+      platform: NativeSystemIdentity;
+      soundtouch_source_sha256: string;
+      worker_sha256: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profiles: AudioDecoderProfile[];
+      host_sha256: string;
+      mastering_applied: boolean;
+      mastering_profile: AudioMasteringProfile;
+      mediabunny_version: string;
+      module_sha256: string;
+      pitch_profiles: AudioPitchProfile[];
+      playwright_version: string;
+      soundtouch_version: string;
+    };
+  export type AudioDecoderProfile =
+  | 'web-audio-decode-at-target-rate'
+  | 'mediabunny-1.41.0-concatenate-offline-resample'
+  | 'native-libav-sinc-at-target-rate'
+  | 'native-libav-concatenate-linear-resample'
+  | 'native-libav-windowed-concatenate-linear-resample';
   export type AudioMasteringProfile = 'classic-export-whole-scene-web-audio-v31';
   export type AudioPitchProfile = 'unprepared-linear' | 'prepared-linear' | 'prepared-soundtouch';
   export type AudioProfile = 'classic-export-v31-web-audio';
@@ -54138,21 +54495,21 @@ export namespace OpencutJobRequestCancelOutput {
   mime_type: string;
   size_bytes: string;
 }
-  export interface AudioExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  /**
-   * Unique profiles used by this fixed scene, not claims about unused engines.
-   */
-  decoder_profiles: AudioDecoderProfile[];
-  host_sha256: string;
-  mastering_applied: boolean;
-  mastering_profile: AudioMasteringProfile;
-  mediabunny_version: string;
-  module_sha256: string;
-  pitch_profiles: AudioPitchProfile[];
-  playwright_version: string;
-  soundtouch_version: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+/**
+ * Audio execution observes its OS/CPU without claiming a graphics or font
+ * subsystem. These are runtime facts, independent of saved project formats.
+ */
+  export interface NativeSystemIdentity {
+  architecture: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
   export interface AudioRangeWavIdentity {
   channels: number;
@@ -54178,12 +54535,6 @@ export namespace OpencutJobRequestCancelOutput {
   content_hash: string;
   mime_type: string;
   size_bytes: string;
-}
-  export interface NativeLibraryIdentity {
-  binary_sha256: string;
-  configuration_sha256: string;
-  name: string;
-  version: string;
 }
   export interface NativePlatformIdentity {
   architecture: string;
@@ -64401,7 +64752,40 @@ export namespace JobAnalysisAssetResult {
 }
 
 export namespace JobAnalysisSequenceTranscribeResult {
-  export type AudioDecoderProfile = 'web-audio-decode-at-target-rate' | 'mediabunny-1.41.0-concatenate-offline-resample';
+  export type AudioExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      decoder_profiles: AudioDecoderProfile[];
+      dsp_profile: string;
+      dsp_sha256: string;
+      host_sha256: string;
+      mastering_applied: boolean;
+      mastering_profile: AudioMasteringProfile;
+      pitch_profiles: AudioPitchProfile[];
+      platform: NativeSystemIdentity;
+      soundtouch_source_sha256: string;
+      worker_sha256: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profiles: AudioDecoderProfile[];
+      host_sha256: string;
+      mastering_applied: boolean;
+      mastering_profile: AudioMasteringProfile;
+      mediabunny_version: string;
+      module_sha256: string;
+      pitch_profiles: AudioPitchProfile[];
+      playwright_version: string;
+      soundtouch_version: string;
+    };
+  export type AudioDecoderProfile =
+  | 'web-audio-decode-at-target-rate'
+  | 'mediabunny-1.41.0-concatenate-offline-resample'
+  | 'native-libav-sinc-at-target-rate'
+  | 'native-libav-concatenate-linear-resample'
+  | 'native-libav-windowed-concatenate-linear-resample';
   export type AudioMasteringProfile = 'classic-export-whole-scene-web-audio-v31';
   export type AudioPitchProfile = 'unprepared-linear' | 'prepared-linear' | 'prepared-soundtouch';
   export type AudioProfile = 'classic-export-v31-web-audio';
@@ -64443,21 +64827,21 @@ export namespace JobAnalysisSequenceTranscribeResult {
   mime_type: string;
   size_bytes: string;
 }
-  export interface AudioExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  /**
-   * Unique profiles used by this fixed scene, not claims about unused engines.
-   */
-  decoder_profiles: AudioDecoderProfile[];
-  host_sha256: string;
-  mastering_applied: boolean;
-  mastering_profile: AudioMasteringProfile;
-  mediabunny_version: string;
-  module_sha256: string;
-  pitch_profiles: AudioPitchProfile[];
-  playwright_version: string;
-  soundtouch_version: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+/**
+ * Audio execution observes its OS/CPU without claiming a graphics or font
+ * subsystem. These are runtime facts, independent of saved project formats.
+ */
+  export interface NativeSystemIdentity {
+  architecture: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
   export interface AudioRangeWavIdentity {
   channels: number;
@@ -64508,7 +64892,40 @@ export namespace JobAnalysisSequenceTranscribeResult {
 }
 
 export namespace JobRenderAudioResult {
-  export type AudioDecoderProfile = 'web-audio-decode-at-target-rate' | 'mediabunny-1.41.0-concatenate-offline-resample';
+  export type AudioExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      decoder_profiles: AudioDecoderProfile[];
+      dsp_profile: string;
+      dsp_sha256: string;
+      host_sha256: string;
+      mastering_applied: boolean;
+      mastering_profile: AudioMasteringProfile;
+      pitch_profiles: AudioPitchProfile[];
+      platform: NativeSystemIdentity;
+      soundtouch_source_sha256: string;
+      worker_sha256: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profiles: AudioDecoderProfile[];
+      host_sha256: string;
+      mastering_applied: boolean;
+      mastering_profile: AudioMasteringProfile;
+      mediabunny_version: string;
+      module_sha256: string;
+      pitch_profiles: AudioPitchProfile[];
+      playwright_version: string;
+      soundtouch_version: string;
+    };
+  export type AudioDecoderProfile =
+  | 'web-audio-decode-at-target-rate'
+  | 'mediabunny-1.41.0-concatenate-offline-resample'
+  | 'native-libav-sinc-at-target-rate'
+  | 'native-libav-concatenate-linear-resample'
+  | 'native-libav-windowed-concatenate-linear-resample';
   export type AudioMasteringProfile = 'classic-export-whole-scene-web-audio-v31';
   export type AudioPitchProfile = 'unprepared-linear' | 'prepared-linear' | 'prepared-soundtouch';
   export type AudioProfile = 'classic-export-v31-web-audio';
@@ -64537,21 +64954,21 @@ export namespace JobRenderAudioResult {
   content_hash: string;
   size: number;
 }
-  export interface AudioExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  /**
-   * Unique profiles used by this fixed scene, not claims about unused engines.
-   */
-  decoder_profiles: AudioDecoderProfile[];
-  host_sha256: string;
-  mastering_applied: boolean;
-  mastering_profile: AudioMasteringProfile;
-  mediabunny_version: string;
-  module_sha256: string;
-  pitch_profiles: AudioPitchProfile[];
-  playwright_version: string;
-  soundtouch_version: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+/**
+ * Audio execution observes its OS/CPU without claiming a graphics or font
+ * subsystem. These are runtime facts, independent of saved project formats.
+ */
+  export interface NativeSystemIdentity {
+  architecture: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
   export interface AudioRangeWavIdentity {
   channels: number;
@@ -66312,7 +66729,40 @@ export namespace JobRenderFrameResult {
 }
 
 export namespace JobRenderMediaVideoResult {
-  export type AudioDecoderProfile = 'web-audio-decode-at-target-rate' | 'mediabunny-1.41.0-concatenate-offline-resample';
+  export type AudioExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      decoder_profiles: AudioDecoderProfile[];
+      dsp_profile: string;
+      dsp_sha256: string;
+      host_sha256: string;
+      mastering_applied: boolean;
+      mastering_profile: AudioMasteringProfile;
+      pitch_profiles: AudioPitchProfile[];
+      platform: NativeSystemIdentity;
+      soundtouch_source_sha256: string;
+      worker_sha256: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profiles: AudioDecoderProfile[];
+      host_sha256: string;
+      mastering_applied: boolean;
+      mastering_profile: AudioMasteringProfile;
+      mediabunny_version: string;
+      module_sha256: string;
+      pitch_profiles: AudioPitchProfile[];
+      playwright_version: string;
+      soundtouch_version: string;
+    };
+  export type AudioDecoderProfile =
+  | 'web-audio-decode-at-target-rate'
+  | 'mediabunny-1.41.0-concatenate-offline-resample'
+  | 'native-libav-sinc-at-target-rate'
+  | 'native-libav-concatenate-linear-resample'
+  | 'native-libav-windowed-concatenate-linear-resample';
   export type AudioMasteringProfile = 'classic-export-whole-scene-web-audio-v31';
   export type AudioPitchProfile = 'unprepared-linear' | 'prepared-linear' | 'prepared-soundtouch';
   export type MediaFrameExecutionSummary =
@@ -66388,21 +66838,21 @@ export namespace JobRenderMediaVideoResult {
   rgba_bytes: string;
   visual: MediaFrameExecutionSummary;
 }
-  export interface AudioExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  /**
-   * Unique profiles used by this fixed scene, not claims about unused engines.
-   */
-  decoder_profiles: AudioDecoderProfile[];
-  host_sha256: string;
-  mastering_applied: boolean;
-  mastering_profile: AudioMasteringProfile;
-  mediabunny_version: string;
-  module_sha256: string;
-  pitch_profiles: AudioPitchProfile[];
-  playwright_version: string;
-  soundtouch_version: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+/**
+ * Audio execution observes its OS/CPU without claiming a graphics or font
+ * subsystem. These are runtime facts, independent of saved project formats.
+ */
+  export interface NativeSystemIdentity {
+  architecture: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
   export interface MediaVideoEncoderSummary {
   audio_bitrate: number;
@@ -66415,12 +66865,6 @@ export namespace JobRenderMediaVideoResult {
   observed_video_frames: string;
   pixel_format: string;
   video_codec: string;
-}
-  export interface NativeLibraryIdentity {
-  binary_sha256: string;
-  configuration_sha256: string;
-  name: string;
-  version: string;
 }
   export interface NativePlatformIdentity {
   architecture: string;
@@ -66474,7 +66918,40 @@ export namespace JobRenderMediaVideoResult {
 }
 
 export namespace JobRenderCaptionVideoResult {
-  export type AudioDecoderProfile = 'web-audio-decode-at-target-rate' | 'mediabunny-1.41.0-concatenate-offline-resample';
+  export type AudioExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      decoder_profiles: AudioDecoderProfile[];
+      dsp_profile: string;
+      dsp_sha256: string;
+      host_sha256: string;
+      mastering_applied: boolean;
+      mastering_profile: AudioMasteringProfile;
+      pitch_profiles: AudioPitchProfile[];
+      platform: NativeSystemIdentity;
+      soundtouch_source_sha256: string;
+      worker_sha256: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profiles: AudioDecoderProfile[];
+      host_sha256: string;
+      mastering_applied: boolean;
+      mastering_profile: AudioMasteringProfile;
+      mediabunny_version: string;
+      module_sha256: string;
+      pitch_profiles: AudioPitchProfile[];
+      playwright_version: string;
+      soundtouch_version: string;
+    };
+  export type AudioDecoderProfile =
+  | 'web-audio-decode-at-target-rate'
+  | 'mediabunny-1.41.0-concatenate-offline-resample'
+  | 'native-libav-sinc-at-target-rate'
+  | 'native-libav-concatenate-linear-resample'
+  | 'native-libav-windowed-concatenate-linear-resample';
   export type AudioMasteringProfile = 'classic-export-whole-scene-web-audio-v31';
   export type AudioPitchProfile = 'unprepared-linear' | 'prepared-linear' | 'prepared-soundtouch';
   export type MediaFrameExecutionSummary =
@@ -66550,21 +67027,21 @@ export namespace JobRenderCaptionVideoResult {
   rgba_bytes: string;
   visual: MediaFrameExecutionSummary;
 }
-  export interface AudioExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  /**
-   * Unique profiles used by this fixed scene, not claims about unused engines.
-   */
-  decoder_profiles: AudioDecoderProfile[];
-  host_sha256: string;
-  mastering_applied: boolean;
-  mastering_profile: AudioMasteringProfile;
-  mediabunny_version: string;
-  module_sha256: string;
-  pitch_profiles: AudioPitchProfile[];
-  playwright_version: string;
-  soundtouch_version: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+/**
+ * Audio execution observes its OS/CPU without claiming a graphics or font
+ * subsystem. These are runtime facts, independent of saved project formats.
+ */
+  export interface NativeSystemIdentity {
+  architecture: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
   export interface MediaVideoEncoderSummary {
   audio_bitrate: number;
@@ -66577,12 +67054,6 @@ export namespace JobRenderCaptionVideoResult {
   observed_video_frames: string;
   pixel_format: string;
   video_codec: string;
-}
-  export interface NativeLibraryIdentity {
-  binary_sha256: string;
-  configuration_sha256: string;
-  name: string;
-  version: string;
 }
   export interface NativePlatformIdentity {
   architecture: string;
@@ -66636,7 +67107,40 @@ export namespace JobRenderCaptionVideoResult {
 }
 
 export namespace JobRenderGraphicVideoResult {
-  export type AudioDecoderProfile = 'web-audio-decode-at-target-rate' | 'mediabunny-1.41.0-concatenate-offline-resample';
+  export type AudioExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      decoder_profiles: AudioDecoderProfile[];
+      dsp_profile: string;
+      dsp_sha256: string;
+      host_sha256: string;
+      mastering_applied: boolean;
+      mastering_profile: AudioMasteringProfile;
+      pitch_profiles: AudioPitchProfile[];
+      platform: NativeSystemIdentity;
+      soundtouch_source_sha256: string;
+      worker_sha256: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profiles: AudioDecoderProfile[];
+      host_sha256: string;
+      mastering_applied: boolean;
+      mastering_profile: AudioMasteringProfile;
+      mediabunny_version: string;
+      module_sha256: string;
+      pitch_profiles: AudioPitchProfile[];
+      playwright_version: string;
+      soundtouch_version: string;
+    };
+  export type AudioDecoderProfile =
+  | 'web-audio-decode-at-target-rate'
+  | 'mediabunny-1.41.0-concatenate-offline-resample'
+  | 'native-libav-sinc-at-target-rate'
+  | 'native-libav-concatenate-linear-resample'
+  | 'native-libav-windowed-concatenate-linear-resample';
   export type AudioMasteringProfile = 'classic-export-whole-scene-web-audio-v31';
   export type AudioPitchProfile = 'unprepared-linear' | 'prepared-linear' | 'prepared-soundtouch';
   export type MediaFrameExecutionSummary =
@@ -66712,21 +67216,21 @@ export namespace JobRenderGraphicVideoResult {
   rgba_bytes: string;
   visual: MediaFrameExecutionSummary;
 }
-  export interface AudioExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  /**
-   * Unique profiles used by this fixed scene, not claims about unused engines.
-   */
-  decoder_profiles: AudioDecoderProfile[];
-  host_sha256: string;
-  mastering_applied: boolean;
-  mastering_profile: AudioMasteringProfile;
-  mediabunny_version: string;
-  module_sha256: string;
-  pitch_profiles: AudioPitchProfile[];
-  playwright_version: string;
-  soundtouch_version: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+/**
+ * Audio execution observes its OS/CPU without claiming a graphics or font
+ * subsystem. These are runtime facts, independent of saved project formats.
+ */
+  export interface NativeSystemIdentity {
+  architecture: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
   export interface MediaVideoEncoderSummary {
   audio_bitrate: number;
@@ -66739,12 +67243,6 @@ export namespace JobRenderGraphicVideoResult {
   observed_video_frames: string;
   pixel_format: string;
   video_codec: string;
-}
-  export interface NativeLibraryIdentity {
-  binary_sha256: string;
-  configuration_sha256: string;
-  name: string;
-  version: string;
 }
   export interface NativePlatformIdentity {
   architecture: string;
@@ -66798,7 +67296,40 @@ export namespace JobRenderGraphicVideoResult {
 }
 
 export namespace JobRenderMaskVideoResult {
-  export type AudioDecoderProfile = 'web-audio-decode-at-target-rate' | 'mediabunny-1.41.0-concatenate-offline-resample';
+  export type AudioExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      decoder_profiles: AudioDecoderProfile[];
+      dsp_profile: string;
+      dsp_sha256: string;
+      host_sha256: string;
+      mastering_applied: boolean;
+      mastering_profile: AudioMasteringProfile;
+      pitch_profiles: AudioPitchProfile[];
+      platform: NativeSystemIdentity;
+      soundtouch_source_sha256: string;
+      worker_sha256: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profiles: AudioDecoderProfile[];
+      host_sha256: string;
+      mastering_applied: boolean;
+      mastering_profile: AudioMasteringProfile;
+      mediabunny_version: string;
+      module_sha256: string;
+      pitch_profiles: AudioPitchProfile[];
+      playwright_version: string;
+      soundtouch_version: string;
+    };
+  export type AudioDecoderProfile =
+  | 'web-audio-decode-at-target-rate'
+  | 'mediabunny-1.41.0-concatenate-offline-resample'
+  | 'native-libav-sinc-at-target-rate'
+  | 'native-libav-concatenate-linear-resample'
+  | 'native-libav-windowed-concatenate-linear-resample';
   export type AudioMasteringProfile = 'classic-export-whole-scene-web-audio-v31';
   export type AudioPitchProfile = 'unprepared-linear' | 'prepared-linear' | 'prepared-soundtouch';
   export type MediaFrameExecutionSummary =
@@ -66874,21 +67405,21 @@ export namespace JobRenderMaskVideoResult {
   rgba_bytes: string;
   visual: MediaFrameExecutionSummary;
 }
-  export interface AudioExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  /**
-   * Unique profiles used by this fixed scene, not claims about unused engines.
-   */
-  decoder_profiles: AudioDecoderProfile[];
-  host_sha256: string;
-  mastering_applied: boolean;
-  mastering_profile: AudioMasteringProfile;
-  mediabunny_version: string;
-  module_sha256: string;
-  pitch_profiles: AudioPitchProfile[];
-  playwright_version: string;
-  soundtouch_version: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+/**
+ * Audio execution observes its OS/CPU without claiming a graphics or font
+ * subsystem. These are runtime facts, independent of saved project formats.
+ */
+  export interface NativeSystemIdentity {
+  architecture: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
   export interface MediaVideoEncoderSummary {
   audio_bitrate: number;
@@ -66901,12 +67432,6 @@ export namespace JobRenderMaskVideoResult {
   observed_video_frames: string;
   pixel_format: string;
   video_codec: string;
-}
-  export interface NativeLibraryIdentity {
-  binary_sha256: string;
-  configuration_sha256: string;
-  name: string;
-  version: string;
 }
   export interface NativePlatformIdentity {
   architecture: string;
@@ -66960,7 +67485,40 @@ export namespace JobRenderMaskVideoResult {
 }
 
 export namespace JobRenderBlendVideoResult {
-  export type AudioDecoderProfile = 'web-audio-decode-at-target-rate' | 'mediabunny-1.41.0-concatenate-offline-resample';
+  export type AudioExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      decoder_profiles: AudioDecoderProfile[];
+      dsp_profile: string;
+      dsp_sha256: string;
+      host_sha256: string;
+      mastering_applied: boolean;
+      mastering_profile: AudioMasteringProfile;
+      pitch_profiles: AudioPitchProfile[];
+      platform: NativeSystemIdentity;
+      soundtouch_source_sha256: string;
+      worker_sha256: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profiles: AudioDecoderProfile[];
+      host_sha256: string;
+      mastering_applied: boolean;
+      mastering_profile: AudioMasteringProfile;
+      mediabunny_version: string;
+      module_sha256: string;
+      pitch_profiles: AudioPitchProfile[];
+      playwright_version: string;
+      soundtouch_version: string;
+    };
+  export type AudioDecoderProfile =
+  | 'web-audio-decode-at-target-rate'
+  | 'mediabunny-1.41.0-concatenate-offline-resample'
+  | 'native-libav-sinc-at-target-rate'
+  | 'native-libav-concatenate-linear-resample'
+  | 'native-libav-windowed-concatenate-linear-resample';
   export type AudioMasteringProfile = 'classic-export-whole-scene-web-audio-v31';
   export type AudioPitchProfile = 'unprepared-linear' | 'prepared-linear' | 'prepared-soundtouch';
   export type MediaFrameExecutionSummary =
@@ -67036,21 +67594,21 @@ export namespace JobRenderBlendVideoResult {
   rgba_bytes: string;
   visual: MediaFrameExecutionSummary;
 }
-  export interface AudioExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  /**
-   * Unique profiles used by this fixed scene, not claims about unused engines.
-   */
-  decoder_profiles: AudioDecoderProfile[];
-  host_sha256: string;
-  mastering_applied: boolean;
-  mastering_profile: AudioMasteringProfile;
-  mediabunny_version: string;
-  module_sha256: string;
-  pitch_profiles: AudioPitchProfile[];
-  playwright_version: string;
-  soundtouch_version: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+/**
+ * Audio execution observes its OS/CPU without claiming a graphics or font
+ * subsystem. These are runtime facts, independent of saved project formats.
+ */
+  export interface NativeSystemIdentity {
+  architecture: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
   export interface MediaVideoEncoderSummary {
   audio_bitrate: number;
@@ -67063,12 +67621,6 @@ export namespace JobRenderBlendVideoResult {
   observed_video_frames: string;
   pixel_format: string;
   video_codec: string;
-}
-  export interface NativeLibraryIdentity {
-  binary_sha256: string;
-  configuration_sha256: string;
-  name: string;
-  version: string;
 }
   export interface NativePlatformIdentity {
   architecture: string;
@@ -67122,7 +67674,40 @@ export namespace JobRenderBlendVideoResult {
 }
 
 export namespace JobRenderSceneVideoResult {
-  export type AudioDecoderProfile = 'web-audio-decode-at-target-rate' | 'mediabunny-1.41.0-concatenate-offline-resample';
+  export type AudioExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      decoder_profiles: AudioDecoderProfile[];
+      dsp_profile: string;
+      dsp_sha256: string;
+      host_sha256: string;
+      mastering_applied: boolean;
+      mastering_profile: AudioMasteringProfile;
+      pitch_profiles: AudioPitchProfile[];
+      platform: NativeSystemIdentity;
+      soundtouch_source_sha256: string;
+      worker_sha256: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profiles: AudioDecoderProfile[];
+      host_sha256: string;
+      mastering_applied: boolean;
+      mastering_profile: AudioMasteringProfile;
+      mediabunny_version: string;
+      module_sha256: string;
+      pitch_profiles: AudioPitchProfile[];
+      playwright_version: string;
+      soundtouch_version: string;
+    };
+  export type AudioDecoderProfile =
+  | 'web-audio-decode-at-target-rate'
+  | 'mediabunny-1.41.0-concatenate-offline-resample'
+  | 'native-libav-sinc-at-target-rate'
+  | 'native-libav-concatenate-linear-resample'
+  | 'native-libav-windowed-concatenate-linear-resample';
   export type AudioMasteringProfile = 'classic-export-whole-scene-web-audio-v31';
   export type AudioPitchProfile = 'unprepared-linear' | 'prepared-linear' | 'prepared-soundtouch';
   export type MediaFrameExecutionSummary =
@@ -67198,21 +67783,21 @@ export namespace JobRenderSceneVideoResult {
   rgba_bytes: string;
   visual: MediaFrameExecutionSummary;
 }
-  export interface AudioExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  /**
-   * Unique profiles used by this fixed scene, not claims about unused engines.
-   */
-  decoder_profiles: AudioDecoderProfile[];
-  host_sha256: string;
-  mastering_applied: boolean;
-  mastering_profile: AudioMasteringProfile;
-  mediabunny_version: string;
-  module_sha256: string;
-  pitch_profiles: AudioPitchProfile[];
-  playwright_version: string;
-  soundtouch_version: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+/**
+ * Audio execution observes its OS/CPU without claiming a graphics or font
+ * subsystem. These are runtime facts, independent of saved project formats.
+ */
+  export interface NativeSystemIdentity {
+  architecture: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
   export interface MediaVideoEncoderSummary {
   audio_bitrate: number;
@@ -67225,12 +67810,6 @@ export namespace JobRenderSceneVideoResult {
   observed_video_frames: string;
   pixel_format: string;
   video_codec: string;
-}
-  export interface NativeLibraryIdentity {
-  binary_sha256: string;
-  configuration_sha256: string;
-  name: string;
-  version: string;
 }
   export interface NativePlatformIdentity {
   architecture: string;
@@ -67284,7 +67863,40 @@ export namespace JobRenderSceneVideoResult {
 }
 
 export namespace JobRenderVideoResult {
-  export type AudioDecoderProfile = 'web-audio-decode-at-target-rate' | 'mediabunny-1.41.0-concatenate-offline-resample';
+  export type AudioExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      decoder_profiles: AudioDecoderProfile[];
+      dsp_profile: string;
+      dsp_sha256: string;
+      host_sha256: string;
+      mastering_applied: boolean;
+      mastering_profile: AudioMasteringProfile;
+      pitch_profiles: AudioPitchProfile[];
+      platform: NativeSystemIdentity;
+      soundtouch_source_sha256: string;
+      worker_sha256: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profiles: AudioDecoderProfile[];
+      host_sha256: string;
+      mastering_applied: boolean;
+      mastering_profile: AudioMasteringProfile;
+      mediabunny_version: string;
+      module_sha256: string;
+      pitch_profiles: AudioPitchProfile[];
+      playwright_version: string;
+      soundtouch_version: string;
+    };
+  export type AudioDecoderProfile =
+  | 'web-audio-decode-at-target-rate'
+  | 'mediabunny-1.41.0-concatenate-offline-resample'
+  | 'native-libav-sinc-at-target-rate'
+  | 'native-libav-concatenate-linear-resample'
+  | 'native-libav-windowed-concatenate-linear-resample';
   export type AudioMasteringProfile = 'classic-export-whole-scene-web-audio-v31';
   export type AudioPitchProfile = 'unprepared-linear' | 'prepared-linear' | 'prepared-soundtouch';
   export type VideoEncoderBackend = 'ffmpeg_libx264' | 'ffmpeg_libvpx_vp9' | 'webcodecs_avc';
@@ -67363,21 +67975,21 @@ export namespace JobRenderVideoResult {
   rgba_bytes: string;
   visual: MediaFrameExecutionSummary;
 }
-  export interface AudioExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  /**
-   * Unique profiles used by this fixed scene, not claims about unused engines.
-   */
-  decoder_profiles: AudioDecoderProfile[];
-  host_sha256: string;
-  mastering_applied: boolean;
-  mastering_profile: AudioMasteringProfile;
-  mediabunny_version: string;
-  module_sha256: string;
-  pitch_profiles: AudioPitchProfile[];
-  playwright_version: string;
-  soundtouch_version: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+/**
+ * Audio execution observes its OS/CPU without claiming a graphics or font
+ * subsystem. These are runtime facts, independent of saved project formats.
+ */
+  export interface NativeSystemIdentity {
+  architecture: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
   export interface ExportVideoEncoderSummary {
   audio_codec?: string | null;
@@ -67399,12 +68011,6 @@ export namespace JobRenderVideoResult {
   export interface ExportVideoRates {
   audio_bitrate?: number | null;
   video_bitrate: number;
-}
-  export interface NativeLibraryIdentity {
-  binary_sha256: string;
-  configuration_sha256: string;
-  name: string;
-  version: string;
 }
   export interface NativePlatformIdentity {
   architecture: string;
@@ -67460,7 +68066,40 @@ export namespace JobRenderVideoResult {
 }
 
 export namespace JobRenderVideoRangeResult {
-  export type AudioDecoderProfile = 'web-audio-decode-at-target-rate' | 'mediabunny-1.41.0-concatenate-offline-resample';
+  export type AudioExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      decoder_profiles: AudioDecoderProfile[];
+      dsp_profile: string;
+      dsp_sha256: string;
+      host_sha256: string;
+      mastering_applied: boolean;
+      mastering_profile: AudioMasteringProfile;
+      pitch_profiles: AudioPitchProfile[];
+      platform: NativeSystemIdentity;
+      soundtouch_source_sha256: string;
+      worker_sha256: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profiles: AudioDecoderProfile[];
+      host_sha256: string;
+      mastering_applied: boolean;
+      mastering_profile: AudioMasteringProfile;
+      mediabunny_version: string;
+      module_sha256: string;
+      pitch_profiles: AudioPitchProfile[];
+      playwright_version: string;
+      soundtouch_version: string;
+    };
+  export type AudioDecoderProfile =
+  | 'web-audio-decode-at-target-rate'
+  | 'mediabunny-1.41.0-concatenate-offline-resample'
+  | 'native-libav-sinc-at-target-rate'
+  | 'native-libav-concatenate-linear-resample'
+  | 'native-libav-windowed-concatenate-linear-resample';
   export type AudioMasteringProfile = 'classic-export-whole-scene-web-audio-v31';
   export type AudioPitchProfile = 'unprepared-linear' | 'prepared-linear' | 'prepared-soundtouch';
   export type VideoEncoderBackend = 'ffmpeg_libx264' | 'ffmpeg_libvpx_vp9' | 'webcodecs_avc';
@@ -67574,21 +68213,21 @@ export namespace JobRenderVideoRangeResult {
   rgba_bytes: string;
   visual: MediaFrameExecutionSummary;
 }
-  export interface AudioExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  /**
-   * Unique profiles used by this fixed scene, not claims about unused engines.
-   */
-  decoder_profiles: AudioDecoderProfile[];
-  host_sha256: string;
-  mastering_applied: boolean;
-  mastering_profile: AudioMasteringProfile;
-  mediabunny_version: string;
-  module_sha256: string;
-  pitch_profiles: AudioPitchProfile[];
-  playwright_version: string;
-  soundtouch_version: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+/**
+ * Audio execution observes its OS/CPU without claiming a graphics or font
+ * subsystem. These are runtime facts, independent of saved project formats.
+ */
+  export interface NativeSystemIdentity {
+  architecture: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
   export interface ExportVideoEncoderSummary {
   audio_codec?: string | null;
@@ -67610,12 +68249,6 @@ export namespace JobRenderVideoRangeResult {
   export interface ExportVideoRates {
   audio_bitrate?: number | null;
   video_bitrate: number;
-}
-  export interface NativeLibraryIdentity {
-  binary_sha256: string;
-  configuration_sha256: string;
-  name: string;
-  version: string;
 }
   export interface NativePlatformIdentity {
   architecture: string;

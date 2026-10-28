@@ -7,7 +7,7 @@ use crate::browser_runtime::{
 use opencut_contracts::EditorError;
 use opencut_job_contracts::scene_audio::AudioWavCapability;
 use opencut_job_execution::scene_audio::LocalAudioExecutionPolicy;
-use opencut_native_services::classic_audio::ClassicAudioProcessConfig;
+use opencut_native_services::native_audio::NativeAudioProcessConfig;
 #[cfg(test)]
 use std::fs;
 use std::{
@@ -63,26 +63,26 @@ impl Unavailable {
 
 pub(crate) fn configured(
     policy: &LocalAudioExecutionPolicy,
-) -> Result<ClassicAudioProcessConfig, EditorError> {
+) -> Result<NativeAudioProcessConfig, EditorError> {
     opencut_editor_application::scene_audio_jobs::validate_policy(policy)?;
-    let paths = resolve(&HostConfiguration::capture())
-        .map_err(|reason| EditorError::new("CAPABILITY_UNAVAILABLE", reason.reason()))?;
-    Ok(ClassicAudioProcessConfig {
-        node: paths.node,
-        runner: paths.runner,
-        chromium: paths.chromium,
-        deadline: Duration::from_millis(policy.deadline_ms),
-        max_pcm_bytes: policy.max_pcm_bytes,
-        max_encoded_bytes: policy.max_encoded_bytes,
-        max_rss_bytes: policy.max_rss_bytes,
-        // This local assembly explicitly admits monitored termination. It does
-        // not pretend macOS has an enforced kernel hard-memory quota.
+    Ok(NativeAudioProcessConfig {
+        worker: crate::native_worker_runtime::worker()?,
+        policy: policy.clone(),
         strict_cgroup: None,
     })
 }
 
 pub(crate) fn capability() -> AudioWavCapability {
-    capability_for(&HostConfiguration::capture())
+    let runtime = crate::native_worker_runtime::worker();
+    AudioWavCapability {
+        schema_version: 1,
+        available: runtime.is_ok(),
+        submit_tool: "opencut_job_audio_wav".into(),
+        sample_rates: vec![44100, 48000],
+        unavailable_reason: runtime
+            .err()
+            .map(|_| "NATIVE_AUDIO_RUNTIME_UNAVAILABLE".into()),
+    }
 }
 
 pub(crate) fn preview_config() -> Result<
@@ -166,6 +166,7 @@ pub(crate) fn range_capability() -> opencut_job_contracts::scene_audio::AudioRan
         unavailable_reason: whole.unavailable_reason,
     }
 }
+#[cfg(test)]
 fn capability_for(configuration: &HostConfiguration) -> AudioWavCapability {
     let result = resolve(configuration);
     AudioWavCapability {

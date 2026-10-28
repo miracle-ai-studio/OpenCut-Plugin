@@ -8,11 +8,14 @@ use super::{
     pcm::*,
     source::{self, DecodeConfig, DecodedSource},
 };
-use opencut_composition::scene::{ClassicAudioPreparationFacts, ClassicAudioPreparationMode};
+use opencut_composition::scene::{
+    AudioExecutionProfile, ClassicAudioPreparationFacts, ClassicAudioPreparationMode,
+    ExactSourceSample,
+};
 use opencut_contracts::EditorError;
 use opencut_editor_application::classic_audio::*;
 use serde::Deserialize;
-use serde_json::{Value, json};
+use serde_json::json;
 use std::{collections::BTreeMap, rc::Rc};
 type Result<T> = std::result::Result<T, EditorError>;
 
@@ -39,54 +42,11 @@ struct Voice {
     element_id: String,
     asset_id: String,
 }
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-struct Block {
-    identity: Value,
-    start_sample: String,
-    frame_count: u32,
-    voices: Vec<BlockVoice>,
-    receipts: Vec<Value>,
-}
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-struct BlockVoice {
-    element_id: String,
-    block_offset: u32,
-    frame_count: u32,
-    positions: Vec<Position>,
-    amplitudes: Vec<f64>,
-}
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-struct Position {
-    lower: String,
-    fraction_numerator: String,
-    fraction_denominator: String,
-}
-fn wide(s: &str) -> Result<u128> {
-    if s.is_empty()
-        || s.len() > 39
-        || (s.len() > 1 && s.starts_with('0'))
-        || !s.bytes().all(|b| b.is_ascii_digit())
-    {
-        return Err(invalid(
-            "Native source fraction is not a canonical unsigned decimal",
-        ));
+fn sample_facts(p: &ExactSourceSample) -> Result<(u64, u128, u128)> {
+    if p.fraction_denominator == 0 || p.fraction_numerator >= p.fraction_denominator {
+        return Err(invalid("Invalid native compiled source fraction"));
     }
-    s.parse()
-        .map_err(|_| invalid("Native source fraction exceeds u128"))
-}
-impl Position {
-    fn facts(&self) -> Result<(u64, u128, u128)> {
-        let lower = decimal(&self.lower)?;
-        let numerator = wide(&self.fraction_numerator)?;
-        let denominator = wide(&self.fraction_denominator)?;
-        if denominator == 0 || numerator >= denominator {
-            return Err(invalid("Invalid native compiled source fraction"));
-        }
-        Ok((lower, numerator, denominator))
-    }
+    Ok((p.lower, p.fraction_numerator, p.fraction_denominator))
 }
 struct Owner {
     source: Rc<PcmSource>,
@@ -265,26 +225,40 @@ pub(crate) fn render<R: ClassicAudioResources + ?Sized, S: AudioSession<R>>(
             owners.remove(&voice.asset_id);
         }
     }
-    let formats: Vec<_> = plan.voices.iter().zip(&preparation).map(|(v,p)| {
-        let source = &sources[&v.element_id];
-        json!({"elementId":v.element_id,"sampleRate":source.sample_rate,"frameCount":source.frames.to_string(),
-            "channels":source.channels,"prepared":p.facts.mode != ClassicAudioPreparationMode::UnpreparedLinear})
-    }).collect();
+    let formats: Vec<_> = plan
+        .voices
+        .iter()
+        .zip(&preparation)
+        .map(|(v, p)| {
+            let source = &sources[&v.element_id];
+            FinalSourceFormat {
+                element_id: v.element_id.clone(),
+                sample_rate: source.sample_rate,
+                frame_count: source.frames.to_string(),
+                channels: source.channels,
+                prepared: p.facts.mode != ClassicAudioPreparationMode::UnpreparedLinear,
+            }
+        })
+        .collect();
     let mut start = 0;
     while start < frames {
         source::check(resources, config.deadline)?;
         let requested = (frames - start).min(4096) as u32;
-        let block: Block = serde_json::from_value(callback(
-            session,
+        let block = session.compile_block(
+            BlockRequest {
+                start_sample: start.to_string(),
+                frame_count: requested,
+                source_formats: formats.clone(),
+            },
             resources,
-            "compileBlock",
-            json!({
-                "startSample":start.to_string(),"frameCount":requested,"sourceFormats":formats,
-            }),
-        )?)
-        .map_err(|_| invalid("Invalid native compiled audio block"))?;
-        if block.identity != raw_plan["identity"]
-            || block.start_sample != start.to_string()
+        )?;
+        if block.identity.project_id != plan.identity.project_id
+            || block.identity.revision != plan.identity.revision
+            || block.identity.sequence_id != plan.identity.sequence_id
+            || block.identity.profile != AudioExecutionProfile::ClassicV31
+            || block.identity.format.sample_rate != plan.identity.sample_rate
+            || block.identity.format.channels != plan.identity.channels
+            || block.start_sample != start
             || block.frame_count == 0
             || block.frame_count > requested
             || block.voices.len() > 32
@@ -325,7 +299,7 @@ pub(crate) fn render<R: ClassicAudioResources + ?Sized, S: AudioSession<R>>(
         for v in &block.voices {
             let source = &sources[&v.element_id];
             for (i, position) in v.positions.iter().enumerate() {
-                let (lower, numerator, denominator) = position.facts()?;
+                let (lower, numerator, denominator) = sample_facts(position)?;
                 for c in 0..2 {
                     let at = (start as usize + v.block_offset as usize + i) * 2 + c;
                     let value = f64::from(output.as_slice()[at])
@@ -367,7 +341,7 @@ pub(crate) fn render<R: ClassicAudioResources + ?Sized, S: AudioSession<R>>(
             clip_export(block);
         }
     }
-    let mut chunk = memory.array(range_count.min(16384) as usize)?;
+    let mut chunk = memory.array(range_count.min(AUDIO_PCM_CHUNK_FRAMES as u64) as usize)?;
     for c in 0..2 {
         let mut offset = 0;
         while offset < range_count {
@@ -452,7 +426,7 @@ fn prepare<R: ClassicAudioResources + ?Sized, S: AudioSession<R>>(
         while start < facts.output_frames {
             source::check(resources, config.deadline)?;
             let count = (facts.output_frames - start).min(4096) as usize;
-            let positions: Vec<Position> = serde_json::from_value(callback(session, resources, "compileSourcePositions",
+            let positions: Vec<ExactSourceSample> = serde_json::from_value(callback(session, resources, "compileSourcePositions",
                 json!({"elementId":element,"localStartSample":start.to_string(),"frameCount":count,"sourceSampleRate":decoded.sample_rate}))?)
                 .map_err(|_| invalid("Invalid native prepared-linear positions"))?;
             if positions.len() != count {
@@ -461,7 +435,7 @@ fn prepare<R: ClassicAudioResources + ?Sized, S: AudioSession<R>>(
                 ));
             }
             for (i, p) in positions.iter().enumerate() {
-                let (lower, n, d) = p.facts()?;
+                let (lower, n, d) = sample_facts(p)?;
                 for c in 0..facts.num_channels {
                     planes[c as usize].as_mut_slice()[start as usize + i] =
                         decoded.linear(c, lower, n, d)? as f32;

@@ -56,7 +56,7 @@ pub enum AudioProcessing {
     NativeMaintainPitch,
     LegacyFfmpegResample,
 }
-#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum AudioParticipation {
     NonAudio,
@@ -69,7 +69,7 @@ pub enum AudioParticipation {
     Ready,
     OutsideBlock,
 }
-#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AudioReceipt {
     pub track_id: String,
@@ -89,14 +89,20 @@ pub struct AudioSourceMapping {
     /// Legacy native rate rounding, after decoding/resampling at 48 kHz.
     pub legacy_retime_sample_rate: Option<u32>,
 }
-#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ExactSourceSample {
-    #[serde(serialize_with = "runtime_pcm::serialize_u64")]
+    #[serde(with = "runtime_pcm::decimal_u64")]
     pub lower: u64,
-    #[serde(serialize_with = "runtime_pcm::serialize_u128")]
+    #[serde(
+        serialize_with = "runtime_pcm::serialize_u128",
+        deserialize_with = "runtime_pcm::deserialize_u128"
+    )]
     pub fraction_numerator: u128,
-    #[serde(serialize_with = "runtime_pcm::serialize_u128")]
+    #[serde(
+        serialize_with = "runtime_pcm::serialize_u128",
+        deserialize_with = "runtime_pcm::deserialize_u128"
+    )]
     pub fraction_denominator: u128,
 }
 /// Borrowed execution facts for native decoder admission, without exposing the

@@ -609,8 +609,8 @@
     },
     "native_audio_working_tree": {
       "base_commit": "bb7edee914be5fb18dd260782aebc04743c95a63",
-      "status": "native DSP and internal export execution built and passed scoped independent PCM; decoder boundary tests passed; isolated native audio worker and production preview/export hosts not connected",
-      "public_contracts_changed": false,
+      "status": "Native audio export worker and production WAV/video hosts hard-cut over; integrated build, contracts, 63 scoped tests, actual AAC independent PCM/pixels and cancellation passed; preview audio and complete delivery remain open",
+      "public_contracts_changed": true,
       "new_dependencies": false,
       "independent_pcm": {
         "cases": 24,
@@ -633,11 +633,9 @@
         "three actual libav tests passed: six PCM representations, channels/PTS/EOF, continuous read, seek, revocation and retirement"
       ],
       "remaining_integration": [
-        "native audio worker and actual runtime/provenance receipts",
         "ordinary realtime PTS windows, preview DSP and physical output-device consumption",
-        "hard cutover in production export and preview hosts",
-        "compressed codec/priming/PTS/window qualification and bounded metadata residency",
-        "isolated process RSS/deadline/cancellation/publication lifecycle",
+        "hard cutover in production preview host",
+        "broader compressed codec/priming/PTS/window qualification",
         "long-source and long-play independent PCM and resource validation",
         "portable runtime packaging and licenses"
       ],
@@ -675,6 +673,144 @@
         ],
         "scope": "internal native export engine and decoder only; no isolated audio worker, production host cutover, compressed-codec parity, device output or complete audio acceptance",
         "decoder_test_binary_sha256": "40a7e2814dcf65e64918b4a80e667f9092ce480c5f77d2bebbae17d3d657b3b4"
+      },
+      "host_integration_working_tree": {
+        "status": "integrated build and scoped public export/cancellation acceptance passed; no browser audio export environment or fallback; preview audio remains pending",
+        "public_contracts_changed": true,
+        "new_dependency_packages": false,
+        "dependency_features": "serde_json/raw_value used only by private compiled amplitude deserialization; global JSON float parsing unchanged",
+        "preview_audio_cutover": false,
+        "delivery_ready": false,
+        "initial_cli_sha256": "2c74d51c007d2b91eb1786093f87cb3ea6ff7aaf7e174887b3e5b797c53e55cf",
+        "initial_worker_sha256": "0493ef1bef09e611539b6ba5f638264c416b521539066039315dc5309b85c473",
+        "failed_public_wav_job": "job_90204fee4030408792aebb60c350a9e9",
+        "failed_public_wav_error": "INVALID_OUTPUT_PCM: output block exceeded existing 4096-frame WAV sink bound",
+        "initial_public_wav_artifacts": 0,
+        "correction": "shared application AUDIO_PCM_CHUNK_FRAMES=4096; native writer/receiver and existing WAV/legacy adapters preserve the same bound; worker test now uses actual WAV file sink",
+        "fix_validation": "4096-frame output bound and actual WAV sink passed under the same corrected candidate; prior failed job and failed AAC candidate retained",
+        "failed_aac_pcm": {
+          "cli_sha256": "ea7c067e9e8746ff0c20b0ce95e7fee10b339cb52f6f45beeb8c9b0ff63d458d",
+          "worker_sha256": "870e9cd856a5fb59a3689fbb45e6ba3f46ecbbca70151e6862d30f33284989fb",
+          "whole_maximum_absolute_error": 0.13572474697139114,
+          "whole_snr_db": 19.55700190481504,
+          "range_maximum_absolute_error": 2.6531517505645752e-05,
+          "range_snr_db": 86.19689594655117,
+          "gate_maximum_absolute_error": 1e-06,
+          "gate_minimum_snr_db": 100,
+          "fitting": "none",
+          "passed": false
+        },
+        "packet_origin_correction": {
+          "cli_sha256": "aab0188b8c32f757ae3cdf4d1731c9f8273d60d23468ef91ffa91a8da3ccebb9",
+          "worker_sha256": "4fca946606e348bc7a2945a43836f77f8622f3b24dfc3a059aefb42119bc0781",
+          "status": "independent decoder regression and actual public WAV/range/video PCM gates passed with maximum absolute error zero; no fitting",
+          "cause": "container consumer must start at the last independent packet at/before zero; decoding the negative AAC preroll packet changes decoder overlap and PNS state",
+          "independent_origin_experiment_maximum_error": 0,
+          "scope": "retained AAC source and pinned browser; codec packet-origin experiment only, not corrected host acceptance",
+          "decoder_reservation": "codec/frame and pending packet reservation retained until decoder drop"
+        },
+        "verification": {
+          "cli_sha256": "aab0188b8c32f757ae3cdf4d1731c9f8273d60d23468ef91ffa91a8da3ccebb9",
+          "worker_sha256": "4fca946606e348bc7a2945a43836f77f8622f3b24dfc3a059aefb42119bc0781",
+          "integrated_build_seconds": 259,
+          "test_build_seconds": 271,
+          "generated_contract_check": true,
+          "canonical_contract_check": {
+            "passed": true,
+            "operations": 184,
+            "domains": 12
+          },
+          "affected_checks_passed": 63,
+          "affected_check_groups": 11,
+          "architecture_tests_passed": 14,
+          "architecture_modules": 24,
+          "temporary_exception_edges": 0,
+          "contract_boundaries": "passed",
+          "independent_aac_decoder_regression": "retained same AAC source and pinned browser reference; byte exact at selected packet origin",
+          "independent_public_pcm": {
+            "wav": {
+              "samples": 96000,
+              "maximum_absolute_error": 0.0,
+              "snr_db": 300.0,
+              "fitting": "none",
+              "passed": true
+            },
+            "wav44100": {
+              "samples": 88200,
+              "maximum_absolute_error": 0.0,
+              "snr_db": 300.0,
+              "fitting": "none",
+              "passed": true
+            },
+            "range": {
+              "samples": 20000,
+              "maximum_absolute_error": 0.0,
+              "snr_db": 300.0,
+              "fitting": "none",
+              "passed": true
+            },
+            "video_preencode": {
+              "samples": 96000,
+              "maximum_absolute_error": 0.0,
+              "snr_db": 300.0,
+              "fitting": "none",
+              "passed": true
+            }
+          },
+          "public_jobs": {
+            "wav": {
+              "job_id": "job_cfaf22db7a7243afb3fbae708b9cc52d",
+              "seconds": 5.456008369103074,
+              "artifact_sha256": "05ee6e1c772e1c7a2170279583b06a1835d3df01c7b68a63c3fa4c7bc232e2c9"
+            },
+            "wav44100": {
+              "job_id": "job_501f393faaa44fb3a634eccffb18104a",
+              "seconds": 4.862010827055201,
+              "artifact_sha256": "6f0e4a4f041d5cd566f22719169f873303a8dedae58041d95ac1ab5f2111fe0e"
+            },
+            "range": {
+              "job_id": "job_e9316a4bad3d4383afb09dd3f35d4399",
+              "seconds": 4.1022208030335605,
+              "artifact_sha256": "6abf2ccde13326dde90622365f00d342b484acc932d839783a3b496e72f47e60"
+            },
+            "video": {
+              "job_id": "job_c2db95ce3120451ebc8a09245a4f15d0",
+              "seconds": 7.694324979092926,
+              "artifact_sha256": "5a2ec9a189b97147a4dde805f97690d5c2229ef5985f2de684c6e45a47d9f969"
+            }
+          },
+          "independent_video_pixels": {
+            "probes": 6,
+            "mae_range": [
+              1.7219227430555555,
+              2.429564525462963
+            ],
+            "gate": 5,
+            "passed": true
+          },
+          "encoded_audio_regression": {
+            "reference_job_id": "job_686ea1ed37ac40bb9bf499310efdbc1d",
+            "maximum_absolute_error": 0,
+            "scope": "decoded AAC compared with retained same-scene output; independent unencoded PCM gates recorded separately"
+          },
+          "native_audio_schema": "actual result proofs validate; browser/GPU/unknown fields rejected",
+          "historical_browser_proof_readable": true,
+          "browser_export_environment": "absent",
+          "cancellation": {
+            "job_id": "job_8b78094c547a43bb8c633df9d679c354",
+            "fault": "SIGSTOP one verified owned native audio child during running attempt",
+            "cancellation_seconds": 0.6995110330171883,
+            "processes_reaped": true,
+            "public_artifacts": 0,
+            "private_result_absent": true,
+            "original_replay_same_cancelled_job": true,
+            "project_unchanged": true,
+            "passed": true
+          },
+          "project_unchanged": true,
+          "scope": "one retained 4-second mono AAC source with two explicit half-second cuts, whole 48k/44.1k and cross-cut range WAV plus 24-frame 640x360 video; DSP/internal-engine matrix separately recorded; no realtime preview, physical device, long-source, broad codec, portable install or whole-product acceptance",
+          "delivery_ready": false
+        }
       }
     }
   }

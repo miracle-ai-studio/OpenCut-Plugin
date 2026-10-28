@@ -28,8 +28,6 @@ pub mod classic_audio;
 pub mod classic_audio_preview;
 pub mod classic_video;
 pub mod classic_visual;
-pub mod native_visual;
-pub mod native_audio;
 pub mod font_catalog;
 pub mod font_color_static;
 pub mod font_derived;
@@ -38,6 +36,9 @@ pub mod font_inspection;
 pub mod font_named;
 pub mod font_synthesis;
 pub mod gc;
+pub mod native_audio;
+mod native_process;
+pub mod native_visual;
 
 pub mod artifacts;
 pub mod budget;

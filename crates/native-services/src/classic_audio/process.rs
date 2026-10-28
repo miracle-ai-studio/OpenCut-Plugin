@@ -207,7 +207,7 @@ impl ClassicAudioProcess {
                         let count = number(&message, "frames")?;
                         if channel > 1
                             || count == 0
-                            || count > 4096
+                            || count > AUDIO_PCM_CHUNK_FRAMES as u64
                             || offset != offsets[channel as usize]
                             || count > frames.saturating_sub(offset)
                         {

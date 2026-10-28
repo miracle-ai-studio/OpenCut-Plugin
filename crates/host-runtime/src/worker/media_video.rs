@@ -7,11 +7,10 @@ use super::{
     },
 };
 use crate::{classic_audio_runtime, classic_visual_runtime};
-use opencut_composition::scene::ClassicAudioPreparationMode;
 use opencut_contracts::EditorError;
 use opencut_editor_application::{
     budget::Writer,
-    classic_audio::{ClassicAudioExecutor, ClassicAudioResources, ClassicAudioSession},
+    classic_audio::{ClassicAudioResources, ClassicAudioSession},
     classic_blend_frame::ClassicBlendFrameSession,
     classic_caption_frame::ClassicCaptionFrameSession,
     classic_graphic_frame::ClassicGraphicFrameSession,
@@ -33,11 +32,12 @@ use opencut_job_contracts::{
 };
 use opencut_media::{CancellationToken, ProgressStage, ProgressUpdate};
 use opencut_native_services::{
-    classic_audio::{ClassicAudioProcess, ClassicAudioWavSink, VerifiedClassicAudioResources},
+    classic_audio::{ClassicAudioWavSink, VerifiedClassicAudioResources},
     classic_video::{
         ClassicVideoEncoder, ClassicVideoEncoderConfig, ClassicVideoProcess, resolve_tool,
     },
     classic_visual::VerifiedClassicTextResources,
+    native_audio::NativeAudioProcess,
 };
 use opencut_sqlite_store::{EditorApplication, JobRecord};
 use opencut_storage_budget::{AttemptLease, Budget};
@@ -348,7 +348,7 @@ fn execute_kernel(
                 ),
             )?;
             let audio_config = classic_audio_runtime::configured(&policy.audio)?;
-            let audio_execution = ClassicAudioProcess {
+            let audio_execution = NativeAudioProcess {
                 config: audio_config,
             }
             .execute(
@@ -362,62 +362,10 @@ fn execute_kernel(
             check_output_name(&attempt, audio_name, &audio_file)?;
             audio_file.sync_all().map_err(io_error)?;
             work_checkpoint(true)?;
-            let decoder_profiles = audio_execution
-                .receipt
-                .decoders
-                .iter()
-                .map(|decoder| match decoder.profile.as_str() {
-                    "web-audio-decode-at-target-rate" => {
-                        Ok(AudioDecoderProfile::WebAudioDecodeAtTargetRate)
-                    }
-                    // V1 windows change residency, not concatenation/resampling semantics.
-                    // The actual implementation is pinned by the module SHA.
-                    "mediabunny-1.41.0-concatenate-offline-resample"
-                    | "mediabunny-1.41.0-windowed-concatenate-offline-resample-v1" => {
-                        Ok(AudioDecoderProfile::Mediabunny141ConcatenateOfflineResample)
-                    }
-                    _ => Err(error(
-                        "ARTIFACT_VERIFICATION_FAILED",
-                        "Unknown actual audio decoder profile",
-                    )),
-                })
-                .collect::<Result<BTreeSet<_>, _>>()?
-                .into_iter()
-                .collect();
-            let pitch_profiles = audio_execution
-                .receipt
-                .preparation
-                .iter()
-                .map(|r| match r.facts.mode {
-                    ClassicAudioPreparationMode::UnpreparedLinear => {
-                        AudioPitchProfile::UnpreparedLinear
-                    }
-                    ClassicAudioPreparationMode::PreparedLinear => {
-                        AudioPitchProfile::PreparedLinear
-                    }
-                    ClassicAudioPreparationMode::PreparedSoundtouch => {
-                        AudioPitchProfile::PreparedSoundtouch
-                    }
-                })
-                .collect::<BTreeSet<_>>()
-                .into_iter()
-                .collect();
             let audio_decoder_evidence_v1 =
-                audio_session.decoder_evidence(&audio_execution.receipt)?;
-            let audio_identity = audio_execution.runtime_identity.identity;
-            let audio_summary = AudioExecutionSummary {
-                host_sha256: host_sha256.clone(),
-                browser_version: audio_identity.browser_version,
-                browser_sha256: audio_identity.browser_sha256,
-                module_sha256: audio_identity.module_sha256,
-                playwright_version: audio_identity.playwright_version,
-                mediabunny_version: audio_identity.mediabunny_version,
-                soundtouch_version: "0.3.0".into(),
-                decoder_profiles,
-                pitch_profiles,
-                mastering_profile: AudioMasteringProfile::ClassicExportWholeSceneWebAudioV31,
-                mastering_applied: audio_execution.receipt.mastering.applied,
-            };
+                Some(audio_session.native_decoder_evidence(&audio_execution.receipt)?);
+            let audio_summary =
+                super::scene_audio::execution_summary(&audio_execution, host_sha256.clone())?;
             drop(audio_resources);
             (
                 Some(audio_file),

@@ -1,6 +1,11 @@
 //! Native audio execution adapters. Application/composition retain authored
 //! clocks, gain facts, policy and publication; this module owns only PCM/DSP.
 pub mod dsp;
+mod identity;
+mod process;
+mod protocol;
+pub(crate) mod worker;
+pub use process::{NativeAudioExecutionReceipt, NativeAudioProcess, NativeAudioProcessConfig};
 mod pcm;
 mod render;
 mod source;
@@ -24,6 +29,17 @@ pub(crate) trait AudioSession<
         request: serde_json::Value,
         resources: &mut R,
     ) -> Result<serde_json::Value, EditorError>;
+    fn compile_block(
+        &mut self,
+        request: opencut_editor_application::classic_audio::BlockRequest,
+        resources: &mut R,
+    ) -> Result<opencut_composition::scene::RuntimeAudioBlock, EditorError> {
+        let value = self.callback(
+            serde_json::json!({"op":"compileBlock","args":request}),
+            resources,
+        )?;
+        serde_json::from_value(value).map_err(|_| invalid("Invalid native typed audio block"))
+    }
 }
 impl<R: opencut_editor_application::classic_audio::ClassicAudioResources + ?Sized> AudioSession<R>
     for opencut_editor_application::classic_audio::ClassicAudioSession<'_>
@@ -41,6 +57,13 @@ impl<R: opencut_editor_application::classic_audio::ClassicAudioResources + ?Size
                 .map_err(|_| invalid("Invalid typed native audio callback"))?,
             resources,
         )
+    }
+    fn compile_block(
+        &mut self,
+        request: opencut_editor_application::classic_audio::BlockRequest,
+        resources: &mut R,
+    ) -> Result<opencut_composition::scene::RuntimeAudioBlock, EditorError> {
+        self.compile_export_block_typed(request, resources)
     }
 }
 fn callback<R, S>(

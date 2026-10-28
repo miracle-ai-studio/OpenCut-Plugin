@@ -185,8 +185,10 @@ fn decode_opened<R: ClassicAudioResources + ?Sized, S: AudioSession<R>>(
         max_io_bytes_per_operation: config.max_encoded_bytes.max(65536),
         max_packets_per_operation: 100000,
     };
+    // The codec and retained origin packets outlive an individual read call.
+    // Keep their reservation until the decoder itself is released.
+    let decoder_memory = memory.reserve(codec_bytes)?;
     let mut decoder = {
-        let _working = memory.reserve(codec_bytes)?;
         NativeAudioDecoder::open(
             &mut Source {
                 resources,
@@ -254,6 +256,21 @@ fn decode_opened<R: ClassicAudioResources + ?Sized, S: AudioSession<R>>(
         )?,
     })
     .map_err(|_| invalid("Invalid native audio decode admission"))?;
+    if container {
+        // Retained AudioBufferSink.buffers(0) starts at getKeyPacket(0), not at
+        // a decoder pre-roll packet whose output is subsequently discarded.
+        decoder
+            .select_keyframe_at_pts(
+                &mut Source {
+                    resources,
+                    transfer,
+                    size: resource.size,
+                },
+                0,
+                config.deadline,
+            )
+            .map_err(media_error)?;
+    }
     let channels = if container {
         track.channels.min(2)
     } else {
@@ -275,6 +292,8 @@ fn decode_opened<R: ClassicAudioResources + ?Sized, S: AudioSession<R>>(
     {
         return Err(invalid("Native primary format exceeds decode admission"));
     }
+    let _window_metadata = memory
+        .reserve((admission.windows.len().max(1) * 4 * std::mem::size_of::<Retained>()) as u64)?;
     let mut retained = Vec::new();
     let max_native = if container {
         if admission.source_sample_rate != Some(track.sample_rate)
@@ -340,7 +359,6 @@ fn decode_opened<R: ClassicAudioResources + ?Sized, S: AudioSession<R>>(
     let mut total = 0u64;
     loop {
         check(resources, config.deadline)?;
-        let _working = memory.reserve(codec_bytes)?;
         let frame = decoder
             .read(
                 &mut Source {
@@ -383,16 +401,16 @@ fn decode_opened<R: ClassicAudioResources + ?Sized, S: AudioSession<R>>(
                 );
                 planes.push(plane);
             }
-            w.chunks.push(Window {
-                start: from,
-                samples: Samples::Planar(planes),
-            });
+            w.chunks
+                .push(Window::new(from, Samples::Planar(planes), memory)?);
         }
         total = end;
     }
     if total == 0 || !decoder.reached_eof() {
         return Err(invalid("Native source decoded no actual EOF PCM"));
     }
+    drop(decoder);
+    drop(decoder_memory);
     // Preserve the retained engine's floating-point length calculation. Source
     // positions supplied by composition remain exact integers/rationals.
     let scaled = total as f64 * (f64::from(config.sample_rate) / f64::from(track.sample_rate));
@@ -433,7 +451,7 @@ fn decode_opened<R: ClassicAudioResources + ?Sized, S: AudioSession<R>>(
             .last()
             .map(|c| c.start + c.samples.frames() as u64)
             .unwrap();
-        let native = PcmSource::new(track.sample_rate, total, channels, true, w.chunks)?;
+        let native = PcmSource::new(track.sample_rate, total, channels, true, w.chunks, memory)?;
         let end = if end_native == total {
             frames
         } else {
@@ -454,10 +472,7 @@ fn decode_opened<R: ClassicAudioResources + ?Sized, S: AudioSession<R>>(
                 )?;
                 planes.push(target);
             }
-            output.push(Window {
-                start: 0,
-                samples: Samples::Planar(planes),
-            });
+            output.push(Window::new(0, Samples::Planar(planes), memory)?);
             break;
         }
         while cursor < w.target {
@@ -507,14 +522,11 @@ fn decode_opened<R: ClassicAudioResources + ?Sized, S: AudioSession<R>>(
                 }
                 planes.push(target);
             }
-            output.push(Window {
-                start: cursor,
-                samples: Samples::Planar(planes),
-            });
+            output.push(Window::new(cursor, Samples::Planar(planes), memory)?);
             cursor += count as u64;
         }
     }
-    let pcm = PcmSource::new(config.sample_rate, frames, channels, sparse, output)?;
+    let pcm = PcmSource::new(config.sample_rate, frames, channels, sparse, output, memory)?;
     if !sparse && pcm.resident_frames() != frames {
         return Err(invalid("Native dense decode lost source frames"));
     }

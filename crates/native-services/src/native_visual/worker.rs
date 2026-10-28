@@ -155,6 +155,11 @@ fn run(channel: &Rc<RefCell<Channel>>) -> Result<(), EditorError> {
     if wire::text(&packet.meta, "type")? != "initialize" || !packet.data.is_empty() {
         return Err(wire::error("Missing native initialization"));
     }
+    if packet.meta["purpose"] == "audio_export" {
+        let mut channel = channel.borrow_mut();
+        let Channel { input, output, .. } = &mut *channel;
+        return crate::native_audio::worker::serve_initialized(packet, input, output);
+    }
     let policy: LocalVisualExecutionPolicy = serde_json::from_value(
         packet
             .meta

@@ -3,8 +3,9 @@
 mod assemble;
 mod engine;
 mod identity;
+#[cfg(test)]
+use crate::native_process::monitor;
 pub(crate) use identity::platform as platform_identity;
-mod monitor;
 mod process;
 pub(crate) use process::NativeProcess;
 mod wire;

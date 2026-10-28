@@ -185,14 +185,14 @@ pub struct PositionRequest {
     pub frame_count: u32,
     pub source_sample_rate: u32,
 }
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct BlockRequest {
     pub start_sample: String,
     pub frame_count: u32,
     pub source_formats: Vec<FinalSourceFormat>,
 }
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct FinalSourceFormat {
     pub element_id: String,

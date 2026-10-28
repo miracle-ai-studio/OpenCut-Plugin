@@ -1028,11 +1028,11 @@ fn native_rate_float_pcm_reuses_bounded_windows_without_changing_asset_metadata(
             })
             .collect(),
     };
-    assert!(validate_decoder_evidence(&audio, &evidence).is_ok());
+    assert!(validate_decoder_evidence(&audio, &evidence, false).is_ok());
     // A float source has four bytes per channel sample; its proof cannot claim
     // the larger frame extent that a signed16 interpretation would allow.
     evidence.sources[0].decoder.frame_count = "2016513".into();
-    assert!(validate_decoder_evidence(&audio, &evidence).is_err());
+    assert!(validate_decoder_evidence(&audio, &evidence, false).is_err());
     let mut denied = request;
     denied.primary.as_mut().unwrap().codec = "pcm-f64".into();
     assert!(

@@ -287,6 +287,24 @@ impl<'a> ClassicAudioSession<'a> {
             })
             .then_some(ClassicAudioDecoderEvidence { sources }))
     }
+    pub fn native_decoder_evidence(
+        &self,
+        receipt: &ClassicAudioRenderReceipt,
+    ) -> Result<ClassicAudioDecoderEvidence, EditorError> {
+        self.validate_native_receipt(receipt)?;
+        Ok(ClassicAudioDecoderEvidence {
+            sources: receipt
+                .decoders
+                .iter()
+                .map(|decoder| {
+                    Ok(ClassicAudioDecoderSource {
+                        resource: self.resource(&decoder.asset_id)?,
+                        decoder: decoder.clone(),
+                    })
+                })
+                .collect::<Result<_, EditorError>>()?,
+        })
+    }
     fn checked_resource(&self, value: &AudioResource) -> Result<(), EditorError> {
         if &self.resource(&value.asset_id)? != value {
             return Err(invalid("Resource differs from fixed revision"));
@@ -880,7 +898,7 @@ impl<'a> ClassicAudioSession<'a> {
     pub fn compile_export_block_typed(
         &mut self,
         request: BlockRequest,
-        resources: &mut dyn ClassicAudioResources,
+        resources: &mut (impl ClassicAudioResources + ?Sized),
     ) -> Result<RuntimeAudioBlock, EditorError> {
         resources.checkpoint()?;
         self.block_typed(request)

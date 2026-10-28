@@ -73,6 +73,9 @@ pub struct PcmReservation {
     bytes: u64,
 }
 impl PcmArray {
+    pub(crate) fn memory(&self) -> PcmMemory {
+        self._reservation.memory.clone()
+    }
     pub fn as_slice(&self) -> &[f32] {
         &self.data
     }

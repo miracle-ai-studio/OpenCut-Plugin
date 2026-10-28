@@ -553,6 +553,7 @@ fn validate_result_common(
 fn validate_decoder_evidence(
     prepared: &PreparedAudio,
     evidence: &crate::classic_audio::ClassicAudioDecoderEvidence,
+    native: bool,
 ) -> Result<BTreeSet<AudioDecoderProfile>, EditorError> {
     let resources: BTreeMap<_, _> = prepared.resources().map(|r| (&r.asset_id, r)).collect();
     if evidence.sources.len() != resources.len() || evidence.sources.len() > 32 {
@@ -582,46 +583,73 @@ fn validate_decoder_evidence(
         {
             return Err(stored_invalid());
         }
-        let profile = match (&r.kind, d.profile.as_str(), d.primary.as_ref()) {
-            (AssetKind::Audio, "web-audio-decode-at-target-rate", None) => {
-                AudioDecoderProfile::WebAudioDecodeAtTargetRate
-            }
-            (
-                AssetKind::Audio,
-                "mediabunny-1.41.0-windowed-concatenate-offline-resample-v1",
-                Some(p),
-            ) => {
-                let sample_bytes = crate::classic_audio::native_pcm_sample_bytes(&p.codec)
-                    .ok_or_else(stored_invalid)?;
-                if p.sample_rate != d.sample_rate
-                    || !(1..=2).contains(&p.channels)
-                    || d.channels != p.channels
-                    || crate::classic_audio::decimal(&d.frame_count)
-                        .map_err(|_| stored_invalid())?
-                        > r.version.size / (u64::from(p.channels) * sample_bytes)
-                {
-                    return Err(stored_invalid());
+        let profile = if native {
+            match (&r.kind, d.profile.as_str(), d.primary.as_ref()) {
+                (AssetKind::Audio, "native-libav-sinc-at-target-rate", None) => {
+                    AudioDecoderProfile::NativeLibavSincAtTargetRate
                 }
-                negotiated_pcm = true;
-                AudioDecoderProfile::Mediabunny141ConcatenateOfflineResample
+                (
+                    AssetKind::Audio | AssetKind::Video,
+                    mode @ ("native-libav-concatenate-linear-resample"
+                    | "native-libav-windowed-concatenate-linear-resample"),
+                    Some(p),
+                ) if !p.codec.is_empty()
+                    && p.codec.len() <= 128
+                    && !p.codec.chars().any(char::is_control)
+                    && (1..=64).contains(&p.channels)
+                    && (1..=384000).contains(&p.sample_rate)
+                    && d.channels == p.channels.min(2) =>
+                {
+                    if mode == "native-libav-windowed-concatenate-linear-resample" {
+                        AudioDecoderProfile::NativeLibavWindowedConcatenateLinearResample
+                    } else {
+                        AudioDecoderProfile::NativeLibavConcatenateLinearResample
+                    }
+                }
+                _ => return Err(stored_invalid()),
             }
-            (
-                AssetKind::Video,
-                "mediabunny-1.41.0-concatenate-offline-resample"
-                | "mediabunny-1.41.0-windowed-concatenate-offline-resample-v1",
-                Some(p),
-            ) if !p.codec.is_empty()
-                && (1..=64).contains(&p.channels)
-                && (8_000..=192_000).contains(&p.sample_rate)
-                && d.channels == p.channels.min(2) =>
-            {
-                AudioDecoderProfile::Mediabunny141ConcatenateOfflineResample
+        } else {
+            match (&r.kind, d.profile.as_str(), d.primary.as_ref()) {
+                (AssetKind::Audio, "web-audio-decode-at-target-rate", None) => {
+                    AudioDecoderProfile::WebAudioDecodeAtTargetRate
+                }
+                (
+                    AssetKind::Audio,
+                    "mediabunny-1.41.0-windowed-concatenate-offline-resample-v1",
+                    Some(p),
+                ) => {
+                    let sample_bytes = crate::classic_audio::native_pcm_sample_bytes(&p.codec)
+                        .ok_or_else(stored_invalid)?;
+                    if p.sample_rate != d.sample_rate
+                        || !(1..=2).contains(&p.channels)
+                        || d.channels != p.channels
+                        || crate::classic_audio::decimal(&d.frame_count)
+                            .map_err(|_| stored_invalid())?
+                            > r.version.size / (u64::from(p.channels) * sample_bytes)
+                    {
+                        return Err(stored_invalid());
+                    }
+                    negotiated_pcm = true;
+                    AudioDecoderProfile::Mediabunny141ConcatenateOfflineResample
+                }
+                (
+                    AssetKind::Video,
+                    "mediabunny-1.41.0-concatenate-offline-resample"
+                    | "mediabunny-1.41.0-windowed-concatenate-offline-resample-v1",
+                    Some(p),
+                ) if !p.codec.is_empty()
+                    && (1..=64).contains(&p.channels)
+                    && (8_000..=192_000).contains(&p.sample_rate)
+                    && d.channels == p.channels.min(2) =>
+                {
+                    AudioDecoderProfile::Mediabunny141ConcatenateOfflineResample
+                }
+                _ => return Err(stored_invalid()),
             }
-            _ => return Err(stored_invalid()),
         };
         profiles.insert(profile);
     }
-    if !negotiated_pcm {
+    if !native && !negotiated_pcm {
         return Err(stored_invalid());
     }
     Ok(profiles)
@@ -633,9 +661,13 @@ pub(crate) fn validate_execution_summary(
     execution: &AudioExecutionSummary,
     evidence: Option<&crate::classic_audio::ClassicAudioDecoderEvidence>,
 ) -> Result<(), EditorError> {
+    let native = matches!(&execution.runtime, AudioRuntimeIdentity::Native(_));
     let decoder_profiles: BTreeSet<_> = if let Some(evidence) = evidence {
-        validate_decoder_evidence(prepared, evidence)?
+        validate_decoder_evidence(prepared, evidence, native)?
     } else {
+        if native {
+            return Err(stored_invalid());
+        }
         prepared
             .resources()
             .map(|r| match r.kind {
@@ -658,17 +690,24 @@ pub(crate) fn validate_execution_summary(
         .collect::<Result<_, _>>()?;
     let observed_decoders: BTreeSet<_> = execution.decoder_profiles.iter().copied().collect();
     let observed_pitch: BTreeSet<_> = execution.pitch_profiles.iter().copied().collect();
-    if execution.playwright_version != "1.63.0"
-        || execution.mediabunny_version != "1.41.0"
-        || execution.soundtouch_version != "0.3.0"
-        || !valid_id(&execution.browser_version)
-        || [
-            &execution.host_sha256,
-            &execution.browser_sha256,
-            &execution.module_sha256,
-        ]
-        .into_iter()
-        .any(|h| !valid_hash(h))
+    match &execution.runtime {
+        AudioRuntimeIdentity::Native(identity) => {
+            crate::classic_audio::validate_native_identity(identity)
+                .map_err(|_| stored_invalid())?
+        }
+        AudioRuntimeIdentity::HistoricalBrowser(identity) => {
+            if identity.playwright_version != "1.63.0"
+                || identity.mediabunny_version != "1.41.0"
+                || identity.soundtouch_version != "0.3.0"
+                || !valid_id(&identity.browser_version)
+                || !valid_hash(&identity.browser_sha256)
+                || !valid_hash(&identity.module_sha256)
+            {
+                return Err(stored_invalid());
+            }
+        }
+    }
+    if !valid_hash(&execution.host_sha256)
         || observed_decoders != decoder_profiles
         || observed_decoders.len() != execution.decoder_profiles.len()
         || observed_pitch != pitch_profiles

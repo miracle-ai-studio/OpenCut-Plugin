@@ -116,19 +116,40 @@ pub fn validate_visual_summary(summary: &MediaFrameExecutionSummary) -> Result<(
     }
 }
 
-/// Historical visual/audio proofs shared a browser. Native execution records
-/// its own decoder and GPU identity; only the publishing host is common.
+/// Historical proofs retain their original browser association. New native
+/// audio and picture phases bind the same worker, libraries and system; audio
+/// contributes no fabricated graphics/font fields.
 pub fn validate_visual_audio_identity(
     visual: &MediaFrameExecutionSummary,
     audio: &crate::scene_audio_jobs::AudioExecutionSummary,
 ) -> bool {
     visual.host_sha256 == audio.host_sha256
-        && match &visual.runtime {
-            VisualRuntimeIdentity::HistoricalBrowser(identity) => {
-                identity.browser_sha256 == audio.browser_sha256
-                    && identity.browser_version == audio.browser_version
+        && match (&visual.runtime, &audio.runtime) {
+            (
+                VisualRuntimeIdentity::HistoricalBrowser(visual),
+                crate::scene_audio_jobs::AudioRuntimeIdentity::HistoricalBrowser(audio),
+            ) => {
+                visual.browser_sha256 == audio.browser_sha256
+                    && visual.browser_version == audio.browser_version
             }
-            VisualRuntimeIdentity::Native(_) => true,
+            (
+                VisualRuntimeIdentity::Native(visual),
+                crate::scene_audio_jobs::AudioRuntimeIdentity::Native(audio),
+            ) => {
+                visual.renderer_sha256 == audio.worker_sha256
+                    && visual.decoder_libraries == audio.decoder_libraries
+                    && visual.platform.as_ref().is_some_and(|p| {
+                        p.os == audio.platform.os
+                            && p.architecture == audio.platform.architecture
+                            && p.kernel_release == audio.platform.kernel_release
+                            && p.system_build == audio.platform.system_build
+                    })
+            }
+            (
+                VisualRuntimeIdentity::Native(_),
+                crate::scene_audio_jobs::AudioRuntimeIdentity::HistoricalBrowser(_),
+            ) => true,
+            _ => false,
         }
 }
 

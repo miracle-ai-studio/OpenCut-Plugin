@@ -19,6 +19,28 @@ pub struct NativeLibraryIdentity {
     pub binary_sha256: String,
 }
 
+/// Audio execution observes its OS/CPU without claiming a graphics or font
+/// subsystem. These are runtime facts, independent of saved project formats.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct NativeSystemIdentity {
+    pub os: String,
+    pub architecture: String,
+    pub kernel_release: String,
+    pub system_build: String,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct NativeAudioIdentity {
+    pub worker_sha256: String,
+    pub decoder_libraries: Vec<NativeLibraryIdentity>,
+    pub decoder_profile: String,
+    pub dsp_profile: String,
+    pub dsp_sha256: String,
+    pub soundtouch_source_sha256: String,
+    pub platform: NativeSystemIdentity,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct NativePlatformIdentity {

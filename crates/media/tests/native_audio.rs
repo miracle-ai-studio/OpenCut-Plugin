@@ -182,3 +182,104 @@ fn revocation_invalid_pcm_deadline_and_admission_retire_instead_of_falling_back(
     assert!(NativeAudioDecoder::open(&mut source, None, bounded, deadline()).is_err());
     assert!(NativeAudioDecoder::open(&mut source, Some(63), limits(), deadline()).is_err());
 }
+
+#[test]
+fn packet_origin_keeps_first_and_following_frames_and_rechecks_authority() {
+    let expected: Vec<i16> = (0..8193).map(|i| (i % 1024) as i16 - 512).collect();
+    let samples: Vec<u8> = expected.iter().flat_map(|v| v.to_le_bytes()).collect();
+    for origin in [-1, 0] {
+        let mut source = wave(1, 16, 1, 48000, &samples);
+        let mut decoder =
+            NativeAudioDecoder::open(&mut source, None, limits(), deadline()).unwrap();
+        decoder
+            .select_keyframe_at_pts(&mut source, origin, deadline())
+            .unwrap();
+        assert!(
+            decoder
+                .select_keyframe_at_pts(&mut source, origin, deadline())
+                .is_err()
+        );
+        let mut actual = Vec::new();
+        while let Some(frame) = decoder.read(&mut source, deadline()).unwrap() {
+            assert_eq!(frame.pts, Some(actual.len() as i64));
+            actual.extend(frame.channels[0].iter().copied());
+        }
+        assert_eq!(
+            actual,
+            expected
+                .iter()
+                .map(|v| f32::from(*v) / 32768.0)
+                .collect::<Vec<_>>()
+        );
+        assert!(decoder.reached_eof());
+    }
+    let mut source = wave(1, 16, 1, 48000, &samples);
+    let mut decoder = NativeAudioDecoder::open(&mut source, None, limits(), deadline()).unwrap();
+    source.revoked = true;
+    let error = decoder
+        .select_keyframe_at_pts(&mut source, 0, deadline())
+        .unwrap_err();
+    assert!(matches!(error, MediaError::Admission { ref code, .. } if code == "PERMISSION_DENIED"));
+    source.revoked = false;
+    assert!(decoder.read(&mut source, deadline()).is_err());
+}
+
+#[test]
+#[ignore = "requires explicit retained AAC source and independently captured browser PCM"]
+fn aac_container_origin_matches_independent_browser_samples_without_preroll() {
+    use sha2::{Digest, Sha256};
+    let dir = std::path::PathBuf::from(
+        std::env::var_os("OPENCUT_AUDIO_AAC_REFERENCE").expect("reference directory"),
+    );
+    let source_path = std::env::var_os("OPENCUT_AUDIO_AAC_SOURCE").expect("retained source");
+    let oracle: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(dir.join("aac-cut-oracle.json")).unwrap()).unwrap();
+    let bytes = std::fs::read(source_path).unwrap();
+    assert_eq!(
+        format!("{:x}", Sha256::digest(&bytes)),
+        oracle["source_sha256"]
+    );
+    assert_eq!(
+        oracle["browser_sha256"],
+        "b5626938028f718a6cdb0c8eff9d0346b186d68b4e04b43df4f9f579c81ecf28"
+    );
+    let expected = std::fs::read(dir.join("aac-cut-oracle.f32le")).unwrap();
+    assert_eq!(
+        format!("{:x}", Sha256::digest(&expected)),
+        oracle["expected_pcm_sha256"]
+    );
+    let mut source = Source {
+        bytes,
+        revoked: false,
+        reads: 0,
+    };
+    let mut decoder = NativeAudioDecoder::open(&mut source, None, limits(), deadline()).unwrap();
+    assert_eq!(decoder.track().codec, "aac");
+    decoder
+        .select_keyframe_at_pts(&mut source, 0, deadline())
+        .unwrap();
+    let mut actual = Vec::new();
+    while let Some(frame) = decoder.read(&mut source, deadline()).unwrap() {
+        assert_eq!(frame.pts, Some(actual.len() as i64));
+        assert_eq!(frame.channels.len(), 1);
+        assert_eq!(frame.sample_rate, 48000);
+        actual.extend(frame.channels[0].iter().copied());
+    }
+    assert_eq!(
+        actual.len() as u64,
+        oracle["native_frames"].as_u64().unwrap()
+    );
+    let mut selected = Vec::new();
+    for range in oracle["manual_source_sample_ranges"].as_array().unwrap() {
+        let start = range[0].as_u64().unwrap() as usize;
+        let end = range[1].as_u64().unwrap() as usize;
+        for sample in &actual[start..end] {
+            selected.extend(sample.to_le_bytes());
+            selected.extend(sample.to_le_bytes());
+        }
+    }
+    assert_eq!(
+        selected, expected,
+        "AAC origin must match without gain or time fitting"
+    );
+}

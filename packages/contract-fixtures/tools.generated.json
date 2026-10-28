@@ -11445,68 +11445,139 @@
         "AudioDecoderProfile": {
           "enum": [
             "web-audio-decode-at-target-rate",
-            "mediabunny-1.41.0-concatenate-offline-resample"
+            "mediabunny-1.41.0-concatenate-offline-resample",
+            "native-libav-sinc-at-target-rate",
+            "native-libav-concatenate-linear-resample",
+            "native-libav-windowed-concatenate-linear-resample"
           ],
           "type": "string"
         },
         "AudioExecutionSummary": {
-          "additionalProperties": false,
-          "properties": {
-            "browser_sha256": {
-              "type": "string"
-            },
-            "browser_version": {
-              "type": "string"
-            },
-            "decoder_profiles": {
-              "description": "Unique profiles used by this fixed scene, not claims about unused engines.",
-              "items": {
-                "$ref": "#/$defs/AudioDecoderProfile"
+          "anyOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "decoder_libraries": {
+                  "items": {
+                    "$ref": "#/$defs/NativeLibraryIdentity"
+                  },
+                  "type": "array"
+                },
+                "decoder_profile": {
+                  "type": "string"
+                },
+                "decoder_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioDecoderProfile"
+                  },
+                  "type": "array"
+                },
+                "dsp_profile": {
+                  "type": "string"
+                },
+                "dsp_sha256": {
+                  "type": "string"
+                },
+                "host_sha256": {
+                  "type": "string"
+                },
+                "mastering_applied": {
+                  "type": "boolean"
+                },
+                "mastering_profile": {
+                  "$ref": "#/$defs/AudioMasteringProfile"
+                },
+                "pitch_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioPitchProfile"
+                  },
+                  "type": "array"
+                },
+                "platform": {
+                  "$ref": "#/$defs/NativeSystemIdentity"
+                },
+                "soundtouch_source_sha256": {
+                  "type": "string"
+                },
+                "worker_sha256": {
+                  "type": "string"
+                }
               },
-              "type": "array"
+              "required": [
+                "worker_sha256",
+                "decoder_libraries",
+                "decoder_profile",
+                "dsp_profile",
+                "dsp_sha256",
+                "soundtouch_source_sha256",
+                "platform",
+                "host_sha256",
+                "decoder_profiles",
+                "pitch_profiles",
+                "mastering_profile",
+                "mastering_applied"
+              ],
+              "type": "object"
             },
-            "host_sha256": {
-              "type": "string"
-            },
-            "mastering_applied": {
-              "type": "boolean"
-            },
-            "mastering_profile": {
-              "$ref": "#/$defs/AudioMasteringProfile"
-            },
-            "mediabunny_version": {
-              "type": "string"
-            },
-            "module_sha256": {
-              "type": "string"
-            },
-            "pitch_profiles": {
-              "items": {
-                "$ref": "#/$defs/AudioPitchProfile"
+            {
+              "additionalProperties": false,
+              "properties": {
+                "browser_sha256": {
+                  "type": "string"
+                },
+                "browser_version": {
+                  "type": "string"
+                },
+                "decoder_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioDecoderProfile"
+                  },
+                  "type": "array"
+                },
+                "host_sha256": {
+                  "type": "string"
+                },
+                "mastering_applied": {
+                  "type": "boolean"
+                },
+                "mastering_profile": {
+                  "$ref": "#/$defs/AudioMasteringProfile"
+                },
+                "mediabunny_version": {
+                  "type": "string"
+                },
+                "module_sha256": {
+                  "type": "string"
+                },
+                "pitch_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioPitchProfile"
+                  },
+                  "type": "array"
+                },
+                "playwright_version": {
+                  "type": "string"
+                },
+                "soundtouch_version": {
+                  "type": "string"
+                }
               },
-              "type": "array"
-            },
-            "playwright_version": {
-              "type": "string"
-            },
-            "soundtouch_version": {
-              "type": "string"
+              "required": [
+                "browser_version",
+                "browser_sha256",
+                "module_sha256",
+                "playwright_version",
+                "mediabunny_version",
+                "soundtouch_version",
+                "host_sha256",
+                "decoder_profiles",
+                "pitch_profiles",
+                "mastering_profile",
+                "mastering_applied"
+              ],
+              "type": "object"
             }
-          },
-          "required": [
-            "host_sha256",
-            "browser_version",
-            "browser_sha256",
-            "module_sha256",
-            "playwright_version",
-            "mediabunny_version",
-            "soundtouch_version",
-            "decoder_profiles",
-            "pitch_profiles",
-            "mastering_profile",
-            "mastering_applied"
-          ],
-          "type": "object"
+          ]
         },
         "AudioMasteringProfile": {
           "enum": [
@@ -15277,6 +15348,31 @@
             "kernel_release",
             "system_build",
             "font_backend"
+          ],
+          "type": "object"
+        },
+        "NativeSystemIdentity": {
+          "additionalProperties": false,
+          "description": "Audio execution observes its OS/CPU without claiming a graphics or font\nsubsystem. These are runtime facts, independent of saved project formats.",
+          "properties": {
+            "architecture": {
+              "type": "string"
+            },
+            "kernel_release": {
+              "type": "string"
+            },
+            "os": {
+              "type": "string"
+            },
+            "system_build": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "os",
+            "architecture",
+            "kernel_release",
+            "system_build"
           ],
           "type": "object"
         },
@@ -66791,68 +66887,139 @@
         "AudioDecoderProfile": {
           "enum": [
             "web-audio-decode-at-target-rate",
-            "mediabunny-1.41.0-concatenate-offline-resample"
+            "mediabunny-1.41.0-concatenate-offline-resample",
+            "native-libav-sinc-at-target-rate",
+            "native-libav-concatenate-linear-resample",
+            "native-libav-windowed-concatenate-linear-resample"
           ],
           "type": "string"
         },
         "AudioExecutionSummary": {
-          "additionalProperties": false,
-          "properties": {
-            "browser_sha256": {
-              "type": "string"
-            },
-            "browser_version": {
-              "type": "string"
-            },
-            "decoder_profiles": {
-              "description": "Unique profiles used by this fixed scene, not claims about unused engines.",
-              "items": {
-                "$ref": "#/$defs/AudioDecoderProfile"
+          "anyOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "decoder_libraries": {
+                  "items": {
+                    "$ref": "#/$defs/NativeLibraryIdentity"
+                  },
+                  "type": "array"
+                },
+                "decoder_profile": {
+                  "type": "string"
+                },
+                "decoder_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioDecoderProfile"
+                  },
+                  "type": "array"
+                },
+                "dsp_profile": {
+                  "type": "string"
+                },
+                "dsp_sha256": {
+                  "type": "string"
+                },
+                "host_sha256": {
+                  "type": "string"
+                },
+                "mastering_applied": {
+                  "type": "boolean"
+                },
+                "mastering_profile": {
+                  "$ref": "#/$defs/AudioMasteringProfile"
+                },
+                "pitch_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioPitchProfile"
+                  },
+                  "type": "array"
+                },
+                "platform": {
+                  "$ref": "#/$defs/NativeSystemIdentity"
+                },
+                "soundtouch_source_sha256": {
+                  "type": "string"
+                },
+                "worker_sha256": {
+                  "type": "string"
+                }
               },
-              "type": "array"
+              "required": [
+                "worker_sha256",
+                "decoder_libraries",
+                "decoder_profile",
+                "dsp_profile",
+                "dsp_sha256",
+                "soundtouch_source_sha256",
+                "platform",
+                "host_sha256",
+                "decoder_profiles",
+                "pitch_profiles",
+                "mastering_profile",
+                "mastering_applied"
+              ],
+              "type": "object"
             },
-            "host_sha256": {
-              "type": "string"
-            },
-            "mastering_applied": {
-              "type": "boolean"
-            },
-            "mastering_profile": {
-              "$ref": "#/$defs/AudioMasteringProfile"
-            },
-            "mediabunny_version": {
-              "type": "string"
-            },
-            "module_sha256": {
-              "type": "string"
-            },
-            "pitch_profiles": {
-              "items": {
-                "$ref": "#/$defs/AudioPitchProfile"
+            {
+              "additionalProperties": false,
+              "properties": {
+                "browser_sha256": {
+                  "type": "string"
+                },
+                "browser_version": {
+                  "type": "string"
+                },
+                "decoder_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioDecoderProfile"
+                  },
+                  "type": "array"
+                },
+                "host_sha256": {
+                  "type": "string"
+                },
+                "mastering_applied": {
+                  "type": "boolean"
+                },
+                "mastering_profile": {
+                  "$ref": "#/$defs/AudioMasteringProfile"
+                },
+                "mediabunny_version": {
+                  "type": "string"
+                },
+                "module_sha256": {
+                  "type": "string"
+                },
+                "pitch_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioPitchProfile"
+                  },
+                  "type": "array"
+                },
+                "playwright_version": {
+                  "type": "string"
+                },
+                "soundtouch_version": {
+                  "type": "string"
+                }
               },
-              "type": "array"
-            },
-            "playwright_version": {
-              "type": "string"
-            },
-            "soundtouch_version": {
-              "type": "string"
+              "required": [
+                "browser_version",
+                "browser_sha256",
+                "module_sha256",
+                "playwright_version",
+                "mediabunny_version",
+                "soundtouch_version",
+                "host_sha256",
+                "decoder_profiles",
+                "pitch_profiles",
+                "mastering_profile",
+                "mastering_applied"
+              ],
+              "type": "object"
             }
-          },
-          "required": [
-            "host_sha256",
-            "browser_version",
-            "browser_sha256",
-            "module_sha256",
-            "playwright_version",
-            "mediabunny_version",
-            "soundtouch_version",
-            "decoder_profiles",
-            "pitch_profiles",
-            "mastering_profile",
-            "mastering_applied"
-          ],
-          "type": "object"
+          ]
         },
         "AudioMasteringProfile": {
           "enum": [
@@ -72588,6 +72755,31 @@
           ],
           "type": "object"
         },
+        "NativeSystemIdentity": {
+          "additionalProperties": false,
+          "description": "Audio execution observes its OS/CPU without claiming a graphics or font\nsubsystem. These are runtime facts, independent of saved project formats.",
+          "properties": {
+            "architecture": {
+              "type": "string"
+            },
+            "kernel_release": {
+              "type": "string"
+            },
+            "os": {
+              "type": "string"
+            },
+            "system_build": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "os",
+            "architecture",
+            "kernel_release",
+            "system_build"
+          ],
+          "type": "object"
+        },
         "OperationSchema": {
           "properties": {
             "name": {
@@ -77268,68 +77460,139 @@
         "AudioDecoderProfile": {
           "enum": [
             "web-audio-decode-at-target-rate",
-            "mediabunny-1.41.0-concatenate-offline-resample"
+            "mediabunny-1.41.0-concatenate-offline-resample",
+            "native-libav-sinc-at-target-rate",
+            "native-libav-concatenate-linear-resample",
+            "native-libav-windowed-concatenate-linear-resample"
           ],
           "type": "string"
         },
         "AudioExecutionSummary": {
-          "additionalProperties": false,
-          "properties": {
-            "browser_sha256": {
-              "type": "string"
-            },
-            "browser_version": {
-              "type": "string"
-            },
-            "decoder_profiles": {
-              "description": "Unique profiles used by this fixed scene, not claims about unused engines.",
-              "items": {
-                "$ref": "#/$defs/AudioDecoderProfile"
+          "anyOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "decoder_libraries": {
+                  "items": {
+                    "$ref": "#/$defs/NativeLibraryIdentity"
+                  },
+                  "type": "array"
+                },
+                "decoder_profile": {
+                  "type": "string"
+                },
+                "decoder_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioDecoderProfile"
+                  },
+                  "type": "array"
+                },
+                "dsp_profile": {
+                  "type": "string"
+                },
+                "dsp_sha256": {
+                  "type": "string"
+                },
+                "host_sha256": {
+                  "type": "string"
+                },
+                "mastering_applied": {
+                  "type": "boolean"
+                },
+                "mastering_profile": {
+                  "$ref": "#/$defs/AudioMasteringProfile"
+                },
+                "pitch_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioPitchProfile"
+                  },
+                  "type": "array"
+                },
+                "platform": {
+                  "$ref": "#/$defs/NativeSystemIdentity"
+                },
+                "soundtouch_source_sha256": {
+                  "type": "string"
+                },
+                "worker_sha256": {
+                  "type": "string"
+                }
               },
-              "type": "array"
+              "required": [
+                "worker_sha256",
+                "decoder_libraries",
+                "decoder_profile",
+                "dsp_profile",
+                "dsp_sha256",
+                "soundtouch_source_sha256",
+                "platform",
+                "host_sha256",
+                "decoder_profiles",
+                "pitch_profiles",
+                "mastering_profile",
+                "mastering_applied"
+              ],
+              "type": "object"
             },
-            "host_sha256": {
-              "type": "string"
-            },
-            "mastering_applied": {
-              "type": "boolean"
-            },
-            "mastering_profile": {
-              "$ref": "#/$defs/AudioMasteringProfile"
-            },
-            "mediabunny_version": {
-              "type": "string"
-            },
-            "module_sha256": {
-              "type": "string"
-            },
-            "pitch_profiles": {
-              "items": {
-                "$ref": "#/$defs/AudioPitchProfile"
+            {
+              "additionalProperties": false,
+              "properties": {
+                "browser_sha256": {
+                  "type": "string"
+                },
+                "browser_version": {
+                  "type": "string"
+                },
+                "decoder_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioDecoderProfile"
+                  },
+                  "type": "array"
+                },
+                "host_sha256": {
+                  "type": "string"
+                },
+                "mastering_applied": {
+                  "type": "boolean"
+                },
+                "mastering_profile": {
+                  "$ref": "#/$defs/AudioMasteringProfile"
+                },
+                "mediabunny_version": {
+                  "type": "string"
+                },
+                "module_sha256": {
+                  "type": "string"
+                },
+                "pitch_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioPitchProfile"
+                  },
+                  "type": "array"
+                },
+                "playwright_version": {
+                  "type": "string"
+                },
+                "soundtouch_version": {
+                  "type": "string"
+                }
               },
-              "type": "array"
-            },
-            "playwright_version": {
-              "type": "string"
-            },
-            "soundtouch_version": {
-              "type": "string"
+              "required": [
+                "browser_version",
+                "browser_sha256",
+                "module_sha256",
+                "playwright_version",
+                "mediabunny_version",
+                "soundtouch_version",
+                "host_sha256",
+                "decoder_profiles",
+                "pitch_profiles",
+                "mastering_profile",
+                "mastering_applied"
+              ],
+              "type": "object"
             }
-          },
-          "required": [
-            "host_sha256",
-            "browser_version",
-            "browser_sha256",
-            "module_sha256",
-            "playwright_version",
-            "mediabunny_version",
-            "soundtouch_version",
-            "decoder_profiles",
-            "pitch_profiles",
-            "mastering_profile",
-            "mastering_applied"
-          ],
-          "type": "object"
+          ]
         },
         "AudioMasteringProfile": {
           "enum": [
@@ -81103,6 +81366,31 @@
           ],
           "type": "object"
         },
+        "NativeSystemIdentity": {
+          "additionalProperties": false,
+          "description": "Audio execution observes its OS/CPU without claiming a graphics or font\nsubsystem. These are runtime facts, independent of saved project formats.",
+          "properties": {
+            "architecture": {
+              "type": "string"
+            },
+            "kernel_release": {
+              "type": "string"
+            },
+            "os": {
+              "type": "string"
+            },
+            "system_build": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "os",
+            "architecture",
+            "kernel_release",
+            "system_build"
+          ],
+          "type": "object"
+        },
         "PixelBounds": {
           "properties": {
             "height": {
@@ -83315,68 +83603,139 @@
         "AudioDecoderProfile": {
           "enum": [
             "web-audio-decode-at-target-rate",
-            "mediabunny-1.41.0-concatenate-offline-resample"
+            "mediabunny-1.41.0-concatenate-offline-resample",
+            "native-libav-sinc-at-target-rate",
+            "native-libav-concatenate-linear-resample",
+            "native-libav-windowed-concatenate-linear-resample"
           ],
           "type": "string"
         },
         "AudioExecutionSummary": {
-          "additionalProperties": false,
-          "properties": {
-            "browser_sha256": {
-              "type": "string"
-            },
-            "browser_version": {
-              "type": "string"
-            },
-            "decoder_profiles": {
-              "description": "Unique profiles used by this fixed scene, not claims about unused engines.",
-              "items": {
-                "$ref": "#/$defs/AudioDecoderProfile"
+          "anyOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "decoder_libraries": {
+                  "items": {
+                    "$ref": "#/$defs/NativeLibraryIdentity"
+                  },
+                  "type": "array"
+                },
+                "decoder_profile": {
+                  "type": "string"
+                },
+                "decoder_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioDecoderProfile"
+                  },
+                  "type": "array"
+                },
+                "dsp_profile": {
+                  "type": "string"
+                },
+                "dsp_sha256": {
+                  "type": "string"
+                },
+                "host_sha256": {
+                  "type": "string"
+                },
+                "mastering_applied": {
+                  "type": "boolean"
+                },
+                "mastering_profile": {
+                  "$ref": "#/$defs/AudioMasteringProfile"
+                },
+                "pitch_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioPitchProfile"
+                  },
+                  "type": "array"
+                },
+                "platform": {
+                  "$ref": "#/$defs/NativeSystemIdentity"
+                },
+                "soundtouch_source_sha256": {
+                  "type": "string"
+                },
+                "worker_sha256": {
+                  "type": "string"
+                }
               },
-              "type": "array"
+              "required": [
+                "worker_sha256",
+                "decoder_libraries",
+                "decoder_profile",
+                "dsp_profile",
+                "dsp_sha256",
+                "soundtouch_source_sha256",
+                "platform",
+                "host_sha256",
+                "decoder_profiles",
+                "pitch_profiles",
+                "mastering_profile",
+                "mastering_applied"
+              ],
+              "type": "object"
             },
-            "host_sha256": {
-              "type": "string"
-            },
-            "mastering_applied": {
-              "type": "boolean"
-            },
-            "mastering_profile": {
-              "$ref": "#/$defs/AudioMasteringProfile"
-            },
-            "mediabunny_version": {
-              "type": "string"
-            },
-            "module_sha256": {
-              "type": "string"
-            },
-            "pitch_profiles": {
-              "items": {
-                "$ref": "#/$defs/AudioPitchProfile"
+            {
+              "additionalProperties": false,
+              "properties": {
+                "browser_sha256": {
+                  "type": "string"
+                },
+                "browser_version": {
+                  "type": "string"
+                },
+                "decoder_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioDecoderProfile"
+                  },
+                  "type": "array"
+                },
+                "host_sha256": {
+                  "type": "string"
+                },
+                "mastering_applied": {
+                  "type": "boolean"
+                },
+                "mastering_profile": {
+                  "$ref": "#/$defs/AudioMasteringProfile"
+                },
+                "mediabunny_version": {
+                  "type": "string"
+                },
+                "module_sha256": {
+                  "type": "string"
+                },
+                "pitch_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioPitchProfile"
+                  },
+                  "type": "array"
+                },
+                "playwright_version": {
+                  "type": "string"
+                },
+                "soundtouch_version": {
+                  "type": "string"
+                }
               },
-              "type": "array"
-            },
-            "playwright_version": {
-              "type": "string"
-            },
-            "soundtouch_version": {
-              "type": "string"
+              "required": [
+                "browser_version",
+                "browser_sha256",
+                "module_sha256",
+                "playwright_version",
+                "mediabunny_version",
+                "soundtouch_version",
+                "host_sha256",
+                "decoder_profiles",
+                "pitch_profiles",
+                "mastering_profile",
+                "mastering_applied"
+              ],
+              "type": "object"
             }
-          },
-          "required": [
-            "host_sha256",
-            "browser_version",
-            "browser_sha256",
-            "module_sha256",
-            "playwright_version",
-            "mediabunny_version",
-            "soundtouch_version",
-            "decoder_profiles",
-            "pitch_profiles",
-            "mastering_profile",
-            "mastering_applied"
-          ],
-          "type": "object"
+          ]
         },
         "AudioMasteringProfile": {
           "enum": [
@@ -87170,6 +87529,31 @@
           ],
           "type": "object"
         },
+        "NativeSystemIdentity": {
+          "additionalProperties": false,
+          "description": "Audio execution observes its OS/CPU without claiming a graphics or font\nsubsystem. These are runtime facts, independent of saved project formats.",
+          "properties": {
+            "architecture": {
+              "type": "string"
+            },
+            "kernel_release": {
+              "type": "string"
+            },
+            "os": {
+              "type": "string"
+            },
+            "system_build": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "os",
+            "architecture",
+            "kernel_release",
+            "system_build"
+          ],
+          "type": "object"
+        },
         "PixelBounds": {
           "properties": {
             "height": {
@@ -90495,68 +90879,139 @@
         "AudioDecoderProfile": {
           "enum": [
             "web-audio-decode-at-target-rate",
-            "mediabunny-1.41.0-concatenate-offline-resample"
+            "mediabunny-1.41.0-concatenate-offline-resample",
+            "native-libav-sinc-at-target-rate",
+            "native-libav-concatenate-linear-resample",
+            "native-libav-windowed-concatenate-linear-resample"
           ],
           "type": "string"
         },
         "AudioExecutionSummary": {
-          "additionalProperties": false,
-          "properties": {
-            "browser_sha256": {
-              "type": "string"
-            },
-            "browser_version": {
-              "type": "string"
-            },
-            "decoder_profiles": {
-              "description": "Unique profiles used by this fixed scene, not claims about unused engines.",
-              "items": {
-                "$ref": "#/$defs/AudioDecoderProfile"
+          "anyOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "decoder_libraries": {
+                  "items": {
+                    "$ref": "#/$defs/NativeLibraryIdentity"
+                  },
+                  "type": "array"
+                },
+                "decoder_profile": {
+                  "type": "string"
+                },
+                "decoder_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioDecoderProfile"
+                  },
+                  "type": "array"
+                },
+                "dsp_profile": {
+                  "type": "string"
+                },
+                "dsp_sha256": {
+                  "type": "string"
+                },
+                "host_sha256": {
+                  "type": "string"
+                },
+                "mastering_applied": {
+                  "type": "boolean"
+                },
+                "mastering_profile": {
+                  "$ref": "#/$defs/AudioMasteringProfile"
+                },
+                "pitch_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioPitchProfile"
+                  },
+                  "type": "array"
+                },
+                "platform": {
+                  "$ref": "#/$defs/NativeSystemIdentity"
+                },
+                "soundtouch_source_sha256": {
+                  "type": "string"
+                },
+                "worker_sha256": {
+                  "type": "string"
+                }
               },
-              "type": "array"
+              "required": [
+                "worker_sha256",
+                "decoder_libraries",
+                "decoder_profile",
+                "dsp_profile",
+                "dsp_sha256",
+                "soundtouch_source_sha256",
+                "platform",
+                "host_sha256",
+                "decoder_profiles",
+                "pitch_profiles",
+                "mastering_profile",
+                "mastering_applied"
+              ],
+              "type": "object"
             },
-            "host_sha256": {
-              "type": "string"
-            },
-            "mastering_applied": {
-              "type": "boolean"
-            },
-            "mastering_profile": {
-              "$ref": "#/$defs/AudioMasteringProfile"
-            },
-            "mediabunny_version": {
-              "type": "string"
-            },
-            "module_sha256": {
-              "type": "string"
-            },
-            "pitch_profiles": {
-              "items": {
-                "$ref": "#/$defs/AudioPitchProfile"
+            {
+              "additionalProperties": false,
+              "properties": {
+                "browser_sha256": {
+                  "type": "string"
+                },
+                "browser_version": {
+                  "type": "string"
+                },
+                "decoder_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioDecoderProfile"
+                  },
+                  "type": "array"
+                },
+                "host_sha256": {
+                  "type": "string"
+                },
+                "mastering_applied": {
+                  "type": "boolean"
+                },
+                "mastering_profile": {
+                  "$ref": "#/$defs/AudioMasteringProfile"
+                },
+                "mediabunny_version": {
+                  "type": "string"
+                },
+                "module_sha256": {
+                  "type": "string"
+                },
+                "pitch_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioPitchProfile"
+                  },
+                  "type": "array"
+                },
+                "playwright_version": {
+                  "type": "string"
+                },
+                "soundtouch_version": {
+                  "type": "string"
+                }
               },
-              "type": "array"
-            },
-            "playwright_version": {
-              "type": "string"
-            },
-            "soundtouch_version": {
-              "type": "string"
+              "required": [
+                "browser_version",
+                "browser_sha256",
+                "module_sha256",
+                "playwright_version",
+                "mediabunny_version",
+                "soundtouch_version",
+                "host_sha256",
+                "decoder_profiles",
+                "pitch_profiles",
+                "mastering_profile",
+                "mastering_applied"
+              ],
+              "type": "object"
             }
-          },
-          "required": [
-            "host_sha256",
-            "browser_version",
-            "browser_sha256",
-            "module_sha256",
-            "playwright_version",
-            "mediabunny_version",
-            "soundtouch_version",
-            "decoder_profiles",
-            "pitch_profiles",
-            "mastering_profile",
-            "mastering_applied"
-          ],
-          "type": "object"
+          ]
         },
         "AudioMasteringProfile": {
           "enum": [
@@ -94327,6 +94782,31 @@
             "kernel_release",
             "system_build",
             "font_backend"
+          ],
+          "type": "object"
+        },
+        "NativeSystemIdentity": {
+          "additionalProperties": false,
+          "description": "Audio execution observes its OS/CPU without claiming a graphics or font\nsubsystem. These are runtime facts, independent of saved project formats.",
+          "properties": {
+            "architecture": {
+              "type": "string"
+            },
+            "kernel_release": {
+              "type": "string"
+            },
+            "os": {
+              "type": "string"
+            },
+            "system_build": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "os",
+            "architecture",
+            "kernel_release",
+            "system_build"
           ],
           "type": "object"
         },
@@ -96948,68 +97428,139 @@
         "AudioDecoderProfile": {
           "enum": [
             "web-audio-decode-at-target-rate",
-            "mediabunny-1.41.0-concatenate-offline-resample"
+            "mediabunny-1.41.0-concatenate-offline-resample",
+            "native-libav-sinc-at-target-rate",
+            "native-libav-concatenate-linear-resample",
+            "native-libav-windowed-concatenate-linear-resample"
           ],
           "type": "string"
         },
         "AudioExecutionSummary": {
-          "additionalProperties": false,
-          "properties": {
-            "browser_sha256": {
-              "type": "string"
-            },
-            "browser_version": {
-              "type": "string"
-            },
-            "decoder_profiles": {
-              "description": "Unique profiles used by this fixed scene, not claims about unused engines.",
-              "items": {
-                "$ref": "#/$defs/AudioDecoderProfile"
+          "anyOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "decoder_libraries": {
+                  "items": {
+                    "$ref": "#/$defs/NativeLibraryIdentity"
+                  },
+                  "type": "array"
+                },
+                "decoder_profile": {
+                  "type": "string"
+                },
+                "decoder_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioDecoderProfile"
+                  },
+                  "type": "array"
+                },
+                "dsp_profile": {
+                  "type": "string"
+                },
+                "dsp_sha256": {
+                  "type": "string"
+                },
+                "host_sha256": {
+                  "type": "string"
+                },
+                "mastering_applied": {
+                  "type": "boolean"
+                },
+                "mastering_profile": {
+                  "$ref": "#/$defs/AudioMasteringProfile"
+                },
+                "pitch_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioPitchProfile"
+                  },
+                  "type": "array"
+                },
+                "platform": {
+                  "$ref": "#/$defs/NativeSystemIdentity"
+                },
+                "soundtouch_source_sha256": {
+                  "type": "string"
+                },
+                "worker_sha256": {
+                  "type": "string"
+                }
               },
-              "type": "array"
+              "required": [
+                "worker_sha256",
+                "decoder_libraries",
+                "decoder_profile",
+                "dsp_profile",
+                "dsp_sha256",
+                "soundtouch_source_sha256",
+                "platform",
+                "host_sha256",
+                "decoder_profiles",
+                "pitch_profiles",
+                "mastering_profile",
+                "mastering_applied"
+              ],
+              "type": "object"
             },
-            "host_sha256": {
-              "type": "string"
-            },
-            "mastering_applied": {
-              "type": "boolean"
-            },
-            "mastering_profile": {
-              "$ref": "#/$defs/AudioMasteringProfile"
-            },
-            "mediabunny_version": {
-              "type": "string"
-            },
-            "module_sha256": {
-              "type": "string"
-            },
-            "pitch_profiles": {
-              "items": {
-                "$ref": "#/$defs/AudioPitchProfile"
+            {
+              "additionalProperties": false,
+              "properties": {
+                "browser_sha256": {
+                  "type": "string"
+                },
+                "browser_version": {
+                  "type": "string"
+                },
+                "decoder_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioDecoderProfile"
+                  },
+                  "type": "array"
+                },
+                "host_sha256": {
+                  "type": "string"
+                },
+                "mastering_applied": {
+                  "type": "boolean"
+                },
+                "mastering_profile": {
+                  "$ref": "#/$defs/AudioMasteringProfile"
+                },
+                "mediabunny_version": {
+                  "type": "string"
+                },
+                "module_sha256": {
+                  "type": "string"
+                },
+                "pitch_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioPitchProfile"
+                  },
+                  "type": "array"
+                },
+                "playwright_version": {
+                  "type": "string"
+                },
+                "soundtouch_version": {
+                  "type": "string"
+                }
               },
-              "type": "array"
-            },
-            "playwright_version": {
-              "type": "string"
-            },
-            "soundtouch_version": {
-              "type": "string"
+              "required": [
+                "browser_version",
+                "browser_sha256",
+                "module_sha256",
+                "playwright_version",
+                "mediabunny_version",
+                "soundtouch_version",
+                "host_sha256",
+                "decoder_profiles",
+                "pitch_profiles",
+                "mastering_profile",
+                "mastering_applied"
+              ],
+              "type": "object"
             }
-          },
-          "required": [
-            "host_sha256",
-            "browser_version",
-            "browser_sha256",
-            "module_sha256",
-            "playwright_version",
-            "mediabunny_version",
-            "soundtouch_version",
-            "decoder_profiles",
-            "pitch_profiles",
-            "mastering_profile",
-            "mastering_applied"
-          ],
-          "type": "object"
+          ]
         },
         "AudioMasteringProfile": {
           "enum": [
@@ -100780,6 +101331,31 @@
             "kernel_release",
             "system_build",
             "font_backend"
+          ],
+          "type": "object"
+        },
+        "NativeSystemIdentity": {
+          "additionalProperties": false,
+          "description": "Audio execution observes its OS/CPU without claiming a graphics or font\nsubsystem. These are runtime facts, independent of saved project formats.",
+          "properties": {
+            "architecture": {
+              "type": "string"
+            },
+            "kernel_release": {
+              "type": "string"
+            },
+            "os": {
+              "type": "string"
+            },
+            "system_build": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "os",
+            "architecture",
+            "kernel_release",
+            "system_build"
           ],
           "type": "object"
         },
@@ -145361,68 +145937,139 @@
         "AudioDecoderProfile": {
           "enum": [
             "web-audio-decode-at-target-rate",
-            "mediabunny-1.41.0-concatenate-offline-resample"
+            "mediabunny-1.41.0-concatenate-offline-resample",
+            "native-libav-sinc-at-target-rate",
+            "native-libav-concatenate-linear-resample",
+            "native-libav-windowed-concatenate-linear-resample"
           ],
           "type": "string"
         },
         "AudioExecutionSummary": {
-          "additionalProperties": false,
-          "properties": {
-            "browser_sha256": {
-              "type": "string"
-            },
-            "browser_version": {
-              "type": "string"
-            },
-            "decoder_profiles": {
-              "description": "Unique profiles used by this fixed scene, not claims about unused engines.",
-              "items": {
-                "$ref": "#/$defs/AudioDecoderProfile"
+          "anyOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "decoder_libraries": {
+                  "items": {
+                    "$ref": "#/$defs/NativeLibraryIdentity"
+                  },
+                  "type": "array"
+                },
+                "decoder_profile": {
+                  "type": "string"
+                },
+                "decoder_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioDecoderProfile"
+                  },
+                  "type": "array"
+                },
+                "dsp_profile": {
+                  "type": "string"
+                },
+                "dsp_sha256": {
+                  "type": "string"
+                },
+                "host_sha256": {
+                  "type": "string"
+                },
+                "mastering_applied": {
+                  "type": "boolean"
+                },
+                "mastering_profile": {
+                  "$ref": "#/$defs/AudioMasteringProfile"
+                },
+                "pitch_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioPitchProfile"
+                  },
+                  "type": "array"
+                },
+                "platform": {
+                  "$ref": "#/$defs/NativeSystemIdentity"
+                },
+                "soundtouch_source_sha256": {
+                  "type": "string"
+                },
+                "worker_sha256": {
+                  "type": "string"
+                }
               },
-              "type": "array"
+              "required": [
+                "worker_sha256",
+                "decoder_libraries",
+                "decoder_profile",
+                "dsp_profile",
+                "dsp_sha256",
+                "soundtouch_source_sha256",
+                "platform",
+                "host_sha256",
+                "decoder_profiles",
+                "pitch_profiles",
+                "mastering_profile",
+                "mastering_applied"
+              ],
+              "type": "object"
             },
-            "host_sha256": {
-              "type": "string"
-            },
-            "mastering_applied": {
-              "type": "boolean"
-            },
-            "mastering_profile": {
-              "$ref": "#/$defs/AudioMasteringProfile"
-            },
-            "mediabunny_version": {
-              "type": "string"
-            },
-            "module_sha256": {
-              "type": "string"
-            },
-            "pitch_profiles": {
-              "items": {
-                "$ref": "#/$defs/AudioPitchProfile"
+            {
+              "additionalProperties": false,
+              "properties": {
+                "browser_sha256": {
+                  "type": "string"
+                },
+                "browser_version": {
+                  "type": "string"
+                },
+                "decoder_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioDecoderProfile"
+                  },
+                  "type": "array"
+                },
+                "host_sha256": {
+                  "type": "string"
+                },
+                "mastering_applied": {
+                  "type": "boolean"
+                },
+                "mastering_profile": {
+                  "$ref": "#/$defs/AudioMasteringProfile"
+                },
+                "mediabunny_version": {
+                  "type": "string"
+                },
+                "module_sha256": {
+                  "type": "string"
+                },
+                "pitch_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioPitchProfile"
+                  },
+                  "type": "array"
+                },
+                "playwright_version": {
+                  "type": "string"
+                },
+                "soundtouch_version": {
+                  "type": "string"
+                }
               },
-              "type": "array"
-            },
-            "playwright_version": {
-              "type": "string"
-            },
-            "soundtouch_version": {
-              "type": "string"
+              "required": [
+                "browser_version",
+                "browser_sha256",
+                "module_sha256",
+                "playwright_version",
+                "mediabunny_version",
+                "soundtouch_version",
+                "host_sha256",
+                "decoder_profiles",
+                "pitch_profiles",
+                "mastering_profile",
+                "mastering_applied"
+              ],
+              "type": "object"
             }
-          },
-          "required": [
-            "host_sha256",
-            "browser_version",
-            "browser_sha256",
-            "module_sha256",
-            "playwright_version",
-            "mediabunny_version",
-            "soundtouch_version",
-            "decoder_profiles",
-            "pitch_profiles",
-            "mastering_profile",
-            "mastering_applied"
-          ],
-          "type": "object"
+          ]
         },
         "AudioMasteringProfile": {
           "enum": [
@@ -149193,6 +149840,31 @@
             "kernel_release",
             "system_build",
             "font_backend"
+          ],
+          "type": "object"
+        },
+        "NativeSystemIdentity": {
+          "additionalProperties": false,
+          "description": "Audio execution observes its OS/CPU without claiming a graphics or font\nsubsystem. These are runtime facts, independent of saved project formats.",
+          "properties": {
+            "architecture": {
+              "type": "string"
+            },
+            "kernel_release": {
+              "type": "string"
+            },
+            "os": {
+              "type": "string"
+            },
+            "system_build": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "os",
+            "architecture",
+            "kernel_release",
+            "system_build"
           ],
           "type": "object"
         },
@@ -179419,68 +180091,139 @@
         "AudioDecoderProfile": {
           "enum": [
             "web-audio-decode-at-target-rate",
-            "mediabunny-1.41.0-concatenate-offline-resample"
+            "mediabunny-1.41.0-concatenate-offline-resample",
+            "native-libav-sinc-at-target-rate",
+            "native-libav-concatenate-linear-resample",
+            "native-libav-windowed-concatenate-linear-resample"
           ],
           "type": "string"
         },
         "AudioExecutionSummary": {
-          "additionalProperties": false,
-          "properties": {
-            "browser_sha256": {
-              "type": "string"
-            },
-            "browser_version": {
-              "type": "string"
-            },
-            "decoder_profiles": {
-              "description": "Unique profiles used by this fixed scene, not claims about unused engines.",
-              "items": {
-                "$ref": "#/$defs/AudioDecoderProfile"
+          "anyOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "decoder_libraries": {
+                  "items": {
+                    "$ref": "#/$defs/NativeLibraryIdentity"
+                  },
+                  "type": "array"
+                },
+                "decoder_profile": {
+                  "type": "string"
+                },
+                "decoder_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioDecoderProfile"
+                  },
+                  "type": "array"
+                },
+                "dsp_profile": {
+                  "type": "string"
+                },
+                "dsp_sha256": {
+                  "type": "string"
+                },
+                "host_sha256": {
+                  "type": "string"
+                },
+                "mastering_applied": {
+                  "type": "boolean"
+                },
+                "mastering_profile": {
+                  "$ref": "#/$defs/AudioMasteringProfile"
+                },
+                "pitch_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioPitchProfile"
+                  },
+                  "type": "array"
+                },
+                "platform": {
+                  "$ref": "#/$defs/NativeSystemIdentity"
+                },
+                "soundtouch_source_sha256": {
+                  "type": "string"
+                },
+                "worker_sha256": {
+                  "type": "string"
+                }
               },
-              "type": "array"
+              "required": [
+                "worker_sha256",
+                "decoder_libraries",
+                "decoder_profile",
+                "dsp_profile",
+                "dsp_sha256",
+                "soundtouch_source_sha256",
+                "platform",
+                "host_sha256",
+                "decoder_profiles",
+                "pitch_profiles",
+                "mastering_profile",
+                "mastering_applied"
+              ],
+              "type": "object"
             },
-            "host_sha256": {
-              "type": "string"
-            },
-            "mastering_applied": {
-              "type": "boolean"
-            },
-            "mastering_profile": {
-              "$ref": "#/$defs/AudioMasteringProfile"
-            },
-            "mediabunny_version": {
-              "type": "string"
-            },
-            "module_sha256": {
-              "type": "string"
-            },
-            "pitch_profiles": {
-              "items": {
-                "$ref": "#/$defs/AudioPitchProfile"
+            {
+              "additionalProperties": false,
+              "properties": {
+                "browser_sha256": {
+                  "type": "string"
+                },
+                "browser_version": {
+                  "type": "string"
+                },
+                "decoder_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioDecoderProfile"
+                  },
+                  "type": "array"
+                },
+                "host_sha256": {
+                  "type": "string"
+                },
+                "mastering_applied": {
+                  "type": "boolean"
+                },
+                "mastering_profile": {
+                  "$ref": "#/$defs/AudioMasteringProfile"
+                },
+                "mediabunny_version": {
+                  "type": "string"
+                },
+                "module_sha256": {
+                  "type": "string"
+                },
+                "pitch_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioPitchProfile"
+                  },
+                  "type": "array"
+                },
+                "playwright_version": {
+                  "type": "string"
+                },
+                "soundtouch_version": {
+                  "type": "string"
+                }
               },
-              "type": "array"
-            },
-            "playwright_version": {
-              "type": "string"
-            },
-            "soundtouch_version": {
-              "type": "string"
+              "required": [
+                "browser_version",
+                "browser_sha256",
+                "module_sha256",
+                "playwright_version",
+                "mediabunny_version",
+                "soundtouch_version",
+                "host_sha256",
+                "decoder_profiles",
+                "pitch_profiles",
+                "mastering_profile",
+                "mastering_applied"
+              ],
+              "type": "object"
             }
-          },
-          "required": [
-            "host_sha256",
-            "browser_version",
-            "browser_sha256",
-            "module_sha256",
-            "playwright_version",
-            "mediabunny_version",
-            "soundtouch_version",
-            "decoder_profiles",
-            "pitch_profiles",
-            "mastering_profile",
-            "mastering_applied"
-          ],
-          "type": "object"
+          ]
         },
         "AudioMasteringProfile": {
           "enum": [
@@ -183251,6 +183994,31 @@
             "kernel_release",
             "system_build",
             "font_backend"
+          ],
+          "type": "object"
+        },
+        "NativeSystemIdentity": {
+          "additionalProperties": false,
+          "description": "Audio execution observes its OS/CPU without claiming a graphics or font\nsubsystem. These are runtime facts, independent of saved project formats.",
+          "properties": {
+            "architecture": {
+              "type": "string"
+            },
+            "kernel_release": {
+              "type": "string"
+            },
+            "os": {
+              "type": "string"
+            },
+            "system_build": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "os",
+            "architecture",
+            "kernel_release",
+            "system_build"
           ],
           "type": "object"
         },
@@ -185484,68 +186252,139 @@
         "AudioDecoderProfile": {
           "enum": [
             "web-audio-decode-at-target-rate",
-            "mediabunny-1.41.0-concatenate-offline-resample"
+            "mediabunny-1.41.0-concatenate-offline-resample",
+            "native-libav-sinc-at-target-rate",
+            "native-libav-concatenate-linear-resample",
+            "native-libav-windowed-concatenate-linear-resample"
           ],
           "type": "string"
         },
         "AudioExecutionSummary": {
-          "additionalProperties": false,
-          "properties": {
-            "browser_sha256": {
-              "type": "string"
-            },
-            "browser_version": {
-              "type": "string"
-            },
-            "decoder_profiles": {
-              "description": "Unique profiles used by this fixed scene, not claims about unused engines.",
-              "items": {
-                "$ref": "#/$defs/AudioDecoderProfile"
+          "anyOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "decoder_libraries": {
+                  "items": {
+                    "$ref": "#/$defs/NativeLibraryIdentity"
+                  },
+                  "type": "array"
+                },
+                "decoder_profile": {
+                  "type": "string"
+                },
+                "decoder_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioDecoderProfile"
+                  },
+                  "type": "array"
+                },
+                "dsp_profile": {
+                  "type": "string"
+                },
+                "dsp_sha256": {
+                  "type": "string"
+                },
+                "host_sha256": {
+                  "type": "string"
+                },
+                "mastering_applied": {
+                  "type": "boolean"
+                },
+                "mastering_profile": {
+                  "$ref": "#/$defs/AudioMasteringProfile"
+                },
+                "pitch_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioPitchProfile"
+                  },
+                  "type": "array"
+                },
+                "platform": {
+                  "$ref": "#/$defs/NativeSystemIdentity"
+                },
+                "soundtouch_source_sha256": {
+                  "type": "string"
+                },
+                "worker_sha256": {
+                  "type": "string"
+                }
               },
-              "type": "array"
+              "required": [
+                "worker_sha256",
+                "decoder_libraries",
+                "decoder_profile",
+                "dsp_profile",
+                "dsp_sha256",
+                "soundtouch_source_sha256",
+                "platform",
+                "host_sha256",
+                "decoder_profiles",
+                "pitch_profiles",
+                "mastering_profile",
+                "mastering_applied"
+              ],
+              "type": "object"
             },
-            "host_sha256": {
-              "type": "string"
-            },
-            "mastering_applied": {
-              "type": "boolean"
-            },
-            "mastering_profile": {
-              "$ref": "#/$defs/AudioMasteringProfile"
-            },
-            "mediabunny_version": {
-              "type": "string"
-            },
-            "module_sha256": {
-              "type": "string"
-            },
-            "pitch_profiles": {
-              "items": {
-                "$ref": "#/$defs/AudioPitchProfile"
+            {
+              "additionalProperties": false,
+              "properties": {
+                "browser_sha256": {
+                  "type": "string"
+                },
+                "browser_version": {
+                  "type": "string"
+                },
+                "decoder_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioDecoderProfile"
+                  },
+                  "type": "array"
+                },
+                "host_sha256": {
+                  "type": "string"
+                },
+                "mastering_applied": {
+                  "type": "boolean"
+                },
+                "mastering_profile": {
+                  "$ref": "#/$defs/AudioMasteringProfile"
+                },
+                "mediabunny_version": {
+                  "type": "string"
+                },
+                "module_sha256": {
+                  "type": "string"
+                },
+                "pitch_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioPitchProfile"
+                  },
+                  "type": "array"
+                },
+                "playwright_version": {
+                  "type": "string"
+                },
+                "soundtouch_version": {
+                  "type": "string"
+                }
               },
-              "type": "array"
-            },
-            "playwright_version": {
-              "type": "string"
-            },
-            "soundtouch_version": {
-              "type": "string"
+              "required": [
+                "browser_version",
+                "browser_sha256",
+                "module_sha256",
+                "playwright_version",
+                "mediabunny_version",
+                "soundtouch_version",
+                "host_sha256",
+                "decoder_profiles",
+                "pitch_profiles",
+                "mastering_profile",
+                "mastering_applied"
+              ],
+              "type": "object"
             }
-          },
-          "required": [
-            "host_sha256",
-            "browser_version",
-            "browser_sha256",
-            "module_sha256",
-            "playwright_version",
-            "mediabunny_version",
-            "soundtouch_version",
-            "decoder_profiles",
-            "pitch_profiles",
-            "mastering_profile",
-            "mastering_applied"
-          ],
-          "type": "object"
+          ]
         },
         "AudioMasteringProfile": {
           "enum": [
@@ -189316,6 +190155,31 @@
             "kernel_release",
             "system_build",
             "font_backend"
+          ],
+          "type": "object"
+        },
+        "NativeSystemIdentity": {
+          "additionalProperties": false,
+          "description": "Audio execution observes its OS/CPU without claiming a graphics or font\nsubsystem. These are runtime facts, independent of saved project formats.",
+          "properties": {
+            "architecture": {
+              "type": "string"
+            },
+            "kernel_release": {
+              "type": "string"
+            },
+            "os": {
+              "type": "string"
+            },
+            "system_build": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "os",
+            "architecture",
+            "kernel_release",
+            "system_build"
           ],
           "type": "object"
         },
@@ -191834,68 +192698,139 @@
         "AudioDecoderProfile": {
           "enum": [
             "web-audio-decode-at-target-rate",
-            "mediabunny-1.41.0-concatenate-offline-resample"
+            "mediabunny-1.41.0-concatenate-offline-resample",
+            "native-libav-sinc-at-target-rate",
+            "native-libav-concatenate-linear-resample",
+            "native-libav-windowed-concatenate-linear-resample"
           ],
           "type": "string"
         },
         "AudioExecutionSummary": {
-          "additionalProperties": false,
-          "properties": {
-            "browser_sha256": {
-              "type": "string"
-            },
-            "browser_version": {
-              "type": "string"
-            },
-            "decoder_profiles": {
-              "description": "Unique profiles used by this fixed scene, not claims about unused engines.",
-              "items": {
-                "$ref": "#/$defs/AudioDecoderProfile"
+          "anyOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "decoder_libraries": {
+                  "items": {
+                    "$ref": "#/$defs/NativeLibraryIdentity"
+                  },
+                  "type": "array"
+                },
+                "decoder_profile": {
+                  "type": "string"
+                },
+                "decoder_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioDecoderProfile"
+                  },
+                  "type": "array"
+                },
+                "dsp_profile": {
+                  "type": "string"
+                },
+                "dsp_sha256": {
+                  "type": "string"
+                },
+                "host_sha256": {
+                  "type": "string"
+                },
+                "mastering_applied": {
+                  "type": "boolean"
+                },
+                "mastering_profile": {
+                  "$ref": "#/$defs/AudioMasteringProfile"
+                },
+                "pitch_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioPitchProfile"
+                  },
+                  "type": "array"
+                },
+                "platform": {
+                  "$ref": "#/$defs/NativeSystemIdentity"
+                },
+                "soundtouch_source_sha256": {
+                  "type": "string"
+                },
+                "worker_sha256": {
+                  "type": "string"
+                }
               },
-              "type": "array"
+              "required": [
+                "worker_sha256",
+                "decoder_libraries",
+                "decoder_profile",
+                "dsp_profile",
+                "dsp_sha256",
+                "soundtouch_source_sha256",
+                "platform",
+                "host_sha256",
+                "decoder_profiles",
+                "pitch_profiles",
+                "mastering_profile",
+                "mastering_applied"
+              ],
+              "type": "object"
             },
-            "host_sha256": {
-              "type": "string"
-            },
-            "mastering_applied": {
-              "type": "boolean"
-            },
-            "mastering_profile": {
-              "$ref": "#/$defs/AudioMasteringProfile"
-            },
-            "mediabunny_version": {
-              "type": "string"
-            },
-            "module_sha256": {
-              "type": "string"
-            },
-            "pitch_profiles": {
-              "items": {
-                "$ref": "#/$defs/AudioPitchProfile"
+            {
+              "additionalProperties": false,
+              "properties": {
+                "browser_sha256": {
+                  "type": "string"
+                },
+                "browser_version": {
+                  "type": "string"
+                },
+                "decoder_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioDecoderProfile"
+                  },
+                  "type": "array"
+                },
+                "host_sha256": {
+                  "type": "string"
+                },
+                "mastering_applied": {
+                  "type": "boolean"
+                },
+                "mastering_profile": {
+                  "$ref": "#/$defs/AudioMasteringProfile"
+                },
+                "mediabunny_version": {
+                  "type": "string"
+                },
+                "module_sha256": {
+                  "type": "string"
+                },
+                "pitch_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioPitchProfile"
+                  },
+                  "type": "array"
+                },
+                "playwright_version": {
+                  "type": "string"
+                },
+                "soundtouch_version": {
+                  "type": "string"
+                }
               },
-              "type": "array"
-            },
-            "playwright_version": {
-              "type": "string"
-            },
-            "soundtouch_version": {
-              "type": "string"
+              "required": [
+                "browser_version",
+                "browser_sha256",
+                "module_sha256",
+                "playwright_version",
+                "mediabunny_version",
+                "soundtouch_version",
+                "host_sha256",
+                "decoder_profiles",
+                "pitch_profiles",
+                "mastering_profile",
+                "mastering_applied"
+              ],
+              "type": "object"
             }
-          },
-          "required": [
-            "host_sha256",
-            "browser_version",
-            "browser_sha256",
-            "module_sha256",
-            "playwright_version",
-            "mediabunny_version",
-            "soundtouch_version",
-            "decoder_profiles",
-            "pitch_profiles",
-            "mastering_profile",
-            "mastering_applied"
-          ],
-          "type": "object"
+          ]
         },
         "AudioMasteringProfile": {
           "enum": [
@@ -195666,6 +196601,31 @@
             "kernel_release",
             "system_build",
             "font_backend"
+          ],
+          "type": "object"
+        },
+        "NativeSystemIdentity": {
+          "additionalProperties": false,
+          "description": "Audio execution observes its OS/CPU without claiming a graphics or font\nsubsystem. These are runtime facts, independent of saved project formats.",
+          "properties": {
+            "architecture": {
+              "type": "string"
+            },
+            "kernel_release": {
+              "type": "string"
+            },
+            "os": {
+              "type": "string"
+            },
+            "system_build": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "os",
+            "architecture",
+            "kernel_release",
+            "system_build"
           ],
           "type": "object"
         },
@@ -197892,68 +198852,139 @@
         "AudioDecoderProfile": {
           "enum": [
             "web-audio-decode-at-target-rate",
-            "mediabunny-1.41.0-concatenate-offline-resample"
+            "mediabunny-1.41.0-concatenate-offline-resample",
+            "native-libav-sinc-at-target-rate",
+            "native-libav-concatenate-linear-resample",
+            "native-libav-windowed-concatenate-linear-resample"
           ],
           "type": "string"
         },
         "AudioExecutionSummary": {
-          "additionalProperties": false,
-          "properties": {
-            "browser_sha256": {
-              "type": "string"
-            },
-            "browser_version": {
-              "type": "string"
-            },
-            "decoder_profiles": {
-              "description": "Unique profiles used by this fixed scene, not claims about unused engines.",
-              "items": {
-                "$ref": "#/$defs/AudioDecoderProfile"
+          "anyOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "decoder_libraries": {
+                  "items": {
+                    "$ref": "#/$defs/NativeLibraryIdentity"
+                  },
+                  "type": "array"
+                },
+                "decoder_profile": {
+                  "type": "string"
+                },
+                "decoder_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioDecoderProfile"
+                  },
+                  "type": "array"
+                },
+                "dsp_profile": {
+                  "type": "string"
+                },
+                "dsp_sha256": {
+                  "type": "string"
+                },
+                "host_sha256": {
+                  "type": "string"
+                },
+                "mastering_applied": {
+                  "type": "boolean"
+                },
+                "mastering_profile": {
+                  "$ref": "#/$defs/AudioMasteringProfile"
+                },
+                "pitch_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioPitchProfile"
+                  },
+                  "type": "array"
+                },
+                "platform": {
+                  "$ref": "#/$defs/NativeSystemIdentity"
+                },
+                "soundtouch_source_sha256": {
+                  "type": "string"
+                },
+                "worker_sha256": {
+                  "type": "string"
+                }
               },
-              "type": "array"
+              "required": [
+                "worker_sha256",
+                "decoder_libraries",
+                "decoder_profile",
+                "dsp_profile",
+                "dsp_sha256",
+                "soundtouch_source_sha256",
+                "platform",
+                "host_sha256",
+                "decoder_profiles",
+                "pitch_profiles",
+                "mastering_profile",
+                "mastering_applied"
+              ],
+              "type": "object"
             },
-            "host_sha256": {
-              "type": "string"
-            },
-            "mastering_applied": {
-              "type": "boolean"
-            },
-            "mastering_profile": {
-              "$ref": "#/$defs/AudioMasteringProfile"
-            },
-            "mediabunny_version": {
-              "type": "string"
-            },
-            "module_sha256": {
-              "type": "string"
-            },
-            "pitch_profiles": {
-              "items": {
-                "$ref": "#/$defs/AudioPitchProfile"
+            {
+              "additionalProperties": false,
+              "properties": {
+                "browser_sha256": {
+                  "type": "string"
+                },
+                "browser_version": {
+                  "type": "string"
+                },
+                "decoder_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioDecoderProfile"
+                  },
+                  "type": "array"
+                },
+                "host_sha256": {
+                  "type": "string"
+                },
+                "mastering_applied": {
+                  "type": "boolean"
+                },
+                "mastering_profile": {
+                  "$ref": "#/$defs/AudioMasteringProfile"
+                },
+                "mediabunny_version": {
+                  "type": "string"
+                },
+                "module_sha256": {
+                  "type": "string"
+                },
+                "pitch_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioPitchProfile"
+                  },
+                  "type": "array"
+                },
+                "playwright_version": {
+                  "type": "string"
+                },
+                "soundtouch_version": {
+                  "type": "string"
+                }
               },
-              "type": "array"
-            },
-            "playwright_version": {
-              "type": "string"
-            },
-            "soundtouch_version": {
-              "type": "string"
+              "required": [
+                "browser_version",
+                "browser_sha256",
+                "module_sha256",
+                "playwright_version",
+                "mediabunny_version",
+                "soundtouch_version",
+                "host_sha256",
+                "decoder_profiles",
+                "pitch_profiles",
+                "mastering_profile",
+                "mastering_applied"
+              ],
+              "type": "object"
             }
-          },
-          "required": [
-            "host_sha256",
-            "browser_version",
-            "browser_sha256",
-            "module_sha256",
-            "playwright_version",
-            "mediabunny_version",
-            "soundtouch_version",
-            "decoder_profiles",
-            "pitch_profiles",
-            "mastering_profile",
-            "mastering_applied"
-          ],
-          "type": "object"
+          ]
         },
         "AudioMasteringProfile": {
           "enum": [
@@ -201724,6 +202755,31 @@
             "kernel_release",
             "system_build",
             "font_backend"
+          ],
+          "type": "object"
+        },
+        "NativeSystemIdentity": {
+          "additionalProperties": false,
+          "description": "Audio execution observes its OS/CPU without claiming a graphics or font\nsubsystem. These are runtime facts, independent of saved project formats.",
+          "properties": {
+            "architecture": {
+              "type": "string"
+            },
+            "kernel_release": {
+              "type": "string"
+            },
+            "os": {
+              "type": "string"
+            },
+            "system_build": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "os",
+            "architecture",
+            "kernel_release",
+            "system_build"
           ],
           "type": "object"
         },
@@ -203952,68 +205008,139 @@
         "AudioDecoderProfile": {
           "enum": [
             "web-audio-decode-at-target-rate",
-            "mediabunny-1.41.0-concatenate-offline-resample"
+            "mediabunny-1.41.0-concatenate-offline-resample",
+            "native-libav-sinc-at-target-rate",
+            "native-libav-concatenate-linear-resample",
+            "native-libav-windowed-concatenate-linear-resample"
           ],
           "type": "string"
         },
         "AudioExecutionSummary": {
-          "additionalProperties": false,
-          "properties": {
-            "browser_sha256": {
-              "type": "string"
-            },
-            "browser_version": {
-              "type": "string"
-            },
-            "decoder_profiles": {
-              "description": "Unique profiles used by this fixed scene, not claims about unused engines.",
-              "items": {
-                "$ref": "#/$defs/AudioDecoderProfile"
+          "anyOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "decoder_libraries": {
+                  "items": {
+                    "$ref": "#/$defs/NativeLibraryIdentity"
+                  },
+                  "type": "array"
+                },
+                "decoder_profile": {
+                  "type": "string"
+                },
+                "decoder_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioDecoderProfile"
+                  },
+                  "type": "array"
+                },
+                "dsp_profile": {
+                  "type": "string"
+                },
+                "dsp_sha256": {
+                  "type": "string"
+                },
+                "host_sha256": {
+                  "type": "string"
+                },
+                "mastering_applied": {
+                  "type": "boolean"
+                },
+                "mastering_profile": {
+                  "$ref": "#/$defs/AudioMasteringProfile"
+                },
+                "pitch_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioPitchProfile"
+                  },
+                  "type": "array"
+                },
+                "platform": {
+                  "$ref": "#/$defs/NativeSystemIdentity"
+                },
+                "soundtouch_source_sha256": {
+                  "type": "string"
+                },
+                "worker_sha256": {
+                  "type": "string"
+                }
               },
-              "type": "array"
+              "required": [
+                "worker_sha256",
+                "decoder_libraries",
+                "decoder_profile",
+                "dsp_profile",
+                "dsp_sha256",
+                "soundtouch_source_sha256",
+                "platform",
+                "host_sha256",
+                "decoder_profiles",
+                "pitch_profiles",
+                "mastering_profile",
+                "mastering_applied"
+              ],
+              "type": "object"
             },
-            "host_sha256": {
-              "type": "string"
-            },
-            "mastering_applied": {
-              "type": "boolean"
-            },
-            "mastering_profile": {
-              "$ref": "#/$defs/AudioMasteringProfile"
-            },
-            "mediabunny_version": {
-              "type": "string"
-            },
-            "module_sha256": {
-              "type": "string"
-            },
-            "pitch_profiles": {
-              "items": {
-                "$ref": "#/$defs/AudioPitchProfile"
+            {
+              "additionalProperties": false,
+              "properties": {
+                "browser_sha256": {
+                  "type": "string"
+                },
+                "browser_version": {
+                  "type": "string"
+                },
+                "decoder_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioDecoderProfile"
+                  },
+                  "type": "array"
+                },
+                "host_sha256": {
+                  "type": "string"
+                },
+                "mastering_applied": {
+                  "type": "boolean"
+                },
+                "mastering_profile": {
+                  "$ref": "#/$defs/AudioMasteringProfile"
+                },
+                "mediabunny_version": {
+                  "type": "string"
+                },
+                "module_sha256": {
+                  "type": "string"
+                },
+                "pitch_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioPitchProfile"
+                  },
+                  "type": "array"
+                },
+                "playwright_version": {
+                  "type": "string"
+                },
+                "soundtouch_version": {
+                  "type": "string"
+                }
               },
-              "type": "array"
-            },
-            "playwright_version": {
-              "type": "string"
-            },
-            "soundtouch_version": {
-              "type": "string"
+              "required": [
+                "browser_version",
+                "browser_sha256",
+                "module_sha256",
+                "playwright_version",
+                "mediabunny_version",
+                "soundtouch_version",
+                "host_sha256",
+                "decoder_profiles",
+                "pitch_profiles",
+                "mastering_profile",
+                "mastering_applied"
+              ],
+              "type": "object"
             }
-          },
-          "required": [
-            "host_sha256",
-            "browser_version",
-            "browser_sha256",
-            "module_sha256",
-            "playwright_version",
-            "mediabunny_version",
-            "soundtouch_version",
-            "decoder_profiles",
-            "pitch_profiles",
-            "mastering_profile",
-            "mastering_applied"
-          ],
-          "type": "object"
+          ]
         },
         "AudioMasteringProfile": {
           "enum": [
@@ -207784,6 +208911,31 @@
             "kernel_release",
             "system_build",
             "font_backend"
+          ],
+          "type": "object"
+        },
+        "NativeSystemIdentity": {
+          "additionalProperties": false,
+          "description": "Audio execution observes its OS/CPU without claiming a graphics or font\nsubsystem. These are runtime facts, independent of saved project formats.",
+          "properties": {
+            "architecture": {
+              "type": "string"
+            },
+            "kernel_release": {
+              "type": "string"
+            },
+            "os": {
+              "type": "string"
+            },
+            "system_build": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "os",
+            "architecture",
+            "kernel_release",
+            "system_build"
           ],
           "type": "object"
         },
@@ -209993,68 +211145,139 @@
         "AudioDecoderProfile": {
           "enum": [
             "web-audio-decode-at-target-rate",
-            "mediabunny-1.41.0-concatenate-offline-resample"
+            "mediabunny-1.41.0-concatenate-offline-resample",
+            "native-libav-sinc-at-target-rate",
+            "native-libav-concatenate-linear-resample",
+            "native-libav-windowed-concatenate-linear-resample"
           ],
           "type": "string"
         },
         "AudioExecutionSummary": {
-          "additionalProperties": false,
-          "properties": {
-            "browser_sha256": {
-              "type": "string"
-            },
-            "browser_version": {
-              "type": "string"
-            },
-            "decoder_profiles": {
-              "description": "Unique profiles used by this fixed scene, not claims about unused engines.",
-              "items": {
-                "$ref": "#/$defs/AudioDecoderProfile"
+          "anyOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "decoder_libraries": {
+                  "items": {
+                    "$ref": "#/$defs/NativeLibraryIdentity"
+                  },
+                  "type": "array"
+                },
+                "decoder_profile": {
+                  "type": "string"
+                },
+                "decoder_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioDecoderProfile"
+                  },
+                  "type": "array"
+                },
+                "dsp_profile": {
+                  "type": "string"
+                },
+                "dsp_sha256": {
+                  "type": "string"
+                },
+                "host_sha256": {
+                  "type": "string"
+                },
+                "mastering_applied": {
+                  "type": "boolean"
+                },
+                "mastering_profile": {
+                  "$ref": "#/$defs/AudioMasteringProfile"
+                },
+                "pitch_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioPitchProfile"
+                  },
+                  "type": "array"
+                },
+                "platform": {
+                  "$ref": "#/$defs/NativeSystemIdentity"
+                },
+                "soundtouch_source_sha256": {
+                  "type": "string"
+                },
+                "worker_sha256": {
+                  "type": "string"
+                }
               },
-              "type": "array"
+              "required": [
+                "worker_sha256",
+                "decoder_libraries",
+                "decoder_profile",
+                "dsp_profile",
+                "dsp_sha256",
+                "soundtouch_source_sha256",
+                "platform",
+                "host_sha256",
+                "decoder_profiles",
+                "pitch_profiles",
+                "mastering_profile",
+                "mastering_applied"
+              ],
+              "type": "object"
             },
-            "host_sha256": {
-              "type": "string"
-            },
-            "mastering_applied": {
-              "type": "boolean"
-            },
-            "mastering_profile": {
-              "$ref": "#/$defs/AudioMasteringProfile"
-            },
-            "mediabunny_version": {
-              "type": "string"
-            },
-            "module_sha256": {
-              "type": "string"
-            },
-            "pitch_profiles": {
-              "items": {
-                "$ref": "#/$defs/AudioPitchProfile"
+            {
+              "additionalProperties": false,
+              "properties": {
+                "browser_sha256": {
+                  "type": "string"
+                },
+                "browser_version": {
+                  "type": "string"
+                },
+                "decoder_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioDecoderProfile"
+                  },
+                  "type": "array"
+                },
+                "host_sha256": {
+                  "type": "string"
+                },
+                "mastering_applied": {
+                  "type": "boolean"
+                },
+                "mastering_profile": {
+                  "$ref": "#/$defs/AudioMasteringProfile"
+                },
+                "mediabunny_version": {
+                  "type": "string"
+                },
+                "module_sha256": {
+                  "type": "string"
+                },
+                "pitch_profiles": {
+                  "items": {
+                    "$ref": "#/$defs/AudioPitchProfile"
+                  },
+                  "type": "array"
+                },
+                "playwright_version": {
+                  "type": "string"
+                },
+                "soundtouch_version": {
+                  "type": "string"
+                }
               },
-              "type": "array"
-            },
-            "playwright_version": {
-              "type": "string"
-            },
-            "soundtouch_version": {
-              "type": "string"
+              "required": [
+                "browser_version",
+                "browser_sha256",
+                "module_sha256",
+                "playwright_version",
+                "mediabunny_version",
+                "soundtouch_version",
+                "host_sha256",
+                "decoder_profiles",
+                "pitch_profiles",
+                "mastering_profile",
+                "mastering_applied"
+              ],
+              "type": "object"
             }
-          },
-          "required": [
-            "host_sha256",
-            "browser_version",
-            "browser_sha256",
-            "module_sha256",
-            "playwright_version",
-            "mediabunny_version",
-            "soundtouch_version",
-            "decoder_profiles",
-            "pitch_profiles",
-            "mastering_profile",
-            "mastering_applied"
-          ],
-          "type": "object"
+          ]
         },
         "AudioMasteringProfile": {
           "enum": [
@@ -213825,6 +215048,31 @@
             "kernel_release",
             "system_build",
             "font_backend"
+          ],
+          "type": "object"
+        },
+        "NativeSystemIdentity": {
+          "additionalProperties": false,
+          "description": "Audio execution observes its OS/CPU without claiming a graphics or font\nsubsystem. These are runtime facts, independent of saved project formats.",
+          "properties": {
+            "architecture": {
+              "type": "string"
+            },
+            "kernel_release": {
+              "type": "string"
+            },
+            "os": {
+              "type": "string"
+            },
+            "system_build": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "os",
+            "architecture",
+            "kernel_release",
+            "system_build"
           ],
           "type": "object"
         },

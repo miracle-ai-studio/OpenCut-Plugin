@@ -81,6 +81,12 @@ pub enum AudioDecoderProfile {
     WebAudioDecodeAtTargetRate,
     #[serde(rename = "mediabunny-1.41.0-concatenate-offline-resample")]
     Mediabunny141ConcatenateOfflineResample,
+    #[serde(rename = "native-libav-sinc-at-target-rate")]
+    NativeLibavSincAtTargetRate,
+    #[serde(rename = "native-libav-concatenate-linear-resample")]
+    NativeLibavConcatenateLinearResample,
+    #[serde(rename = "native-libav-windowed-concatenate-linear-resample")]
+    NativeLibavWindowedConcatenateLinearResample,
 }
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, JsonSchema,
@@ -98,22 +104,103 @@ pub enum AudioMasteringProfile {
     #[serde(rename = "classic-export-whole-scene-web-audio-v31")]
     ClassicExportWholeSceneWebAudioV31,
 }
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct AudioExecutionSummary {
     pub host_sha256: String,
-    pub browser_version: String,
-    pub browser_sha256: String,
-    pub module_sha256: String,
-    pub playwright_version: String,
-    pub mediabunny_version: String,
-    pub soundtouch_version: String,
+    #[serde(flatten)]
+    pub runtime: AudioRuntimeIdentity,
     /// Unique profiles used by this fixed scene, not claims about unused engines.
     pub decoder_profiles: Vec<AudioDecoderProfile>,
     pub pitch_profiles: Vec<AudioPitchProfile>,
     pub mastering_profile: AudioMasteringProfile,
     pub mastering_applied: bool,
 }
+/// A union for immutable proof reads, never an execution backend selector.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(untagged)]
+pub enum AudioRuntimeIdentity {
+    Native(opencut_contracts::renderer_identity::NativeAudioIdentity),
+    HistoricalBrowser(HistoricalBrowserAudioIdentity),
+}
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct HistoricalBrowserAudioIdentity {
+    pub browser_version: String,
+    pub browser_sha256: String,
+    pub module_sha256: String,
+    pub playwright_version: String,
+    pub mediabunny_version: String,
+    pub soundtouch_version: String,
+}
+#[derive(JsonSchema)]
+struct AudioSummaryFields {
+    host_sha256: String,
+    decoder_profiles: Vec<AudioDecoderProfile>,
+    pitch_profiles: Vec<AudioPitchProfile>,
+    mastering_profile: AudioMasteringProfile,
+    mastering_applied: bool,
+}
+impl JsonSchema for AudioExecutionSummary {
+    fn schema_name() -> std::borrow::Cow<'static, str> {
+        "AudioExecutionSummary".into()
+    }
+    fn json_schema(generator: &mut schemars::SchemaGenerator) -> schemars::Schema {
+        let common = AudioSummaryFields::json_schema(generator);
+        let mut variants = [
+            opencut_contracts::renderer_identity::NativeAudioIdentity::json_schema(generator),
+            HistoricalBrowserAudioIdentity::json_schema(generator),
+        ];
+        for variant in &mut variants {
+            let object = variant.ensure_object();
+            object
+                .get_mut("properties")
+                .unwrap()
+                .as_object_mut()
+                .unwrap()
+                .extend(common.as_value()["properties"].as_object().unwrap().clone());
+            object
+                .get_mut("required")
+                .unwrap()
+                .as_array_mut()
+                .unwrap()
+                .extend(
+                    common.as_value()["required"]
+                        .as_array()
+                        .unwrap()
+                        .iter()
+                        .cloned(),
+                );
+        }
+        schemars::json_schema!({"anyOf":variants})
+    }
+}
+impl<'de> Deserialize<'de> for AudioExecutionSummary {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        #[derive(Deserialize)]
+        struct Fields {
+            host_sha256: String,
+            decoder_profiles: Vec<AudioDecoderProfile>,
+            pitch_profiles: Vec<AudioPitchProfile>,
+            mastering_profile: AudioMasteringProfile,
+            mastering_applied: bool,
+            #[serde(flatten)]
+            runtime: serde_json::Map<String, serde_json::Value>,
+        }
+        let f = Fields::deserialize(deserializer)?;
+        let runtime = serde_json::from_value(serde_json::Value::Object(f.runtime))
+            .map_err(serde::de::Error::custom)?;
+        Ok(Self {
+            host_sha256: f.host_sha256,
+            runtime,
+            decoder_profiles: f.decoder_profiles,
+            pitch_profiles: f.pitch_profiles,
+            mastering_profile: f.mastering_profile,
+            mastering_applied: f.mastering_applied,
+        })
+    }
+}
+/* Profiles and runtime fields above deliberately retain the exact historical
+ * serialized object while native proofs declare only the executing engine. */
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct AudioArtifactMetadata {
@@ -163,6 +250,59 @@ pub struct AudioRangeWavResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn audio_runtime_proofs_preserve_history_and_reject_mixed_or_invented_engine_fields() {
+        let mut historical = serde_json::json!({"host_sha256":"a".repeat(64),"browser_version":"pinned","browser_sha256":"b".repeat(64),"module_sha256":"c".repeat(64),
+            "playwright_version":"1.63.0","mediabunny_version":"1.41.0","soundtouch_version":"0.3.0","decoder_profiles":["web-audio-decode-at-target-rate"],"pitch_profiles":["unprepared-linear"],
+            "mastering_profile":"classic-export-whole-scene-web-audio-v31","mastering_applied":false});
+        let decoded: AudioExecutionSummary = serde_json::from_value(historical.clone()).unwrap();
+        assert!(matches!(
+            decoded.runtime,
+            AudioRuntimeIdentity::HistoricalBrowser(_)
+        ));
+        assert_eq!(serde_json::to_value(decoded).unwrap(), historical);
+        let native = opencut_contracts::renderer_identity::NativeAudioIdentity {
+            worker_sha256: "d".repeat(64),
+            decoder_libraries: vec![],
+            decoder_profile: "libav-authorized-audio".into(),
+            dsp_profile: "classic-audio-f32".into(),
+            dsp_sha256: "e".repeat(64),
+            soundtouch_source_sha256: "f".repeat(64),
+            platform: opencut_contracts::renderer_identity::NativeSystemIdentity {
+                os: "macos".into(),
+                architecture: "x86_64".into(),
+                kernel_release: "darwin".into(),
+                system_build: "test".into(),
+            },
+        };
+        let value = AudioExecutionSummary {
+            host_sha256: "a".repeat(64),
+            runtime: AudioRuntimeIdentity::Native(native),
+            decoder_profiles: vec![AudioDecoderProfile::NativeLibavSincAtTargetRate],
+            pitch_profiles: vec![AudioPitchProfile::UnpreparedLinear],
+            mastering_profile: AudioMasteringProfile::ClassicExportWholeSceneWebAudioV31,
+            mastering_applied: false,
+        };
+        let native = serde_json::to_value(&value).unwrap();
+        assert!(serde_json::from_value::<AudioExecutionSummary>(native.clone()).is_ok());
+        for field in ["browser_version", "gpu_backend", "font_backend"] {
+            let mut mixed = native.clone();
+            mixed[field] = serde_json::json!("invented");
+            assert!(serde_json::from_value::<AudioExecutionSummary>(mixed).is_err());
+        }
+        historical["worker_sha256"] = native["worker_sha256"].clone();
+        assert!(serde_json::from_value::<AudioExecutionSummary>(historical).is_err());
+        let schema = schemars::schema_for!(AudioExecutionSummary);
+        for variant in schema.as_value()["anyOf"].as_array().unwrap() {
+            assert_eq!(variant["additionalProperties"], false);
+            assert!(
+                variant["required"]
+                    .as_array()
+                    .unwrap()
+                    .contains(&serde_json::json!("host_sha256"))
+            );
+        }
+    }
     #[test]
     fn submission_cannot_supply_execution_authority_or_native_locations() {
         let input = serde_json::json!({"idempotency_key":"key", "project_id":"p", "revision":"r", "sequence_id":"s", "sample_rate":48000});

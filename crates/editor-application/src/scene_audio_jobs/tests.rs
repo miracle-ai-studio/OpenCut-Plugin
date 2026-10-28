@@ -363,12 +363,17 @@ fn result(prepared: &PreparedAudioWav) -> StoredAudioWavResult {
             .unwrap(),
             execution: AudioExecutionSummary {
                 host_sha256: "e".repeat(64),
-                browser_version: "Chromium pinned".into(),
-                browser_sha256: "f".repeat(64),
-                module_sha256: "a".repeat(64),
-                playwright_version: "1.63.0".into(),
-                mediabunny_version: "1.41.0".into(),
-                soundtouch_version: "0.3.0".into(),
+                runtime:
+                    opencut_job_contracts::scene_audio::AudioRuntimeIdentity::HistoricalBrowser(
+                        opencut_job_contracts::scene_audio::HistoricalBrowserAudioIdentity {
+                            browser_version: "Chromium pinned".into(),
+                            browser_sha256: "f".repeat(64),
+                            module_sha256: "a".repeat(64),
+                            playwright_version: "1.63.0".into(),
+                            mediabunny_version: "1.41.0".into(),
+                            soundtouch_version: "0.3.0".into(),
+                        },
+                    ),
                 decoder_profiles: vec![AudioDecoderProfile::WebAudioDecodeAtTargetRate],
                 pitch_profiles: vec![AudioPitchProfile::UnpreparedLinear],
                 mastering_profile: AudioMasteringProfile::ClassicExportWholeSceneWebAudioV31,

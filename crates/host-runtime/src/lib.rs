@@ -25,6 +25,7 @@ mod font_derived;
 mod font_import;
 mod font_named;
 mod font_synthesis;
+mod native_worker_runtime;
 mod source_art;
 mod source_art_runtime;
 mod subtitle_ass;

@@ -264,6 +264,8 @@ class RuntimeBundleTest(unittest.TestCase):
                 self.assertEqual(doctor.runtime_executable(root, manifest, 'ffmpeg', ('OPENCUT_FFMPEG',), True, True), binary.resolve())
             with patch.dict(doctor.os.environ, {'OPENCUT_FFMPEG': str(configured)}, clear=True):
                 self.assertEqual(doctor.runtime_executable(root, manifest, 'ffmpeg', ('OPENCUT_FFMPEG',), True, True), configured.resolve())
+            with patch.dict(doctor.os.environ, {'OPENCUT_FFMPEG': configured.name, 'PATH': os.path.relpath(root, Path.cwd())}, clear=True):
+                self.assertEqual(doctor.runtime_executable(root, manifest, 'ffmpeg', ('OPENCUT_FFMPEG',), True, True), configured.resolve())
             with patch.dict(doctor.os.environ, {'OPENCUT_FFMPEG': ''}, clear=True), self.assertRaisesRegex(ValueError, 'unavailable'):
                 doctor.runtime_executable(root, manifest, 'ffmpeg', ('OPENCUT_FFMPEG',), True, True)
 

@@ -76,6 +76,8 @@ def runtime_executable(root, runtime, component, variables, path_fallback=False,
     else:
         bundled = runtime.get('components', {}).get(component) if runtime else None
         value = str(root / 'bin/libexec' / bundled['entry']) if bundled else (shutil.which(component) if path_fallback else None)
+    if value and configured_relative:
+        value = str(Path(value).resolve())
     if not value or not Path(value).is_absolute() or not Path(value).is_file() or not os.access(value, os.X_OK):
         raise ValueError('Configured ' + component + ' executable is unavailable')
     return Path(value).resolve()

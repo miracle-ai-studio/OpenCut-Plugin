@@ -390,24 +390,153 @@
       }
     },
     "native_runtime_distribution": {
-      "status": "integrated source and scoped Python/boundary checks passed; new media libraries still building; Rust build, relocation and independent media acceptance pending",
+      "source_commit": "6daf827532ce0dae06c93f5e64f43e840adc7306",
+      "status": "native worker/shared-library distribution passed scoped relocated execution, preview and independent media acceptance on macOS Intel; full bundle doctor failed only unavailable font Python; complete delivery remains false",
       "delivery_ready": false,
-      "implementation": [
-        "adjacent native worker and five identified FFmpeg libraries in bin/lib; relative Mach-O loads and ad-hoc signatures on copies only",
-        "native auxiliary manifest accepts only Node/Python; new distributions exclude Chromium and browser renderer modules; exact historical manifest reads retained",
-        "native startup/source-byte protocol probe replaces Chromium module import doctor; provenance and corresponding source required"
-      ],
+      "runtime": {
+        "opencut": {
+          "path": "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/relocated install/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+          "sha256": "ab12bc4d2644bbba92b7e8fc897a36042fa518540f007a85a22647dbb86d8e31"
+        },
+        "opencut-render-worker": {
+          "path": "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/relocated install/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+          "sha256": "c970294ef4540b9224638ab75fcc26de4261e88ed208a9d0d8798f81ca20c3b1"
+        }
+      },
+      "archive_sha256": "baa084ad8ce93e06aa75159ac8441b8b4404b414c3a045681b037d61e8d468e9",
+      "archive_qualification": "scoped native decoder/worker closure only; external Node, Python/fontTools and FFmpeg/ffprobe remain declared; shipped status was captured before this acceptance",
+      "media_build": {
+        "ffmpeg": "8.1.3",
+        "license": "LGPL-2.1-or-later",
+        "dav1d": "1.5.3 statically linked with assembly enabled",
+        "configuration": "disable GPL/nonfree/version3; no unrecorded third-party dynamic decoder dependencies",
+        "provenance_sha256": "257621787f088da22f64707a0b7d3d24dbeffd187a0a9ad15256023c6888679a"
+      },
       "checks": {
         "runtime_and_native_distribution_python_tests_passed": 12,
         "package_python_tests_passed": 7,
         "architecture_unit_tests_passed": 14,
-        "architecture_and_contract_boundaries": "passed; no baseline extensions"
+        "architecture_and_contract_boundaries": "passed without baseline extensions",
+        "rust_media_library_tests_passed": 30,
+        "native_audio_source_art_process_checks_passed": 34,
+        "native_scope": "requested native modules only, 138 other native-service tests filtered; all explicitly ignored native reference checks enabled",
+        "host_checks_passed": 99,
+        "host_scope": "entire host library suite including explicitly enabled actual native source-art case",
+        "generated_contracts": "package assembly checked exact relocated CLI; canonical contract checked same ab12bc4d2644, 184 operations/12 domains",
+        "initial_reference_failures": "26 native checks passed, 8 failed only missing reference directory/environment; original logs retained. Corrected environment and reran only those 8; no binary or numerical gate change."
+      },
+      "relocation": {
+        "path_contains_spaces": true,
+        "worker_default_adjacent_discovery": "actual public AV1 import/source and long exports and HTTP service, OPENCUT_RENDER_WORKER unset",
+        "native_probe_source_reads": 2,
+        "decoder_library_hashes": {
+          "avcodec": "2a7aba0f1db6a3be4f0006651f6d9f80ce7614300e928749986e8516043f6931",
+          "avformat": "263b243dfb9eb6a70996a58fc5a4d0302b4269a4c550b7500c7f6cf8a3c46d09",
+          "avutil": "b4eaacd9f05e25c77eb4e9e69156f44e5f6e66f99d6fb93157a236ef182831aa",
+          "swresample": "fc68d684558e5636593e7e2aa28257bef882f4d6a127528aaa1529acc640b81c",
+          "swscale": "11e02d38c373509d84432652d6587aa02dbc3ed02ca9ebc1167cb9366975299b"
+        }
+      },
+      "independent_av1": {
+        "container": "Matroska",
+        "resolution": [
+          64,
+          64
+        ],
+        "pixel_mae": 1.5390625,
+        "gate": 5,
+        "source_sha256": "d10c0dc41569d70b3eed8898740c882d495d8b511c95806f259a98e654380957",
+        "scope": "One retained 64x64 AV1/Matroska source through public upload/import/bind and native source frame; validates packaged static AV1 decoder availability, not broad codec/4K acceptance"
+      },
+      "long_export": {
+        "seconds": 94,
+        "resolution": [
+          320,
+          180
+        ],
+        "fps": "30/1",
+        "jobs": {
+          "wav": {
+            "job_id": "job_27530ae4b49b4b54a03cfc58696a8319",
+            "seconds": 14.061744263861328,
+            "artifact_sha256": "c90f8de39756ce1a6f97ef969922f094db4510be38669e9b3c78fa7c4bee623e"
+          },
+          "video": {
+            "job_id": "job_28e7e52caeea4b29aea8f917f68aad4e",
+            "seconds": 54.737908034119755,
+            "artifact_sha256": "1e693d78859527d2273d344b8c89b95ff76877bf75286e014f07e951ed811eca"
+          }
+        },
+        "whole_wav_maximum_error": 0.0,
+        "video_preencode_pcm_maximum_error": 0.0,
+        "sampled_pixel_mae": [
+          3.3577719907407406,
+          2.7891666666666666,
+          2.921244212962963,
+          3.2230324074074073,
+          2.6107118055555554,
+          3.429027777777778,
+          2.984826388888889
+        ],
+        "pixel_gate": 5,
+        "encoded_aac_snr_db": 57.76281596782658,
+        "native_worker_sampled_peak_kib": 47192,
+        "artifacts_equal_retained_prior_candidate": true,
+        "scope": "same fixed 94-second 320p project and independent source/PCM oracles; no 4K or universal throughput claim"
+      },
+      "continuous_preview": {
+        "report_sha256": "c5d4d9ceab52457271eb3063f264ed5bc37e8b3beb6d4c32c90450876530d999",
+        "passed": true,
+        "presented_frames": 2820,
+        "discarded_frames": 0,
+        "max_underflow_events": 0,
+        "device_frames": "4512000",
+        "lag_p95_ms": 31.770833333333332,
+        "max_wall_frame_gap_ms": 42.5,
+        "automated_startup_seconds": 4.788209796,
+        "actual_click_to_sampled_presentation_upper_seconds": 3.902,
+        "sampling_ms": 250,
+        "scope": "Actual click and DOM sampling upper bound; no physical screen latency or audibility claim",
+        "preview_responses": 9184,
+        "source_art_responses": 344,
+        "source_art_all_native_and_http_200": true,
+        "seek_pause_resume": "90-second exact seek, pause and resume to end passed",
+        "native_worker_sampled_peak_kib": 18684,
+        "visual_review": "agent inspected actual editor playback screenshot with native picture, source thumbnails and waveform; no human physical screen/audio acceptance"
+      },
+      "doctor": {
+        "passed": 354,
+        "failed": 1,
+        "failure": "Configured python executable is unavailable",
+        "scope": "external font derivation runtime remains missing; no external-browser fallback"
+      },
+      "lifecycle": {
+        "service_stopped": true,
+        "active_jobs": 0,
+        "remaining_native_workers": 0,
+        "existing_projects_unchanged": true
+      },
+      "evidence_sha256": {
+        "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/integrated-build.json": "a89d0a9e1a538b88d143445e42790bd26ff9a8822d4cb6de411300c80dc424a8",
+        "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/pinned-source-and-test-binaries.json": "f85be06b3b08e06ca8a7085bf173af11950e2787f056ccb613effcb4a582ee32",
+        "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/media-build-normalized-before-toolchain.json": "c40f0daab6918ac7008dce932e61fc0b8345fc04e99406cf5aa4a57671890e5b",
+        "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/redistribution/build.json": "257621787f088da22f64707a0b7d3d24dbeffd187a0a9ad15256023c6888679a",
+        "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/native-candidate-checks.json": "3e7c02957a479916c691b29ae54fe0479be393320e0a916bdc9286ac5eb27755",
+        "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/native-candidate-checks-recovered.json": "63143570c80e11f14abb2aa0d9e83ecdf3743ef1879c38e72d44644fbeb647b2",
+        "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/relocated-canonical-contract.json": "e2a93f5daf9c8b55f891c07c1cb86ff320caceffb9f9b12dd803e049de2b574d",
+        "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/relocated-worker-smoke.json": "2fb9948f10cc81dc8fc2fd8624d5d84a1d1d1af63734112ad4153ecd6132fafd",
+        "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/relocated-av1.json": "1416427b88d5138d28ba157f9d214daae34910f2eb89c45920604231dd03664d",
+        "/Users/vincent/Movies/OpenCut-native-rendering/acceptance/native-long-export-ab12bc4d2644-c970294ef454-relocated.json": "43c3408c117e4ff5073f0fda3d5a461efdfc2a3874599256e2410eccfe5ee7ef",
+        "/Users/vincent/Movies/OpenCut-native-rendering/acceptance/native-long-ui-ab12bc4d2644-c970294ef454-relocated.json": "c5d4d9ceab52457271eb3063f264ed5bc37e8b3beb6d4c32c90450876530d999",
+        "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/relocated-preview-metrics.json": "911ad7c5167f716ca0da893585b73b27e5de205e134ba082237227ad011c2e02",
+        "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/relocated-doctor.json": "39c2393290ec9a41ca8b7b68e6eb9de067cf606a2d500cc3455cb101b1d1e33f",
+        "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/relocated-cleanup.json": "c71dce31596c44e433ffc314488a0ebc94328f20c4cbd7b6f6bee624c7deca0b"
       },
       "remaining": [
-        "finish LGPL FFmpeg/shared and static dav1d build with complete corresponding source/licenses",
-        "integrated release build and exact delivered binary contract checks",
-        "relocated package execution and independent pixels/PCM on the new decoder identity",
-        "external encoder/tools and auxiliary runtime distribution, clean install and cross-platform/manual acceptance"
+        "package pinned font Python/fontTools and catalog/export tool runtimes with original licenses and relocated/clean-install proof",
+        "broader codec/container/color/orientation/default-track and 4K performance matrix beyond retained samples",
+        "historical intermittent asset-free text resume stall cause",
+        "physical/manual and cross-platform delivery acceptance"
       ]
     }
   },

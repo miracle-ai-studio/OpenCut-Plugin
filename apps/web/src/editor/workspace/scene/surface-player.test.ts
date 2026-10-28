@@ -88,12 +88,45 @@ it("starts at a warm window tail without granting audio credit into a cold next 
 
 it("bounds live scene preparation to twenty-four native frames and accounts every queued raster before another render",async()=>{
  const f=fixture(24);await f.player.start(new AbortController().signal);
+ await f.tick();
  expect(f.frame).toHaveBeenCalledTimes(25);
  expect(f.frame.mock.calls.at(-1)?.[0]).toEqual({ticks:"24",timebase:25});
  const calls=f.frame.mock.calls as unknown as [unknown,AbortSignal,number][];
  expect(calls.at(-1)?.[2]).toBe(24*960*540*4);
  expect(calls.at(-1)![2]).toBeLessThan(64*1024*1024);
  expect(f.failed).not.toHaveBeenCalled();await f.player.stop(true);
+ expect(f.bitmaps.every(b=>b.close.mock.calls.length===1)).toBe(true);
+});
+
+it("starts with a validated prefix and refills its steady reserve without crediting a blocked tail",async()=>{
+ const f=fixture(24);f.binding.directPictureCredit=true;
+ const base=f.frame.getMockImplementation()!;let release!:(picture:CachedPicture)=>void;
+ f.frame.mockImplementation((...args)=>args[0].ticks==="5"
+  ?new Promise<CachedPicture>(resolve=>{release=resolve;}) :base(...args));
+ await f.player.start(new AbortController().signal);
+ expect(f.frame).toHaveBeenCalledTimes(5);
+ expect(f.player.snapshot().readyThrough).toEqual({ticks:"5",timebase:25});
+ expect(f.port.postMessage).toHaveBeenLastCalledWith({kind:"picture-limit",token:"device",frames:"9600"});
+ await f.tick();expect(f.frame).toHaveBeenCalledTimes(6);
+ expect(f.player.snapshot().readyThrough).toEqual({ticks:"5",timebase:25});
+ const stopping=f.player.stop(true),late=f.picture({ticks:"5",timebase:25});release(late);await stopping;
+ expect(late.pixels.close).toHaveBeenCalledOnce();expect(f.failed).not.toHaveBeenCalled();
+ expect(f.callbacks.size).toBe(0);expect(f.bitmaps.every(b=>b.close.mock.calls.length===1)).toBe(true);
+});
+
+it("reports the actual first picture before lookahead completes without starting the device clock",async()=>{
+ const f=fixture(24);f.binding.directPictureCredit=true;
+ const base=f.frame.getMockImplementation()!;let release!:(picture:CachedPicture)=>void;
+ f.frame.mockImplementation((...args)=>args[0].ticks==="1"
+  ?new Promise<CachedPicture>(resolve=>{release=resolve;}) :base(...args));
+ let started=false;const starting=f.player.start(new AbortController().signal).then(()=>{started=true;});await flush();
+ expect(started).toBe(false);expect(f.drawImage).toHaveBeenCalledOnce();
+ expect(f.reports[0]).toMatchObject({presentedFrames:1,time:0,readyThrough:{ticks:"1",timebase:25}});
+ expect(f.port.postMessage).toHaveBeenLastCalledWith({kind:"picture-limit",token:"device",frames:"1920"});
+ expect(f.callbacks.size).toBe(0);
+ release(f.picture({ticks:"1",timebase:25}));await starting;
+ expect(f.player.snapshot().readyThrough).toEqual({ticks:"5",timebase:25});
+ await f.player.stop(true);expect(f.failed).not.toHaveBeenCalled();
  expect(f.bitmaps.every(b=>b.close.mock.calls.length===1)).toBe(true);
 });
 

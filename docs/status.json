@@ -1541,6 +1541,70 @@
         "native worker/shared libraries and provenance in relocated installation; retire remaining browser distribution modules",
         "physical/manual and cross-platform acceptance"
       ]
+    },
+    "native_preview_startup_prefix": {
+      "base_commit": "ecca84e59e536ce60d336974a5c8296542222736",
+      "status": "scoped current Web startup, continuous 94-second playback and short editor cases passed; complete delivery remains false",
+      "delivery_ready": false,
+      "rust": "unchanged exact CLI ee6a2b621ab3 and worker cff628baf0d8; reuse their existing generated contracts and independent native pixels/PCM, no Rust rebuild",
+      "web_source_digest": "d77fea26d5fd151a16a1be583abf7b904ed1fbe0f1ef5e4ad961ae2121dcaf25",
+      "change": "Wait for up to four validated startup pictures while preserving original steady capacity and budgets. Report the completed first picture before lookahead finishes; direct credit covers only the contiguous validated native interval, with no invented audio consumption or clock advance.",
+      "checks": {
+        "affected_frontend_tests_passed": 110,
+        "boundary_and_timing_tests_passed": 28,
+        "boundary_scope": "module/import policies unchanged after first integration check",
+        "typescript_and_web_build": "passed",
+        "new_regressions": "blocked refill tail does not gain credit; stop closes late pixels; completed first picture is reported while lookahead is pending and the display/device clock is not started"
+      },
+      "timing_audit": {
+        "old_automated_wall_seconds": [
+          5.541441726000001,
+          5.171635026
+        ],
+        "corresponding_actual_click_to_presented_probe_upper_seconds": [
+          4.569,
+          3.844
+        ],
+        "explanation": "Old wall measurement included Playwright actionability and assertion polling, so it did not isolate actual user-click-to-first-picture time. Original reports remain unchanged and failed by their declared wall gate; current code also meets that stricter wall gate.",
+        "current_automated_wall_seconds": 4.693330523999999,
+        "current_actual_click_to_presented_probe_upper_seconds": 3.839,
+        "original_gate_seconds": 5,
+        "probe_scope": "capture-phase actual button click, 250ms DOM sampling upper bound on native first presentation; no physical screen latency claim"
+      },
+      "long_editor": {
+        "passed": true,
+        "preview_responses": 9171,
+        "http_and_page_errors": 0,
+        "seconds": 99.44913663199999,
+        "presented_frames": 2820,
+        "discarded_frames": 0,
+        "maximum_underflow_events": 0,
+        "actual_device_frames": "4512000",
+        "lag_p95_ms": 31.458333333333332,
+        "maximum_wall_frame_gap_ms": 43.200000047683716,
+        "actual_seek_pause_resume": "90-second exact seek, pause and resume to end passed",
+        "project_unchanged": true,
+        "report_sha256": "fd8a99cb6083dd1ea8aff400503aef6e0b198b04a8288c4074f060410bb09546"
+      },
+      "short_editor": {
+        "passed": true,
+        "cases": 3,
+        "preview_responses": 963,
+        "source_art_responses": 46,
+        "http_and_page_errors": 0,
+        "report_sha256": "1f39f742b774e0c1b821bcf97c396ccc973028df473bac6f790be74404d3bbfe"
+      },
+      "rss": {
+        "native_worker_peak_kib": 20136,
+        "owned_tree_including_browser_and_verifier_peak_kib": 2069956,
+        "scope": "one 320x180 retained synthetic source; not 4K or a universal memory bound"
+      },
+      "remaining": [
+        "15 host test failures and current-contract coverage",
+        "long independent pixel/PCM export and throughput",
+        "historical asset-free intermittent resume stall cause",
+        "broader codecs/colors/orientation/default decode track, 4K, physical/manual and portable distribution"
+      ]
     }
   }
 }

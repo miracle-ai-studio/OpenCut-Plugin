@@ -103,7 +103,13 @@ export class SurfacePlayer {
       try {await waitPicture(first,this.abort.signal);}catch(error){first.pixels.close();throw error;}
       if(this.closed||signal.aborted||this.abort.signal.aborted){first.pixels.close();throw new DOMException("Cached presentation replaced","AbortError");}
       this.next=first.frame.next_time;this.draw(first,this.session.presentation_time);
-      await this.fill(false);signal.throwIfAborted();this.abort.signal.throwIfAborted();
+      // Present the completed first picture while startup lookahead is still
+      // preparing. Its report grants only this validated native interval.
+      this.publish(true);
+      // A small validated prefix starts the native audio producer sooner.
+      // The steady queue keeps its original capacity and refills while the
+      // first PCM arrives; picture credit still fences every consumed sample.
+      await this.fill(false,Math.min(4,this.capacity));signal.throwIfAborted();this.abort.signal.throwIfAborted();
       await Promise.all(this.queue.map(picture=>waitPicture(picture,this.abort.signal)));
       if(this.closed)throw new DOMException("Cached presentation closed","AbortError");
       this.publish(true);this.frame=this.screen.request(this.tick);
@@ -111,11 +117,11 @@ export class SurfacePlayer {
     } catch(error) {await this.stop(true);throw error;}
     finally {signal.removeEventListener("abort",abort);}
   }
-  private fill(waitForCold=true) {
+  private fill(waitForCold=true,limit=this.capacity) {
     if(this.filling)return this.filling;
     const task=(async()=>{
       const plan=this.cache.descriptor();
-      while(!this.closed&&!this.abort.signal.aborted&&this.queue.length<this.capacity&&this.validating<4&&this.next&&compare(this.next,plan.duration)<0n) {
+      while(!this.closed&&!this.abort.signal.aborted&&this.queue.length<limit&&this.validating<4&&this.next&&compare(this.next,plan.duration)<0n) {
         // Startup only credits decoded pictures from an already published
         // window. A cold reserve is filled asynchronously after audio starts.
         if(!waitForCold&&!this.cache.hasFrame(this.next))break;

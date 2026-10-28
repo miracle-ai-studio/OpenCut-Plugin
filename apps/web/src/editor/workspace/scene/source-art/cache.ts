@@ -4,7 +4,7 @@ export type MaterializedArt<T> = { value: T; bytes: number; fingerprint: string;
 export type ArtAllocation<T> = { bytes: number; fingerprint: string; materialize(): MaterializedArt<T> };
 type Load<T> = (signal: AbortSignal) => Promise<ArtAllocation<T>>;
 type Entry<T> = {
-  key: string; users: number; used: number; cancelled: boolean;
+  key: string; users: number; used: number; cancelled: boolean; background: boolean;
   state: "queued" | "running" | "ready"; abort: AbortController; cancel(): void | Promise<void>;
   termination?: Promise<void>;
   load: Load<T>; value?: MaterializedArt<T>; promise: Promise<T>;
@@ -19,12 +19,13 @@ export class SourceArtCache<T> {
   private running = 0;
   private bytes = 0;
   private clock = 0;
+  private foregroundRun = 0;
   private scope: string | null = null;
   constructor(private readonly limits: { bytes: number; entries: number; concurrent: number } = SOURCE_ART_LIMITS) {}
   activate(scope: string) {
     if (this.scope !== scope) { this.clear(); this.scope = scope; }
   }
-  acquire(key: string, load: Load<T>, cancel: () => void | Promise<void>) {
+  acquire(key: string, load: Load<T>, cancel: () => void | Promise<void>, background = false) {
     let entry = this.entries.get(key);
     if (entry?.users) { entry.users++; entry.used = ++this.clock; return this.lease(entry); }
     const retained = entry?.value;
@@ -37,7 +38,7 @@ export class SourceArtCache<T> {
     // Cancellation can happen before a component attaches its await handler.
     void promise.catch(() => {});
     entry = { key, users: 1, used: ++this.clock, state: "queued", abort: new AbortController(),
-      cancelled: false, load, cancel, value: retained, promise, resolve, reject };
+      cancelled: false, background, load, cancel, value: retained, promise, resolve, reject };
     // A renewed authorization joins the queue at its current request time,
     // rather than inheriting an older retained entry's scheduling position.
     this.entries.delete(key); this.entries.set(key, entry); this.pump();
@@ -65,9 +66,15 @@ export class SourceArtCache<T> {
     for (const entry of unused) { if (done()) break; this.remove(entry); }
   }
   private pump() {
-    for (const entry of this.entries.values()) {
-      if (this.running >= this.limits.concurrent) break;
-      if (entry.state !== "queued") continue;
+    while (this.running < this.limits.concurrent) {
+      const queued = [...this.entries.values()].filter(entry => entry.state === "queued");
+      const foreground = queued.find(entry => !entry.background), background = queued.find(entry => entry.background);
+      // New visible content can pass queued renewal probes, but at most three
+      // foreground loads can pass a waiting probe. Never preempt a decoder or
+      // release its credit before cancellation is acknowledged.
+      const entry = background && (!foreground || this.foregroundRun >= 3) ? background : foreground;
+      if (!entry) break;
+      this.foregroundRun = entry.background || !background ? 0 : Math.min(3, this.foregroundRun + 1);
       entry.state = "running"; this.running++;
       void this.run(entry);
     }

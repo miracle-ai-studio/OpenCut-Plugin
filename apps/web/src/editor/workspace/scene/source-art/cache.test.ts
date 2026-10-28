@@ -4,6 +4,24 @@ const flush = async () => { for (let i = 0; i < 12; i++) await Promise.resolve()
 const allocation = (value: string, bytes = 4, dispose = vi.fn()) => ({ bytes, fingerprint: value,
   materialize: () => ({ bytes, fingerprint: value, value, dispose }) });
 
+it("prioritizes newly visible artwork while serving a waiting authorization after at most three foreground loads", async () => {
+  const cache = new SourceArtCache<string>({ bytes: 128, entries: 32, concurrent: 1 });
+  const started: string[] = [], finish = new Map<string, () => void>();
+  const acquire = (key: string, background = false) => cache.acquire(key, () => new Promise<ReturnType<typeof allocation>>(resolve => {
+    started.push(key); finish.set(key, () => resolve(allocation(key)));
+  }), vi.fn(), background);
+  const leases = [acquire("running-probe", true), acquire("waiting-probe", true),
+    ...Array.from({ length: 5 }, (_, i) => acquire(`visible-${i}`))];
+  try {
+    finish.get("running-probe")!(); await flush();
+    expect(started).toEqual(["running-probe", "visible-0"]);
+    for (const key of ["visible-0", "visible-1", "visible-2"]) { finish.get(key)!(); await flush(); }
+    expect(started).toEqual(["running-probe", "visible-0", "visible-1", "visible-2", "waiting-probe"]);
+    finish.get("waiting-probe")!(); await flush();
+    expect(started.at(-1)).toBe("visible-3");
+  } finally { cache.clear(); finish.forEach(done => done()); await flush(); leases.forEach(lease => lease.release()); }
+});
+
 it("shares active promises and waits for last-waiter cancellation acknowledgement before starting another decoder", async () => {
   const cache = new SourceArtCache<string>({ bytes: 32, entries: 8, concurrent: 2 });
   const signals: AbortSignal[] = [];

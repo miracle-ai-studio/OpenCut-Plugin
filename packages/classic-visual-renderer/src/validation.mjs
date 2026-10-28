@@ -10,6 +10,15 @@ export function encodeRgbaHex(bytes) {
   for (const byte of bytes) hex += byte.toString(16).padStart(2, "0");
   return hex;
 }
+// Only the private browser-to-Node bridge uses base64. Node restores the
+// canonical native hex packet before the existing output/binding fences.
+export function encodeRgbaBase64(bytes) {
+  if (typeof bytes.toBase64 === "function") return bytes.toBase64();
+  let binary = "";
+  for (let offset = 0; offset < bytes.length; offset += 8192)
+    binary += String.fromCharCode(...bytes.subarray(offset, offset + 8192));
+  return btoa(binary);
+}
 export function integer(value, name, minimum = 0, maximum = Number.MAX_SAFE_INTEGER) {
   if (!Number.isSafeInteger(value) || value < minimum || value > maximum) reject("INVALID_VISUAL_PLAN", `Invalid ${name}`);
   return value;

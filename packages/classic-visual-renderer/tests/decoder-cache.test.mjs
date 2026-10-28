@@ -24,13 +24,13 @@ class CanvasSink {
     const frames = this.frames.map(frame=>this.compact?{...frame,canvas:this.compact}:frame);
     let index = values.findIndex(v => v.timestamp + v.duration > start);
     if (index < 0) index = values.length;
-    const iterator = { start, returned: false, next: async () => ({ value: frames[index++], done: index > frames.length }),
+    const iterator = { start, returned: false, reads: 0, next: async () => { iterator.reads++; return { value: frames[index++], done: index > frames.length }; },
       return: async () => { iterator.returned = true; return { done: true }; } };
     iterators.push(iterator); return iterator;
   }
 }
 class VideoSampleSink {
- samples(start){const iterator=new CanvasSink({},{}).canvases(start);return {async *[Symbol.asyncIterator](){for(;;){const item=await iterator.next();if(item.done)return;const value=item.value;yield {timestamp:value.timestamp,duration:value.duration,displayWidth:4,displayHeight:2,rotation:0,toVideoFrame:()=>({displayWidth:4,displayHeight:2,close:mock.fn()}),close:mock.fn()};}}};}
+ samples(start){const iterator=new CanvasSink({},{}).canvases(start);return {async *[Symbol.asyncIterator](){try{for(;;){const item=await iterator.next();if(item.done)return;const value=item.value;yield {timestamp:value.timestamp,duration:value.duration,displayWidth:4,displayHeight:2,rotation:0,toVideoFrame:()=>({displayWidth:4,displayHeight:2,close:mock.fn()}),close:mock.fn()};}}finally{await iterator.return();}}};}
  async getSample(time){const value=[...values].reverse().find(v=>v.timestamp<=time);return value?{timestamp:value.timestamp,duration:value.duration,displayWidth:4,displayHeight:2,rotation:0,toVideoFrame:()=>({displayWidth:4,displayHeight:2,close:mock.fn()}),close:mock.fn()}:null;}
 }
 mock.module("mediabunny", { namedExports: { Input, CanvasSink, VideoSampleSink, StreamSource: class { constructor(options) { this.options = options; } dispose() { this.options.dispose(); } }, ALL_FORMATS: [] } });
@@ -67,6 +67,33 @@ function resourceCallback(plan, name, args) {
 const admission = { maxWidth: 4, maxHeight: 2, maxPixels: "8", maxDecodedBytes: "128" };
 const decode = requestedTimeSeconds => ({ selectedVideoStream: null, requestedTimeSeconds, eofPolicy: { kind: "noFrame" } });
 const signal = new AbortController().signal;
+for (const surfaces of [1, 2, 4]) test(`distant forward cuts seek directly while nearby and long-duration frames stay warm (${surfaces} surfaces)`, async () => {
+  const saved = values.slice(), cache = new VisualDecoderCache(), source = await openSource();
+  const permit = { ...admission, decoderSurfaces: surfaces };
+  values.splice(0, values.length, ...Array.from({ length: 241 }, (_, i) => ({
+    timestamp: i / 2, duration: .5, canvas: { width: 4, height: 2 },
+  })));
+  cache.keepRange("cut", source);
+  const count = opened.length, before = iterators.length;
+  const read = time => cache.decode("cut", source, decode(time), permit, signal);
+  try {
+    await read(.25); await read(1.75);
+    assert.equal(iterators.length, before + 1, "missed nearby pictures must not reopen a GOP");
+    const first = iterators.at(-1), reads = first.reads;
+    assert.equal((await read(90.25)).actualTimestampSeconds, 90);
+    assert.equal(first.returned, true);
+    assert.equal(first.reads, reads, "discarded interval must not be decoded sequentially");
+    assert.equal(iterators.at(-1).start, 90.25);
+    assert.equal(iterators.at(-1).reads, 1);
+    assert.equal(opened.length, count + 1, "retain the same verified Input and demuxer");
+    assert.equal((await read(.25)).actualTimestampSeconds, 0);
+    // A VFR frame that already covers the requested time is still reusable.
+    const entry = cache.entries.get("cut"); entry.current.duration = 60;
+    const retained = iterators.length;
+    assert.equal((await read(30)).actualTimestampSeconds, 0);
+    assert.equal(iterators.length, retained);
+  } finally { await cache.close(); values.splice(0, values.length, ...saved); }
+});
 test("a cut decoder adopts its verified source and covering PTS without reopening or decoding on the presentation path",async()=>{
  const {prewarmVideoSources}=await import("../src/index.mjs");
  const future=new VisualDecoderCache(),current=new VisualDecoderCache(),before=opened.length;

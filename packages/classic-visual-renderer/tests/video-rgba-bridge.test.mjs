@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {encodeRgbaHex} from "../src/validation.mjs";
+import {encodeRgbaBase64} from "../src/validation.mjs";
 import {executeVideoFrame,videoBrowserHooks} from "../host/video-browser.mjs";
 import {openVideoRgbaTransport} from "../host/video-rgba.mjs";
 import {validateBlendBegin} from "../host/protocol.mjs";
@@ -17,8 +17,31 @@ async function configured(t,onPacket=()=>{}) {
   const bind=async()=>{await callback("bindCaptionFrameV3",{rasters:[],captions:[]});await callback("bindGraphicFrameV1",graphicObservations);await callback("bindBlendFrameV1",{});};
   const size=()=>realm.currentFrame.plan.identity.width*realm.currentFrame.plan.identity.height*4;
   const upload=(body,url=realm.rgbaTransport.endpoint+"/0",method="POST",from=origin)=>fetch(url,{method,headers:{Origin:from,"Content-Type":"application/octet-stream"},body});
-  return {realm,packets,cancel,bind,size,upload};
+  return {realm,packets,cancel,bind,size,upload,batch:handlers.get("__opencutVisualRgbaBatch")};
 }
+test("private base64 batches preserve exact bytes through the original native handler",async t=>{
+  const gate=await configured(t);await gate.bind();
+  const source=Buffer.alloc(65540);for(let i=0;i<source.length;i++)source[i]=i%256;
+  const bytes=source.subarray(4),encoded=encodeRgbaBase64(bytes);
+  assert.equal(encoded.length,87384);assert.equal(encoded,bytes.toString("base64"));
+  await gate.batch([{offsetBytes:"0",bytesBase64:encoded}]);
+  assert.equal(gate.packets.length,1);
+  assert.equal(gate.packets[0].bytesHex,bytes.toString("hex"));
+  assert.equal(gate.packets[0].frameIndex,0);
+});
+test("private batches reject noncanonical, oversized and partial-pixel encodings before native output",async t=>{
+  const gate=await configured(t);await gate.bind();
+  const valid={offsetBytes:"0",bytesBase64:"AAAAAA=="};
+  for(const packets of [[],Array(17).fill(valid),[{...valid,extra:true}],
+    ...["", "AAAAAA", "AAAAAB==", "AAAAAA==\n", "!!!!", "AAAA", "-AAAAA==", "AAAA".repeat(21847)].map(bytesBase64=>[{offsetBytes:"0",bytesBase64}])])
+    await assert.rejects(gate.batch(packets),{code:"INVALID_OUTPUT_RGBA"});
+  assert.equal(gate.packets.length,0);
+});
+test("private batch cannot rebind its remaining chunks after frame retirement",async t=>{
+  const gate=await configured(t,(_packet,realm)=>{realm.currentFrame={...realm.currentFrame,frameIndex:1};});await gate.bind();
+  await assert.rejects(gate.batch([{offsetBytes:"0",bytesBase64:"AAAAAA=="},{offsetBytes:"4",bytesBase64:"AAAAAA=="}]),{code:"RESOURCE_SOURCE_CLOSED"});
+  assert.equal(gate.packets.length,1);assert.equal(gate.packets[0].frameIndex,0);
+});
 test("binary video retains final binding and rejects wrong capability, frame and origin",async t=>{
   const gate=await configured(t);
   for(const [url,from] of [[gate.realm.rgbaTransport.endpoint+"/1",origin],[gate.realm.rgbaTransport.endpoint+"/0","http://other.invalid"]]) {
@@ -67,13 +90,13 @@ function install(t,render,fetcher) {
   const keys=["__opencutVisualModule","__opencutVideoBytes","__opencutVideoDecoders","__opencutVideoFonts","__opencutVisualRgbaBatch","fetch"];
   const previous=keys.map(key=>[key,Object.getOwnPropertyDescriptor(globalThis,key)]);
   t.after(()=>{for(const [key,descriptor] of previous)if(descriptor)Object.defineProperty(globalThis,key,descriptor);else delete globalThis[key];});
-  globalThis.__opencutVisualModule={encodeRgbaHex,VisualDecoderCache:class{},renderClassicTextFrame:render};globalThis.__opencutVisualRgbaBatch=async packets=>{assert(packets.length<=16);for(const packet of packets)await fetcher(packet);};globalThis.fetch=async()=>assert.fail("RGBA must not allocate a full-frame HTTP body");
+  globalThis.__opencutVisualModule={encodeRgbaBase64,VisualDecoderCache:class{},renderClassicTextFrame:render};globalThis.__opencutVisualRgbaBatch=async packets=>{assert(packets.length<=16);for(const packet of packets)await fetcher(packet);};globalThis.fetch=async()=>assert.fail("RGBA must not allocate a full-frame HTTP body");
 }
 test("browser owns exact copied bytes from a reused renderer buffer and waits for the upload acknowledgement",async t=>{
   let unblock,arrived,finished=false;const blocked=new Promise(r=>unblock=r),received=new Promise(r=>arrived=r);const expected=Buffer.alloc(9*65536);
   install(t,async(_plan,host)=>{assert.equal(host.outputBufferBytes,16*65536*16);const bytes=new Uint8Array(65536);
     for(let i=0;i<9;i++){for(let j=0;j<bytes.length;j++)bytes[j]=expected[i*65536+j]=(i*17+j)%256;await host.rgba(i*bytes.length,bytes);bytes.fill(255);}return {complete:true};},
-    async packet=>{const offset=Number(packet.offsetBytes),bytes=Buffer.from(packet.bytesHex,"hex");assert.deepEqual(bytes,expected.subarray(offset,offset+bytes.length));if(offset+bytes.length===expected.length){arrived();await blocked;}});
+    async packet=>{const offset=Number(packet.offsetBytes),bytes=Buffer.from(packet.bytesBase64,"base64");assert.deepEqual(bytes,expected.subarray(offset,offset+bytes.length));if(offset+bytes.length===expected.length){arrived();await blocked;}});
   const pending=executeVideoFrame({plan:{identity:{width:256,height:576}},admission:{},outputUrl:"http://127.0.0.1/fixed"}).then(v=>{finished=true;return v;});
   await received;assert.equal(finished,false);unblock();assert.deepEqual(await pending,{ok:true,receipt:{complete:true}});
 });

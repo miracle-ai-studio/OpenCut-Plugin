@@ -353,7 +353,7 @@ async function verifyCachedResource(resource,host,signal,operation="resolveVerif
 }
 
 export { renderClassicSceneFrame } from "./scene-frame.mjs";
-export { encodeRgbaHex } from "./validation.mjs";
+export { encodeRgbaHex, encodeRgbaBase64 } from "./validation.mjs";
 export { PreviewSegmentDecoder } from "./preview-segment.mjs";
 export async function createCanvasVideo(...args) {
   const encoder = await import("./canvas-video.mjs");

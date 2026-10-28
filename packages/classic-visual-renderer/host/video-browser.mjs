@@ -76,7 +76,20 @@ export async function configureVideoPageCallbacks(realm) {
     await realm.page.exposeFunction("__opencutVisualCallback",(...args)=>invoke("__opencutVisualCallback",args));
     await realm.page.exposeFunction("__opencutVisualRgbaBatch",async packets=>{
       if(!Array.isArray(packets)||packets.length<1||packets.length>16)reject("INVALID_OUTPUT_RGBA","Invalid bounded RGBA batch");
-      for(const packet of packets)await invoke("__opencutVisualRgba",[packet]);
+      // Base64 cuts CDP string traffic by one third. Decode one bounded chunk
+      // at a time; the original handler and Rust sink still validate output.
+      const frame=realm.currentFrame;
+      for(const packet of packets){
+        if(!frame||realm.currentFrame!==frame)reject("RESOURCE_SOURCE_CLOSED","RGBA batch frame retired");
+        if(!packet||Object.keys(packet).sort().join()!=="bytesBase64,offsetBytes"||typeof packet.bytesBase64!=="string"||
+          !packet.bytesBase64.length||packet.bytesBase64.length>87384||packet.bytesBase64.length%4)
+          reject("INVALID_OUTPUT_RGBA","Invalid bounded RGBA encoding");
+        const bytes=Buffer.from(packet.bytesBase64,"base64");
+        if(!bytes.length||bytes.length>65536||bytes.length%4||bytes.toString("base64")!==packet.bytesBase64)
+          reject("INVALID_OUTPUT_RGBA","RGBA encoding is not canonical");
+        await invoke("__opencutVisualRgba",[{offsetBytes:packet.offsetBytes,bytesHex:bytes.toString("hex")}]);
+        if(realm.currentFrame!==frame)reject("RESOURCE_SOURCE_CLOSED","RGBA batch frame retired");
+      }
     });
     return invoke;
 }
@@ -130,8 +143,8 @@ export async function executeVideoFrame({plan,admission,outputUrl,resourceUrl,ca
     globalThis.__opencutVideoDecoders??=new module.VisualDecoderCache();
     const render={beginTextFrame:module.renderClassicTextFrame,beginCaptionFrame:module.renderClassicCaptionFrame,beginGraphicFrame:module.renderClassicGraphicFrame,beginBlendFrame:module.renderClassicBlendFrame,beginMaskFrame:module.renderClassicMaskFrame,beginSceneFrame:module.renderClassicSceneFrame}[profile];
     if(typeof render!=="function")return {ok:false,error:{code:"INVALID_HOST_PROTOCOL"}};
-    // One bounded frame crosses the browser boundary as binary, then the
-    // original handler/native sink validates every canonical 64KiB chunk.
+    // Bounded batches cross the browser boundary as base64; the original
+    // handler/native sink still validates every canonical 64KiB hex chunk.
     const expected=plan.identity.width*plan.identity.height*4;
     const timings={};let callbackMs=0;
     const video=canvasEncoding?(globalThis.__opencutCanvasVideo??=await module.createCanvasVideo(plan.identity,canvasEncoding)):null;
@@ -155,7 +168,7 @@ export async function executeVideoFrame({plan,admission,outputUrl,resourceUrl,ca
         // Reuse the original bounded native handler. Each acknowledged 64KiB
         // chunk retires before the GPU reuses its scratch buffer. A full-frame
         // POST/Blob also duplicates its body through CDP network observation.
-        batch.push({offsetBytes:String(at),bytesHex:module.encodeRgbaHex(bytes)});offset+=bytes.length;
+        batch.push({offsetBytes:String(at),bytesBase64:module.encodeRgbaBase64(bytes)});offset+=bytes.length;
         if(batch.length===16)await flush();
       }};
     const receipt=await render(plan,host,globalThis.__opencutVisualGpu,undefined,globalThis.__opencutVideoBytes,globalThis.__opencutVideoDecoders,globalThis.__opencutVideoFonts);

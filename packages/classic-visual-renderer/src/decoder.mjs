@@ -193,10 +193,13 @@ export class VisualDecoderCache {
     await this.prepare(key,bytes,admission,signal);
     const e=this.entries.get(key);
     try {
-      // Keep the decoder warm for monotonic targets. Restarting after every
-      // missed half-second picture repeatedly seeks back to the keyframe and
-      // re-reads/decompresses the same GOP. Backward user seeks still restart.
-      if ((!e.iterator && !e.ended) || requested < e.last) {
+      // Keep nearby monotonic targets warm, including missed live pictures.
+      // A distant cut in the same source must seek instead of decoding every
+      // discarded frame between clips. Measure from the observed frame's end,
+      // so a long-duration VFR frame keeps covering its original interval.
+      const end = e.current && e.current.timestamp + e.current.duration;
+      const distant = !e.ended && end !== null && end !== undefined && requested - end > 2;
+      if ((!e.iterator && !e.ended) || requested < e.last || distant) {
         await e.iterator?.return(); checkAbort(signal);
         if(e.surfaces===1){for(const frame of new Set([...e.canvases,e.current?.canvas,e.terminal?.canvas]))if(frame)closeSurface(frame);e.canvases.clear();}
         e.iterator = e.sink.canvases(requested); e.current = null; e.ended = false; e.terminal = undefined;

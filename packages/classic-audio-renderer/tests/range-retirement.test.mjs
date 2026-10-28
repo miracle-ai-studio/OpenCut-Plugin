@@ -9,6 +9,24 @@ const deferred = () => {
   return { promise, resolve };
 };
 
+test("hex ranges preserve every byte and canonical validation before decoding", async () => {
+  const bytes = Buffer.alloc(65536); for (let i = 0; i < bytes.length; i++) bytes[i] = i % 256;
+  const fixed = { assetId: "hex", contentHash: "a".repeat(64), size: String(bytes.length) };
+  let encoded = bytes.toString("hex"), charged = 0;
+  const capability = await openVerifiedRangeSource(fixed, {
+    open: async () => ({ transferId: "hex", contentHash: fixed.contentHash, byteLength: fixed.size, maxChunkBytes: 65536 }),
+    read: async () => ({ offset: "0", eof: true, bytesHex: encoded }), release: async () => {},
+  }, { reserve: n => { charged += n; return () => { charged -= n; }; } }, 65536, undefined, { prefetch: false });
+  try {
+    assert.deepEqual(Buffer.from(await capability.readBytes(0, bytes.length)), bytes);
+    for (const invalid of [encoded.toUpperCase(), encoded.slice(2), "gg" + encoded.slice(2), "\n0" + encoded.slice(2)]) {
+      encoded = invalid;
+      await assert.rejects(capability.readBytes(0, bytes.length), { code: "ASSET_HASH_MISMATCH" });
+    }
+  } finally { await capability.close(); }
+  assert.equal(charged, 0);
+});
+
 for (const chunk of [65536, 524288]) test(`on-demand Mediabunny reads (${chunk}) leave no speculative worker and propagate foreground retirement`, async () => {
   const length = 4 * chunk, second = deferred(), resume = deferred();
   const fixed = { assetId: "retiring", contentHash: "a".repeat(64), size: String(length) };

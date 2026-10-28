@@ -62,8 +62,14 @@ export async function openVerifiedRangeSource(resource, access, budget, cacheByt
         }
         if (typeof chunk.bytesHex !== "string" || chunk.bytesHex.length !== count * 2 || !/^(?:[0-9a-f]{2})+$/.test(chunk.bytesHex))
           fail("ASSET_HASH_MISMATCH", "Verified source bytes are not a bounded canonical interval");
+        // Canonical lowercase/length validation remains above. Native decoding
+        // avoids per-byte substrings; older engines use the same exact nibbles.
+        if (typeof Uint8Array.fromHex === "function") return Uint8Array.fromHex(chunk.bytesHex);
         const bytes = new Uint8Array(count);
-        for (let n = 0; n < count; n++) bytes[n] = Number.parseInt(chunk.bytesHex.slice(n * 2, n * 2 + 2), 16);
+        for (let n = 0; n < count; n++) {
+          const high = chunk.bytesHex.charCodeAt(n * 2), low = chunk.bytesHex.charCodeAt(n * 2 + 1);
+          bytes[n] = ((high <= 57 ? high - 48 : high - 87) << 4) | (low <= 57 ? low - 48 : low - 87);
+        }
         return bytes;
       })();
       pending.add(work);

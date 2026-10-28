@@ -1,5 +1,5 @@
 import { sha256 } from "@noble/hashes/sha2.js";
-import { bytesToHex } from "@noble/hashes/utils.js";
+import { bytesToHex, hexToBytes } from "@noble/hashes/utils.js";
 import type { ToolInput, ToolOutput } from "../../../../lib/editor-sdk";
 import type { EditorApi } from "../../api";
 import type { Asset } from "../types";
@@ -72,7 +72,7 @@ export function allocateArt(response: SourceArtResponse, selected: ArtSelection)
       !Number.isInteger(data.height) || data.height < 1 || data.height > 720 || !hash(data.content_hash) ||
       typeof data.jpeg_bytes_hex !== "string" || !data.jpeg_bytes_hex.length || data.jpeg_bytes_hex.length > 2 * 1024 * 1024 ||
       !/^(?:[a-f0-9]{2})+$/.test(data.jpeg_bytes_hex)) invalid();
-  const jpeg = Uint8Array.from(data.jpeg_bytes_hex.match(/../g)!, pair => Number.parseInt(pair, 16));
+  const jpeg = hexToBytes(data.jpeg_bytes_hex);
   if (jpeg[0] !== 255 || jpeg[1] !== 216 || bytesToHex(sha256(jpeg)) !== data.content_hash) invalid();
   const bytes = metadataBytes + 128 + jpeg.byteLength + data.width * data.height * 4;
   const fingerprint = canonicalArt([identity, data.content_hash, data.width, data.height]);
@@ -107,7 +107,7 @@ function readArt(owner: Owner, api: EditorApi, selection: ArtRequestSelection, a
   }, async () => {
     if (typeof api.scene.cancelSourceArt === "function") await api.scene.cancelSourceArt({
       project_id: selection.projectId, revision: selection.revision, request_id: requestId });
-  });
+  }, authorization);
 }
 
 function scheduleAuthorization(owner: Owner, api: EditorApi, key: string, group: AuthorizationGroup) {

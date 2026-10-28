@@ -1,5 +1,6 @@
 /** Private execution bridge. Public frame DTOs are generated from Rust. */
 export function encodeRgbaHex(bytes: Uint8Array): string;
+export function encodeRgbaBase64(bytes: Uint8Array): string;
 export type GpuRealm = { device: { destroy(): void }; observation: { gpuBackend: string; gpuDevice: string; textureFormat: string } };
 export type ClassicTextFontCache = Map<string, { bytes: Uint8Array; face?: FontFace }>;
 declare const preparedFontFrameBrand: unique symbol;

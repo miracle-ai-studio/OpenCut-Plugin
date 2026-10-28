@@ -1,4 +1,4 @@
-import {encodeRgbaHex} from "../src/validation.mjs";
+import {encodeRgbaBase64} from "../src/validation.mjs";
 globalThis.__opencutVisualRgbaBatch=async()=>{};
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -28,6 +28,6 @@ test('mask host blocks pixels and injection until its own final bind succeeds on
 test('native frame and persistent video dispatch choose only the additive mask renderer',async t=>{
  const oldFetch=globalThis.fetch;globalThis.fetch=async()=>({ok:true});t.after(()=>globalThis.fetch=oldFetch);
  let selected;await browserHooks.render({begin:maskBegin(),page:{evaluate:async fn=>{selected=fn;return{ok:true,receipt:{}}}}});assert.equal(selected,executeMaskVisualPage);
- globalThis.__opencutVisualModule={encodeRgbaHex,VisualDecoderCache:class{},renderClassicMaskFrame:async(_plan,host)=>{await host.rgba(0,new Uint8Array(4));return {masks:[]};}};
+ globalThis.__opencutVisualModule={encodeRgbaBase64,VisualDecoderCache:class{},renderClassicMaskFrame:async(_plan,host)=>{await host.rgba(0,new Uint8Array(4));return {masks:[]};}};
  try{assert.deepEqual(await executeVideoFrame({plan:{identity:{width:1,height:1}},admission:{},profile:'beginMaskFrame'}),{ok:true,receipt:{masks:[]}});}finally{for(const key of ['__opencutVisualModule','__opencutVideoBytes','__opencutVideoFonts','__opencutVideoDecoders'])delete globalThis[key];}
 });

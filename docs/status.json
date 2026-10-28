@@ -15,11 +15,14 @@
     "Portable local-plugin metadata, versioned checksummed installer/launcher, doctor and Web service helper; automatic output reservation retains database headroom without a fixed small file quota.",
     "Legacy per-scene preview and native source-space limited-range BT.601/BT.709 grading share the scene renderer without rewriting project settings.",
     "Native-rate mono/stereo float32 PCM reuses bounded PCM windows and validates exact per-channel sample-byte evidence.",
-    "Unchanged native-authorized preview manifests retain encoded content and paused decoders for 30 seconds; live surface cold preparation keeps cancellation and backend fences."
+    "Unchanged native-authorized preview manifests retain encoded content and paused decoders for 30 seconds; live surface cold preparation keeps cancellation and backend fences.",
+    "Shared visual decoders reposition across distant source cuts while preserving nearby sequential reuse and VFR frame coverage.",
+    "Visible source artwork takes bounded priority over queued authorization renewals; byte conversion avoids per-byte temporary strings.",
+    "Private browser-to-Node video output uses bounded canonical Base64 batches and preserves the original native RGBA handler and frame fences."
   ],
   "validation": {
-    "source_base_commit": "d0a781b797b91139bcce6f0c0cb1f0679a768aba",
-    "source_state": "uncommitted local repair candidate; plugin beta.2 is not published",
+    "source_base_commit": "26479ea5eba4c1bbc454e08396b0cce53f4d31a1",
+    "source_state": "uncommitted performance candidate on committed local repairs; running user services and local plugin unchanged",
     "previous_cover_candidate": {
       "binary_sha256": "9595d79ef1dd400c39458e96a7cb3b8996802b105ee64b4aa5bf57db76ba9aae",
       "cli_release_build": "passed",
@@ -184,6 +187,207 @@
         "desktop_chat_tools": "client reload required; current conversation not verified",
         "public_release": false
       }
+    },
+    "performance_candidate": {
+      "source_base_commit": "26479ea5eba4c1bbc454e08396b0cce53f4d31a1",
+      "binary_sha256": "74f670cd51be9b5c1810c7e05d7df21bc75cf2a2130597eecd27fcb13e2a4821",
+      "rust_rebuilt": false,
+      "web_production_build": "passed in an isolated external directory",
+      "generated_and_canonical_contracts": "passed for the same explicit binary; 184 operations, 12 domains",
+      "visual_node_tests": 214,
+      "audio_node_tests": 74,
+      "source_art_node_tests": 5,
+      "affected_web_tests": 57,
+      "architecture": "passed; 14 unit tests, 22 modules, zero temporary exception edges",
+      "contract_boundaries": "passed",
+      "web_boundary_files": 261,
+      "real_chromium_decoder": {
+        "source": "94s synthetic 320x180 H264, 30fps",
+        "jump_seconds": [
+          1.75,
+          90.25
+        ],
+        "decoder_surfaces": [
+          1,
+          2,
+          4
+        ],
+        "before_ms": [
+          615.1,
+          1049.9,
+          678.5
+        ],
+        "after_ms": [
+          11.7,
+          8.0,
+          6.2
+        ],
+        "before_range_reads": 2623,
+        "after_range_reads": 108,
+        "before_range_bytes": 3045382,
+        "after_range_bytes": 131088,
+        "before_after_pixels_and_pts": "identical at cold, nearby, distant, continued and backward targets",
+        "independent_pixel_gate": {
+          "max_rgba_error": 12,
+          "observed": [
+            42,
+            43,
+            155,
+            184,
+            190,
+            195
+          ],
+          "status": "failed equally in baseline and candidate; root cause unresolved"
+        }
+      },
+      "rgba_4k_bridge": {
+        "before_median_ms": 2365.233571,
+        "after_median_ms": 1745.6606945,
+        "native_bytes": "identical",
+        "scope": "Actual Playwright callback and original bounded native packet handler; synthetic renderer, excludes GPU/encoder time and full export throughput"
+      },
+      "thumbnail_hex_conversion": {
+        "bytes": 262144,
+        "before_ms_per_call": 43.5333,
+        "after_ms_per_call": 0.6208,
+        "scope": "Conversion only; excludes authorization, host startup, transfer and JPEG decode"
+      },
+      "native_thumbnail": {
+        "width": 640,
+        "height": 360,
+        "elapsed_seconds": 3.09967761,
+        "scope": "One actual native authorized JPEG; no before/after full loading-speed claim"
+      },
+      "native_video": {
+        "scope": "Same owned synthetic project and fixed revision; one 1s 24-frame H264/AAC native export per candidate",
+        "width": 640,
+        "height": 360,
+        "before_seconds": 16.045322021,
+        "after_seconds": 15.510829739,
+        "artifact_and_decoded_rgba_pcm": "byte-identical before and after",
+        "independent_pixel_gate": {
+          "mae": 5,
+          "observed_mae": [
+            16.5546,
+            16.58975,
+            19.89754,
+            16.50912,
+            16.04993,
+            15.79179
+          ],
+          "status": "failed; equal baseline bytes establish no change, not pixel correctness"
+        },
+        "independent_pcm": "not_run",
+        "stable_whole_export_throughput": "not_qualified",
+        "baseline_execution": {
+          "visual": {
+            "browser_sha256": "b5626938028f718a6cdb0c8eff9d0346b186d68b4e04b43df4f9f579c81ecf28",
+            "browser_version": "153.0.8010.12",
+            "decoder_profile": "mediabunny-1.41.0-initial-canvases-half-open;static-png-jpeg-browser-image",
+            "gpu_backend": "webgpu",
+            "gpu_device": "{\"vendor\":\"amd\",\"architecture\":\"rdna-1\",\"device\":\"\",\"description\":\"\"}",
+            "host_sha256": "74f670cd51be9b5c1810c7e05d7df21bc75cf2a2130597eecd27fcb13e2a4821",
+            "mediabunny_version": "1.41.0",
+            "module_sha256": "0660045bdcb900eba40988ce3b367f1c873665cf515f03cfd5b5088cc109a3a0",
+            "playwright_version": "1.63.0",
+            "shader_sha256": "4f7c4dc262e89e905e32f8aed865b99cd4c6d838c87d17396583984536d09f82",
+            "texture_format": "bgra8unorm"
+          },
+          "audio": {
+            "browser_sha256": "b5626938028f718a6cdb0c8eff9d0346b186d68b4e04b43df4f9f579c81ecf28",
+            "browser_version": "153.0.8010.12",
+            "decoder_profiles": [
+              "mediabunny-1.41.0-concatenate-offline-resample"
+            ],
+            "host_sha256": "74f670cd51be9b5c1810c7e05d7df21bc75cf2a2130597eecd27fcb13e2a4821",
+            "mastering_applied": false,
+            "mastering_profile": "classic-export-whole-scene-web-audio-v31",
+            "mediabunny_version": "1.41.0",
+            "module_sha256": "c7724a115334f9b9db783dce1069f88e27f2a72a6248c1b699d534c3ee24b8a5",
+            "pitch_profiles": [
+              "unprepared-linear"
+            ],
+            "playwright_version": "1.63.0",
+            "soundtouch_version": "0.3.0"
+          },
+          "encoder": {
+            "audio_codec": "aac",
+            "backend": "ffmpeg_libx264",
+            "ffmpeg_sha256": "434a59ef057cf847f497b95dd394208b61f2f1254728344442d3d2ad71f926bb",
+            "ffprobe_sha256": "501ae4034055451cbd993166b43b7764dd69553ccebbcf55c2730b732b82c570",
+            "observed_audio_duration_seconds": 1.0,
+            "observed_video_duration_seconds": 1.0,
+            "observed_video_frames": "24",
+            "pixel_format": "yuv420p",
+            "rates": {
+              "audio_bitrate": 192000,
+              "video_bitrate": 745000
+            },
+            "video_codec": "h264"
+          }
+        },
+        "candidate_execution": {
+          "visual": {
+            "browser_sha256": "b5626938028f718a6cdb0c8eff9d0346b186d68b4e04b43df4f9f579c81ecf28",
+            "browser_version": "153.0.8010.12",
+            "decoder_profile": "mediabunny-1.41.0-initial-canvases-half-open;static-png-jpeg-browser-image",
+            "gpu_backend": "webgpu",
+            "gpu_device": "{\"vendor\":\"amd\",\"architecture\":\"rdna-1\",\"device\":\"\",\"description\":\"\"}",
+            "host_sha256": "74f670cd51be9b5c1810c7e05d7df21bc75cf2a2130597eecd27fcb13e2a4821",
+            "mediabunny_version": "1.41.0",
+            "module_sha256": "4ae91a85713895b454ac904c4b57611dc0ad1753757f7d5d8f571a39cd54bf94",
+            "playwright_version": "1.63.0",
+            "shader_sha256": "4f7c4dc262e89e905e32f8aed865b99cd4c6d838c87d17396583984536d09f82",
+            "texture_format": "bgra8unorm"
+          },
+          "audio": {
+            "browser_sha256": "b5626938028f718a6cdb0c8eff9d0346b186d68b4e04b43df4f9f579c81ecf28",
+            "browser_version": "153.0.8010.12",
+            "decoder_profiles": [
+              "mediabunny-1.41.0-concatenate-offline-resample"
+            ],
+            "host_sha256": "74f670cd51be9b5c1810c7e05d7df21bc75cf2a2130597eecd27fcb13e2a4821",
+            "mastering_applied": false,
+            "mastering_profile": "classic-export-whole-scene-web-audio-v31",
+            "mediabunny_version": "1.41.0",
+            "module_sha256": "0712cbe9a13241cce9b63161908e02b604c3e5980aa07bf174027c624f587ed8",
+            "pitch_profiles": [
+              "unprepared-linear"
+            ],
+            "playwright_version": "1.63.0",
+            "soundtouch_version": "0.3.0"
+          },
+          "encoder": {
+            "audio_codec": "aac",
+            "backend": "ffmpeg_libx264",
+            "ffmpeg_sha256": "434a59ef057cf847f497b95dd394208b61f2f1254728344442d3d2ad71f926bb",
+            "ffprobe_sha256": "501ae4034055451cbd993166b43b7764dd69553ccebbcf55c2730b732b82c570",
+            "observed_audio_duration_seconds": 1.0,
+            "observed_video_duration_seconds": 1.0,
+            "observed_video_frames": "24",
+            "pixel_format": "yuv420p",
+            "rates": {
+              "audio_bitrate": 192000,
+              "video_bitrate": 745000
+            },
+            "video_codec": "h264"
+          }
+        }
+      },
+      "existing_source_art_browser_suite": "failed at obsolete media-import UI assumption; cleanup also lacks expected_revision; retained workspace and import reused",
+      "manual_acceptance": "not_run",
+      "user_runtime_upgraded": false,
+      "full_product_acceptance": "not_run",
+      "workbench_observation": {
+        "thumbnail_surfaces": 3,
+        "first_picture_ms": 3310.990148,
+        "last_picture_seconds": 0.9583333333333334,
+        "audio_status": "Scene sound ended",
+        "page_errors": [],
+        "playback_errors": [],
+        "terminal_assertion": "failed due to two same-named status elements; failure and screenshot retained",
+        "scope": "Automated one-second actual workbench observation plus screenshot inspection; not full UI or manual audiovisual acceptance"
+      }
     }
   },
   "known_limits": [
@@ -194,7 +398,10 @@
     "Per-font/platform/budget/FPS and optional sound-provider failure/cancellation qualification are incomplete.",
     "Package dependency/branch-merge/fault, signing/installation/upgrade and cross-platform delivery qualification are incomplete.",
     "Some composed compatibility/acceptance verifiers retain obsolete interface assumptions and are not current acceptance proof.",
-    "Local plugin prerelease: macOS Intel package only, external Node/FFmpeg/Chromium required; unsigned and not verified in a clean machine or an actual ChatGPT client conversation. A synthetic untagged H264 export color probe observed RGB 254/23/0 and failed the unchanged green < 15 gate; package workflow success is separate from pixel qualification."
+    "Local plugin prerelease: macOS Intel package only, external Node/FFmpeg/Chromium required; unsigned and not verified in a clean machine or an actual ChatGPT client conversation. A synthetic untagged H264 export color probe observed RGB 254/23/0 and failed the unchanged green < 15 gate; package workflow success is separate from pixel qualification.",
+    "Performance candidate: independent synthetic source-frame and native-export pixel probes still fail equally before/after; unchanged bytes do not establish independent pixel correctness.",
+    "Cold picture preparation waits for subsequent windows; source artwork authorization still transfers complete JPEGs and cold requests include runtime identity scans and process startup.",
+    "4K raw-frame bridge remains expensive after scoped improvement; full export throughput and process-tree RSS need separate qualification. The Web workspace chunk is about 1.80 MB (gzip 508 KB)."
   ],
   "manual_acceptance": [
     "Finder and cross-app file transport",

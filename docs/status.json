@@ -606,6 +606,76 @@
       },
       "public_schema_results": 23,
       "verifier_repair": "First browser script matched duplicate status text; narrowed the selector and used current ended/seek controls, retaining the failed attempt. No product rebuild or source project edit."
+    },
+    "native_audio_working_tree": {
+      "base_commit": "bb7edee914be5fb18dd260782aebc04743c95a63",
+      "status": "native DSP and internal export execution built and passed scoped independent PCM; decoder boundary tests passed; isolated native audio worker and production preview/export hosts not connected",
+      "public_contracts_changed": false,
+      "new_dependencies": false,
+      "independent_pcm": {
+        "cases": 24,
+        "soundtouch_cases": 6,
+        "decode_resample_cases": 6,
+        "preparation_resample_cases": 6,
+        "compressor_cases": 6,
+        "soundtouch_and_resamplers_max_error": 0,
+        "compressor_max_absolute_error": 3.5762786865234375e-07,
+        "compressor_min_snr_db": 145.7289978786065,
+        "gain_or_time_fitting": false,
+        "source_soundtouch_sha256": "5143b5e14251a1e2068c83a7851ffe4bee27a0628cb0e587e2d941e0f06bf9c0",
+        "reference_browser_sha256": "b5626938028f718a6cdb0c8eff9d0346b186d68b4e04b43df4f9f579c81ecf28",
+        "scope": "DSP primitives only; not assembled native preview/export PCM acceptance"
+      },
+      "decoder_source": [
+        "shared authorized AVIO; no path or URL input",
+        "native sample format/channel/PTS preservation, bounded frames and I/O",
+        "explicit EOF, exact stream-PTS seek and retired decoder on errors",
+        "three actual libav tests passed: six PCM representations, channels/PTS/EOF, continuous read, seek, revocation and retirement"
+      ],
+      "remaining_integration": [
+        "native audio worker and actual runtime/provenance receipts",
+        "ordinary realtime PTS windows, preview DSP and physical output-device consumption",
+        "hard cutover in production export and preview hosts",
+        "compressed codec/priming/PTS/window qualification and bounded metadata residency",
+        "isolated process RSS/deadline/cancellation/publication lifecycle",
+        "long-source and long-play independent PCM and resource validation",
+        "portable runtime packaging and licenses"
+      ],
+      "internal_export_engine": {
+        "test_binary_sha256": "295d26f42e515b42a372b2adcbb0cbc5f833e9bd1e94c80091e3ad84c289abfc",
+        "native_test_functions_passed": 10,
+        "decoder_test_functions_passed": 3,
+        "independent_engine_pcm_cases": 28,
+        "input_formats": [
+          "synthetic float32 RIFF/WAV"
+        ],
+        "maximum_absolute_error": 3.5762786865234375e-07,
+        "minimum_snr_db": 144.40400691631223,
+        "gain_or_time_fitting": false,
+        "maximum_accounted_pcm_bytes_in_reference_cases": 9961472,
+        "application_and_cas": "actual fixed application sessions and verified descriptors; no authored project reconstruction in DSP",
+        "source_checks": [
+          "manual expected shared-source Float32 accumulation and mono mapping",
+          "actual EOF zero tail and separate prepared-linear buffer",
+          "4s source with sparse trim at 3s; no long-source throughput or RSS qualification"
+        ],
+        "failure_checks": [
+          "NOT_AUTHORIZED and PERMISSION_DENIED preserved after AVIO read",
+          "JOB_CANCELLED preserved after AVIO read",
+          "foreign compiled revision rejected before PCM emission",
+          "insufficient PCM budget rejected before PCM emission"
+        ],
+        "fixes": [
+          "shared native audio/visual media-error conversion preserves original application port error codes"
+        ],
+        "retained_failed_attempts": [
+          "invalid inferred source extent in authored fixtures",
+          "same-track overlap in authored shared-voice fixture",
+          "original authorization error incorrectly converted to STORAGE_BUDGET_ERROR"
+        ],
+        "scope": "internal native export engine and decoder only; no isolated audio worker, production host cutover, compressed-codec parity, device output or complete audio acceptance",
+        "decoder_test_binary_sha256": "40a7e2814dcf65e64918b4a80e667f9092ce480c5f77d2bebbae17d3d657b3b4"
+      }
     }
   }
 }

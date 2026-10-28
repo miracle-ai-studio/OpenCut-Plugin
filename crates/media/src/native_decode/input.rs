@@ -136,7 +136,7 @@ impl Bridge {
     pub(super) fn open(
         &mut self,
         source: &mut dyn ByteSource,
-        limits: DecodeLimits,
+        max_io_bytes: u64,
         deadline: Instant,
     ) -> MediaResult<av::format::context::Input> {
         let mut io = av::format::context::StreamIo::from_read_seek_with_capacity(
@@ -148,7 +148,7 @@ impl Bridge {
         )
         .map_err(failed)?;
         let opaque = Arc::as_ptr(&self.shared).cast_mut().cast::<c_void>();
-        self.run(source, deadline, limits.max_io_bytes_per_operation, || {
+        self.run(source, deadline, max_io_bytes, || {
             // SAFETY: AVFormatContext is uniquely owned here. Custom IO owns
             // its Reader/Arc through Input destruction. No filename is passed,
             // and nested protocol opens are denied before probing any bytes.
@@ -159,7 +159,7 @@ impl Bridge {
                 (*context).flags |= ffi::AVFMT_FLAG_CUSTOM_IO;
                 (*context).io_open = Some(deny_open);
                 (*context).interrupt_callback = ffi::AVIOInterruptCB { callback: Some(interrupt), opaque };
-                (*context).probesize = limits.max_io_bytes_per_operation.min(4 * 1024 * 1024) as i64;
+                (*context).probesize = max_io_bytes.min(4 * 1024 * 1024) as i64;
                 (*context).max_analyze_duration = 5_000_000;
                 (*context).max_streams = 64;
                 let mut options = av::Dictionary::new();

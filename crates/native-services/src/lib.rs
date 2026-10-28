@@ -29,6 +29,7 @@ pub mod classic_audio_preview;
 pub mod classic_video;
 pub mod classic_visual;
 pub mod native_visual;
+pub mod native_audio;
 pub mod font_catalog;
 pub mod font_color_static;
 pub mod font_derived;

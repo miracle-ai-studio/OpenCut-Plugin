@@ -1,9 +1,11 @@
 //! In-process libav decoding over an already authorized immutable byte port.
 //! No path, URL, project document or authorization grant enters the decoder.
+mod audio;
 pub mod identity;
 mod input;
 mod video;
 use crate::{MediaError, MediaResult};
+pub use audio::{AudioDecodeLimits, DecodedAudioFrame, NativeAudioDecoder, NativeAudioTrack};
 use std::time::Instant;
 pub use video::{DecodedVideoFrame, NativeVideoDecoder, VideoColorMatrix};
 

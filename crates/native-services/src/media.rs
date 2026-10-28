@@ -7,6 +7,15 @@ use opencut_editor_application::maintenance::{
 use opencut_editor_application::media::{self as application, DetectedMedia};
 use opencut_media::{FfmpegBackend, MediaMetadata, ProbeRequest};
 use std::path::Path;
+/// AVIO borrows application authority on every call. Those errors are already
+/// typed by the owning session; do not erase cancellation/revocation codes via
+/// MediaError's storage-admission compatibility mapping.
+pub(crate) fn execution_error(error: opencut_media::MediaError) -> EditorError {
+    match error {
+        opencut_media::MediaError::Admission { code, message } => EditorError::new(code, message),
+        other => EditorError::new(other.code(), other.to_string()),
+    }
+}
 pub struct NativeMediaCatalog<'a>(pub &'a Path, pub Option<&'a dyn PublicationJournal>);
 fn utf8(path: &Path) -> Result<String, EditorError> {
     path.to_str()

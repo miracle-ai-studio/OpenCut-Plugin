@@ -80,7 +80,7 @@ impl NativeVideoDecoder {
         // avcodec registration is automatic. Avoid network/device registration
         // and global log mutations; this adapter cannot open URLs or devices.
         let mut bridge = Bridge::new(source.len())?;
-        let input = bridge.open(source, limits, deadline)?;
+        let input = bridge.open(source, limits.max_io_bytes_per_operation, deadline)?;
         let stream = match selected_stream {
             Some(index) => input.stream(index as usize),
             None => input

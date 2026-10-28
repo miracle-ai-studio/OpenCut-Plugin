@@ -334,6 +334,22 @@ impl<'a> ClassicAudioSession<'a> {
         Ok(plan)
     }
     pub fn validate_receipt(&self, receipt: &ClassicAudioRenderReceipt) -> Result<(), EditorError> {
+        self.validate_receipt_for(receipt, false)
+    }
+    /// Native execution keeps the same fixed clocks/preparation/mastering
+    /// validation, while requiring truthful native decoder observations. The
+    /// publishing host separately binds and verifies the isolated worker hash.
+    pub fn validate_native_receipt(
+        &self,
+        receipt: &ClassicAudioRenderReceipt,
+    ) -> Result<(), EditorError> {
+        self.validate_receipt_for(receipt, true)
+    }
+    fn validate_receipt_for(
+        &self,
+        receipt: &ClassicAudioRenderReceipt,
+        native: bool,
+    ) -> Result<(), EditorError> {
         if self.preview.is_some() {
             return Err(invalid(
                 "Realtime session cannot validate an export receipt",
@@ -391,13 +407,20 @@ impl<'a> ClassicAudioSession<'a> {
                 .ok_or_else(|| invalid("Unknown decoder receipt resource"))?;
             let resource = self.resource(&decoder.asset_id)?;
             let kind = &resource.kind;
-            let profile = if self
+            let windowed = self
                 .window_admissions
                 .get(&decoder.asset_id)
-                .is_some_and(|a| a.reply.mode == "windowed")
-            {
+                .is_some_and(|a| a.reply.mode == "windowed");
+            let standalone = kind == "audio" && resource.size <= self.max_encoded_bytes;
+            let profile = if native && windowed {
+                "native-libav-windowed-concatenate-linear-resample"
+            } else if native && standalone {
+                "native-libav-sinc-at-target-rate"
+            } else if native {
+                "native-libav-concatenate-linear-resample"
+            } else if windowed {
                 "mediabunny-1.41.0-windowed-concatenate-offline-resample-v1"
-            } else if kind == "audio" && resource.size <= self.max_encoded_bytes {
+            } else if standalone {
                 "web-audio-decode-at-target-rate"
             } else {
                 "mediabunny-1.41.0-concatenate-offline-resample"

@@ -1,0 +1,56 @@
+{
+  "sources": [
+    {
+      "file": "dynamics_compressor.cc",
+      "url": "https://raw.githubusercontent.com/chromium/chromium/153.0.8010.12/third_party/blink/renderer/platform/audio/dynamics_compressor.cc",
+      "sha256": "14f1ac7ee487ba94d6f244b0efbad5c27c7cbf36ea9aa7abdeab7bf1f1f6e86a"
+    },
+    {
+      "file": "dynamics_compressor.h",
+      "url": "https://raw.githubusercontent.com/chromium/chromium/153.0.8010.12/third_party/blink/renderer/platform/audio/dynamics_compressor.h",
+      "sha256": "39da7be02ca6198c4d36da959625aa9873580d9c064fbdecca75793324489f82"
+    },
+    {
+      "file": "sinc_resampler.cc",
+      "url": "https://raw.githubusercontent.com/chromium/chromium/153.0.8010.12/third_party/blink/renderer/platform/audio/sinc_resampler.cc",
+      "sha256": "59b5a4755cefbbdad27e83378d6eeab101f1a2004b0f79095a13ed39f2a0d2ac"
+    },
+    {
+      "file": "sinc_resampler.h",
+      "url": "https://raw.githubusercontent.com/chromium/chromium/153.0.8010.12/third_party/blink/renderer/platform/audio/sinc_resampler.h",
+      "sha256": "772112892f8d8145ed427d3995cdf4710e3994219aa7325a78386deee7a005bc"
+    },
+    {
+      "file": "audio_buffer_source_handler.cc",
+      "url": "https://raw.githubusercontent.com/chromium/chromium/153.0.8010.12/third_party/blink/renderer/modules/webaudio/audio_buffer_source_handler.cc",
+      "sha256": "e8c7a3dd4ca503ecb28953cafa4fed3bed2aa3d806d8420fb28ee01e5a71fe07"
+    },
+    {
+      "file": "audio_utilities.cc",
+      "url": "https://raw.githubusercontent.com/chromium/chromium/153.0.8010.12/third_party/blink/renderer/platform/audio/audio_utilities.cc",
+      "sha256": "904354af32f9724dc59fe6621759c013fe24006056975fce086e53a23269a498"
+    },
+    {
+      "file": "audio_utilities.h",
+      "url": "https://raw.githubusercontent.com/chromium/chromium/153.0.8010.12/third_party/blink/renderer/platform/audio/audio_utilities.h",
+      "sha256": "5a6c8b1c4c3d87821d137a65557db3cd94f73f7520f9a1c1b675993b516ca591"
+    },
+    {
+      "file": "soundtouch.js",
+      "url": "https://registry.npmjs.org/soundtouchjs/-/soundtouchjs-0.3.0.tgz",
+      "source_path": "packages/classic-audio-renderer/vendor/soundtouchjs-0.3.0/soundtouch.js",
+      "sha256": "5143b5e14251a1e2068c83a7851ffe4bee27a0628cb0e587e2d941e0f06bf9c0"
+    },
+    {
+      "file": "LICENSE",
+      "url": "https://raw.githubusercontent.com/chromium/chromium/153.0.8010.12/LICENSE",
+      "sha256": "368cca1106be99d39ecd32a38d8305585d802a475effb66380b91ffc9bcf709b"
+    }
+  ],
+  "adaptation": "src/native_audio/dsp; fixed Classic processor parameters; application owns preparation and sample clocks",
+  "licenses": [
+    "LICENSE.chromium",
+    "LICENSE.soundtouch",
+    "LICENSE.chromium-project"
+  ]
+}

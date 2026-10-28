@@ -17,6 +17,7 @@ mod preview;
 #[cfg(test)]
 mod tests;
 mod text;
+use crate::media::execution_error as media_error;
 pub use engine::NativeFrameEngine;
 pub use measurement::{NativeTextMeasureOptions, NativeTextMeasurement, NativeTextMeasurements};
 pub use media::{MediaFrameSources, NativeMediaDecoders};
@@ -47,9 +48,6 @@ pub fn platform_backend() -> Result<opencut_renderer::Backend, EditorError> {
 
 fn invalid(message: impl Into<String>) -> EditorError {
     EditorError::new("INVALID_VISUAL_PLAN", message)
-}
-fn media_error(error: opencut_media::MediaError) -> EditorError {
-    EditorError::new(error.code(), error.to_string())
 }
 fn number(value: &str) -> Result<u64, EditorError> {
     let number = value

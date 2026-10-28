@@ -22,10 +22,16 @@ def system(path):
 
 
 def library_name(filename):
-    match = re.fullmatch(r'lib(avcodec|avformat|avutil|swresample|swscale)\.\d+\.dylib', filename)
+    match = re.fullmatch(r'lib(avcodec|avformat|avutil|swresample|swscale)\.\d+(?:\.\d+\.\d+)?\.dylib', filename)
     if not match:
         raise ValueError('Native media library is outside the identified ABI set')
     return match[1]
+
+
+def abi_name(filename):
+    name = library_name(filename)
+    major = filename[len('lib' + name + '.'):].split('.')[0]
+    return 'lib' + name + '.' + major + '.dylib'
 
 
 def command(args):
@@ -82,9 +88,10 @@ def bundle(host, cli, worker, target, spec_path):
     for name, source in binaries.items():
         shutil.copyfile(source, destination / name)
         (destination / name).chmod(0o755)
-    for name in proof['libraries']:
-        shutil.copyfile(Path(spec['root']) / 'lib' / name, destination / 'lib' / name)
-    paths = [destination / name for name in binaries] + [destination / 'lib' / name for name in proof['libraries']]
+    libraries = {abi_name(name): name for name in proof['libraries']}
+    for name, original in libraries.items():
+        shutil.copyfile(Path(spec['root']) / 'lib' / original, destination / 'lib' / name)
+    paths = [destination / name for name in binaries] + [destination / 'lib' / name for name in libraries]
     for path in paths:
         executable = path.parent == destination
         slices = runtime.macho_commands(path)
@@ -92,8 +99,8 @@ def bundle(host, cli, worker, target, spec_path):
             raise ValueError('Native media input is not Mach-O')
         dependencies = {name for part in slices for name in part['libraries'] if not system(name)}
         for original in sorted(dependencies):
-            name = Path(original).name
-            if name not in proof['libraries']:
+            name = abi_name(Path(original).name)
+            if name not in libraries:
                 raise ValueError('Unidentified transitive native dependency: ' + name)
             replacement = ('@executable_path/lib/' if executable else '@loader_path/') + name
             if original != replacement:

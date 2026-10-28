@@ -647,7 +647,7 @@
       ]
     },
     "native_media_tool_distribution": {
-      "status": "integrated source; Rust build and relocated media acceptance pending",
+      "status": "release CLI/worker built; first relocated bundle rejected for missing lavfi; standalone tools rebuild active; test fixture compile repair active",
       "delivery_ready": false,
       "baseline_commit": "928ccabe",
       "scope": "shared host tool assembly, standalone FFmpeg/ffprobe, original corresponding sources and licenses",
@@ -657,11 +657,24 @@
         "architecture_and_contract_boundaries": "passed"
       },
       "remaining": [
-        "integrated CLI/worker build and generated/canonical checks",
-        "relocated tool discovery without system FFmpeg",
-        "fixed-project independent media/export acceptance",
+        "corrected test binary build and affected tests",
+        "lavfi-capable standalone tool rebuild and relocation acceptance",
+        "same-candidate generated/canonical checks and independent media/export/preview acceptance",
         "broader codec/color/orientation/default-track/4K and clean-machine/manual/platform coverage"
-      ]
+      ],
+      "release_source_commit": "939b72b1",
+      "test_source_commit": "4de1b821",
+      "release_build": "passed",
+      "release_cli_sha256": "8b00afa1ae1e52218b7a5c2ab9d4de18201d2e43584de6397ac8952776aa7079",
+      "release_worker_sha256": "84a63088fb0a87ef4f17489f500235d258aa506a5c35aa635fb992646d3db276",
+      "initial_relocated_cli_sha256": "8a529f78e6ac5d7f9ba07824bb300e93b465431d6950c46f880aebcb53c2589f",
+      "initial_archive_sha256": "7f44d340329add76022030cd63aba07cc9821598f087cd7d87f09c1f252051de",
+      "initial_doctor_failure": {
+        "check": "media_encode_probe",
+        "cause": "FFmpeg --disable-avdevice removed lavfi input, which the existing media backend also requires",
+        "evidence": "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/export-tools/initial-no-lavfi-relocated-doctor.json",
+        "repair": "rebuild standalone tools with --enable-avdevice --disable-indevs --disable-outdevs --enable-indev=lavfi; no Rust release rebuild"
+      }
     }
   },
   "known_limits": [

@@ -38,6 +38,9 @@ pub struct ClassicCompressor {
     release: [f32; 5],
 }
 impl ClassicCompressor {
+    pub fn lookahead_frames_for_rate(sample_rate: u32) -> usize {
+        ((0.006f32 * sample_rate as f32) as usize).min(1023)
+    }
     pub fn new(sample_rate: u32, memory: &PcmMemory) -> Result<Self> {
         if !(8000..=192000).contains(&sample_rate) {
             return Err(invalid(
@@ -64,7 +67,7 @@ impl ClassicCompressor {
         let threshold = linear(-1.0);
         let knee_db = db(threshold);
         let saturate_one = linear(knee_db + 0.05 * (0.0 - (-1.0)));
-        let delay_frames = ((0.006f32 * rate) as usize).min(1023);
+        let delay_frames = Self::lookahead_frames_for_rate(sample_rate);
         Ok(Self {
             delay: memory.array(2048)?,
             read: 0,

@@ -1,10 +1,21 @@
 //! Native audio execution adapters. Application/composition retain authored
 //! clocks, gain facts, policy and publication; this module owns only PCM/DSP.
+mod channel;
 pub mod dsp;
 mod identity;
+mod input;
+mod preview;
+mod preview_process;
+mod preview_protocol;
+mod preview_worker;
 mod process;
 mod protocol;
+mod rolling;
+mod rpc;
 pub(crate) mod worker;
+pub use preview_process::{
+    NativeAudioPreviewPcmBlock, NativeAudioPreviewProcessConfig, NativeAudioPreviewProducer,
+};
 pub use process::{NativeAudioExecutionReceipt, NativeAudioProcess, NativeAudioProcessConfig};
 mod pcm;
 mod render;
@@ -40,6 +51,25 @@ pub(crate) trait AudioSession<
         )?;
         serde_json::from_value(value).map_err(|_| invalid("Invalid native typed audio block"))
     }
+    fn compile_preview(
+        &mut self,
+        request: opencut_editor_application::classic_audio::BindPreviewSources,
+        resources: &mut R,
+    ) -> Result<opencut_composition::scene::PreviewAudioBlock, EditorError> {
+        let window = request
+            .window
+            .clone()
+            .ok_or_else(|| invalid("Native preview binding requires its command window"))?;
+        self.callback(
+            serde_json::json!({"op":"bindPreviewSources","args":request}),
+            resources,
+        )?;
+        let value = self.callback(
+            serde_json::json!({"op":"compilePreviewBlock","args":window}),
+            resources,
+        )?;
+        serde_json::from_value(value).map_err(|_| invalid("Invalid native typed preview block"))
+    }
 }
 impl<R: opencut_editor_application::classic_audio::ClassicAudioResources + ?Sized> AudioSession<R>
     for opencut_editor_application::classic_audio::ClassicAudioSession<'_>
@@ -64,6 +94,21 @@ impl<R: opencut_editor_application::classic_audio::ClassicAudioResources + ?Size
         resources: &mut R,
     ) -> Result<opencut_composition::scene::RuntimeAudioBlock, EditorError> {
         self.compile_export_block_typed(request, resources)
+    }
+    fn compile_preview(
+        &mut self,
+        request: opencut_editor_application::classic_audio::BindPreviewSources,
+        resources: &mut R,
+    ) -> Result<opencut_composition::scene::PreviewAudioBlock, EditorError> {
+        let window = request
+            .window
+            .clone()
+            .ok_or_else(|| invalid("Native preview binding requires its command window"))?;
+        self.callback(
+            opencut_editor_application::classic_audio::AudioCallback::BindPreview(request),
+            resources,
+        )?;
+        self.compile_preview_block_typed(window, resources)
     }
 }
 fn callback<R, S>(

@@ -384,7 +384,7 @@ impl ClassicAudioSession<'_> {
             ));
         }
         let reply = WindowDecodeAdmission {
-            mode: if small { "whole" } else { "windowed" },
+            mode: if small { "whole" } else { "windowed" }.into(),
             max_frames: logical,
             max_channels: primary.channels,
             working_frames: working,

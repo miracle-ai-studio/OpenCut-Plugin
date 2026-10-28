@@ -1,7 +1,7 @@
 //! Native source observation and bounded concat PCM. The application supplies
 //! decoder/window admission; timestamps remain observations, never an export
 //! placement clock. Ordinary realtime PTS consumers use their separate port.
-use super::{AudioSession, callback, dsp::*, invalid, media_error, pcm::*};
+use super::{AudioSession, callback, dsp::*, input::NativeInput, invalid, pcm::*};
 use opencut_contracts::EditorError;
 use opencut_editor_application::classic_audio::*;
 use opencut_media::{MediaError, native_decode::*};
@@ -78,6 +78,7 @@ pub(crate) struct DecodedSource {
     pub primary: Option<ClassicAudioPrimarySelection>,
     pub profile: DecodeProfile,
     pub track: NativeAudioTrack,
+    pub native_frames: u64,
 }
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -110,6 +111,7 @@ struct Retained {
     target: u64,
     chunks: Vec<Window>,
 }
+#[derive(Clone, Copy)]
 pub(crate) struct DecodeConfig {
     pub sample_rate: u32,
     pub max_pcm_bytes: u64,
@@ -137,90 +139,61 @@ pub(crate) fn decode<R: ClassicAudioResources + ?Sized, S: AudioSession<R>>(
     config: &DecodeConfig,
     memory: &PcmMemory,
 ) -> Result<DecodedSource> {
-    check(resources, config.deadline)?;
-    let opened = callback(
+    let codec_bytes = (config.max_pcm_bytes / 8).min(16 * 1024 * 1024);
+    let mut input = NativeInput::open(
         session,
         resources,
-        "openVerifiedRange",
-        json!({"resource":resource,"handle":handle}),
+        resource,
+        handle,
+        config,
+        memory,
+        codec_bytes,
     )?;
-    let transfer = opened["transferId"]
-        .as_str()
-        .ok_or_else(|| invalid("Missing native audio transfer"))?;
-    let result = (|| {
-        if opened["byteLength"].as_str() != Some(&resource.size.to_string())
-            || opened["contentHash"].as_str() != Some(&resource.content_hash)
-            || opened["maxChunkBytes"].as_u64() != Some(65536)
-        {
-            return Err(invalid(
-                "Native audio descriptor differs from the fixed source",
-            ));
-        }
-        decode_opened(session, resources, resource, transfer, config, memory)
-    })();
-    // Even failure releases the verified descriptor. An earlier failure keeps
-    // its original code; successful decode must also pass release/revocation.
-    let released = resources.release(transfer);
+    let result = decode_opened(session, resources, &mut input, config, memory, None, false);
+    let released = input.close(resources);
     let result = result?;
     released?;
     check(resources, config.deadline)?;
     Ok(result)
 }
-fn decode_opened<R: ClassicAudioResources + ?Sized, S: AudioSession<R>>(
+/// Preparation consumes the exact same bounded concatenation and resampling
+/// kernel as export, with its independently admitted realtime consumer facts.
+/// The native extent is reported separately from the target-rate PCM extent.
+pub(super) fn decode_preview_preparation<R: ClassicAudioResources + ?Sized, S: AudioSession<R>>(
     session: &mut S,
     resources: &mut R,
-    resource: &AudioResource,
-    transfer: &str,
+    input: &mut NativeInput,
+    admission: &serde_json::Value,
+    retain_decoder: bool,
     config: &DecodeConfig,
     memory: &PcmMemory,
 ) -> Result<DecodedSource> {
-    let codec_bytes = (config.max_pcm_bytes / 8).min(16 * 1024 * 1024);
-    if codec_bytes < 65536 {
-        return Err(invalid("Native codec has no admitted frame workspace"));
-    }
-    let limits = AudioDecodeLimits {
-        max_channels: 64,
-        max_frame_samples: 65536,
-        max_resident_bytes: codec_bytes,
-        max_io_bytes_per_operation: config.max_encoded_bytes.max(65536),
-        max_packets_per_operation: 100000,
-    };
-    // The codec and retained origin packets outlive an individual read call.
-    // Keep their reservation until the decoder itself is released.
-    let decoder_memory = memory.reserve(codec_bytes)?;
-    let mut decoder = {
-        NativeAudioDecoder::open(
-            &mut Source {
-                resources,
-                transfer,
-                size: resource.size,
-            },
-            None,
-            limits,
-            config.deadline,
-        )
-        .map_err(media_error)?
-    };
-    let track = decoder.track().clone();
-    if track.sample_rate == 0 || track.channels == 0 {
-        return Err(EditorError::new(
-            "UNSUPPORTED_AUDIO_CAPABILITY",
-            "Native primary format is unknown before PCM admission",
-        ));
-    }
-    let observed = ClassicAudioPrimarySelection {
-        track_id: u32::try_from(track.track_id)
-            .map_err(|_| invalid("Native audio track has no nonnegative identity"))?,
-        codec: match track.codec.as_str() {
-            "pcm_s16le" | "pcm_s16be" => "pcm-s16",
-            "pcm_f32le" | "pcm_f32be" => "pcm-f32",
-            other => other,
-        }
-        .into(),
-        sample_rate: track.sample_rate,
-        channels: track.channels,
-    };
-    let standalone = resource.kind == "audio" && resource.size <= config.max_encoded_bytes;
+    decode_opened(
+        session,
+        resources,
+        input,
+        config,
+        memory,
+        Some(admission),
+        retain_decoder,
+    )
+}
+fn decode_opened<R: ClassicAudioResources + ?Sized, S: AudioSession<R>>(
+    session: &mut S,
+    resources: &mut R,
+    input: &mut NativeInput,
+    config: &DecodeConfig,
+    memory: &PcmMemory,
+    preview_admission: Option<&serde_json::Value>,
+    retain_decoder: bool,
+) -> Result<DecodedSource> {
+    let resource = input.resource.clone();
+    let resource = &resource;
+    let track = input.track.clone();
+    let observed = input.primary.clone();
+    let preview = preview_admission.is_some();
+    let standalone =
+        !preview && resource.kind == "audio" && resource.size <= config.max_encoded_bytes;
     let mut pcm_admission = None;
     if standalone
         && matches!(observed.codec.as_str(), "pcm-s16" | "pcm-f32")
@@ -242,7 +215,7 @@ fn decode_opened<R: ClassicAudioResources + ?Sized, S: AudioSession<R>>(
         }
     }
     let container = !standalone || pcm_admission.is_some();
-    let admission: Admission = serde_json::from_value(match pcm_admission {
+    let admission: Admission = serde_json::from_value(if let Some(admission) = preview_admission { admission.clone() } else { match pcm_admission {
         Some(a) => a,
         None => callback(
             session,
@@ -254,22 +227,12 @@ fn decode_opened<R: ClassicAudioResources + ?Sized, S: AudioSession<R>>(
             },
             json!({"resource":resource,"primary":if container { Some(&observed) } else { None }}),
         )?,
-    })
+    }})
     .map_err(|_| invalid("Invalid native audio decode admission"))?;
     if container {
         // Retained AudioBufferSink.buffers(0) starts at getKeyPacket(0), not at
         // a decoder pre-roll packet whose output is subsequently discarded.
-        decoder
-            .select_keyframe_at_pts(
-                &mut Source {
-                    resources,
-                    transfer,
-                    size: resource.size,
-                },
-                0,
-                config.deadline,
-            )
-            .map_err(media_error)?;
+        input.select_origin(resources, 0.0, config)?;
     }
     let channels = if container {
         track.channels.min(2)
@@ -359,16 +322,7 @@ fn decode_opened<R: ClassicAudioResources + ?Sized, S: AudioSession<R>>(
     let mut total = 0u64;
     loop {
         check(resources, config.deadline)?;
-        let frame = decoder
-            .read(
-                &mut Source {
-                    resources,
-                    transfer,
-                    size: resource.size,
-                },
-                config.deadline,
-            )
-            .map_err(media_error)?;
+        let frame = input.read(resources, config)?;
         let Some(frame) = frame else {
             break;
         };
@@ -406,14 +360,19 @@ fn decode_opened<R: ClassicAudioResources + ?Sized, S: AudioSession<R>>(
         }
         total = end;
     }
-    if total == 0 || !decoder.reached_eof() {
+    if total == 0 || !input.reached_eof()? {
         return Err(invalid("Native source decoded no actual EOF PCM"));
     }
-    drop(decoder);
-    drop(decoder_memory);
+    if !retain_decoder {
+        input.retire_decoder();
+    }
     // Preserve the retained engine's floating-point length calculation. Source
     // positions supplied by composition remain exact integers/rationals.
-    let scaled = total as f64 * (f64::from(config.sample_rate) / f64::from(track.sample_rate));
+    let scaled = if preview {
+        total as f64 * f64::from(config.sample_rate) / f64::from(track.sample_rate)
+    } else {
+        total as f64 * (f64::from(config.sample_rate) / f64::from(track.sample_rate))
+    };
     let frames = if container {
         scaled.ceil()
     } else {
@@ -539,6 +498,7 @@ fn decode_opened<R: ClassicAudioResources + ?Sized, S: AudioSession<R>>(
         pcm,
         primary: if container { Some(observed) } else { None },
         profile,
+        native_frames: total,
         track,
     })
 }

@@ -1,16 +1,17 @@
 //! Parent owns authorization, typed application callbacks, PCM sink and final
 //! publication fence. The shared process monitor can kill stalled codec calls.
 use super::{
-    identity, invalid,
+    invalid,
     protocol::{self, error},
+    rpc,
 };
-use crate::native_process::{self, Domain, ProcessConfig, WorkerProcess, wire};
+use crate::native_process::{Domain, ProcessConfig, WorkerProcess, wire};
 use opencut_contracts::{EditorError, renderer_identity::NativeAudioIdentity};
 use opencut_editor_application::{
     classic_audio::*,
     scene_audio_jobs::{LocalAudioExecutionPolicy, validate_policy},
 };
-use serde_json::{Value, json};
+use serde_json::json;
 use std::{path::PathBuf, time::Duration};
 pub struct NativeAudioProcessConfig {
     pub worker: PathBuf,
@@ -62,34 +63,13 @@ impl NativeAudioProcess {
             strict_cgroup: config.strict_cgroup.clone(),
             domain: Domain::Audio,
         })?;
-        worker.send(
-            json!({"type":"initialize","purpose":"audio_export","policy":config.policy}),
-            &[],
+        let identity = rpc::initialize(
+            &mut worker,
+            "audio_export",
+            serde_json::to_value(&config.policy)
+                .map_err(|_| error("Invalid native audio policy"))?,
+            resources,
         )?;
-        let ready = receive(&worker, resources)?;
-        protocol::reject_failure(&ready)?;
-        if ready.meta["type"] != "ready"
-            || ready.meta["purpose"] != "audio_export"
-            || wire::integer(&ready.meta, "pid")? != u64::from(worker.pid())
-            || !ready.data.is_empty()
-        {
-            return Err(error("Invalid native audio readiness"));
-        }
-        let identity: NativeAudioIdentity = serde_json::from_value(ready.meta["identity"].clone())
-            .map_err(|_| error("Invalid native audio identity"))?;
-        validate_native_identity(&identity)?;
-        if identity.worker_sha256 != worker.expected_hash
-            || identity.dsp_sha256 != identity::dsp_hash()
-            || identity.platform != native_process::system_identity()?
-            || identity.decoder_libraries != native_process::library_identities()?
-        {
-            return Err(EditorError::new(
-                "AUDIO_ENGINE_CHANGED",
-                "Native audio worker differs from the configured runtime",
-            ));
-        }
-        worker.unchanged()?;
-        resources.checkpoint()?;
         worker.send(
             json!({"type":"audio","frame":0,"plan":session.plan()?,"handles":handles}),
             &[],
@@ -97,67 +77,21 @@ impl NativeAudioProcess {
         let mut requests = 0u64;
         let mut offsets = [0u64; 2];
         let receipt = loop {
-            let packet = receive(&worker, resources)?;
+            let packet = rpc::receive(&worker, resources)?;
             protocol::reject_failure(&packet)?;
             if wire::integer(&packet.meta, "frame")? != 0 {
                 return Err(error("Native audio output belongs to another command"));
             }
             match wire::text(&packet.meta, "type")? {
-                "request" => {
-                    requests = requests
-                        .checked_add(1)
-                        .filter(|n| *n <= 100000)
-                        .ok_or_else(|| error("Native audio callback limit exceeded"))?;
-                    if wire::integer(&packet.meta, "id")? != requests || !packet.data.is_empty() {
-                        return Err(error("Native audio callback order changed"));
-                    }
-                    let args = &packet.meta["args"];
-                    match wire::text(&packet.meta, "operation")? {
-                        "callback" => {
-                            let request: AudioCallback = serde_json::from_value(args.clone())
-                                .map_err(|_| error("Invalid typed native audio callback"))?;
-                            let data = match request {
-                                AudioCallback::Block(request) => protocol::encode(
-                                    &session.compile_export_block_typed(request, resources)?,
-                                )?,
-                                request => {
-                                    protocol::encode(&session.callback(request, resources)?)?
-                                }
-                            };
-                            resources.checkpoint()?;
-                            worker.send(json!({"type":"json_reply","frame":0,"id":requests,"length":data.len()}),&[])?;
-                            for (n, chunk) in data.chunks(wire::DATA_BYTES).enumerate() {
-                                resources.checkpoint()?;
-                                worker.send(json!({"type":"json_chunk","frame":0,"id":requests,"offset":n*wire::DATA_BYTES}),chunk)?;
-                            }
-                        }
-                        "read" => {
-                            let count = wire::integer(args, "count")?;
-                            if count == 0 || count > wire::DATA_BYTES as u64 {
-                                return Err(error("Invalid native audio verified range"));
-                            }
-                            let (bytes, eof) = resources.read(
-                                wire::text(args, "transfer")?,
-                                wire::integer(args, "offset")?,
-                                count as u32,
-                            )?;
-                            if bytes.len() > count as usize {
-                                return Err(error("Oversized native audio byte reply"));
-                            }
-                            resources.checkpoint()?;
-                            worker.send(
-                                json!({"type":"reply","frame":0,"id":requests,"eof":eof}),
-                                &bytes,
-                            )?;
-                        }
-                        "release" => {
-                            resources.release(wire::text(args, "transfer")?)?;
-                            resources.checkpoint()?;
-                            worker.send(json!({"type":"reply","frame":0,"id":requests}), &[])?;
-                        }
-                        _ => return Err(error("Unknown native audio resource operation")),
-                    }
-                }
+                "request" => rpc::service(
+                    &mut worker,
+                    packet,
+                    0,
+                    &mut requests,
+                    session,
+                    resources,
+                    rpc::Mode::Export,
+                )?,
                 "pcm" => {
                     let channel = wire::integer(&packet.meta, "channel")?;
                     let offset = wire::integer(&packet.meta, "offset")?;
@@ -206,7 +140,7 @@ impl NativeAudioProcess {
         };
         resources.checkpoint()?;
         worker.send(json!({"type":"finish","frames":1}), &[])?;
-        let complete = receive(&worker, resources)?;
+        let complete = rpc::receive(&worker, resources)?;
         protocol::reject_failure(&complete)?;
         if complete.meta["type"] != "complete"
             || wire::integer(&complete.meta, "frames")? != 1
@@ -238,17 +172,5 @@ impl NativeAudioProcess {
                 identity,
             },
         })
-    }
-}
-fn receive(
-    worker: &WorkerProcess,
-    resources: &mut dyn ClassicAudioResources,
-) -> Result<wire::Packet, EditorError> {
-    loop {
-        resources.checkpoint()?;
-        if let Some(packet) = worker.receive()? {
-            resources.checkpoint()?;
-            return Ok(packet);
-        }
     }
 }

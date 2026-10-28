@@ -1,6 +1,6 @@
 use super::*;
 use crate::transport_io::StreamRead;
-use opencut_native_services::classic_audio_preview::ClassicAudioPreviewPcmBlock;
+use opencut_native_services::native_audio::NativeAudioPreviewPcmBlock;
 use sha2::{Digest, Sha256};
 use std::time::Duration;
 
@@ -14,7 +14,7 @@ pub struct AudioPreviewReader {
     generation: u64,
     epoch: u64,
     sequence: u64,
-    pending: Option<mpsc::Receiver<Result<ClassicAudioPreviewPcmBlock, EditorError>>>,
+    pending: Option<mpsc::Receiver<Result<NativeAudioPreviewPcmBlock, EditorError>>>,
 }
 impl AudioPreviewReader {
     pub(super) fn new(entry: Arc<Entry>, input: AudioPreviewStream) -> Result<Self, EditorError> {
@@ -122,6 +122,7 @@ impl AudioPreviewReader {
             }
         }
         let header = AudioPreviewPcmHeader {
+            pcm_stage: AudioPreviewPcmStage::Mastered,
             session_id: self.input.session_id.clone(),
             identity: view.identity,
             generation: self.input.generation.clone(),
@@ -634,16 +635,34 @@ mod picture_expiry_tests {
         };
         assert!(weak.upgrade().is_some());
         for index in 1..=10 {
-            let at=Time{ticks:index.to_string(),timebase:24};
-            let prepared=Arc::new(opencut_editor_application::visual_preview::PreparedPicture::new(
-                opencut_editor_application::scene_frame_jobs::prepare(&snapshot,"s",&at).unwrap(),policy.clone(),vec![]).unwrap());
-            state.remember_picture(CachedPicture{resolution:opencut_contracts::export_video::RasterResolution::Source,
-                retained_picture_bytes:0,session:session.clone(),prepared});
-            assert!(state.pictures.len()<=8);
+            let at = Time {
+                ticks: index.to_string(),
+                timebase: 24,
+            };
+            let prepared = Arc::new(
+                opencut_editor_application::visual_preview::PreparedPicture::new(
+                    opencut_editor_application::scene_frame_jobs::prepare(&snapshot, "s", &at)
+                        .unwrap(),
+                    policy.clone(),
+                    vec![],
+                )
+                .unwrap(),
+            );
+            state.remember_picture(CachedPicture {
+                resolution: opencut_contracts::export_video::RasterResolution::Source,
+                retained_picture_bytes: 0,
+                session: session.clone(),
+                prepared,
+            });
+            assert!(state.pictures.len() <= 8);
         }
         assert!(weak.upgrade().is_none());
-        assert!(state.pictures.iter().any(|p|p.prepared.time()==&Time{ticks:"6".into(),timebase:24}));
-        let weak=Arc::downgrade(&state.pictures.last().unwrap().prepared);
+        assert!(state.pictures.iter().any(|p| p.prepared.time()
+            == &Time {
+                ticks: "6".into(),
+                timebase: 24
+            }));
+        let weak = Arc::downgrade(&state.pictures.last().unwrap().prepared);
         assert!(state.machine.expire(31000).unwrap());
         assert!(weak.upgrade().is_some());
         assert!(!state.expire(31000).unwrap());

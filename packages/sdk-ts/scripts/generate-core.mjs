@@ -454,9 +454,9 @@ const audioStreamInput = component(audioStreamEnvelope.data.input, "AudioPreview
 component(audioStreamEnvelope.data.header, "AudioPreviewPcmHeaderV4");
 paths["/api/preview/audio/stream"] = { post: {
   operationId: "opencut_audio_preview_stream",
-  description: "Bounded fixed-generation unmastered stereo Float32. Each OCAP frame has 12-byte little-endian lengths, a generated JSON header and a maximum 32768-byte interleaved payload. Actual consumption is acknowledged through the control operation.",
+  description: "Bounded fixed-generation mastered stereo Float32. Each OCAP frame has 12-byte little-endian lengths, a generated JSON header with pcm_stage=mastered, and a maximum 32768-byte interleaved payload. Consumers present completed PCM directly without another compressor, gain or look-ahead delay. Actual consumption is acknowledged through the control operation.",
   requestBody: { required: true, content: { "application/json": { schema: audioStreamInput } } },
-  responses: { "200": { description: "OCAP framed PCM; maximum two unconsumed blocks.", content: {
+  responses: { "200": { description: "OCAP framed mastered PCM; maximum 131072 unconsumed frames.", content: {
     "application/vnd.opencut.audio-preview": { schema: { type: "string", format: "binary" } },
   } }, default: transportError },
 } };

@@ -52,7 +52,7 @@ pub struct RuntimeAudioVoiceBlock {
     pub amplitudes: Vec<f64>,
 }
 
-fn deserialize_amplitudes<'de, D: serde::Deserializer<'de>>(
+pub(super) fn deserialize_amplitudes<'de, D: serde::Deserializer<'de>>(
     deserializer: D,
 ) -> Result<Vec<f64>, D::Error> {
     struct Amplitudes;
@@ -82,6 +82,16 @@ fn deserialize_amplitudes<'de, D: serde::Deserializer<'de>>(
         }
     }
     deserializer.deserialize_seq(Amplitudes)
+}
+pub(super) fn deserialize_f64<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<f64, D::Error> {
+    let raw = <Box<serde_json::value::RawValue> as serde::Deserialize>::deserialize(deserializer)?;
+    raw.get()
+        .parse::<f64>()
+        .ok()
+        .filter(|n| n.is_finite())
+        .ok_or_else(|| serde::de::Error::custom("Expected a finite compiled floating-point fact"))
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

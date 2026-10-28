@@ -21,7 +21,7 @@ impl Samples {
             Self::Stereo(_) => 2,
         }
     }
-    fn value(&self, channel: usize, frame: usize) -> f32 {
+    pub(super) fn value(&self, channel: usize, frame: usize) -> f32 {
         match self {
             Self::Planar(p) => p[channel].as_slice()[frame],
             Self::Stereo(p) => p.as_slice()[frame * 2 + channel],

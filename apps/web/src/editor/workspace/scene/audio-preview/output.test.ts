@@ -3,10 +3,6 @@ import { PreviewAudioOutput } from "./output";
 import { WorkerPreviewPump } from "./worker-pump";
 import type { DeviceReceipt } from "./device-port";
 
-vi.mock("../audio-preview-mastering", () => ({
-  CLASSIC_MASTERING_LOOKAHEAD_SECONDS: .006,
-  createClassicMasteringChain: () => ({ input: {}, disconnect: vi.fn() }),
-}));
 vi.mock("./worklet.ts?worker&url", () => ({ default: "/worklet.js" }));
 vi.mock("./worker-pump", () => ({
   WorkerPreviewPump: class {
@@ -30,6 +26,8 @@ class Device {
   destination = {};
   getOutputTimestamp = () => ({ contextTime: outputTime, performanceTime: performance.now() });
   onstatechange: (() => void) | null = null;
+  createDynamicsCompressor = vi.fn(() => {throw Error("Device must not master native PCM again");});
+  createGain = vi.fn(() => {throw Error("Device must not add an output gain to native PCM");});
   audioWorklet = { addModule: vi.fn(async () => {}) };
   resume = vi.fn(async () => {});
   close = vi.fn(async () => {
@@ -88,6 +86,18 @@ afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
   vi.clearAllMocks();
+});
+
+it("presents native-mastered samples without a second compressor, gain or look-ahead",async()=>{
+  const output=new PreviewAudioOutput("generation",48000,vi.fn(),vi.fn());
+  try {
+    await output.ready;
+    expect(Node.latest.connect).toHaveBeenCalledExactlyOnceWith(Device.latest.destination);
+    expect(Device.latest.createDynamicsCompressor).not.toHaveBeenCalled();
+    expect(Device.latest.createGain).not.toHaveBeenCalled();
+    const channel=new MessageChannel();
+    expect(output.bindPresentationClock(channel.port1).graphLatencySeconds).toBe(0);
+  }finally{output.silence();await output.stop();}
 });
 
 it("publishes the valid device mapping before the first PCM content interval",async()=>{
@@ -180,7 +190,7 @@ it("rejects a device sample-rate mismatch before installing a worklet or playing
   await expect(output.ready).rejects.toThrow("sample rate");
   expect(await output.stop()).toBe("0");
 });
-it("keeps the output graph alive until the last submitted sample and look-ahead reach the device", async () => {
+it("keeps the output graph alive until the last native-mastered sample reaches the device", async () => {
   vi.useFakeTimers();
   vi.advanceTimersByTime(10);
   outputTime = 500;

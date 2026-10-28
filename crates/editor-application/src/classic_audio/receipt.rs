@@ -2,7 +2,7 @@
 use super::*;
 use opencut_composition::scene::ClassicAudioPreparationFacts;
 use serde::{Deserialize, Serialize};
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ClassicAudioIdentity {
     pub project_id: String,
@@ -88,7 +88,7 @@ pub struct ClassicAudioExecutionReceipt {
     pub quota: AudioQuotaReceipt,
     pub runtime_identity: ClassicAudioRuntimeReceipt,
 }
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ClassicAudioPreviewDecoderReceipt {
     pub asset_id: String,
@@ -97,7 +97,7 @@ pub struct ClassicAudioPreviewDecoderReceipt {
     pub frame_count: Option<String>,
     pub channels: u32,
 }
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ClassicAudioPreviewReceipt {
     pub identity: ClassicAudioIdentity,

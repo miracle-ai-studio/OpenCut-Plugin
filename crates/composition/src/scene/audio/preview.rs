@@ -177,6 +177,7 @@ pub fn prepare_preview_audio_scene(
 pub struct PreviewAudioSegment {
     pub segment_id: u32,
     /// Pinned decoder's observed seconds, not authored project ticks.
+    #[serde(deserialize_with = "runtime_pcm::deserialize_f64")]
     pub timestamp_seconds: f64,
     #[serde(with = "runtime_pcm::decimal_u64")]
     pub frame_count: u64,
@@ -371,23 +372,25 @@ fn bind_preview_formats<'a>(
         original_order,
     })
 }
-#[derive(Clone, Debug, PartialEq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PreviewSourceSample {
     pub segment_id: u32,
-    #[serde(serialize_with = "runtime_pcm::serialize_u64")]
+    #[serde(with = "runtime_pcm::decimal_u64")]
     pub lower: u64,
-    #[serde(serialize_with = "runtime_pcm::serialize_u64")]
+    #[serde(with = "runtime_pcm::decimal_u64")]
     pub upper: u64,
+    #[serde(deserialize_with = "runtime_pcm::deserialize_f64")]
     pub fraction: f64,
 }
-#[derive(Clone, Debug, PartialEq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PreviewAudioVoiceBlock {
     pub element_id: String,
     pub block_offset: u32,
     pub frame_count: u32,
     pub positions: Vec<Option<PreviewSourceSample>>,
+    #[serde(deserialize_with = "runtime_pcm::deserialize_amplitudes")]
     pub amplitudes: Vec<f64>,
 }
 #[derive(Clone, Debug, PartialEq, Serialize)]
@@ -400,15 +403,43 @@ pub struct PreviewAudioIdentity {
     pub sample_rate: u32,
     pub channels: u32,
 }
-#[derive(Clone, Debug, PartialEq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PreviewAudioBlock {
     pub identity: PreviewAudioIdentity,
-    #[serde(serialize_with = "runtime_pcm::serialize_u64")]
+    #[serde(with = "runtime_pcm::decimal_u64")]
     pub start_sample: u64,
     pub frame_count: u32,
     pub voices: Vec<PreviewAudioVoiceBlock>,
     pub receipts: Vec<AudioReceipt>,
+}
+impl<'de> Deserialize<'de> for PreviewAudioIdentity {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        #[derive(Deserialize)]
+        #[serde(rename_all = "camelCase", deny_unknown_fields)]
+        struct Fields {
+            project_id: String,
+            revision: String,
+            sequence_id: String,
+            profile: String,
+            sample_rate: u32,
+            channels: u32,
+        }
+        let f = Fields::deserialize(deserializer)?;
+        if f.profile != CLASSIC_REALTIME_AUDIO_PROFILE {
+            return Err(serde::de::Error::custom(
+                "Compiled preview profile differs from fixed realtime semantics",
+            ));
+        }
+        Ok(Self {
+            project_id: f.project_id,
+            revision: f.revision,
+            sequence_id: f.sequence_id,
+            profile: CLASSIC_REALTIME_AUDIO_PROFILE,
+            sample_rate: f.sample_rate,
+            channels: f.channels,
+        })
+    }
 }
 fn preview_amplitude(
     base: Gain,
@@ -722,11 +753,13 @@ pub fn compile_preview_audio_block_scene(
 
 /// Decoder API projections from the same exact source mapping used by the
 /// sampler. Browser code neither maps authored clocks nor infers retime.
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PreviewSourceWindow {
     pub asset_id: String,
+    #[serde(deserialize_with = "runtime_pcm::deserialize_f64")]
     pub start_seconds: f64,
+    #[serde(deserialize_with = "runtime_pcm::deserialize_f64")]
     pub end_seconds: f64,
 }
 pub fn preview_source_windows(

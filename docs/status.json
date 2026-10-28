@@ -417,14 +417,15 @@
   ],
   "native_rendering_replacement": {
     "source_base_commit": "74afa429",
-    "execution": "hard cutover in static-frame, export visual and Web continuous preview hosts; no selectable browser visual backend or fallback; source artwork and native audio remain pending",
+    "execution": "hard cutover in static-frame, visual/audio export and Web continuous visual/audio preview hosts; no selectable browser render backend or fallback; source artwork remains pending and realtime audio follow-up acceptance is in progress",
     "implementation": "Native worker shares GPU/decode/raster and application sessions across static frames, export and live preview; CPU-only text authoring/three subtitle planners use the same shaping/layout implementation",
     "build": {
       "cli_sha256": "93e1f897aff47a41f9beb8d07d9692c083edf3c7d2448758f6a4ad11e02e577e",
       "worker_sha256": "7fb71710c40e823f28fa64762b52a0538e6ee3f170a598b655f63bcb5e8c70a2",
       "status": "passed integrated production and selected test builds; exact CLI generated and checked contracts; Web typecheck/build passed",
       "source_digest": "acff52cae43ecd7c5ab7e637672e2a1af76b4f3e5f40a75e4e1c321d9d156674",
-      "web_files_sha256": "5688c26f44535f4d26f0f357694426a69f0f04bdf9f999131adf0477ddb7ce10"
+      "web_files_sha256": "5688c26f44535f4d26f0f357694426a69f0f04bdf9f999131adf0477ddb7ce10",
+      "scope": "retained accepted visual/CPU-text baseline; newer audio export and preview candidates are recorded separately below"
     },
     "scoped_behavior": {
       "generated_and_canonical_contracts": "passed; 184 operations, 12 domains",
@@ -523,7 +524,7 @@
       "broader native text scripts, fonts, synthesis and platform coverage",
       "long native continuous video/audio playback and seek/retirement/resource matrix",
       "source artwork",
-      "native audio execution and independent PCM",
+      "broader native audio codecs, prepared preview and long-play/device acceptance",
       "large-source and 4K pixel/memory/performance matrix",
       "runtime dependency/license packaging and clean installation",
       "broader editor and manual acceptance"
@@ -810,6 +811,146 @@
           "project_unchanged": true,
           "scope": "one retained 4-second mono AAC source with two explicit half-second cuts, whole 48k/44.1k and cross-cut range WAV plus 24-frame 640x360 video; DSP/internal-engine matrix separately recorded; no realtime preview, physical device, long-source, broad codec, portable install or whole-product acceptance",
           "delivery_ready": false
+        }
+      },
+      "realtime_preview_working_tree": {
+        "base_commit": "8e70bc58f3a17873053dffe9b856e1b11a5d9355",
+        "status": "Integrated native realtime PCM feature passed 120 scoped tests, independent actual AAC HTTP/export PCM, blocked-child public stop and repeated scoped editor flows; one intermittent post-build resume stall remains unresolved, so complete delivery stays false",
+        "implemented_source": [
+          "one verified native input owner shared by export and realtime; descriptor release and persistent codec reservation",
+          "ordinary source rolling PTS windows, admitted chunk/frame limits, exact repeated-interval checks, eviction and observed EOF",
+          "prepared realtime consumers reuse existing native concat/resample/pitch kernels with realtime native/target extent observations",
+          "shared application preview source binding and typed Rust tap/gain compilation; native Float32 mixing in stored order",
+          "continuous native compressor with fixed declared lookahead read-ahead, EOF zero tail and generation/overlay reset",
+          "shared native audio callback channel and bounded body transport for exact Float64 bindings",
+          "fresh codec context after demux seek; preserve authorized AVIO and observed packet-origin comparison",
+          "new source regressions for ordinary mono/stereo, seek/rewind/EOF, shared prepared/ordinary consumers, exact typed facts and independent continuous compressor"
+        ],
+        "source_checks": {
+          "architecture_tests_passed": 14,
+          "architecture_modules": 24,
+          "temporary_exception_edges": 0,
+          "contract_boundaries": "passed",
+          "rust_build": "first integrated candidate passed; subsequent stage/seek changes building",
+          "behavior_tests": "118 passed only for recorded first integrated binaries; subsequent stage/seek/pitch changes pending"
+        },
+        "independent_reference": {
+          "browser_sha256": "b5626938028f718a6cdb0c8eff9d0346b186d68b4e04b43df4f9f579c81ecf28",
+          "manifest_sha256": "9852da23df0ba06095d1aba12b7701876ccdf8ad89163b79665859959cd14739",
+          "cases_captured": 6,
+          "rates": [
+            44100,
+            48000
+          ],
+          "signals": [
+            "burst",
+            "small",
+            "impulse"
+          ],
+          "declared_lookahead_frames": {
+            "44100": 264,
+            "48000": 288
+          },
+          "scope": "Six continuous compressor cases compared successfully on first integrated candidate; six additional prepared pitch/master references retained but new tests not run yet"
+        },
+        "remaining_integration": [
+          "resolve the retained intermittent real editor resume stall with device/picture/transport telemetry",
+          "long native playback, large sources and resource/retirement matrix",
+          "physical device/manual and clean installation acceptance"
+        ],
+        "preview_audio_cutover": true,
+        "delivery_ready": false,
+        "first_integrated_candidate": {
+          "cli_sha256": "2c9297318d531bc8c3f81d7c98a2919593a6f410480e2ef940f8ce965ab65d59",
+          "worker_sha256": "71c2e2beb3b9e6908b41bf04e67068dc0a800814bc8bc424b6eeab7f5a116a01",
+          "scoped_tests_passed": 118,
+          "generated_and_canonical_contracts": "passed, 184 operations and 12 domains",
+          "web_build": "passed",
+          "real_http": {
+            "sample_rates": [
+              44100,
+              48000
+            ],
+            "independent_pcm_maximum_absolute_error": 0,
+            "pause_seek_replay_same_worker": true,
+            "stop_reaped": true,
+            "project_and_durable_jobs_unchanged": true,
+            "first_block_seconds": [
+              0.5794377678539604,
+              0.579129503807053
+            ],
+            "warm_replay_first_block_seconds": [
+              0.017205396201461554,
+              0.01922136708162725
+            ],
+            "scope": "one-second AAC two-cut fixture; HTTP PCM only, no fabricated device reports or physical audio claim"
+          }
+        },
+        "current_candidate": {
+          "cli_sha256": "b9dc33c32b67560afe2d61e2c5327b983270ac16aaed8a4545e6ee8b8f63cd32",
+          "worker_sha256": "47eb116060352ba68f29a0f376a8c3821848a16ee9897a291159e546ee214b70",
+          "product_build": "passed",
+          "generated_and_canonical_contracts": "passed; 184 operations, 12 domains",
+          "web_typecheck_and_build": "passed",
+          "web_output_transport_clock_tests": 19,
+          "required_pcm_stage": "mastered",
+          "real_http": {
+            "sample_rates": [
+              44100,
+              48000
+            ],
+            "independent_pcm_maximum_absolute_error": 0,
+            "pause_seek_replay_same_worker": true,
+            "stop_reaped": true,
+            "project_and_durable_jobs_unchanged": true,
+            "scope": "retained one-second AAC fixture; no physical audio claim"
+          },
+          "public_stop_fault_injection": {
+            "passed": true,
+            "signal": "SIGSTOP against verified owned child",
+            "stop_seconds": 0.032126002945005894,
+            "stale_pcm_bytes": 0,
+            "owned_child_reaped": true,
+            "project_and_durable_jobs_unchanged": true
+          },
+          "native_test_batch": {
+            "passed": 120,
+            "failed": 0,
+            "prepared_pitch_pcm_comparisons": 12,
+            "prepared_pitch_maximum_absolute_error": 0,
+            "exact_wave_seek_regression": "passed"
+          },
+          "actual_editor": {
+            "passed_scoped_runs": "one diagnostic full text/AAC run, then five repeated text flows plus one AAC flow with unchanged gates",
+            "verified": [
+              "play",
+              "pause",
+              "resume to end",
+              "go-to-time then play to end",
+              "actual Web Audio consumption reports",
+              "project unchanged"
+            ],
+            "remaining_failure": "one post-build 4-second text run stalled near 1.87 seconds on resume for 30 seconds, despite no API/page error; later successful repetitions do not prove resolution",
+            "physical_audio": "not accepted"
+          },
+          "actual_export": {
+            "passed": true,
+            "independent_pcm_maximum_absolute_error": 0,
+            "sample_rates": [
+              44100,
+              48000
+            ],
+            "range_and_video_preencode": "passed",
+            "video_frames": 24,
+            "independent_pixel_mae_range": [
+              1.7219227430555555,
+              2.429564525462963
+            ],
+            "gate": 5,
+            "final_mp4_sha256": "5a2ec9a189b97147a4dde805f97690d5c2229ef5985f2de684c6e45a47d9f969",
+            "scope": "same retained one-second AAC two-cut fixture; no long-export throughput claim",
+            "verifier_environment_repair": "four jobs succeeded before missing jsonschema halted validation; installed isolated verifier-only dependency and reused those exact completed jobs without rerendering"
+          }
         }
       }
     }

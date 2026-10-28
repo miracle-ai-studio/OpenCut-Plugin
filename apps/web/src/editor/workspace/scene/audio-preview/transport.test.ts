@@ -47,7 +47,7 @@ async function context() {
   });
   s.total_frames = "2";
   const header: AudioPreviewPcmHeader = {
-
+    pcm_stage: "mastered",
     session_id: s.session_id,
     identity: s.identity,
     generation: s.generation,
@@ -72,6 +72,26 @@ it("verifies exact identity and Float32 LE while parsing split prefix/header/pay
     ))
       blocks.push([...block]);
     expect(blocks).toEqual([[0.5, -0.5, 0.25, -0.25]]);
+  } finally {
+    f.cleanup();
+  }
+});
+it("requires completed native mastering before yielding samples to a direct device graph", async () => {
+  const { f, s, header } = await context();
+  try {
+    for (const pcm_stage of [undefined, "unmastered", "unknown"]) {
+      const malformed = {
+        ...header,
+        pcm_stage,
+      } as unknown as AudioPreviewPcmHeader;
+      await expect(
+        readPreviewPcm(
+          response([encode(malformed, [0, 0, 0, 0])]),
+          s,
+          new AbortController().signal,
+        ).next(),
+      ).rejects.toThrow();
+    }
   } finally {
     f.cleanup();
   }

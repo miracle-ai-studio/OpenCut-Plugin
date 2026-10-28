@@ -178,6 +178,9 @@ pub struct AudioPreviewCapability {
     pub available: bool,
     pub unavailable_reason: Option<String>,
     pub profile: AudioPreviewProfile,
+    /// Completed scene PCM. Consumers present it directly without a second
+    /// compressor, gain or look-ahead delay.
+    pub pcm_stage: AudioPreviewPcmStage,
     pub sample_rates: Vec<u32>,
     pub stream_path: String,
     pub max_sessions_per_database: u32,
@@ -187,11 +190,17 @@ pub struct AudioPreviewCapability {
     pub authorization_heartbeat_ms: u32,
     pub session_ttl_ms: u32,
 }
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum AudioPreviewPcmStage {
+    Mastered,
+}
 /// One header precedes one interleaved stereo Float32 little-endian payload.
 /// One bounded PCM envelope, independent from project storage formats.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct AudioPreviewPcmHeader {
+    pub pcm_stage: AudioPreviewPcmStage,
     pub session_id: String,
     pub identity: AudioPreviewIdentity,
     pub generation: String,

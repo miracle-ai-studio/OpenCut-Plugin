@@ -169,6 +169,7 @@ pub(crate) fn render<R: ClassicAudioResources + ?Sized, S: AudioSession<R>>(
                 primary,
                 profile,
                 track,
+                ..
             } = source::decode(
                 session,
                 resources,
@@ -392,7 +393,7 @@ fn release<R: ClassicAudioResources + ?Sized, S: AudioSession<R>>(
     }
     Ok(())
 }
-fn prepare<R: ClassicAudioResources + ?Sized, S: AudioSession<R>>(
+pub(super) fn prepare<R: ClassicAudioResources + ?Sized, S: AudioSession<R>>(
     session: &mut S,
     resources: &mut R,
     element: &str,

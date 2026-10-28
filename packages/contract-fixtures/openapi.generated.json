@@ -11455,7 +11455,7 @@
     "/api/preview/audio/stream": {
       "post": {
         "operationId": "opencut_audio_preview_stream",
-        "description": "Bounded fixed-generation unmastered stereo Float32. Each OCAP frame has 12-byte little-endian lengths, a generated JSON header and a maximum 32768-byte interleaved payload. Actual consumption is acknowledged through the control operation.",
+        "description": "Bounded fixed-generation mastered stereo Float32. Each OCAP frame has 12-byte little-endian lengths, a generated JSON header with pcm_stage=mastered, and a maximum 32768-byte interleaved payload. Consumers present completed PCM directly without another compressor, gain or look-ahead delay. Actual consumption is acknowledged through the control operation.",
         "requestBody": {
           "required": true,
           "content": {
@@ -11468,7 +11468,7 @@
         },
         "responses": {
           "200": {
-            "description": "OCAP framed PCM; maximum two unconsumed blocks.",
+            "description": "OCAP framed mastered PCM; maximum 131072 unconsumed frames.",
             "content": {
               "application/vnd.opencut.audio-preview": {
                 "schema": {
@@ -32116,6 +32116,10 @@
                 "minimum": 0,
                 "type": "integer"
               },
+              "pcm_stage": {
+                "$ref": "#/components/schemas/OpencutAudioPreviewCapabilityOutput/$defs/AudioPreviewPcmStage",
+                "description": "Completed scene PCM. Consumers present it directly without a second\ncompressor, gain or look-ahead delay."
+              },
               "profile": {
                 "$ref": "#/components/schemas/OpencutAudioPreviewCapabilityOutput/$defs/AudioPreviewProfile"
               },
@@ -32145,6 +32149,7 @@
             "required": [
               "available",
               "profile",
+              "pcm_stage",
               "sample_rates",
               "stream_path",
               "max_sessions_per_database",
@@ -32155,6 +32160,12 @@
               "session_ttl_ms"
             ],
             "type": "object"
+          },
+          "AudioPreviewPcmStage": {
+            "enum": [
+              "mastered"
+            ],
+            "type": "string"
           },
           "AudioPreviewProfile": {
             "enum": [
@@ -69209,6 +69220,9 @@
           "AudioPreviewIdentity": {
             "$ref": "#/components/schemas/OpencutAudioPreviewRecoveryDispatchOutput/$defs/AudioPreviewIdentity"
           },
+          "AudioPreviewPcmStage": {
+            "$ref": "#/components/schemas/OpencutAudioPreviewCapabilityOutput/$defs/AudioPreviewPcmStage"
+          },
           "AudioPreviewProfile": {
             "$ref": "#/components/schemas/OpencutAudioPreviewCapabilityOutput/$defs/AudioPreviewProfile"
           }
@@ -69234,6 +69248,9 @@
           "overlay_epoch": {
             "type": "string"
           },
+          "pcm_stage": {
+            "$ref": "#/components/schemas/AudioPreviewPcmHeaderV4/$defs/AudioPreviewPcmStage"
+          },
           "sequence": {
             "type": "string"
           },
@@ -69245,6 +69262,7 @@
           }
         },
         "required": [
+          "pcm_stage",
           "session_id",
           "identity",
           "generation",

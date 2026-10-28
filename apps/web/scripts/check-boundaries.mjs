@@ -28,14 +28,8 @@ export function violations(file, code) {
       errors.push(`${file}: dynamic module path`);
       return;
     }
-    if (
-      name.includes("classic-audio-renderer") &&
-      !(
-        file === "editor/workspace/scene/audio-preview-mastering.ts" &&
-        name === "../../../../../../packages/classic-audio-renderer/src/mastering.mjs"
-      )
-    )
-      errors.push(`${file}: renderer imports require the pure mastering bridge`);
+    if (name.includes("classic-audio-renderer"))
+      errors.push(`${file}: audio adapters present native PCM and cannot import browser rendering or mastering`);
     if (name.includes("classic-visual-renderer")) {
       const bindings = node && ts.isImportDeclaration(node) && node.importClause?.namedBindings;
       if (file !== "editor/workspace/scene/visual-preview-renderer.ts" ||

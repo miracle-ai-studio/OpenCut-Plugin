@@ -696,6 +696,28 @@ impl<'a> ClassicAudioSession<'a> {
             }
             AudioCallback::Block(v) => self.block(v),
             AudioCallback::PreviewWindows(v) => self.preview_windows(v),
+            AudioCallback::AdmitPreviewBlock(v) => {
+                let preview = self
+                    .preview
+                    .ok_or_else(|| invalid("Not a realtime session"))?;
+                let start = decimal(&v.start_sample)?;
+                if start < self.preview_anchor
+                    || v.frame_count == 0
+                    || v.frame_count > 4096
+                    || start
+                        .checked_add(u64::from(v.frame_count))
+                        .is_none_or(|end| end > preview.extent())
+                {
+                    return Err(invalid(
+                        "Preview admission exceeds the fixed generation window",
+                    ));
+                }
+                let count = preview.block_frame_limit(start).min(v.frame_count);
+                if count == 0 {
+                    return Err(invalid("No native preview block prefix fits admission"));
+                }
+                serialize(count)
+            }
             AudioCallback::BindPreview(v) => self.bind_preview(v),
             AudioCallback::PreviewBlock(v) => self.preview_block(v),
             AudioCallback::ObservePreviewDecoded(v) => self.observe_preview_decoded(v),
@@ -1244,7 +1266,7 @@ impl<'a> ClassicAudioSession<'a> {
     pub fn compile_preview_block_typed(
         &mut self,
         request: PreviewBlockRequest,
-        resources: &mut dyn ClassicAudioResources,
+        resources: &mut (impl ClassicAudioResources + ?Sized),
     ) -> Result<PreviewAudioBlock, EditorError> {
         resources.checkpoint()?;
         self.preview_block_typed(request)

@@ -1,6 +1,8 @@
 //! Real application compiler -> verified CAS -> libav -> native preparation /
 //! mixing / mastering. Expected PCM comes from authored samples or retained
 //! independent Chromium captures, never another invocation of this engine.
+#[path = "preview_tests.rs"]
+mod preview_tests;
 use super::*;
 use crate::classic_audio::VerifiedClassicAudioResources;
 use opencut_asset_store::AssetStore;

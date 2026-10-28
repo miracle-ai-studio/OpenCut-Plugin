@@ -1,6 +1,5 @@
 import { DEVICE_PRIME_BLOCKS } from "./buffer-limits";
 import workletUrl from "./worklet.ts?worker&url";
-import { createClassicMasteringChain, CLASSIC_MASTERING_LOOKAHEAD_SECONDS } from "../audio-preview-mastering";
 import { PreviewDevicePort } from "./device-port";
 import { WorkerPreviewPump } from "./worker-pump";
 import type { DeviceReceipt } from "./device-port";
@@ -20,14 +19,13 @@ export type AudioOutputProgress = {
   atRefresh?: boolean;
   deviceTimestamp?:DeviceTimestamp;
 };
-/** Device/master chain assembled during Play; worker owns the data-plane port. */
+/** Native-mastered PCM presentation; the worker owns the data-plane port. */
 export class PreviewAudioOutput {
   clockDiagnostics(){return {...this.clock.diagnostics(),deviceUnderflowAt:this.latestReceipt?.underflowAt??"",deviceElapsedFrames:this.latestReceipt?.elapsedRenderFrames??"",deviceCopiedFrames:this.latestReceipt?.consumedFrames??"",...this.pump?.diagnostics?.()};}
   readonly ready: Promise<void>;
   readonly sampleRate: number;
   private context: AudioContext;
   private node: AudioWorkletNode | null = null;
-  private chain: ReturnType<typeof createClassicMasteringChain> | null = null;
   private device: PreviewDevicePort | null = null;
   private pump: WorkerPreviewPump | null = null;
   private stopped = false;
@@ -49,7 +47,7 @@ export class PreviewAudioOutput {
     if(this.stopped||!this.node||this.presentationBound)throw Error("Presentation clock is unavailable or already bound");
     this.presentationBound=true;
     this.node.port.postMessage({kind:"presentation-clock-port",token:this.token,port},[port]);
-    return {token:this.token,sampleRate:this.sampleRate,graphLatencySeconds:CLASSIC_MASTERING_LOOKAHEAD_SECONDS,directPictureCredit:true,...(this.pump?{outputPort:this.pump.bindOutputClock()}: {})};
+    return {token:this.token,sampleRate:this.sampleRate,graphLatencySeconds:0,directPictureCredit:true,...(this.pump?{outputPort:this.pump.bindOutputClock()}: {})};
   }
   constructor(
     readonly token: string,
@@ -61,7 +59,7 @@ export class PreviewAudioOutput {
   ) {
     this.context = new AudioContext({ sampleRate });
     this.sampleRate = this.context.sampleRate;
-    this.clock = new PreviewOutputClock(this.sampleRate, CLASSIC_MASTERING_LOOKAHEAD_SECONDS);
+    this.clock = new PreviewOutputClock(this.sampleRate, 0);
     const activation = this.context.resume();
     this.ready = this.initialize(sampleRate, activation);
   }
@@ -138,11 +136,9 @@ export class PreviewAudioOutput {
         "opencut-audio-preview",
         { numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [2] },
       );
-      this.chain = createClassicMasteringChain(
-        this.context,
-        this.context.destination,
-      );
-      this.node.connect(this.chain.input);
+      // Native PCM already includes the realtime master and its compensated
+      // look-ahead. The device adapter only presents these exact samples.
+      this.node.connect(this.context.destination);
       this.node.port.postMessage({ kind: "prime", blocks: this.primeBlocks });
       const clockChannel=new MessageChannel();
       this.clockPort=clockChannel.port1;
@@ -228,7 +224,6 @@ export class PreviewAudioOutput {
     this.picturePort = null;
     this.closeClockPort();
     this.node?.disconnect();
-    this.chain?.disconnect();
   }
   stop() {
     return (this.closing ??= this.close());

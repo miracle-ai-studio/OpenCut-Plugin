@@ -1,6 +1,80 @@
 use super::*;
 
 #[test]
+fn realtime_compiled_transport_preserves_exact_pts_fraction_gain_and_wide_sample_indices() {
+    let fraction = 1.0f64 / 3.0;
+    let amplitude = f64::from_bits(0x3ff0_0000_0000_0001);
+    let block = PreviewAudioBlock {
+        identity: PreviewAudioIdentity {
+            project_id: "p".into(),
+            revision: "r".into(),
+            sequence_id: "s".into(),
+            profile: CLASSIC_REALTIME_AUDIO_PROFILE,
+            sample_rate: 48000,
+            channels: 2,
+        },
+        start_sample: u64::MAX - 4096,
+        frame_count: 1,
+        voices: vec![PreviewAudioVoiceBlock {
+            element_id: "voice".into(),
+            block_offset: 0,
+            frame_count: 1,
+            positions: vec![Some(PreviewSourceSample {
+                segment_id: 0,
+                lower: u64::MAX - 1,
+                upper: u64::MAX,
+                fraction,
+            })],
+            amplitudes: vec![amplitude],
+        }],
+        receipts: vec![],
+    };
+    let bytes = serde_json::to_vec(&block).unwrap();
+    let restored: PreviewAudioBlock = serde_json::from_slice(&bytes).unwrap();
+    assert_eq!(restored.start_sample, block.start_sample);
+    assert_eq!(
+        restored.voices[0].positions[0].as_ref().unwrap().lower,
+        u64::MAX - 1
+    );
+    assert_eq!(
+        restored.voices[0].positions[0]
+            .as_ref()
+            .unwrap()
+            .fraction
+            .to_bits(),
+        fraction.to_bits()
+    );
+    assert_eq!(
+        restored.voices[0].amplitudes[0].to_bits(),
+        amplitude.to_bits()
+    );
+    for timestamp in [0.000001, 1024.0 / 48000.0, 1.0 / 44100.0, 3.989333333333333] {
+        let format = PreviewSourceFormat {
+            element_id: "voice".into(),
+            sample_rate: 48000,
+            frame_count: 1024,
+            channels: 1,
+            prepared: false,
+            segments: vec![PreviewAudioSegment {
+                segment_id: 0,
+                timestamp_seconds: timestamp,
+                frame_count: 1024,
+            }],
+        };
+        let restored: PreviewSourceFormat =
+            serde_json::from_slice(&serde_json::to_vec(&format).unwrap()).unwrap();
+        assert_eq!(
+            restored.segments[0].timestamp_seconds.to_bits(),
+            timestamp.to_bits()
+        );
+    }
+    let malformed = String::from_utf8(bytes)
+        .unwrap()
+        .replace(CLASSIC_REALTIME_AUDIO_PROFILE, "unbound-realtime");
+    assert!(serde_json::from_str::<PreviewAudioBlock>(&malformed).is_err());
+}
+
+#[test]
 fn compiled_audio_wire_keeps_wide_indices_rationals_and_every_float64_gain_bit() {
     let amplitudes: Vec<f64> = (0..4096u64)
         .map(|n| {

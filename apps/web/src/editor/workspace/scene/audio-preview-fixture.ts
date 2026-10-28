@@ -62,6 +62,7 @@ export async function setupAudioPreview(beforeCreate:()=>Promise<void>=async()=>
     sample_rates: [44100, 48000],
     stream_path: "/api/preview/audio/stream",
     max_sessions_per_database: 4,
+    pcm_stage: "mastered",
     max_block_frames: 4096,
     max_buffered_frames: 8192,
     owner_lease_ms: 30000,

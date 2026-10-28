@@ -68,7 +68,7 @@ export async function* readPreviewPcm(
           );
           const payload = pending.subarray(12 + headerLength, size);
           if (
-
+            header.pcm_stage !== "mastered" ||
             header.session_id !== session.session_id ||
             !header.identity ||
             !sameAudioIdentity(header.identity, session.identity) ||

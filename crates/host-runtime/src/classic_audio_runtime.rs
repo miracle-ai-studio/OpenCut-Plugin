@@ -52,6 +52,33 @@ struct RuntimePaths {
     chromium: PathBuf,
     runner: PathBuf,
 }
+/// Remaining source-art observation assets share the pinned media package.
+/// This resolves installation data only; audio execution never selects it.
+pub(crate) struct SourceArtDependencies {
+    pub node: PathBuf,
+    pub chromium: PathBuf,
+    pub audio_package: PathBuf,
+}
+pub(crate) fn source_art_dependencies() -> Result<SourceArtDependencies, EditorError> {
+    let paths = resolve(&HostConfiguration::capture())
+        .map_err(|reason| EditorError::new("CAPABILITY_UNAVAILABLE", reason.reason()))?;
+    let audio_package = paths
+        .runner
+        .parent()
+        .and_then(Path::parent)
+        .ok_or_else(|| {
+            EditorError::new(
+                "CAPABILITY_UNAVAILABLE",
+                "Source-art media package is unavailable",
+            )
+        })?
+        .to_path_buf();
+    Ok(SourceArtDependencies {
+        node: paths.node,
+        chromium: paths.chromium,
+        audio_package,
+    })
+}
 impl Unavailable {
     fn reason(&self) -> &str {
         match self {
@@ -85,51 +112,13 @@ pub(crate) fn capability() -> AudioWavCapability {
     }
 }
 
-pub(crate) fn preview_config() -> Result<
-    opencut_native_services::classic_audio_preview::ClassicAudioPreviewProcessConfig,
-    EditorError,
-> {
-    let paths = resolve(&HostConfiguration::capture())
-        .map_err(|reason| EditorError::new("CAPABILITY_UNAVAILABLE", reason.reason()))?;
-    let package = paths
-        .runner
-        .parent()
-        .and_then(Path::parent)
-        .ok_or_else(|| {
-            EditorError::new(
-                "CAPABILITY_UNAVAILABLE",
-                "Audio preview package is unavailable",
-            )
-        })?;
-    for file in [
-        "host/preview-runner.mjs",
-        "host/preview-browser.mjs",
-        "host/preview-page.mjs",
-        "host/preview-binding.mjs",
-        "src/preview.mjs",
-        "src/preview-decoder.mjs",
-        "src/preview-mixing.mjs",
-        "src/preview-packet.mjs",
-    ] {
-        package_file(package, file).map_err(|_| {
-            EditorError::new(
-                "CAPABILITY_UNAVAILABLE",
-                "Audio preview execution modules are unavailable",
-            )
-        })?;
-    }
-    let runner = package_file(package, "host/preview-runner.mjs").map_err(|_| {
-        EditorError::new(
-            "CAPABILITY_UNAVAILABLE",
-            "Audio preview runner is unavailable",
-        )
-    })?;
+pub(crate) fn preview_config()
+-> Result<opencut_native_services::native_audio::NativeAudioPreviewProcessConfig, EditorError> {
     Ok(
-        opencut_native_services::classic_audio_preview::ClassicAudioPreviewProcessConfig {
-            node: paths.node,
-            runner,
-            chromium: paths.chromium,
+        opencut_native_services::native_audio::NativeAudioPreviewProcessConfig {
+            worker: crate::native_worker_runtime::worker()?,
             preparation_deadline: Duration::from_secs(120),
+            operation_deadline: Duration::from_secs(30),
             max_pcm_bytes: 256 * 1024 * 1024,
             max_encoded_bytes: 32 * 1024 * 1024,
             max_rss_bytes: 2 * 1024 * 1024 * 1024,
@@ -145,6 +134,7 @@ pub(crate) fn preview_capability() -> opencut_api_contracts::audio_preview::Audi
         available: resolved.is_ok(),
         unavailable_reason: resolved.err().map(|e| e.code),
         profile: AudioPreviewProfile::ClassicRealtimeV31,
+        pcm_stage: AudioPreviewPcmStage::Mastered,
         sample_rates: vec![44100, 48000],
         stream_path: "/api/preview/audio/stream".into(),
         max_sessions_per_database: 4,

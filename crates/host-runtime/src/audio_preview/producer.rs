@@ -1,8 +1,8 @@
 use super::*;
 use opencut_editor_application::classic_audio::{ClassicAudioResources, ClassicAudioSession};
 use opencut_native_services::classic_audio::VerifiedClassicAudioResources;
-use opencut_native_services::classic_audio_preview::{
-    ClassicAudioPreviewPcmBlock, ClassicAudioPreviewProducer,
+use opencut_native_services::native_audio::{
+    NativeAudioPreviewPcmBlock, NativeAudioPreviewProducer,
 };
 use opencut_sqlite_store::EditorApplication;
 use std::time::Duration;
@@ -12,7 +12,7 @@ pub(super) struct BlockRequest {
     pub overlay_epoch: u64,
     pub start: u64,
     pub count: u32,
-    pub reply: mpsc::Sender<Result<ClassicAudioPreviewPcmBlock, EditorError>>,
+    pub reply: mpsc::Sender<Result<NativeAudioPreviewPcmBlock, EditorError>>,
 }
 pub(super) fn run(entry: Arc<Entry>, receiver: mpsc::Receiver<BlockRequest>) {
     let result = execute(&entry, receiver);
@@ -49,7 +49,7 @@ fn execute(entry: &Entry, receiver: mpsc::Receiver<BlockRequest>) -> Result<(), 
         })?;
     let handles = resources.handles();
     let mut producer =
-        ClassicAudioPreviewProducer::start(&config, &mut session, &mut resources, &handles)?;
+        NativeAudioPreviewProducer::start(&config, &mut session, &mut resources, &handles)?;
     let result = (|| {
         loop {
             producer.checkpoint(&mut session, &mut resources)?;
@@ -90,11 +90,11 @@ fn execute(entry: &Entry, receiver: mpsc::Receiver<BlockRequest>) -> Result<(), 
 fn block(
     entry: &Entry,
     app: &EditorApplication,
-    producer: &mut ClassicAudioPreviewProducer,
+    producer: &mut NativeAudioPreviewProducer,
     session: &mut ClassicAudioSession<'_>,
     resources: &mut dyn ClassicAudioResources,
     request: &BlockRequest,
-) -> Result<ClassicAudioPreviewPcmBlock, EditorError> {
+) -> Result<NativeAudioPreviewPcmBlock, EditorError> {
     entry.checkpoint(app)?;
     let (anchor, gain) = {
         let state = lock(&entry.state)?;

@@ -31,12 +31,8 @@ pub(crate) fn configured(
     query: &SourceArtQuery,
 ) -> Result<SourceArtProcessConfig, EditorError> {
     opencut_editor_application::source_art::validate_policy(policy)?;
-    let runtime = crate::classic_audio_runtime::preview_config()?;
-    let audio = runtime
-        .runner
-        .parent()
-        .and_then(Path::parent)
-        .ok_or_else(unavailable)?;
+    let runtime = crate::classic_audio_runtime::source_art_dependencies()?;
+    let audio = runtime.audio_package.as_path();
     let package = std::env::var_os("OPENCUT_SOURCE_ART_PACKAGE")
         .map(PathBuf::from)
         .unwrap_or_else(|| {

@@ -282,4 +282,20 @@ fn aac_container_origin_matches_independent_browser_samples_without_preroll() {
         selected, expected,
         "AAC origin must match without gain or time fitting"
     );
+    // A retained demuxer is reused after EOF, but a new iterator must start
+    // with fresh codec overlap/PNS state rather than the previous decoder tail.
+    for _ in 0..2 {
+        decoder.seek_pts(&mut source, 0, deadline()).unwrap();
+        decoder
+            .select_keyframe_before_seconds(&mut source, 0.0, deadline())
+            .unwrap();
+        let mut replay = Vec::new();
+        while let Some(frame) = decoder.read(&mut source, deadline()).unwrap() {
+            replay.extend(frame.channels[0].iter().copied());
+        }
+        assert_eq!(
+            replay, actual,
+            "Rewound AAC must retain independent exact PCM"
+        );
+    }
 }

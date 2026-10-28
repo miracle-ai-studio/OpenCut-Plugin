@@ -51,6 +51,8 @@ pub enum AudioCallback {
     BindPreview(BindPreviewSources),
     #[serde(rename = "previewSourceWindows")]
     PreviewWindows(PreviewBlockRequest),
+    #[serde(rename = "admitPreviewBlock")]
+    AdmitPreviewBlock(PreviewBlockRequest),
     #[serde(rename = "compilePreviewBlock")]
     PreviewBlock(PreviewBlockRequest),
     #[serde(rename = "observePreviewDecoded")]
@@ -72,7 +74,7 @@ pub struct PreviewDecodedObservation {
     pub frame_count: String,
     pub channels: u32,
 }
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct BindPreviewSources {
     pub source_formats: Vec<opencut_composition::scene::PreviewSourceFormat>,
@@ -117,8 +119,8 @@ pub struct DecodeAdmission {
 
 /// Residency for an ordinary primary track. No complete-source PCM length is
 /// known or admitted; every command supplies fresh bounded PTS observations.
-#[derive(Clone, Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct RollingPreviewAdmission {
     pub working_frames: u64,
     pub max_channels: u32,
@@ -129,8 +131,8 @@ pub struct RollingPreviewAdmission {
 
 /// One source may feed both ordinary PTS windows and prepared concat PCM.
 /// Allocation choices describe consumers,not protocol generations.
-#[derive(Clone, Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct PreviewDecodeAllocation {
     pub stream: Option<RollingPreviewAdmission>,
     pub preparation: Option<WindowDecodeAdmission>,
@@ -138,10 +140,10 @@ pub struct PreviewDecodeAllocation {
 
 /// Private decoder admission. Logical source frames never authorize
 /// a full PCM allocation; working_frames retains the original four-copy bound.
-#[derive(Clone, Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct WindowDecodeAdmission {
-    pub mode: &'static str,
+    pub mode: String,
     pub max_frames: u64,
     pub max_channels: u32,
     pub working_frames: u64,
@@ -150,8 +152,8 @@ pub struct WindowDecodeAdmission {
     pub max_native_frames: String,
     pub windows: Vec<DecodePcmWindow>,
 }
-#[derive(Clone, Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct DecodePcmWindow {
     pub source_start_frame: String,
     pub source_end_frame: String,

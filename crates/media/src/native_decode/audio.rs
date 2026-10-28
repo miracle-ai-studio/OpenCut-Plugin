@@ -28,6 +28,7 @@ impl AudioDecodeLimits {
 }
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct NativeAudioTrack {
+    pub container: String,
     pub stream_index: u32,
     pub track_id: i32,
     pub codec: String,
@@ -37,6 +38,7 @@ pub struct NativeAudioTrack {
     pub channels: u32,
     pub time_base_numerator: u32,
     pub time_base_denominator: u32,
+    pub duration_pts: Option<i64>,
 }
 #[derive(Debug)]
 pub struct DecodedAudioFrame {
@@ -91,20 +93,9 @@ impl NativeAudioDecoder {
         if time.numerator() <= 0 || time.denominator() <= 0 {
             return Err(invalid("Native audio stream has no exact time base"));
         }
-        let mut context =
-            av::codec::Context::from_parameters(stream.parameters()).map_err(failed)?;
-        context.set_threading(av::codec::threading::Config {
-            count: 1,
-            kind: av::codec::threading::Type::Slice,
-            ..Default::default()
-        });
-        // SAFETY: this uniquely owned context is not open. The codec's frame
-        // allocation limit precedes accepting any decoded sample allocation.
-        unsafe {
-            (*context.as_mut_ptr()).max_samples = i64::from(limits.max_frame_samples);
-        }
-        let decoder = context.decoder().audio().map_err(failed)?;
+        let decoder = open_codec(stream.parameters(), limits.max_frame_samples)?;
         let track = NativeAudioTrack {
+            container: input.format().name().into(),
             stream_index: stream.index() as u32,
             track_id: stream.id(),
             codec: decoder.id().name().into(),
@@ -112,6 +103,7 @@ impl NativeAudioDecoder {
             channels: u32::from(decoder.channels()),
             time_base_numerator: time.numerator() as u32,
             time_base_denominator: time.denominator() as u32,
+            duration_pts: (stream.duration() > 0).then(|| stream.duration()),
         };
         if track.channels > limits.max_channels || track.sample_rate > 384000 {
             return Err(invalid("Native audio header exceeds its admitted format"));
@@ -152,6 +144,32 @@ impl NativeAudioDecoder {
         pts: i64,
         deadline: Instant,
     ) -> MediaResult<()> {
+        self.select_origin(source, deadline, |observed| observed <= pts)
+    }
+    /// Seconds here are observed decoder-window coordinates supplied by the
+    /// application. Compare in the same observed coordinate space instead of
+    /// rounding a packet boundary through an intermediate integer timestamp.
+    pub fn select_keyframe_before_seconds(
+        &mut self,
+        source: &mut dyn ByteSource,
+        seconds: f64,
+        deadline: Instant,
+    ) -> MediaResult<()> {
+        if !seconds.is_finite() || seconds < 0.0 {
+            return Err(invalid("Invalid native audio packet-origin seconds"));
+        }
+        let numerator = f64::from(self.track.time_base_numerator);
+        let denominator = f64::from(self.track.time_base_denominator);
+        self.select_origin(source, deadline, |pts| {
+            pts as f64 * numerator / denominator <= seconds
+        })
+    }
+    fn select_origin(
+        &mut self,
+        source: &mut dyn ByteSource,
+        deadline: Instant,
+        at_or_before: impl Fn(i64) -> bool,
+    ) -> MediaResult<()> {
         if self.retired || self.started || !self.pending.is_empty() {
             return Err(invalid("Native audio packet origin is already bound"));
         }
@@ -180,7 +198,7 @@ impl NativeAudioDecoder {
                         "Native audio packet has no observed presentation timestamp".into(),
                     )
                 })?;
-                if observed <= pts {
+                if at_or_before(observed) {
                     candidate = Some(packet);
                     continue;
                 }
@@ -458,6 +476,18 @@ impl NativeAudioDecoder {
                 Ok(())
             },
         );
+        // A fresh iterator has fresh codec state, including AAC overlap and
+        // PNS state. Merely flushing decoded frames does not establish that
+        // reset contract for every codec. Keep the demuxer and authorized AVIO.
+        let result = result.and_then(|()| {
+            let parameters = self
+                .input
+                .stream(stream as usize)
+                .ok_or_else(|| invalid("Selected native audio stream disappeared"))?
+                .parameters();
+            self.decoder = open_codec(parameters, self.limits.max_frame_samples)?;
+            checkpoint(source, deadline)
+        });
         if result.is_err() {
             self.retired = true;
         }
@@ -470,4 +500,21 @@ impl NativeAudioDecoder {
         self.demux_eof = false;
         result
     }
+}
+fn open_codec(
+    parameters: av::codec::Parameters,
+    max_samples: u32,
+) -> MediaResult<av::decoder::Audio> {
+    let mut context = av::codec::Context::from_parameters(parameters).map_err(failed)?;
+    context.set_threading(av::codec::threading::Config {
+        count: 1,
+        kind: av::codec::threading::Type::Slice,
+        ..Default::default()
+    });
+    // SAFETY: uniquely owned and unopened; bound codec frame allocations before
+    // accepting PCM. Codec/driver allocations also have parent RSS/deadline fences.
+    unsafe {
+        (*context.as_mut_ptr()).max_samples = i64::from(max_samples);
+    }
+    context.decoder().audio().map_err(failed)
 }

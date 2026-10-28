@@ -13709,6 +13709,11 @@ export namespace OpencutAudioPreviewCapabilityOutput {
   max_buffered_frames: number;
   max_sessions_per_database: number;
   owner_lease_ms: number;
+  /**
+   * Completed scene PCM. Consumers present it directly without a second
+   * compressor, gain or look-ahead delay.
+   */
+  pcm_stage: 'mastered';
   profile: AudioPreviewProfile;
   sample_rates: number[];
   session_ttl_ms: number;
@@ -68312,6 +68317,7 @@ export namespace AudioPreviewTransport {
 
 export namespace AudioPreviewPcm {
   export type AudioPreviewProfile = 'classic-realtime-v31';
+  export type AudioPreviewPcmStage = 'mastered';
 
 /**
  * One header precedes one interleaved stereo Float32 little-endian payload.
@@ -68323,6 +68329,7 @@ export namespace AudioPreviewPcm {
   generation: string;
   identity: AudioPreviewIdentity;
   overlay_epoch: string;
+  pcm_stage: AudioPreviewPcmStage;
   sequence: string;
   session_id: string;
   start_sample: string;

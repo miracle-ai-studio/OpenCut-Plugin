@@ -53225,6 +53225,10 @@
               "minimum": 0,
               "type": "integer"
             },
+            "pcm_stage": {
+              "$ref": "#/$defs/AudioPreviewPcmStage",
+              "description": "Completed scene PCM. Consumers present it directly without a second\ncompressor, gain or look-ahead delay."
+            },
             "profile": {
               "$ref": "#/$defs/AudioPreviewProfile"
             },
@@ -53254,6 +53258,7 @@
           "required": [
             "available",
             "profile",
+            "pcm_stage",
             "sample_rates",
             "stream_path",
             "max_sessions_per_database",
@@ -53264,6 +53269,12 @@
             "session_ttl_ms"
           ],
           "type": "object"
+        },
+        "AudioPreviewPcmStage": {
+          "enum": [
+            "mastered"
+          ],
+          "type": "string"
         },
         "AudioPreviewProfile": {
           "enum": [

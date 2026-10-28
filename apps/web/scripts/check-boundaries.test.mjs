@@ -76,9 +76,9 @@ test("edit recovery permits one current locator key and exact original reads", (
   ]) assert.equal(violations(file, code).length, 1);
   assert.equal(violations("editor/workspace/controller.ts", 'sessionStorage.setItem("opencut.edit-recovery.v2",payload);').length, 1);
 });
-test("audio output shares only the pure mastering bridge, never the renderer host", () => {
+test("audio output rejects all browser rendering and mastering imports", () => {
   const path = "../../../../../../packages/classic-audio-renderer/src/mastering.mjs";
-  assert.deepEqual(violations("editor/workspace/scene/audio-preview-mastering.ts", `export {createClassicMasteringChain} from "${path}";`), []);
+  assert.equal(violations("editor/workspace/scene/audio-preview-mastering.ts", `export {createClassicMasteringChain} from "${path}";`).length, 1);
   for (const [file, name] of [
     ["editor/workspace/scene/audio-preview.ts", path],
     ["editor/workspace/scene/audio-preview-mastering.ts", "@opencut/classic-audio-renderer"],

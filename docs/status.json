@@ -538,6 +538,26 @@
         "historical intermittent asset-free text resume stall cause",
         "physical/manual and cross-platform delivery acceptance"
       ]
+    },
+    "native_auxiliary_distribution": {
+      "status": "pinned standalone Python and Node acquired with original notices; three actual worker identities match unchanged locks after restoring immutable validator; integrated Rust build and relocated cold font imports pending",
+      "delivery_ready": false,
+      "source_base_commit": "10ada9fb",
+      "cause": "generate.py maintenance-only path/type/atlas changes altered its whole-file identity (1b4b30d8...), while all saved derived locks and proofs still bind 948dce6b...; actual independent Python revealed the mismatch",
+      "repair": "restore exact source from 1b261849 as immutable imported dependency; current generate_catalog.py publication entry imports unchanged helpers; no font lock/proof/output identity updates",
+      "checks": {
+        "font_python_tests_passed": 23,
+        "architecture_unit_tests_passed": 14,
+        "architecture_and_contract_boundaries": "passed without baseline extensions",
+        "actual_worker_identities": "all three match exact existing runtime locks with Python 3.14.7/fontTools4.61.1",
+        "native_linkage": "Node and full standalone Python component closures contain no unresolved external libraries"
+      },
+      "remaining": [
+        "integrated binary embeds the restored validator source",
+        "package original Python dependency notices, exact fontTools implementation and minimal Node catalog executable",
+        "relocated doctor and cold public font imports with unchanged pinned output bytes",
+        "export-tool distribution and remaining broader native-rendering acceptance"
+      ]
     }
   },
   "known_limits": [

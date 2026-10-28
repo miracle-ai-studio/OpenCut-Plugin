@@ -1,0 +1,10 @@
+{
+  "implementation": "generate.py",
+  "source_commit": "1b26184981ac107619764d5c6397f3b3fdd5a461",
+  "source_path": "scripts/font-catalog/generate.py",
+  "sha256": "948dce6b6727f6243315b466f6cba6db53c42f8325e555320ed8e5d95ac8cb73",
+  "license": "MIT",
+  "role": "Immutable imported validator dependency bound by all saved outline/renamed/color derivation proofs. Its historical publication main is not the maintained entrypoint.",
+  "current_publication_entrypoint": "generate_catalog.py",
+  "restoration_evidence": "AST of every non-main helper equals the previously current source; only publication paths/names and atlas location had drifted."
+}

@@ -37,7 +37,7 @@ proxy environment. Obtain the complete fixed tree from the official GitHub API:
 `https://api.github.com/repos/google/fonts/git/trees/66928797f271fed5ee428544e7229685e2d90127?recursive=1`.
 
 ```sh
-python3 scripts/font-catalog/generate.py \
+python3 scripts/font-catalog/generate_catalog.py \
   --tree /tmp/opencut-google-fonts-tree.json \
   --cache /tmp/opencut-b3-font-cache --workers 20
 python3 scripts/font-catalog/check.py
@@ -116,3 +116,5 @@ OPENCUT_FONT_DERIVED_CACHE=/tmp/opencut-b3-font-cache \
 That inventory checks each pinned output's bytes and native static-face metadata.
 The actual public import, saved proof and independent rendering still need their
 own recorded candidate evidence; no font binaries belong in the repository.
+
+`generate.py` is an immutable imported dependency: saved derivation proofs bind its entire original file (`948dce6b…`). Its historical command body is retained as proof source, not used for current publication. Run `generate_catalog.py` for current Rust names/paths and the delivered atlas; it imports the same unchanged validation helpers. `static-validator-source.json` records provenance. Do not update runtime locks or font proofs to hide dependency drift.

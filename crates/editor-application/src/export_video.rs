@@ -538,7 +538,7 @@ pub fn validate_stored_result(
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
     fn input() -> PreparedExportVideo {
         PreparedExportVideo {
@@ -599,8 +599,7 @@ mod tests {
         changed.visual_profile = ExportVisualProfile::GraphicV1;
         assert!(prepare(&changed).is_err());
     }
-    #[test]
-    fn stored_output_binds_format_quality_audio_absence_and_private_artifact() {
+    pub(crate) fn stored_export_fixture() -> (PreparedExportVideo, StoredExportVideo) {
         use opencut_job_contracts::media_frame::{
             MediaFrameArtifactMetadata, MediaFrameExecutionSummary,
         };
@@ -669,6 +668,11 @@ browser_version: "test-browser".into(),
                 content_hash: hash,
             },
         };
+        (input, stored)
+    }
+    #[test]
+    fn stored_output_binds_format_quality_audio_absence_and_private_artifact() {
+        let (input, stored) = stored_export_fixture();
         let public = validate_stored_result(&input, &stored).unwrap();
         assert!(
             !serde_json::to_string(&public)

@@ -647,19 +647,21 @@
       ]
     },
     "native_media_tool_distribution": {
-      "status": "release CLI/worker built; first relocated bundle rejected for missing lavfi; standalone tools rebuild active; test fixture compile repair active",
+      "status": "relocated corrected tool package doctor, native/host checks, retained independent WAV/MP4 exports and package/import tool discovery passed; quality projection defect repair pending",
       "delivery_ready": false,
       "baseline_commit": "928ccabe",
       "scope": "shared host tool assembly, standalone FFmpeg/ffprobe, original corresponding sources and licenses",
       "checks": {
         "runtime_distribution_python_tests_passed": 10,
         "architecture_unit_tests_passed": 14,
-        "architecture_and_contract_boundaries": "passed"
+        "architecture_and_contract_boundaries": "passed",
+        "native_tests_passed": 49,
+        "host_tests_passed": 102,
+        "relocated_doctor_passed": 2540
       },
       "remaining": [
-        "corrected test binary build and affected tests",
-        "lavfi-capable standalone tool rebuild and relocation acceptance",
-        "same-candidate generated/canonical checks and independent media/export/preview acceptance",
+        "quality application fix build and regression/native behavior against existing published export",
+        "VP9/Opus and same candidate continuous preview",
         "broader codec/color/orientation/default-track/4K and clean-machine/manual/platform coverage"
       ],
       "release_source_commit": "939b72b1",
@@ -674,6 +676,30 @@
         "cause": "FFmpeg --disable-avdevice removed lavfi input, which the existing media backend also requires",
         "evidence": "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/export-tools/initial-no-lavfi-relocated-doctor.json",
         "repair": "rebuild standalone tools with --enable-avdevice --disable-indevs --disable-outdevs --enable-indev=lavfi; no Rust release rebuild"
+      },
+      "corrected_archive_sha256": "1d1f019edc5c71bd7fd72ef64fec4f876b693b10031df63a75734aaa23fef0f5",
+      "media_tools": {
+        "ffmpeg": "df7bf6ac82589b188a9246592bf7be3fd4d4718b237dcb92198f05cd4e280103",
+        "ffprobe": "f6bd5f9e375ced5ace260c406e408be4b5f41a1c03b81580632575b75034ce7b"
+      },
+      "relocated_worker_sha256": "da066ecc7bf27269719e7b4cf1a8aa856916de27ff8b110c2db36422426aac07",
+      "export_seconds": {
+        "wav": 14.664766592904925,
+        "mp4": 59.560199382016435
+      },
+      "independent_export": {
+        "whole_and_preencode_pcm_maximum_error": 0,
+        "sampled_source_frames": 7,
+        "pixel_mae_gate": 5,
+        "encoded_aac_snr_db": 57.76281596782658,
+        "fitting": "none"
+      },
+      "quality_failure": {
+        "cause": "public normalized kind compared with exact private preparation kind",
+        "code": "INVALID_ARGUMENT",
+        "message": "Quality requires a successful configurable whole/range video export",
+        "source_repair": "check record.kind; reuse full stored-export fixture to verify native-port reach and authorization/artifact rejection",
+        "validation": "pending"
       }
     }
   },

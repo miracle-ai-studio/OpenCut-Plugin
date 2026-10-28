@@ -105,9 +105,10 @@ pub fn inspect(
         .read_job(job_id)
         .map_err(crate::job_views::public_error)?;
     let view = crate::job_views::project(record.clone());
+    // Preparation belongs to the exact stored kind; public task names are projected.
     if view.state != crate::JobState::Succeeded
         || !matches!(
-            view.kind.as_str(),
+            record.kind.as_str(),
             export::EXPORT_VIDEO_KIND | export::EXPORT_VIDEO_RANGE_KIND
         )
     {
@@ -434,3 +435,6 @@ pub fn evidence_plan(
     });
     Ok(QualityEvidencePlan{project_id:input.project_id,revision:input.revision,sequence_id:input.sequence_id,omitted_frames:candidate_frames.saturating_sub(frames.len()),candidate_frames,frames,coverage:"deterministic clip-boundary and caption samples only; submit returned requests unchanged through render.v4.submit".into()})
 }
+
+#[cfg(test)]
+mod tests;

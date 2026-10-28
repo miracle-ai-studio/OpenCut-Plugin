@@ -1,4 +1,4 @@
-//! Actual isolated Chromium/WebGPU pixel checks. All PNG inputs are synthetic,
+//! Actual isolated native GPU pixel checks. All PNG inputs are synthetic,
 //! tiny and owned by a TempDir; no user media or queue-publication claim.
 use opencut_asset_store::AssetStore;
 use opencut_composition::{CompositionScope, scene::*};
@@ -30,19 +30,10 @@ fn policy() -> LocalVisualExecutionPolicy {
     }
 }
 fn config() -> ClassicVisualProcessConfig {
-    let workspace = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .unwrap()
-        .parent()
-        .unwrap();
     ClassicVisualProcessConfig {
-        node: std::env::var_os("OPENCUT_NODE")
-            .unwrap_or_else(|| "node".into())
+        worker: std::env::var_os("OPENCUT_RENDER_WORKER")
+            .expect("Set OPENCUT_RENDER_WORKER to the integrated native worker")
             .into(),
-        chromium: std::env::var_os("OPENCUT_CHROME")
-            .expect("Set OPENCUT_CHROME to the actual installed browser")
-            .into(),
-        runner: workspace.join("packages/classic-visual-renderer/host/runner.mjs"),
         deadline: Duration::from_secs(45),
         policy: policy(),
         strict_cgroup: None,
@@ -192,10 +183,12 @@ fn render(root: &Path, snapshot: &EditorSnapshot) -> (Rgba, ClassicVisualExecuti
         execution.runtime_identity.identity.texture_format,
         "bgra8unorm"
     );
-    assert_eq!(execution.runtime_identity.identity.gpu_backend, "webgpu");
+    opencut_editor_application::classic_visual::validate_native_identity(
+        &execution.runtime_identity.identity,
+    )
+    .unwrap();
     for hash in [
-        &execution.runtime_identity.identity.browser_sha256,
-        &execution.runtime_identity.identity.module_sha256,
+        &execution.runtime_identity.identity.renderer_sha256,
         &execution.runtime_identity.identity.shader_sha256,
     ] {
         assert_eq!(hash.len(), 64);
@@ -207,9 +200,9 @@ fn render(root: &Path, snapshot: &EditorSnapshot) -> (Rgba, ClassicVisualExecuti
     #[cfg(unix)]
     unsafe {
         assert_eq!(
-            libc::kill(execution.runtime_identity.browser_pid as i32, 0),
+            libc::kill(execution.runtime_identity.worker_pid as i32, 0),
             -1,
-            "Browser remains alive after completion"
+            "Native worker remains alive after completion"
         );
     }
     (rgba, execution)
@@ -221,7 +214,7 @@ fn pixel(rgba: &Rgba, x: usize, y: usize) -> [u8; 4] {
 }
 
 #[test]
-#[ignore = "Requires installed pinned browser/WebGPU runtime; run explicitly with OPENCUT_CHROME"]
+#[ignore = "Requires the integrated native worker; run explicitly with OPENCUT_RENDER_WORKER"]
 fn actual_gpu_contain_layer_order_and_quarter_opacity_have_independent_rgb_oracles() {
     let directory = tempfile::tempdir().unwrap();
     let mut snapshot = snapshot();
@@ -262,7 +255,7 @@ fn actual_gpu_contain_layer_order_and_quarter_opacity_have_independent_rgb_oracl
     assert_eq!((quad.width, quad.height), (16.0, 8.0));
 }
 #[test]
-#[ignore = "Requires installed pinned browser/WebGPU runtime; run explicitly with OPENCUT_CHROME"]
+#[ignore = "Requires the integrated native worker; run explicitly with OPENCUT_RENDER_WORKER"]
 fn actual_gpu_negative_scale_flips_asymmetric_source_without_replacing_identity() {
     let directory = tempfile::tempdir().unwrap();
     let mut snapshot = snapshot();
@@ -292,12 +285,12 @@ fn actual_gpu_negative_scale_flips_asymmetric_source_without_replacing_identity(
     assert_eq!(receipt.receipt.bound.layers[0].asset_id, "asymmetric");
     assert_eq!(
         receipt.runtime_identity.identity.decoder_profile,
-        opencut_editor_application::media_frame_jobs::CLASSIC_VISUAL_DECODER_PROFILE
+        opencut_editor_application::classic_visual::NATIVE_DECODER_PROFILE
     );
 }
 
 #[test]
-#[ignore = "Requires installed pinned browser/WebGPU and FFmpeg; run explicitly with OPENCUT_CHROME"]
+#[ignore = "Requires the integrated native worker and FFmpeg; run explicitly with OPENCUT_RENDER_WORKER"]
 fn actual_video_trim_requests_green_second_frame_and_records_observed_pts() {
     let directory = tempfile::tempdir().unwrap();
     let raw = directory.path().join("two-colors.rgba");
@@ -431,7 +424,7 @@ fn actual_video_trim_requests_green_second_frame_and_records_observed_pts() {
 }
 
 #[test]
-#[ignore = "Requires installed pinned browser/WebGPU runtime; run explicitly with OPENCUT_CHROME"]
+#[ignore = "Requires the integrated native worker; run explicitly with OPENCUT_RENDER_WORKER"]
 fn actual_gpu_clockwise_rotation_position_background_and_track_source_alpha_multiply() {
     let directory = tempfile::tempdir().unwrap();
     let mut snapshot = snapshot();

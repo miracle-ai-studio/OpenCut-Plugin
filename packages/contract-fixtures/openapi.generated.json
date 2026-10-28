@@ -18316,54 +18316,196 @@
             "$ref": "#/components/schemas/OpencutFontCatalogOutput/$defs/EditorError"
           },
           "MediaFrameExecutionSummary": {
+            "anyOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "decoder_libraries": {
+                    "items": {
+                      "$ref": "#/components/schemas/OpencutQualityInspectOutput/$defs/NativeLibraryIdentity"
+                    },
+                    "type": "array"
+                  },
+                  "decoder_profile": {
+                    "type": "string"
+                  },
+                  "gpu_backend": {
+                    "$ref": "#/components/schemas/OpencutQualityInspectOutput/$defs/NativeGraphicsApi"
+                  },
+                  "gpu_device": {
+                    "type": "string"
+                  },
+                  "gpu_device_id": {
+                    "format": "uint32",
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "gpu_driver": {
+                    "type": "string"
+                  },
+                  "gpu_vendor_id": {
+                    "format": "uint32",
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "host_sha256": {
+                    "type": "string"
+                  },
+                  "platform": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/components/schemas/OpencutQualityInspectOutput/$defs/NativePlatformIdentity"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Absent only in immutable proofs captured before platform observation.\nNew execution requires the observed OS/font/driver platform identity."
+                  },
+                  "rasterizer": {
+                    "type": "string"
+                  },
+                  "renderer_sha256": {
+                    "type": "string"
+                  },
+                  "shader_sha256": {
+                    "type": "string"
+                  },
+                  "texture_format": {
+                    "type": "string"
+                  },
+                  "wgpu_version": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "renderer_sha256",
+                  "shader_sha256",
+                  "decoder_libraries",
+                  "wgpu_version",
+                  "rasterizer",
+                  "gpu_backend",
+                  "gpu_device",
+                  "gpu_driver",
+                  "gpu_vendor_id",
+                  "gpu_device_id",
+                  "texture_format",
+                  "decoder_profile",
+                  "host_sha256"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "browser_sha256": {
+                    "type": "string"
+                  },
+                  "browser_version": {
+                    "type": "string"
+                  },
+                  "decoder_profile": {
+                    "type": "string"
+                  },
+                  "gpu_backend": {
+                    "type": "string"
+                  },
+                  "gpu_device": {
+                    "type": "string"
+                  },
+                  "host_sha256": {
+                    "type": "string"
+                  },
+                  "mediabunny_version": {
+                    "type": "string"
+                  },
+                  "module_sha256": {
+                    "type": "string"
+                  },
+                  "playwright_version": {
+                    "type": "string"
+                  },
+                  "shader_sha256": {
+                    "type": "string"
+                  },
+                  "texture_format": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "browser_version",
+                  "browser_sha256",
+                  "module_sha256",
+                  "shader_sha256",
+                  "playwright_version",
+                  "mediabunny_version",
+                  "gpu_backend",
+                  "gpu_device",
+                  "texture_format",
+                  "decoder_profile",
+                  "host_sha256"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "NativeGraphicsApi": {
+            "enum": [
+              "metal",
+              "vulkan",
+              "direct_x"
+            ],
+            "type": "string"
+          },
+          "NativeLibraryIdentity": {
             "additionalProperties": false,
             "properties": {
-              "browser_sha256": {
+              "binary_sha256": {
                 "type": "string"
               },
-              "browser_version": {
+              "configuration_sha256": {
                 "type": "string"
               },
-              "decoder_profile": {
+              "name": {
                 "type": "string"
               },
-              "gpu_backend": {
-                "type": "string"
-              },
-              "gpu_device": {
-                "type": "string"
-              },
-              "host_sha256": {
-                "type": "string"
-              },
-              "mediabunny_version": {
-                "type": "string"
-              },
-              "module_sha256": {
-                "type": "string"
-              },
-              "playwright_version": {
-                "type": "string"
-              },
-              "shader_sha256": {
-                "type": "string"
-              },
-              "texture_format": {
+              "version": {
                 "type": "string"
               }
             },
             "required": [
-              "host_sha256",
-              "browser_version",
-              "browser_sha256",
-              "module_sha256",
-              "shader_sha256",
-              "playwright_version",
-              "mediabunny_version",
-              "gpu_backend",
-              "gpu_device",
-              "texture_format",
-              "decoder_profile"
+              "name",
+              "version",
+              "configuration_sha256",
+              "binary_sha256"
+            ],
+            "type": "object"
+          },
+          "NativePlatformIdentity": {
+            "additionalProperties": false,
+            "properties": {
+              "architecture": {
+                "type": "string"
+              },
+              "font_backend": {
+                "type": "string"
+              },
+              "kernel_release": {
+                "type": "string"
+              },
+              "os": {
+                "type": "string"
+              },
+              "system_build": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "os",
+              "architecture",
+              "kernel_release",
+              "system_build",
+              "font_backend"
             ],
             "type": "object"
           },
@@ -21733,7 +21875,7 @@
             "additionalProperties": false,
             "properties": {
               "actual_timestamp_seconds": {
-                "description": "Mediabunny browser seconds, not a claim of exact original demux ticks.",
+                "description": "Observed presentation seconds. Exact demux ticks remain decoder facts.",
                 "format": "double",
                 "type": [
                   "number",
@@ -22195,6 +22337,15 @@
               "artifact"
             ],
             "type": "object"
+          },
+          "NativeGraphicsApi": {
+            "$ref": "#/components/schemas/OpencutQualityInspectOutput/$defs/NativeGraphicsApi"
+          },
+          "NativeLibraryIdentity": {
+            "$ref": "#/components/schemas/OpencutQualityInspectOutput/$defs/NativeLibraryIdentity"
+          },
+          "NativePlatformIdentity": {
+            "$ref": "#/components/schemas/OpencutQualityInspectOutput/$defs/NativePlatformIdentity"
           },
           "PixelBounds": {
             "properties": {
@@ -31307,13 +31458,6 @@
           "VisualDecodeAdmission": {
             "additionalProperties": false,
             "properties": {
-              "decoderSurfaces": {
-                "description": "Native-admitted working surfaces: direct video (1), canvas transfer (2),\nor the frozen four-surface decoder (4).\nMissing values retain the frozen four-surface decoder contract.",
-                "format": "uint8",
-                "maximum": 255,
-                "minimum": 0,
-                "type": "integer"
-              },
               "maxDecodedBytes": {
                 "type": "string"
               },
@@ -41775,6 +41919,15 @@
             ],
             "type": "object"
           },
+          "NativeGraphicsApi": {
+            "$ref": "#/components/schemas/OpencutQualityInspectOutput/$defs/NativeGraphicsApi"
+          },
+          "NativeLibraryIdentity": {
+            "$ref": "#/components/schemas/OpencutQualityInspectOutput/$defs/NativeLibraryIdentity"
+          },
+          "NativePlatformIdentity": {
+            "$ref": "#/components/schemas/OpencutQualityInspectOutput/$defs/NativePlatformIdentity"
+          },
           "OperationSchema": {
             "properties": {
               "name": {
@@ -44221,6 +44374,15 @@
           "MediaVideoResult": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/MediaVideoResult"
           },
+          "NativeGraphicsApi": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/NativeGraphicsApi"
+          },
+          "NativeLibraryIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/NativeLibraryIdentity"
+          },
+          "NativePlatformIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/NativePlatformIdentity"
+          },
           "PixelBounds": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/PixelBounds"
           },
@@ -44768,6 +44930,15 @@
           },
           "MediaVideoResult": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/MediaVideoResult"
+          },
+          "NativeGraphicsApi": {
+            "$ref": "#/components/schemas/OpencutQualityInspectOutput/$defs/NativeGraphicsApi"
+          },
+          "NativeLibraryIdentity": {
+            "$ref": "#/components/schemas/OpencutQualityInspectOutput/$defs/NativeLibraryIdentity"
+          },
+          "NativePlatformIdentity": {
+            "$ref": "#/components/schemas/OpencutQualityInspectOutput/$defs/NativePlatformIdentity"
           },
           "PixelBounds": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/PixelBounds"
@@ -46079,6 +46250,15 @@
           "MediaVideoResult": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/MediaVideoResult"
           },
+          "NativeGraphicsApi": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/NativeGraphicsApi"
+          },
+          "NativeLibraryIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/NativeLibraryIdentity"
+          },
+          "NativePlatformIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/NativePlatformIdentity"
+          },
           "PixelBounds": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/PixelBounds"
           },
@@ -46797,6 +46977,15 @@
           },
           "MediaVideoResult": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/MediaVideoResult"
+          },
+          "NativeGraphicsApi": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/NativeGraphicsApi"
+          },
+          "NativeLibraryIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/NativeLibraryIdentity"
+          },
+          "NativePlatformIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/NativePlatformIdentity"
           },
           "PixelBounds": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/PixelBounds"
@@ -53593,6 +53782,15 @@
           "MediaVideoResult": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/MediaVideoResult"
           },
+          "NativeGraphicsApi": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/NativeGraphicsApi"
+          },
+          "NativeLibraryIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/NativeLibraryIdentity"
+          },
+          "NativePlatformIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/NativePlatformIdentity"
+          },
           "PixelBounds": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/PixelBounds"
           },
@@ -57961,6 +58159,15 @@
           "MediaVideoResult": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/MediaVideoResult"
           },
+          "NativeGraphicsApi": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/NativeGraphicsApi"
+          },
+          "NativeLibraryIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/NativeLibraryIdentity"
+          },
+          "NativePlatformIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/NativePlatformIdentity"
+          },
           "PixelBounds": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/PixelBounds"
           },
@@ -58507,6 +58714,15 @@
           },
           "MediaVideoResult": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/MediaVideoResult"
+          },
+          "NativeGraphicsApi": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/NativeGraphicsApi"
+          },
+          "NativeLibraryIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/NativeLibraryIdentity"
+          },
+          "NativePlatformIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/NativePlatformIdentity"
           },
           "PixelBounds": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/PixelBounds"
@@ -59201,6 +59417,15 @@
           "MediaVideoResult": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/MediaVideoResult"
           },
+          "NativeGraphicsApi": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/NativeGraphicsApi"
+          },
+          "NativeLibraryIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/NativeLibraryIdentity"
+          },
+          "NativePlatformIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/NativePlatformIdentity"
+          },
           "PixelBounds": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/PixelBounds"
           },
@@ -59740,6 +59965,15 @@
           },
           "MediaVideoResult": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/MediaVideoResult"
+          },
+          "NativeGraphicsApi": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/NativeGraphicsApi"
+          },
+          "NativeLibraryIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/NativeLibraryIdentity"
+          },
+          "NativePlatformIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/NativePlatformIdentity"
           },
           "PixelBounds": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/PixelBounds"
@@ -60283,6 +60517,15 @@
           "MediaVideoResult": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/MediaVideoResult"
           },
+          "NativeGraphicsApi": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/NativeGraphicsApi"
+          },
+          "NativeLibraryIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/NativeLibraryIdentity"
+          },
+          "NativePlatformIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/NativePlatformIdentity"
+          },
           "PixelBounds": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/PixelBounds"
           },
@@ -60794,6 +61037,15 @@
           },
           "MediaVideoResult": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/MediaVideoResult"
+          },
+          "NativeGraphicsApi": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/NativeGraphicsApi"
+          },
+          "NativeLibraryIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/NativeLibraryIdentity"
+          },
+          "NativePlatformIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/NativePlatformIdentity"
           },
           "PixelBounds": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/PixelBounds"

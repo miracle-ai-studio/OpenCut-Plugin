@@ -784,21 +784,9 @@ pub(crate) fn validate_result_evidence(
     };
     let video_seconds = seconds(&plan.identity.video_duration)?;
     let audio_seconds = plan.audio.duration_samples() as f64 / 48_000.0;
-    if visual.host_sha256 != execution.audio.host_sha256
-        || visual.browser_sha256 != execution.audio.browser_sha256
-        || visual.browser_version != execution.audio.browser_version
-        || visual.playwright_version != "1.63.0"
-        || visual.mediabunny_version != "1.41.0"
-        || visual.gpu_backend != "webgpu"
-        || visual.texture_format != "bgra8unorm"
-        || visual.decoder_profile != crate::media_frame_jobs::CLASSIC_VISUAL_DECODER_PROFILE
-        || !valid_id(&visual.browser_version)
-        || !valid_id(&visual.gpu_device)
+    if !crate::classic_visual::validate_visual_audio_identity(visual, &execution.audio)
+        || crate::classic_visual::validate_visual_summary(visual).is_err()
         || [
-            &visual.host_sha256,
-            &visual.browser_sha256,
-            &visual.module_sha256,
-            &visual.shader_sha256,
             &encoder.ffmpeg_sha256,
             &encoder.ffprobe_sha256,
             &execution.frame_receipts_sha256,

@@ -1,0 +1,15 @@
+[package]
+name = "opencut-renderer"
+description = "Native GPU execution of prepared OpenCut rendering instructions"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+opencut-contracts = { path = "../contracts" }
+wgpu = { version = "=30.0.1", default-features = false, features = ["std", "parking_lot", "metal", "vulkan", "dx12", "wgsl"] }
+pollster = "=0.4.0"
+sha2 = "0.10"
+tiny-skia = { version = "=0.11.4", default-features = false, features = ["std", "simd"] }
+skia-safe = { version = "=0.153.3", features = ["textlayout"] }
+ttf-parser = "=0.25.1"

@@ -240,6 +240,7 @@
       "dependencies": {
         "normal": [
           "cosmic-text",
+          "ffmpeg-next",
           "image",
           "libc",
           "opencut-media-contracts",
@@ -286,6 +287,7 @@
           "opencut-media",
           "opencut-plugin-host",
           "opencut-project-render",
+          "opencut-renderer",
           "opencut-storage-budget",
           "opencut-time",
           "png",
@@ -475,6 +477,38 @@
           "tempfile",
           "uuid"
         ]
+      }
+    },
+    "opencut-renderer": {
+      "path": "crates/renderer",
+      "layer": "adapter",
+      "owner": "Media",
+      "responsibility": "受限原生 GPU 执行；仅消费已准备的几何与像素，不解释工程或持有资源授权。依赖理由见 docs/native-rendering.md。",
+      "dependencies": {
+        "normal": [
+          "opencut-contracts",
+          "pollster",
+          "sha2",
+          "skia-safe",
+          "tiny-skia",
+          "ttf-parser",
+          "wgpu"
+        ],
+        "build": [],
+        "dev": []
+      }
+    },
+    "opencut-render-worker": {
+      "path": "apps/render-worker",
+      "layer": "host",
+      "owner": "Media",
+      "responsibility": "独立原生媒体执行进程；仅装配受限字节端口和原生适配器，不解析 CLI 或发布工程；边界依据见 docs/native-rendering.md。",
+      "dependencies": {
+        "normal": [
+          "opencut-native-services"
+        ],
+        "build": [],
+        "dev": []
       }
     }
   },

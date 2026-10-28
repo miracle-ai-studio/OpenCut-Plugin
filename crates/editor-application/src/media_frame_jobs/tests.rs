@@ -140,16 +140,21 @@ fn stored(input: &PreparedMediaFramePng) -> StoredFramePngResult {
             sources: public_sources(&prepared, &[observation()]).unwrap(),
             execution: MediaFrameExecutionSummary {
                 host_sha256: "b".repeat(64),
-                browser_version: "test-browser".into(),
-                browser_sha256: "c".repeat(64),
-                module_sha256: "d".repeat(64),
-                shader_sha256: "e".repeat(64),
-                playwright_version: "1.63.0".into(),
-                mediabunny_version: "1.41.0".into(),
-                gpu_backend: "webgpu".into(),
-                gpu_device: "fixture-device".into(),
-                texture_format: "bgra8unorm".into(),
-                decoder_profile: CLASSIC_VISUAL_DECODER_PROFILE.into(),
+                runtime:
+                    opencut_job_contracts::media_frame::VisualRuntimeIdentity::HistoricalBrowser(
+                        opencut_job_contracts::media_frame::HistoricalBrowserVisualIdentity {
+                            browser_version: "test-browser".into(),
+                            browser_sha256: "c".repeat(64),
+                            module_sha256: "d".repeat(64),
+                            shader_sha256: "e".repeat(64),
+                            playwright_version: "1.63.0".into(),
+                            mediabunny_version: "1.41.0".into(),
+                            gpu_backend: "webgpu".into(),
+                            gpu_device: "fixture-device".into(),
+                            texture_format: "bgra8unorm".into(),
+                            decoder_profile: CLASSIC_VISUAL_DECODER_PROFILE.into(),
+                        },
+                    ),
             },
             artifact: MediaFrameArtifactMetadata {
                 mime_type: "image/png".into(),
@@ -190,7 +195,14 @@ fn exact_presentation_time_full_snapshot_identity_and_safe_result_projection() {
             0 => changed.public.identity.time = t(1, 8),
             1 => changed.public.sources[0].asset_id = "other".into(),
             2 => changed.public.asset_lock.assets[0].size += 1,
-            _ => changed.public.execution.shader_sha256 = "unknown".into(),
+            _ => match &mut changed.public.execution.runtime {
+                VisualRuntimeIdentity::HistoricalBrowser(identity) => {
+                    identity.shader_sha256 = "unknown".into()
+                }
+                VisualRuntimeIdentity::Native(identity) => {
+                    identity.shader_sha256 = "unknown".into()
+                }
+            },
         }
         assert_eq!(
             validate_stored_result(&input, &changed).unwrap_err().code,
@@ -744,7 +756,7 @@ fn retained_picture_keeps_fixed_time_policy_and_revalidates_decoder_facts() {
 }
 
 #[test]
-fn two_full_hd_sources_fit_128_mib_but_still_reject_larger_decodes_and_original_64_mib() {
+fn native_decoded_pixel_limits_admit_hd_and_reject_oversized_or_small_cpu_budgets() {
     let input = input();
     let prepared = validate_prepared(&input).unwrap();
     let mut graph = prepared.graph().clone();
@@ -793,7 +805,7 @@ fn two_full_hd_sources_fit_128_mib_but_still_reject_larger_decodes_and_original_
             .code,
         "VISUAL_BUDGET_EXCEEDED"
     );
-    policy.max_rgba_bytes = 64 * 1024 * 1024;
+    policy.max_rgba_bytes = 16 * 1024 * 1024;
     let previous = ClassicVisualSession::new(&prepared, &policy).unwrap();
     assert_eq!(
         previous

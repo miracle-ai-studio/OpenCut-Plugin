@@ -62,24 +62,10 @@ pub struct ClassicVisualRenderReceipt {
     pub rgba_bytes: String,
     pub peak_accounted_bytes: String,
 }
-#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct ClassicVisualEngineIdentity {
-    pub engine: String,
-    pub browser_version: String,
-    pub browser_sha256: String,
-    pub module_sha256: String,
-    pub shader_sha256: String,
-    pub playwright_version: String,
-    pub mediabunny_version: String,
-    pub gpu_backend: String,
-    pub gpu_device: String,
-    pub texture_format: String,
-    pub decoder_profile: String,
-}
+pub use opencut_contracts::renderer_identity::NativeVisualIdentity as ClassicVisualEngineIdentity;
 #[derive(Clone, Debug)]
 pub struct ClassicVisualRuntimeReceipt {
-    pub browser_pid: u32,
+    pub worker_pid: u32,
     pub identity: ClassicVisualEngineIdentity,
 }
 #[derive(Debug, Serialize, Deserialize)]

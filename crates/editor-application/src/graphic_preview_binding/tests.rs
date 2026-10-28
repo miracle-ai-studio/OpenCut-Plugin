@@ -143,14 +143,14 @@ fn graphic_preview_matches_native_admission_without_deducting_text_and_fonts_twi
         .media()
         .resources()
         .iter()
-        .map(|r| r.version.size)
+        .map(|r| r.version.size.min(4 * 1024 * 1024) + 65536)
         .sum();
     exact.max_rgba_bytes = graphic_pixels * 16
         + text_pixels * 16
         + fonts * 3
         + u64::from(frame.identity().width) * u64::from(frame.identity().height) * 4
-        + encoded * 3
-        + 2 * 16;
+        + encoded
+        + 2 * 4;
     let native =
         crate::classic_graphic_frame::graphic_media_policy(&original.prepared, &exact).unwrap();
     let native_media =

@@ -30,7 +30,7 @@ fn two_hd_sources_and_locked_font_fit_without_unused_scene_canvases() {
     policy.max_rgba_bytes = 160 * 1024 * 1024;
     policy.max_gpu_bytes = 512 * 1024 * 1024;
     policy.max_output_bytes = 129 * 1024 * 1024;
-    for limit in [policy.max_rgba_bytes, 80 * 1024 * 1024] {
+    for limit in [policy.max_rgba_bytes, 64 * 1024 * 1024] {
         let mut bounded = policy.clone();
         bounded.max_rgba_bytes = limit;
         let scene = scene_execution_policy(&prepared, &bounded).unwrap();
@@ -292,11 +292,14 @@ fn four_k_legacy_two_sources_keep_grades_and_admit_bounded_serial_decoders() {
     .unwrap();
     for layer in &source.layers {
         let permit = session.decode_admission_for(&layer.element_id).unwrap();
-        assert_eq!(permit.decoder_surfaces, 2);
         assert!(permit.max_pixels.parse::<u64>().unwrap() >= 3840 * 2160);
-        assert_eq!(
-            permit.max_decoded_bytes.parse::<u64>().unwrap(),
-            permit.max_pixels.parse::<u64>().unwrap() * 8
+        assert!(
+            permit.max_decoded_bytes.parse::<u64>().unwrap()
+                >= permit.max_pixels.parse::<u64>().unwrap() * 4
+        );
+        assert!(
+            permit.max_decoded_bytes.parse::<u64>().unwrap() * (source.layers.len() as u64)
+                <= media.max_rgba_bytes
         );
     }
     // Reproduce the real foreground budget and missing imported size hints.
@@ -355,11 +358,14 @@ fn four_k_legacy_two_sources_keep_grades_and_admit_bounded_serial_decoders() {
     .unwrap();
     for layer in &videos.layers {
         let permit = session.decode_admission_for(&layer.element_id).unwrap();
-        assert_eq!(permit.decoder_surfaces, 1);
         assert!(permit.max_pixels.parse::<u64>().unwrap() >= 3840 * 2160);
-        assert_eq!(
-            permit.max_decoded_bytes.parse::<u64>().unwrap(),
-            permit.max_pixels.parse::<u64>().unwrap() * 4
+        assert!(
+            permit.max_decoded_bytes.parse::<u64>().unwrap()
+                >= permit.max_pixels.parse::<u64>().unwrap() * 4
+        );
+        assert!(
+            permit.max_decoded_bytes.parse::<u64>().unwrap() * (videos.layers.len() as u64)
+                <= media.max_rgba_bytes
         );
     }
     let decoded: Vec<_> = videos

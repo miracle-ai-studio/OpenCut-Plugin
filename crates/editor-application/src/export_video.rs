@@ -123,7 +123,12 @@ fn original_profile(
     )
 }
 pub fn validate_submission(input: &SubmitExportVideo) -> Result<(), EditorError> {
-    if input.options.runtime_fingerprint.as_ref().is_some_and(|v| !valid_hash(v)) {
+    if input
+        .options
+        .runtime_fingerprint
+        .as_ref()
+        .is_some_and(|v| !valid_hash(v))
+    {
         return Err(invalid("Runtime fingerprint must be a SHA-256 digest"));
     }
     video::validate_submission(&video::FixedVideoInput {
@@ -276,7 +281,10 @@ pub fn submit_range(
     };
     submit_inner(store, assets, base, Some(input.range))
 }
-fn export_request(input:&SubmitExportVideo,range:Option<&VideoFrameRange>)->Result<JobRequest,EditorError>{
+fn export_request(
+    input: &SubmitExportVideo,
+    range: Option<&VideoFrameRange>,
+) -> Result<JobRequest, EditorError> {
     Ok(JobRequest {
         idempotency_key: input.idempotency_key.clone(),
         kind: if range.is_some() {
@@ -302,12 +310,23 @@ fn export_request(input:&SubmitExportVideo,range:Option<&VideoFrameRange>)->Resu
 }
 /// Read the original admitted request under the same fixed-snapshot access
 /// checks. This never captures media, reserves output storage or accepts a Job.
-pub fn cached_range(store:&impl ExportVideoStore,input:SubmitExportVideoRange)->Result<Option<JobRecord>,EditorError>{
-    let base=SubmitExportVideo{idempotency_key:input.idempotency_key,project_id:input.project_id,revision:input.revision,sequence_id:input.sequence_id,options:input.options};
+pub fn cached_range(
+    store: &impl ExportVideoStore,
+    input: SubmitExportVideoRange,
+) -> Result<Option<JobRecord>, EditorError> {
+    let base = SubmitExportVideo {
+        idempotency_key: input.idempotency_key,
+        project_id: input.project_id,
+        revision: input.revision,
+        sequence_id: input.sequence_id,
+        options: input.options,
+    };
     validate_submission(&base)?;
-    let fixed=store.fixed_scene_video_snapshot(&base.project_id,&base.revision)?;
-    if fixed.snapshot.project.id!=base.project_id||fixed.snapshot.revision!=base.revision{return Err(invalid("Authorized export revision changed"));}
-    store.find_accepted_scene_video_job(&export_request(&base,Some(&input.range))?)
+    let fixed = store.fixed_scene_video_snapshot(&base.project_id, &base.revision)?;
+    if fixed.snapshot.project.id != base.project_id || fixed.snapshot.revision != base.revision {
+        return Err(invalid("Authorized export revision changed"));
+    }
+    store.find_accepted_scene_video_job(&export_request(&base, Some(&input.range))?)
 }
 fn submit_inner(
     store: &mut impl ExportVideoStore,
@@ -322,7 +341,7 @@ fn submit_inner(
     {
         return Err(invalid("Authorized export revision changed"));
     }
-    let request = export_request(&input,range.as_ref())?;
+    let request = export_request(&input, range.as_ref())?;
     if let Some(existing) = store.find_accepted_scene_video_job(&request)? {
         return Ok(existing);
     }
@@ -361,8 +380,11 @@ fn submit_inner(
 }
 fn project_raster_identity(plan: &mut video::PreparedVideoSelection, options: &ExportVideoOptions) {
     if options.resolution == RasterResolution::Preview540 {
-        let size = opencut_composition::scene::preview_canvas(opencut_contracts::scene::CanvasSize {
-            width: plan.identity.width, height: plan.identity.height });
+        let size =
+            opencut_composition::scene::preview_canvas(opencut_contracts::scene::CanvasSize {
+                width: plan.identity.width,
+                height: plan.identity.height,
+            });
         plan.identity.width = size.width;
         plan.identity.height = size.height;
     }
@@ -444,10 +466,17 @@ pub fn validate_stored_result(
                 && input.options.resolution == RasterResolution::Preview540
                 && !input.options.include_audio
                 && input.range.is_some()
-                && input.visual_profile == ExportVisualProfile::SceneV1 => 0,
+                && input.visual_profile == ExportVisualProfile::SceneV1 =>
+        {
+            0
+        }
         Some(VideoEncoderBackend::WebcodecsAvc) => return Err(bad()),
-        Some(VideoEncoderBackend::FfmpegLibx264) if format != ExportFormat::Mp4 => return Err(bad()),
-        Some(VideoEncoderBackend::FfmpegLibvpxVp9) if format != ExportFormat::Webm => return Err(bad()),
+        Some(VideoEncoderBackend::FfmpegLibx264) if format != ExportFormat::Mp4 => {
+            return Err(bad());
+        }
+        Some(VideoEncoderBackend::FfmpegLibvpxVp9) if format != ExportFormat::Webm => {
+            return Err(bad());
+        }
         _ => rgba,
     };
     let duration = opencut_time::RationalTime::try_from(&plan.identity.video_duration)?;
@@ -472,18 +501,8 @@ pub fn validate_stored_result(
         || e.rgba_bytes != expected_rgba.to_string()
         || !enc.observed_video_duration_seconds.is_finite()
         || (enc.observed_video_duration_seconds - seconds).abs() > video_tolerance
-        || v.playwright_version != "1.63.0"
-        || v.mediabunny_version != "1.41.0"
-        || v.gpu_backend != "webgpu"
-        || v.texture_format != "bgra8unorm"
-        || v.decoder_profile != crate::media_frame_jobs::CLASSIC_VISUAL_DECODER_PROFILE
-        || !valid_id(&v.browser_version)
-        || !valid_id(&v.gpu_device)
+        || crate::classic_visual::validate_visual_summary(v).is_err()
         || [
-            &v.host_sha256,
-            &v.browser_sha256,
-            &v.module_sha256,
-            &v.shader_sha256,
             &enc.ffmpeg_sha256,
             &enc.ffprobe_sha256,
             &e.frame_receipts_sha256,
@@ -509,7 +528,7 @@ pub fn validate_stored_result(
                 stored.audio_decoder_evidence_v1.as_ref(),
             )
             .map_err(|_| bad())?;
-            if v.host_sha256 != summary.host_sha256 || v.browser_sha256 != summary.browser_sha256 || v.browser_version != summary.browser_version
+            if !crate::classic_visual::validate_visual_audio_identity(v, summary)
                 || !observed.is_finite() || (observed - p.identity.audio_frame_count.as_ref().and_then(|n| n.parse::<u64>().ok()).ok_or_else(bad)? as f64 / 48000.0).abs() > 0.05
                 || summary.mastering_profile != crate::scene_audio_jobs::AudioMasteringProfile::ClassicExportWholeSceneWebAudioV31 { return Err(bad()); }
         }
@@ -606,7 +625,8 @@ mod tests {
                 execution: ExportVideoExecution {
                     visual: MediaFrameExecutionSummary {
                         host_sha256: hash.clone(),
-                        browser_version: "test-browser".into(),
+                        runtime: opencut_job_contracts::media_frame::VisualRuntimeIdentity::HistoricalBrowser(opencut_job_contracts::media_frame::HistoricalBrowserVisualIdentity {
+browser_version: "test-browser".into(),
                         browser_sha256: hash.clone(),
                         module_sha256: hash.clone(),
                         shader_sha256: hash.clone(),
@@ -617,7 +637,8 @@ mod tests {
                         texture_format: "bgra8unorm".into(),
                         decoder_profile: crate::media_frame_jobs::CLASSIC_VISUAL_DECODER_PROFILE
                             .into(),
-                    },
+                    }),
+},
                     audio: None,
                     encoder: ExportVideoEncoderSummary {
                         backend:None,
@@ -674,28 +695,41 @@ mod tests {
         changed.artifact.mime_type = "video/mp4".into();
         assert!(validate_stored_result(&input, &changed).is_err());
         changed = stored.clone();
-        let mut canvas_input=input.clone();
-        canvas_input.options.format=ExportFormat::Mp4;
-        canvas_input.options.resolution=RasterResolution::Preview540;
-        canvas_input.range=Some(VideoFrameRange{start_frame:"0".into(),frame_count:"60".into()});
-        let canvas_plan=prepare(&canvas_input).unwrap();
-        let mut canvas=stored.clone();
-        canvas.public.identity=public_identity(&canvas_input,&canvas_plan);
-        canvas.public.render_input_sha256=render_input_sha256(&canvas_input).unwrap();
-        canvas.public.execution.encoder.backend=Some(VideoEncoderBackend::WebcodecsAvc);
-        canvas.public.execution.encoder.video_codec="h264".into();
-        canvas.public.execution.encoder.rates=classic_export_rates(&canvas_input.options,canvas_plan.identity.width,canvas_plan.identity.height).unwrap();
-        canvas.public.execution.rgba_bytes="0".into();
-        canvas.public.artifact.mime_type="video/mp4".into();canvas.artifact.mime_type="video/mp4".into();
-        assert!(validate_stored_result(&canvas_input,&canvas).is_ok());
-        let mut wrong=canvas.clone();wrong.public.execution.encoder.backend=None;
-        assert!(validate_stored_result(&canvas_input,&wrong).is_err());
-        wrong=canvas.clone();wrong.public.execution.rgba_bytes="737280".into();
-        assert!(validate_stored_result(&canvas_input,&wrong).is_err());
-        let mut wrong_input=canvas_input.clone();wrong_input.range=None;
-        assert!(validate_stored_result(&wrong_input,&canvas).is_err());
-        wrong_input=canvas_input.clone();wrong_input.options.resolution=RasterResolution::Source;
-        assert!(validate_stored_result(&wrong_input,&canvas).is_err());
+        let mut canvas_input = input.clone();
+        canvas_input.options.format = ExportFormat::Mp4;
+        canvas_input.options.resolution = RasterResolution::Preview540;
+        canvas_input.range = Some(VideoFrameRange {
+            start_frame: "0".into(),
+            frame_count: "60".into(),
+        });
+        let canvas_plan = prepare(&canvas_input).unwrap();
+        let mut canvas = stored.clone();
+        canvas.public.identity = public_identity(&canvas_input, &canvas_plan);
+        canvas.public.render_input_sha256 = render_input_sha256(&canvas_input).unwrap();
+        canvas.public.execution.encoder.backend = Some(VideoEncoderBackend::WebcodecsAvc);
+        canvas.public.execution.encoder.video_codec = "h264".into();
+        canvas.public.execution.encoder.rates = classic_export_rates(
+            &canvas_input.options,
+            canvas_plan.identity.width,
+            canvas_plan.identity.height,
+        )
+        .unwrap();
+        canvas.public.execution.rgba_bytes = "0".into();
+        canvas.public.artifact.mime_type = "video/mp4".into();
+        canvas.artifact.mime_type = "video/mp4".into();
+        assert!(validate_stored_result(&canvas_input, &canvas).is_ok());
+        let mut wrong = canvas.clone();
+        wrong.public.execution.encoder.backend = None;
+        assert!(validate_stored_result(&canvas_input, &wrong).is_err());
+        wrong = canvas.clone();
+        wrong.public.execution.rgba_bytes = "737280".into();
+        assert!(validate_stored_result(&canvas_input, &wrong).is_err());
+        let mut wrong_input = canvas_input.clone();
+        wrong_input.range = None;
+        assert!(validate_stored_result(&wrong_input, &canvas).is_err());
+        wrong_input = canvas_input.clone();
+        wrong_input.options.resolution = RasterResolution::Source;
+        assert!(validate_stored_result(&wrong_input, &canvas).is_err());
         changed.public.execution.frames_rendered = "59".into();
         assert!(validate_stored_result(&input, &changed).is_err());
         changed = stored.clone();

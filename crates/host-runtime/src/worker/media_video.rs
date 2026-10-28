@@ -47,7 +47,6 @@ use std::{
     cell::Cell,
     collections::BTreeSet,
     ffi::OsStr,
-    io::Write,
     path::Path,
     sync::{Arc, Mutex},
     time::{Duration, Instant},
@@ -500,46 +499,17 @@ fn execute_kernel(
         max_rss_bytes: policy.visual.max_rss_bytes,
         execution_limit: execution_limit.remaining_after(started.elapsed()),
     };
-    let canvas_output = matches!(profile, video::VideoFrameProfile::SceneV1) && export_input.as_ref().is_some_and(|v| {
-        v.options.resolution == export::RasterResolution::Preview540
-            && v.options.format == export::ExportFormat::Mp4
-            && !v.options.include_audio
-            && v.range.is_some()
-    });
-    let canvas_config = encoder_config.clone();
-    let _canvas_reservation = if canvas_output {
-        Some(
-            budget
-                .reserve_output_bytes(encoder_config.max_output_bytes, admission.writer.clone())?,
-        )
+    let mut encoder = if let Some(export) = &export_input {
+        ClassicVideoEncoder::start_export(
+            encoder_config,
+            export.options.clone(),
+            &admission,
+            work_checkpoint,
+        )?
     } else {
-        None
+        ClassicVideoEncoder::start(encoder_config, &admission, work_checkpoint)?
     };
-    let mut canvas_file = if canvas_output {
-        Some(
-            attempt
-                .create_readwrite_child(output_name)
-                .map_err(io_error)?,
-        )
-    } else {
-        None
-    };
-    let mut canvas_received = 0u64;
-    let mut encoder = if canvas_output {
-        None
-    } else {
-        Some(if let Some(export) = &export_input {
-            ClassicVideoEncoder::start_export(
-                encoder_config,
-                export.options.clone(),
-                &admission,
-                work_checkpoint,
-            )?
-        } else {
-            ClassicVideoEncoder::start(encoder_config, &admission, work_checkpoint)?
-        })
-    };
-    let mut config = match profile {
+    let config = match profile {
         video::VideoFrameProfile::TextV2 => {
             classic_visual_runtime::configured_text(&policy.visual)?
         }
@@ -559,86 +529,53 @@ fn execute_kernel(
             classic_visual_runtime::configured_blend(&policy.visual)?
         }
     };
-    config.runner = config
-        .runner
-        .parent()
-        .ok_or_else(|| error("CAPABILITY_UNAVAILABLE", "Missing visual runner directory"))?
-        .join("video-runner.mjs");
-    if !config.runner.is_file() {
-        return Err(error(
-            "CAPABILITY_UNAVAILABLE",
-            "Persistent video runner unavailable",
-        ));
-    }
     let remaining_limit = execution_limit.remaining_after(started.elapsed());
     let progress_clock = execution_limit
         .renews_on_progress()
         .then(|| last_progress.clone());
-    let mut process = if canvas_output {
-        let rates = export::classic_export_rates(
-            &export_input.as_ref().unwrap().options,
-            prepared.identity.width,
-            prepared.identity.height,
-        )
-        .ok_or_else(|| error("INVALID_ARGUMENT", "Invalid canvas preview bitrate"))?;
-        ClassicVideoProcess::start_scene_canvas(
+    let mut process = match profile {
+        video::VideoFrameProfile::TextV2 => ClassicVideoProcess::start(
             config,
             count,
             remaining_limit,
             progress_clock.clone(),
             &mut || checkpoint(),
-            opencut_native_services::classic_video::CanvasVideoEncoding {
-                fps_numerator: prepared.identity.fps.numerator,
-                fps_denominator: prepared.identity.fps.denominator,
-                bitrate: u64::from(rates.video_bitrate),
-                max_output_bytes: canvas_config.max_output_bytes,
-            },
-        )?
-    } else {
-        match profile {
-            video::VideoFrameProfile::TextV2 => ClassicVideoProcess::start(
-                config,
-                count,
-                remaining_limit,
-                progress_clock.clone(),
-                &mut || checkpoint(),
-            )?,
-            video::VideoFrameProfile::CaptionV3 => ClassicVideoProcess::start_caption(
-                config,
-                count,
-                remaining_limit,
-                progress_clock.clone(),
-                &mut || checkpoint(),
-            )?,
-            video::VideoFrameProfile::GraphicV1 => ClassicVideoProcess::start_graphic(
-                config,
-                count,
-                remaining_limit,
-                progress_clock.clone(),
-                &mut || checkpoint(),
-            )?,
-            video::VideoFrameProfile::SceneV1 => ClassicVideoProcess::start_scene(
-                config,
-                count,
-                remaining_limit,
-                progress_clock.clone(),
-                &mut || checkpoint(),
-            )?,
-            video::VideoFrameProfile::MaskV1 => ClassicVideoProcess::start_mask(
-                config,
-                count,
-                remaining_limit,
-                progress_clock.clone(),
-                &mut || checkpoint(),
-            )?,
-            video::VideoFrameProfile::BlendV1 => ClassicVideoProcess::start_blend(
-                config,
-                count,
-                remaining_limit,
-                progress_clock.clone(),
-                &mut || checkpoint(),
-            )?,
-        }
+        )?,
+        video::VideoFrameProfile::CaptionV3 => ClassicVideoProcess::start_caption(
+            config,
+            count,
+            remaining_limit,
+            progress_clock.clone(),
+            &mut || checkpoint(),
+        )?,
+        video::VideoFrameProfile::GraphicV1 => ClassicVideoProcess::start_graphic(
+            config,
+            count,
+            remaining_limit,
+            progress_clock.clone(),
+            &mut || checkpoint(),
+        )?,
+        video::VideoFrameProfile::SceneV1 => ClassicVideoProcess::start_scene(
+            config,
+            count,
+            remaining_limit,
+            progress_clock.clone(),
+            &mut || checkpoint(),
+        )?,
+        video::VideoFrameProfile::MaskV1 => ClassicVideoProcess::start_mask(
+            config,
+            count,
+            remaining_limit,
+            progress_clock.clone(),
+            &mut || checkpoint(),
+        )?,
+        video::VideoFrameProfile::BlendV1 => ClassicVideoProcess::start_blend(
+            config,
+            count,
+            remaining_limit,
+            progress_clock.clone(),
+            &mut || checkpoint(),
+        )?,
     };
     let mut receipts = Sha256::new();
     let mut rgba_bytes = 0u64;
@@ -688,21 +625,7 @@ fn execute_kernel(
         let render_started = Instant::now();
         let handles = resources.handles();
         let fonts = resources.font_handles();
-        struct NoRgba;
-        impl ClassicVisualRgbaSink for NoRgba {
-            fn chunk(&mut self, _: u64, _: &[u8]) -> Result<(), EditorError> {
-                Err(error(
-                    "VIDEO_PROTOCOL_ERROR",
-                    "Canvas execution emitted unexpected RGBA",
-                ))
-            }
-        }
-        let mut no_rgba = NoRgba;
-        let sink: &mut dyn ClassicVisualRgbaSink = if let Some(encoder) = encoder.as_mut() {
-            encoder
-        } else {
-            &mut no_rgba
-        };
+        let sink: &mut dyn ClassicVisualRgbaSink = &mut encoder;
         let bytes = match &selected {
             video::PreparedVideoFrame::Text(frame) => {
                 let mut session =
@@ -738,9 +661,6 @@ fn execute_kernel(
             video::PreparedVideoFrame::Scene(frame) => {
                 let mut session =
                     ClassicSceneFrameSession::new(frame, &policy.visual, resources.coverage())?;
-                if canvas_output {
-                    session.use_canvas_output()?;
-                }
                 let receipt = process.render_scene_frame(
                     &mut session,
                     &mut resources,
@@ -782,19 +702,15 @@ fn execute_kernel(
             )
         })?;
         let render_ms = render_started.elapsed().as_secs_f64() * 1000.0;
-        if let Some(encoder) = encoder.as_mut() {
-            encoder.finish_frame()?;
-        }
+        encoder.finish_frame()?;
         resources.checkpoint()?;
         receipts.update(index.to_le_bytes());
         receipts.update((bytes.len() as u64).to_le_bytes());
         receipts.update(&bytes);
         rgba_bytes = rgba_bytes
-            .checked_add(if canvas_output {
-                0
-            } else {
-                u64::from(prepared.identity.width) * u64::from(prepared.identity.height) * 4
-            })
+            .checked_add(
+                u64::from(prepared.identity.width) * u64::from(prepared.identity.height) * 4,
+            )
             .ok_or_else(|| error("VIDEO_BUDGET_EXCEEDED", "Video byte counter overflow"))?;
         if profile_directory.is_some() && frame_profile.len() < 50 {
             frame_profile.push(serde_json::json!({"frame":index,"prepare_ms":prepared_ms,
@@ -809,32 +725,7 @@ fn execute_kernel(
         });
     }
     let finish_started = Instant::now();
-    let (runtime, _quota) = if canvas_output {
-        process.finish_canvas(&mut || checkpoint(), &mut |offset, bytes| {
-            checkpoint()?;
-            if offset != canvas_received
-                || bytes.len() > 65536
-                || bytes.is_empty()
-                || offset
-                    .checked_add(bytes.len() as u64)
-                    .is_none_or(|end| end > canvas_config.max_output_bytes)
-            {
-                return Err(error(
-                    "VIDEO_PROTOCOL_ERROR",
-                    "Invalid bounded canvas output",
-                ));
-            }
-            let file = canvas_file.as_mut().unwrap();
-            check_output_name(&attempt, output_name, file)?;
-            file.write_all(bytes).map_err(io_error)?;
-            canvas_received += bytes.len() as u64;
-            checkpoint()?;
-            check_output_name(&attempt, output_name, file)?;
-            Ok(())
-        })?
-    } else {
-        process.finish(&mut || checkpoint())?
-    };
+    let (runtime, _quota) = process.finish(&mut || checkpoint())?;
     verify_cache_runtime()?;
     work_checkpoint(true)?;
     checkpoint()?;
@@ -846,20 +737,7 @@ fn execute_kernel(
         fraction: None,
         media_time: None,
     });
-    let observed = if let Some(encoder) = encoder {
-        encoder.finish(&admission)?
-    } else {
-        if canvas_received == 0 {
-            return Err(error("ARTIFACT_VERIFICATION_FAILED", "Empty canvas MP4"));
-        }
-        canvas_file.as_ref().unwrap().sync_all().map_err(io_error)?;
-        opencut_native_services::classic_video::verify_canvas_video(
-            &canvas_config,
-            &export_input.as_ref().unwrap().options,
-            &admission,
-            &mut |completed| work_checkpoint(completed),
-        )?
-    };
+    let observed = encoder.finish(&admission)?;
     checkpoint()?;
     let mut file = attempt.open_readonly_child(output_name).map_err(io_error)?;
     let size = file.metadata().map_err(io_error)?.len();
@@ -901,16 +779,7 @@ fn execute_kernel(
     let identity = runtime.identity;
     let visual_summary = MediaFrameExecutionSummary {
         host_sha256: host_sha256.clone(),
-        browser_version: identity.browser_version,
-        browser_sha256: identity.browser_sha256,
-        module_sha256: identity.module_sha256,
-        shader_sha256: identity.shader_sha256,
-        playwright_version: identity.playwright_version,
-        mediabunny_version: identity.mediabunny_version,
-        gpu_backend: identity.gpu_backend,
-        gpu_device: identity.gpu_device,
-        texture_format: identity.texture_format,
-        decoder_profile: identity.decoder_profile,
+        runtime: opencut_job_contracts::media_frame::VisualRuntimeIdentity::Native(identity),
     };
     let result = if let Some(export_input) = &export_input {
         let format = export_input.options.format;

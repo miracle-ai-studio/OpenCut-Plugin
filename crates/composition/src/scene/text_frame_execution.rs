@@ -38,7 +38,6 @@ impl PreparedTextFrame {
         if reflowed.media.graph() != self.media.graph() {
             return Err(invalid("Text reflow cannot change fixed media sources"));
         }
-        reflowed.media.decoder_surfaces = self.media.decoder_surfaces;
         Ok(reflowed)
     }
     pub fn identity(&self) -> &TextFrameIdentity {

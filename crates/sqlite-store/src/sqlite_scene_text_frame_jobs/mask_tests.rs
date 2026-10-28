@@ -113,7 +113,8 @@ fn mask_frame_stored_result_binds_mask_scope_hash_and_private_artifact() {
             .unwrap(),
             execution: MediaFrameExecutionSummary {
                 host_sha256: digest.clone(),
-                browser_version: "test-browser".into(),
+                runtime: opencut_job_contracts::media_frame::VisualRuntimeIdentity::HistoricalBrowser(opencut_job_contracts::media_frame::HistoricalBrowserVisualIdentity {
+browser_version: "test-browser".into(),
                 browser_sha256: digest.clone(),
                 module_sha256: digest.clone(),
                 shader_sha256: digest.clone(),
@@ -125,7 +126,8 @@ fn mask_frame_stored_result_binds_mask_scope_hash_and_private_artifact() {
                 decoder_profile:
                     opencut_editor_application::media_frame_jobs::CLASSIC_VISUAL_DECODER_PROFILE
                         .into(),
-            },
+            }),
+},
             sources: vec![],
             texts: vec![],
             captions: vec![],

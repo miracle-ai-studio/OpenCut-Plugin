@@ -637,3 +637,4 @@ pub mod subtitle_classic_ass;
 pub mod project_readonly;
 
 pub mod project_catalog;
+pub mod renderer_identity;

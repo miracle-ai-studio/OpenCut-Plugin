@@ -15,6 +15,8 @@ image = { version = "0.25", default-features = false, features = ["png"] }
 unicode-script = "0.5"
 tempfile = "3"
 sha2 = "0.10"
+# Native decode uses bounded custom AVIO; URL/device/network input is disabled.
+ffmpeg-next = { version = "=9.0.0", default-features = false, features = ["codec", "format", "software-scaling", "software-resampling"] }
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"

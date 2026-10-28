@@ -150,8 +150,8 @@ pub(crate) fn policy() -> LocalVisualExecutionPolicy {
         max_frame_pixels: 1000,
         max_decoded_pixels: 1000,
         max_gpu_bytes: 100000,
-        max_rgba_bytes: 100000,
-        max_encoded_bytes: 1000,
+        max_rgba_bytes: 1024 * 1024,
+        max_encoded_bytes: 1024 * 1024,
         max_output_bytes: 10000,
         max_rss_bytes: 64000000,
         deadline_ms: 10000,
@@ -548,21 +548,24 @@ fn combined_font_text_and_media_work_is_admitted_before_resource_opening() {
     let prepared = c::prepare_text_frame(&graph()).unwrap();
     let mut exact = policy();
     exact.max_frame_pixels = 8;
-    exact.max_encoded_bytes = 17;
+    // One seven-byte source has one bounded AVIO block plus its probe bytes.
+    // The shared ten-byte font is counted once; both media layers need pixels.
+    let demux_bytes = 65536 + 7;
+    exact.max_encoded_bytes = 10 + demux_bytes;
     exact.max_decoded_pixels = 10;
-    exact.max_rgba_bytes = 243;
-    exact.max_gpu_bytes = 928;
+    exact.max_rgba_bytes = 8 * 16 + 10 * 3 + 8 * 4 + demux_bytes + 2 * 4;
+    exact.max_gpu_bytes = 8 * 16 + 8 * 4 * 8 + 256 * 2 + 2 * 8;
     let reduced = admit_text_frame(&prepared, &exact).unwrap();
     assert_eq!(reduced.max_decoded_pixels, 2);
-    assert_eq!(reduced.max_rgba_bytes, 85);
-    assert_eq!(reduced.max_gpu_bytes, 800);
+    assert_eq!(reduced.max_rgba_bytes, 8 * 4 + demux_bytes + 2 * 4);
+    assert_eq!(reduced.max_gpu_bytes, 8 * 4 * 8 + 256 * 2 + 2 * 8);
     for field in 0..5 {
         let mut denied = exact.clone();
         match field {
-            0 => denied.max_encoded_bytes = 16,
+            0 => denied.max_encoded_bytes -= 1,
             1 => denied.max_decoded_pixels = 9,
-            2 => denied.max_rgba_bytes = 242,
-            3 => denied.max_gpu_bytes = 927,
+            2 => denied.max_rgba_bytes -= 1,
+            3 => denied.max_gpu_bytes -= 1,
             _ => denied.max_frame_pixels = 7,
         };
         assert_eq!(
@@ -578,7 +581,7 @@ fn combined_font_text_and_media_work_is_admitted_before_resource_opening() {
     graph.layers.push(title);
     let duplicated = c::prepare_text_frame(&graph).unwrap();
     let mut roomy = policy();
-    roomy.max_encoded_bytes = 17;
+    roomy.max_encoded_bytes = 10 + demux_bytes;
     let reduced = admit_text_frame(&duplicated, &roomy).unwrap();
     assert_eq!(
         reduced.max_rgba_bytes,

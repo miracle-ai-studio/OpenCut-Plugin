@@ -478,38 +478,6 @@ impl<F: FnMut(bool) -> Result<(), EditorError>> ClassicVideoEncoder<F> {
         })
     }
 }
-/// Verify a complete browser-encoded canvas result in its owned output attempt.
-/// Codec/dimensions/CFR/frame count/duration/audio are checked by the same probe.
-pub fn verify_canvas_video(
-    config: &ClassicVideoEncoderConfig,
-    options: &opencut_contracts::export_video::ExportVideoOptions,
-    admission: &dyn OutputAdmission,
-    checkpoint: &mut dyn FnMut(bool) -> Result<(), EditorError>,
-) -> Result<ClassicVideoEncoderObservation, EditorError> {
-    if options.format != opencut_contracts::export_video::ExportFormat::Mp4 || options.include_audio
-    {
-        return Err(err("Canvas preview requires video-only AVC"));
-    }
-    let observed = probe(
-        &config.ffprobe,
-        &config.output,
-        admission,
-        config.execution_limit,
-        config.max_rss_bytes,
-        checkpoint,
-    )?;
-    let actual = crate::export_video::verify_probe(&observed, config, options)?;
-    let ffmpeg_sha256 = hash(&config.ffmpeg, &mut |completed| checkpoint(completed))?;
-    let ffprobe_sha256 = hash(&config.ffprobe, &mut |completed| checkpoint(completed))?;
-    Ok(ClassicVideoEncoderObservation {
-        backend: opencut_editor_application::export_video::VideoEncoderBackend::WebcodecsAvc,
-        ffmpeg_sha256,
-        ffprobe_sha256,
-        video_frames: actual.frames,
-        video_duration_seconds: actual.video_seconds,
-        audio_duration_seconds: 0.0,
-    })
-}
 impl<F: FnMut(bool) -> Result<(), EditorError>> ClassicVisualRgbaSink for ClassicVideoEncoder<F> {
     fn chunk(&mut self, offset: u64, bytes: &[u8]) -> Result<(), EditorError> {
         self.check()?;

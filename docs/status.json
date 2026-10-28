@@ -414,5 +414,104 @@
     "Marketing/blog/cloud-account/SEO pages",
     "Whole-document in-memory BFCache restoration",
     "Classic browser-project recovery and its public analyze/import operations"
-  ]
+  ],
+  "native_rendering_replacement": {
+    "source_base_commit": "74afa429",
+    "execution": "hard cutover in static-frame and export visual hosts; no selectable browser visual backend or fallback; Web continuous preview remains pending",
+    "implementation": "Native GPU/decode/raster worker and static-frame/export visual host integrated; text layout and macOS exit-monitor repairs built and passed scoped acceptance; Web preview, source artwork and native audio still pending",
+    "build": {
+      "cli_sha256": "8a571a9c2714dccbb0c7dcd96cfe16921b12ba88b73f403cdedad0c7e415f187",
+      "worker_sha256": "c71a2bd29c1b4aae23a5dca18504fef03c14fe5850f409f6b220a761c4f3fa28",
+      "status": "passed; same explicit production binaries used for generated contracts and serial scoped acceptance",
+      "source_digest": "cd11a75d825375a8f37be1e1a9332343259eca41c755ab181f529009bb0ead9a"
+    },
+    "scoped_behavior": {
+      "generated_and_canonical_contracts": "passed; 184 operations, 12 domains",
+      "job_contract_tests": {
+        "passed": 11
+      },
+      "failed_application_regressions_rerun": {
+        "passed": 31,
+        "failed": 0,
+        "scope": "30 passed on the preceding repair candidate; final graphic budget regression passed on the prior build and reused by identical pure-test executable SHA256"
+      },
+      "historical_renderer_proof": "passed; stored dependency identities remain exact while current live engines require current dependencies and platform identity",
+      "worker_lifecycle": "passed cancellation, revocation, deadline and RSS termination",
+      "worker_flip_profile": "passed original failing native flip/decoder identity regression after macOS ESRCH repair",
+      "retained_export": {
+        "cli_sha256": "7abf0e29c40349d6903753deb4fea4b8e0308c42b79ca85c99cb6bf2f8117d30",
+        "worker_sha256": "b68873878a10019ad546a84517508cdeff80fc538026e1ba442133d96280326a",
+        "frames": 24,
+        "seconds": 11.877258946187794,
+        "prior_seconds": 15.510829739039764,
+        "independent_pixel_mae_range": [
+          1.72,
+          2.43
+        ],
+        "pixel_gate": 5,
+        "passed": true,
+        "audio": "existing browser DSP; identical decoded PCM, not native audio acceptance"
+      },
+      "independent_raster": {
+        "latin_iou": 1,
+        "latin_pixel_mae": 0,
+        "latin_width_error_px": 0,
+        "chinese_iou": 1,
+        "chinese_pixel_mae": 0,
+        "chinese_width_error_px": 0,
+        "text_passed": true,
+        "styled_pixel_mae": 0.040863715277777775,
+        "styled_second_line_width_error_px": 0,
+        "text_gates": "IoU >0.995; pixel MAE <0.1; blank error <=2; width/ascent/descent error <0.00005 px",
+        "ellipse_iou": 0.998987898789879,
+        "ellipse_passed": true,
+        "ellipse_candidate": "7abf0e29c403-b68873878a10",
+        "oracle_correction": "authored geometry is an ellipse; initial mistaken circle reference preserved",
+        "max_text_metric_error_px": 1.430511474609375e-06,
+        "text_scope": "Three fixed-font authored text samples: Latin, Chinese, and transformed multiline underline/background/letter spacing. Wider Unicode/font/platform coverage remains open."
+      },
+      "initial_failures_retained": [
+        "stored result identity deserialization",
+        "31 obsolete application admission expectations",
+        "text pixels and process-exit RSS observation"
+      ],
+      "schema_validation": "passed actual native text artifact results; unknown and mixed browser/native identity proofs rejected",
+      "public_cancellation": {
+        "queue": {
+          "passed": true,
+          "job_id": "job_c6dcb992feb24c4094b2b5dd51ca7bef",
+          "public_artifacts": 0,
+          "project_unchanged": true,
+          "original_replay_same_cancelled_job": true
+        },
+        "render": {
+          "passed": true,
+          "job_id": "job_06392ed7c562428794737217524edc6b",
+          "public_artifacts": 0,
+          "project_unchanged": true,
+          "original_replay_same_cancelled_job": true
+        },
+        "before-publication": {
+          "passed": true,
+          "job_id": "job_e83195bfc47b439aabe2291987031148",
+          "public_artifacts": 0,
+          "project_unchanged": true,
+          "original_replay_same_cancelled_job": true
+        },
+        "scope": "Real public cancellation in each window; publication window delays only completion of an already successful real output probe. Normal-runtime export throughput not remeasured."
+      },
+      "verifier_repair": "Initial cancellation verifier read an obsolete JobView field. Corrected only the verifier, retained its failed logs and rechecked the same three cancelled jobs; no replacement tasks or Rust rebuild."
+    },
+    "manual_acceptance": "Styled static native PNG and independent reference visually inspected; whole editor walkthrough not yet run",
+    "delivery_ready": false,
+    "remaining": [
+      "broader native text scripts, fonts, synthesis and platform coverage",
+      "Web continuous preview",
+      "source artwork",
+      "native audio execution and independent PCM",
+      "full pixel and resource lifecycle matrix",
+      "runtime packaging and clean installation",
+      "manual acceptance"
+    ]
+  }
 }

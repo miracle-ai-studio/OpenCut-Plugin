@@ -44,21 +44,6 @@ pub struct VisualDecodeAdmission {
     pub max_height: u32,
     pub max_pixels: String,
     pub max_decoded_bytes: String,
-    /// Native-admitted working surfaces: direct video (1), canvas transfer (2),
-    /// or the frozen four-surface decoder (4).
-    /// Missing values retain the frozen four-surface decoder contract.
-    #[serde(
-        default = "default_decoder_surfaces",
-        skip_serializing_if = "is_default_decoder_surfaces"
-    )]
-    pub decoder_surfaces: u8,
-}
-
-fn default_decoder_surfaces() -> u8 {
-    4
-}
-fn is_default_decoder_surfaces(value: &u8) -> bool {
-    *value == 4
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]

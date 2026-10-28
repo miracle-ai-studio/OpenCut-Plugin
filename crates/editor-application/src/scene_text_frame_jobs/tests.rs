@@ -306,16 +306,21 @@ fn persisted_text_result_rejects_font_raster_and_identity_tampering() {
             .unwrap(),
             execution: MediaFrameExecutionSummary {
                 host_sha256: "b".repeat(64),
-                browser_version: "test-browser".into(),
-                browser_sha256: "c".repeat(64),
-                module_sha256: "d".repeat(64),
-                shader_sha256: "e".repeat(64),
-                playwright_version: "1.63.0".into(),
-                mediabunny_version: "1.41.0".into(),
-                gpu_backend: "webgpu".into(),
-                gpu_device: "fixture-device".into(),
-                texture_format: "bgra8unorm".into(),
-                decoder_profile: CLASSIC_VISUAL_DECODER_PROFILE.into(),
+                runtime:
+                    opencut_job_contracts::media_frame::VisualRuntimeIdentity::HistoricalBrowser(
+                        opencut_job_contracts::media_frame::HistoricalBrowserVisualIdentity {
+                            browser_version: "test-browser".into(),
+                            browser_sha256: "c".repeat(64),
+                            module_sha256: "d".repeat(64),
+                            shader_sha256: "e".repeat(64),
+                            playwright_version: "1.63.0".into(),
+                            mediabunny_version: "1.41.0".into(),
+                            gpu_backend: "webgpu".into(),
+                            gpu_device: "fixture-device".into(),
+                            texture_format: "bgra8unorm".into(),
+                            decoder_profile: CLASSIC_VISUAL_DECODER_PROFILE.into(),
+                        },
+                    ),
             },
             sources: public_sources(
                 prepared.media(),

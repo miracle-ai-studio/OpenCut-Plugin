@@ -1,7 +1,9 @@
 //! Internal fixed-frame execution boundary. Resources and private output are
 //! supplied by the host; no path, process or public authorization lives here.
+mod identity;
 mod protocol;
 mod session;
+pub use identity::*;
 use opencut_contracts::EditorError;
 pub use protocol::*;
 pub use session::*;

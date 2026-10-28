@@ -7,6 +7,7 @@
 mod admission;
 mod analysis;
 mod audio_pcm;
+pub mod native_decode;
 pub use audio_pcm::{
     NativeChannelMap, NativePcmBlock, NativePcmSource, NativePcmStream, PcmDecodeLimits,
 };

@@ -269,9 +269,11 @@ fn separate_audio_and_visual_encoded_budgets_keep_both_limits_and_complete_lock(
     );
     fixed.snapshot.project.assets[0].version.size = 33 * 1024 * 1024;
     fixed.asset_lock.assets[0].size = 33 * 1024 * 1024;
+    // Native images stream through bounded AVIO/probe buffers as videos do;
+    // encoded file length is not an allocation of the entire source.
     assert_eq!(
-        validate_prepared(&fixed).err().unwrap().code,
-        "VISUAL_BUDGET_EXCEEDED"
+        validate_prepared(&fixed).unwrap().asset_ids,
+        ["image", "sound"]
     );
 
     let mut video = input();
@@ -416,16 +418,22 @@ fn stored_video_projection_validates_identity_codec_counts_hashes_and_private_ar
             execution: MediaVideoExecutionSummary {
                 visual: MediaFrameExecutionSummary {
                     host_sha256: digest.clone(),
-                    browser_version: "test-browser".into(),
-                    browser_sha256: digest.clone(),
-                    module_sha256: digest.clone(),
-                    shader_sha256: digest.clone(),
-                    playwright_version: "1.63.0".into(),
-                    mediabunny_version: "1.41.0".into(),
-                    gpu_backend: "webgpu".into(),
-                    gpu_device: "test-gpu".into(),
-                    texture_format: "bgra8unorm".into(),
-                    decoder_profile: crate::media_frame_jobs::CLASSIC_VISUAL_DECODER_PROFILE.into(),
+                    runtime:
+                        opencut_job_contracts::media_frame::VisualRuntimeIdentity::HistoricalBrowser(
+                            opencut_job_contracts::media_frame::HistoricalBrowserVisualIdentity {
+                                browser_version: "test-browser".into(),
+                                browser_sha256: digest.clone(),
+                                module_sha256: digest.clone(),
+                                shader_sha256: digest.clone(),
+                                playwright_version: "1.63.0".into(),
+                                mediabunny_version: "1.41.0".into(),
+                                gpu_backend: "webgpu".into(),
+                                gpu_device: "test-gpu".into(),
+                                texture_format: "bgra8unorm".into(),
+                                decoder_profile:
+                                    crate::media_frame_jobs::CLASSIC_VISUAL_DECODER_PROFILE.into(),
+                            },
+                        ),
                 },
                 audio: AudioExecutionSummary {
                     host_sha256: digest.clone(),
@@ -611,13 +619,16 @@ fn lock_covers_media_entering_after_the_first_output_frame() {
     let plan = prepare(&long).unwrap();
     assert_eq!(plan.asset_ids.len(), 40);
     assert_eq!(plan.identity.frame_count, "4320000");
-    // The actual simultaneous-frame limit is unchanged.
-    let mut overlap = long.snapshot.project.sequences[0].tracks[0].clone();
-    overlap.id = "overlap".into();
-    overlap.elements = vec![overlap.elements[1].clone()];
-    overlap.elements[0].id = "overlap-element".into();
-    overlap.elements[0].timeline_range.start = t(0, 1);
-    long.snapshot.project.sequences[0].tracks.push(overlap);
+    // The encoded-memory limit is still aggregate per simultaneous frame:
+    // eight distinct sources exceed 32 MiB of bounded probe/AVIO reserves.
+    for index in 1..8 {
+        let mut overlap = long.snapshot.project.sequences[0].tracks[0].clone();
+        overlap.id = format!("overlap-{index}");
+        overlap.elements = vec![overlap.elements[index].clone()];
+        overlap.elements[0].id = format!("overlap-element-{index}");
+        overlap.elements[0].timeline_range.start = t(0, 1);
+        long.snapshot.project.sequences[0].tracks.push(overlap);
+    }
     assert_eq!(prepare(&long).err().unwrap().code, "VISUAL_BUDGET_EXCEEDED");
 }
 
@@ -631,28 +642,72 @@ fn scene_video_admits_supported_crossfade_through_the_same_frame_execution_plan(
     let track = &mut fixed.snapshot.project.sequences[0].tracks[0];
     let first = &mut track.elements[0];
     first.source_span = ElementSourceSpan::ClassicTrimmed {
-        trim_start: t(1, 1), trim_end: t(3, 1), source_duration: Some(t(6, 1)),
+        trim_start: t(1, 1),
+        trim_end: t(3, 1),
+        source_duration: Some(t(6, 1)),
     };
     first.content = ElementContent::Video {
-        asset_id: "image".into(), video_stream: None, source_audio_enabled: false,
-        audio: AudioStyle {stream: None, gain: Gain::Decibels {value: 0.0}, muted: false},
-        retime: Retime {rate: RationalRate {numerator: 1, denominator: 1}, maintain_pitch: false,
-            mapping: RetimeMapping::ClassicRoundedTicks {timebase: 120000}},
+        asset_id: "image".into(),
+        video_stream: None,
+        source_audio_enabled: false,
+        audio: AudioStyle {
+            stream: None,
+            gain: Gain::Decibels { value: 0.0 },
+            muted: false,
+        },
+        retime: Retime {
+            rate: RationalRate {
+                numerator: 1,
+                denominator: 1,
+            },
+            maintain_pitch: false,
+            mapping: RetimeMapping::ClassicRoundedTicks { timebase: 120000 },
+        },
     };
     let mut incoming = first.clone();
     incoming.id = "incoming".into();
     incoming.timeline_range.start = t(2, 1);
     track.elements.push(incoming);
-    fixed.snapshot.project.sequences[0].transitions.push(SceneTransition {
-        id: "cut".into(), outgoing_element_id: "element".into(), incoming_element_id: "incoming".into(),
-        duration: t(1, 1), transition: TransitionKind::LegacyCrossfadeV3,
-    });
-    let admitted = prepare_with_audio_selection(&fixed.snapshot, "scene", &fixed.processing_policy, VideoFrameProfile::SceneV1, false).unwrap();
+    fixed.snapshot.project.sequences[0]
+        .transitions
+        .push(SceneTransition {
+            id: "cut".into(),
+            outgoing_element_id: "element".into(),
+            incoming_element_id: "incoming".into(),
+            duration: t(1, 1),
+            transition: TransitionKind::LegacyCrossfadeV3,
+        });
+    let admitted = prepare_with_audio_selection(
+        &fixed.snapshot,
+        "scene",
+        &fixed.processing_policy,
+        VideoFrameProfile::SceneV1,
+        false,
+    )
+    .unwrap();
     assert_eq!(admitted.identity.frame_count, "120");
     assert_eq!(admitted.asset_ids, ["image"]);
     // Other backends retain their own admission rules; accepting a Scene
     // crossfade must not silently erase it in a narrower rendering profile.
-    assert!(prepare_with_audio_selection(&fixed.snapshot, "scene", &fixed.processing_policy, VideoFrameProfile::TextV2, false).is_err());
+    assert!(
+        prepare_with_audio_selection(
+            &fixed.snapshot,
+            "scene",
+            &fixed.processing_policy,
+            VideoFrameProfile::TextV2,
+            false
+        )
+        .is_err()
+    );
     fixed.snapshot.project.sequences[0].transitions[0].duration = t(5, 1);
-    assert!(prepare_with_audio_selection(&fixed.snapshot, "scene", &fixed.processing_policy, VideoFrameProfile::SceneV1, false).is_err());
+    assert!(
+        prepare_with_audio_selection(
+            &fixed.snapshot,
+            "scene",
+            &fixed.processing_policy,
+            VideoFrameProfile::SceneV1,
+            false
+        )
+        .is_err()
+    );
 }

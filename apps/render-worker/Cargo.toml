@@ -1,0 +1,8 @@
+[package]
+name = "opencut-render-worker"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+opencut-native-services = { path = "../../crates/native-services" }

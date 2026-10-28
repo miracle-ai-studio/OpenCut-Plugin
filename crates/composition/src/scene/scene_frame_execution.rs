@@ -401,16 +401,7 @@ pub fn prepare_scene_frame(
         })
         .collect();
     raw.fonts.retain(|font| text_fonts.contains(&font.id));
-    let mut blend = prepare_blend_frame(&raw)?;
-    // Colour backgrounds can consume opaque VideoFrames directly on the GPU.
-    // CPU backdrop painting keeps a bounded canvas transfer; frozen narrow
-    // profiles retain their original four-surface contract.
-    blend.execution.execution.execution.media.decoder_surfaces =
-        if matches!(&background, SceneBackground::Color { .. }) {
-            1
-        } else {
-            2
-        };
+    let blend = prepare_blend_frame(&raw)?;
     for title in blend.execution().execution().execution().texts() {
         if synthesis_ids.contains(&title.font.id) {
             let font = graph

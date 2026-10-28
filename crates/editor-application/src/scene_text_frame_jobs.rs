@@ -319,21 +319,7 @@ pub(crate) fn validate_output_evidence(
     public: &opencut_job_contracts::media_frame::MediaFrameArtifactMetadata,
     artifact: &ArtifactDescriptor,
 ) -> Result<(), EditorError> {
-    if execution.playwright_version != "1.63.0"
-        || execution.mediabunny_version != "1.41.0"
-        || execution.gpu_backend != "webgpu"
-        || !valid_id(&execution.browser_version)
-        || !valid_id(&execution.gpu_device)
-        || execution.texture_format != "bgra8unorm"
-        || execution.decoder_profile != CLASSIC_VISUAL_DECODER_PROFILE
-        || [
-            &execution.host_sha256,
-            &execution.browser_sha256,
-            &execution.module_sha256,
-            &execution.shader_sha256,
-        ]
-        .into_iter()
-        .any(|h| !valid_hash(h))
+    if crate::classic_visual::validate_visual_summary(execution).is_err()
         || artifact.mime_type != "image/png"
         || public.mime_type != "image/png"
         || artifact.size == 0

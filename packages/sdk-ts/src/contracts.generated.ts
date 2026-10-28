@@ -2683,6 +2683,41 @@ export namespace OpencutQualityInspectInput {
 export namespace OpencutQualityInspectOutput {
   export type ArtifactAvailability = 'unchecked';
   export type ArtifactRole = 'primary';
+  export type MediaFrameExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      gpu_backend: NativeGraphicsApi;
+      gpu_device: string;
+      gpu_device_id: number;
+      gpu_driver: string;
+      gpu_vendor_id: number;
+      host_sha256: string;
+      /**
+       * Absent only in immutable proofs captured before platform observation.
+       * New execution requires the observed OS/font/driver platform identity.
+       */
+      platform?: NativePlatformIdentity | null;
+      rasterizer: string;
+      renderer_sha256: string;
+      shader_sha256: string;
+      texture_format: string;
+      wgpu_version: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profile: string;
+      gpu_backend: string;
+      gpu_device: string;
+      host_sha256: string;
+      mediabunny_version: string;
+      module_sha256: string;
+      playwright_version: string;
+      shader_sha256: string;
+      texture_format: string;
+    };
+  export type NativeGraphicsApi = 'metal' | 'vulkan' | 'direct_x';
 
   export interface Response {
   data?: QualityReport | null;
@@ -2735,18 +2770,18 @@ export namespace OpencutQualityInspectOutput {
   ticks: string;
   timebase: number;
 }
-  export interface MediaFrameExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  decoder_profile: string;
-  gpu_backend: string;
-  gpu_device: string;
-  host_sha256: string;
-  mediabunny_version: string;
-  module_sha256: string;
-  playwright_version: string;
-  shader_sha256: string;
-  texture_format: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+  export interface NativePlatformIdentity {
+  architecture: string;
+  font_backend: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
   export interface OutputMeasurements {
   audio?: QualityStream | null;
@@ -3001,6 +3036,41 @@ export namespace OpencutAnalysisAssetOutput {
   export type AudioPitchProfile = 'unprepared-linear' | 'prepared-linear' | 'prepared-soundtouch';
   export type AudioProfile = 'classic-export-v31-web-audio';
   export type AudioSampleFormat = 'ieee_float32_le';
+  export type MediaFrameExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      gpu_backend: NativeGraphicsApi;
+      gpu_device: string;
+      gpu_device_id: number;
+      gpu_driver: string;
+      gpu_vendor_id: number;
+      host_sha256: string;
+      /**
+       * Absent only in immutable proofs captured before platform observation.
+       * New execution requires the observed OS/font/driver platform identity.
+       */
+      platform?: NativePlatformIdentity | null;
+      rasterizer: string;
+      renderer_sha256: string;
+      shader_sha256: string;
+      texture_format: string;
+      wgpu_version: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profile: string;
+      gpu_backend: string;
+      gpu_device: string;
+      host_sha256: string;
+      mediabunny_version: string;
+      module_sha256: string;
+      playwright_version: string;
+      shader_sha256: string;
+      texture_format: string;
+    };
+  export type NativeGraphicsApi = 'metal' | 'vulkan' | 'direct_x';
   export type MediaFrameProfile = 'classic-v31-gpu-normal-frame';
   export type MediaFrameNoSourceReason = 'outside_read_window' | 'eof' | 'timestamp_gap';
   export type TextFrameProfile = 'classic-v31-gpu-normal-text-frame-v2';
@@ -3572,18 +3642,18 @@ export namespace OpencutAnalysisAssetOutput {
   mime_type: string;
   size_bytes: string;
 }
-  export interface MediaFrameExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  decoder_profile: string;
-  gpu_backend: string;
-  gpu_device: string;
-  host_sha256: string;
-  mediabunny_version: string;
-  module_sha256: string;
-  playwright_version: string;
-  shader_sha256: string;
-  texture_format: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+  export interface NativePlatformIdentity {
+  architecture: string;
+  font_backend: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
   export interface MediaFrameIdentity {
   height: number;
@@ -3603,7 +3673,7 @@ export namespace OpencutAnalysisAssetOutput {
 }
   export interface MediaFrameSourceObservation {
   /**
-   * Mediabunny browser seconds, not a claim of exact original demux ticks.
+   * Observed presentation seconds. Exact demux ticks remain decoder facts.
    */
   actual_timestamp_seconds?: number | null;
   asset_id: string;
@@ -13499,12 +13569,6 @@ export namespace OpencutVisualPreviewFrameOutput {
   width: number;
 }
   export interface VisualDecodeAdmission {
-  /**
-   * Native-admitted working surfaces: direct video (1), canvas transfer (2),
-   * or the frozen four-surface decoder (4).
-   * Missing values retain the frozen four-surface decoder contract.
-   */
-  decoderSurfaces?: number;
   maxDecodedBytes: string;
   maxHeight: number;
   maxPixels: string;
@@ -17988,6 +18052,41 @@ export namespace OpencutResourceReadOutput {
   export type AudioPitchProfile = 'unprepared-linear' | 'prepared-linear' | 'prepared-soundtouch';
   export type AudioProfile = 'classic-export-v31-web-audio';
   export type AudioSampleFormat = 'ieee_float32_le';
+  export type MediaFrameExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      gpu_backend: NativeGraphicsApi;
+      gpu_device: string;
+      gpu_device_id: number;
+      gpu_driver: string;
+      gpu_vendor_id: number;
+      host_sha256: string;
+      /**
+       * Absent only in immutable proofs captured before platform observation.
+       * New execution requires the observed OS/font/driver platform identity.
+       */
+      platform?: NativePlatformIdentity | null;
+      rasterizer: string;
+      renderer_sha256: string;
+      shader_sha256: string;
+      texture_format: string;
+      wgpu_version: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profile: string;
+      gpu_backend: string;
+      gpu_device: string;
+      host_sha256: string;
+      mediabunny_version: string;
+      module_sha256: string;
+      playwright_version: string;
+      shader_sha256: string;
+      texture_format: string;
+    };
+  export type NativeGraphicsApi = 'metal' | 'vulkan' | 'direct_x';
   export type MediaFrameProfile = 'classic-v31-gpu-normal-frame';
   export type MediaFrameNoSourceReason = 'outside_read_window' | 'eof' | 'timestamp_gap';
   export type TextFrameProfile = 'classic-v31-gpu-normal-text-frame-v2';
@@ -19280,18 +19379,18 @@ export namespace OpencutResourceReadOutput {
   mime_type: string;
   size_bytes: string;
 }
-  export interface MediaFrameExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  decoder_profile: string;
-  gpu_backend: string;
-  gpu_device: string;
-  host_sha256: string;
-  mediabunny_version: string;
-  module_sha256: string;
-  playwright_version: string;
-  shader_sha256: string;
-  texture_format: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+  export interface NativePlatformIdentity {
+  architecture: string;
+  font_backend: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
   export interface MediaFrameIdentity {
   height: number;
@@ -19311,7 +19410,7 @@ export namespace OpencutResourceReadOutput {
 }
   export interface MediaFrameSourceObservation {
   /**
-   * Mediabunny browser seconds, not a claim of exact original demux ticks.
+   * Observed presentation seconds. Exact demux ticks remain decoder facts.
    */
   actual_timestamp_seconds?: number | null;
   asset_id: string;
@@ -20178,6 +20277,41 @@ export namespace OpencutJobViewOutput {
   export type AudioPitchProfile = 'unprepared-linear' | 'prepared-linear' | 'prepared-soundtouch';
   export type AudioProfile = 'classic-export-v31-web-audio';
   export type AudioSampleFormat = 'ieee_float32_le';
+  export type MediaFrameExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      gpu_backend: NativeGraphicsApi;
+      gpu_device: string;
+      gpu_device_id: number;
+      gpu_driver: string;
+      gpu_vendor_id: number;
+      host_sha256: string;
+      /**
+       * Absent only in immutable proofs captured before platform observation.
+       * New execution requires the observed OS/font/driver platform identity.
+       */
+      platform?: NativePlatformIdentity | null;
+      rasterizer: string;
+      renderer_sha256: string;
+      shader_sha256: string;
+      texture_format: string;
+      wgpu_version: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profile: string;
+      gpu_backend: string;
+      gpu_device: string;
+      host_sha256: string;
+      mediabunny_version: string;
+      module_sha256: string;
+      playwright_version: string;
+      shader_sha256: string;
+      texture_format: string;
+    };
+  export type NativeGraphicsApi = 'metal' | 'vulkan' | 'direct_x';
   export type MediaFrameProfile = 'classic-v31-gpu-normal-frame';
   export type MediaFrameNoSourceReason = 'outside_read_window' | 'eof' | 'timestamp_gap';
   export type TextFrameProfile = 'classic-v31-gpu-normal-text-frame-v2';
@@ -20749,18 +20883,18 @@ export namespace OpencutJobViewOutput {
   mime_type: string;
   size_bytes: string;
 }
-  export interface MediaFrameExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  decoder_profile: string;
-  gpu_backend: string;
-  gpu_device: string;
-  host_sha256: string;
-  mediabunny_version: string;
-  module_sha256: string;
-  playwright_version: string;
-  shader_sha256: string;
-  texture_format: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+  export interface NativePlatformIdentity {
+  architecture: string;
+  font_backend: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
   export interface MediaFrameIdentity {
   height: number;
@@ -20780,7 +20914,7 @@ export namespace OpencutJobViewOutput {
 }
   export interface MediaFrameSourceObservation {
   /**
-   * Mediabunny browser seconds, not a claim of exact original demux ticks.
+   * Observed presentation seconds. Exact demux ticks remain decoder facts.
    */
   actual_timestamp_seconds?: number | null;
   asset_id: string;
@@ -21631,6 +21765,41 @@ export namespace OpencutJobQueryOutput {
   export type AudioPitchProfile = 'unprepared-linear' | 'prepared-linear' | 'prepared-soundtouch';
   export type AudioProfile = 'classic-export-v31-web-audio';
   export type AudioSampleFormat = 'ieee_float32_le';
+  export type MediaFrameExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      gpu_backend: NativeGraphicsApi;
+      gpu_device: string;
+      gpu_device_id: number;
+      gpu_driver: string;
+      gpu_vendor_id: number;
+      host_sha256: string;
+      /**
+       * Absent only in immutable proofs captured before platform observation.
+       * New execution requires the observed OS/font/driver platform identity.
+       */
+      platform?: NativePlatformIdentity | null;
+      rasterizer: string;
+      renderer_sha256: string;
+      shader_sha256: string;
+      texture_format: string;
+      wgpu_version: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profile: string;
+      gpu_backend: string;
+      gpu_device: string;
+      host_sha256: string;
+      mediabunny_version: string;
+      module_sha256: string;
+      playwright_version: string;
+      shader_sha256: string;
+      texture_format: string;
+    };
+  export type NativeGraphicsApi = 'metal' | 'vulkan' | 'direct_x';
   export type MediaFrameProfile = 'classic-v31-gpu-normal-frame';
   export type MediaFrameNoSourceReason = 'outside_read_window' | 'eof' | 'timestamp_gap';
   export type TextFrameProfile = 'classic-v31-gpu-normal-text-frame-v2';
@@ -22207,18 +22376,18 @@ export namespace OpencutJobQueryOutput {
   mime_type: string;
   size_bytes: string;
 }
-  export interface MediaFrameExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  decoder_profile: string;
-  gpu_backend: string;
-  gpu_device: string;
-  host_sha256: string;
-  mediabunny_version: string;
-  module_sha256: string;
-  playwright_version: string;
-  shader_sha256: string;
-  texture_format: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+  export interface NativePlatformIdentity {
+  architecture: string;
+  font_backend: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
   export interface MediaFrameIdentity {
   height: number;
@@ -22238,7 +22407,7 @@ export namespace OpencutJobQueryOutput {
 }
   export interface MediaFrameSourceObservation {
   /**
-   * Mediabunny browser seconds, not a claim of exact original demux ticks.
+   * Observed presentation seconds. Exact demux ticks remain decoder facts.
    */
   actual_timestamp_seconds?: number | null;
   asset_id: string;
@@ -23351,6 +23520,41 @@ export namespace OpencutJobSubmitOutput {
   export type AudioPitchProfile = 'unprepared-linear' | 'prepared-linear' | 'prepared-soundtouch';
   export type AudioProfile = 'classic-export-v31-web-audio';
   export type AudioSampleFormat = 'ieee_float32_le';
+  export type MediaFrameExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      gpu_backend: NativeGraphicsApi;
+      gpu_device: string;
+      gpu_device_id: number;
+      gpu_driver: string;
+      gpu_vendor_id: number;
+      host_sha256: string;
+      /**
+       * Absent only in immutable proofs captured before platform observation.
+       * New execution requires the observed OS/font/driver platform identity.
+       */
+      platform?: NativePlatformIdentity | null;
+      rasterizer: string;
+      renderer_sha256: string;
+      shader_sha256: string;
+      texture_format: string;
+      wgpu_version: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profile: string;
+      gpu_backend: string;
+      gpu_device: string;
+      host_sha256: string;
+      mediabunny_version: string;
+      module_sha256: string;
+      playwright_version: string;
+      shader_sha256: string;
+      texture_format: string;
+    };
+  export type NativeGraphicsApi = 'metal' | 'vulkan' | 'direct_x';
   export type MediaFrameProfile = 'classic-v31-gpu-normal-frame';
   export type MediaFrameNoSourceReason = 'outside_read_window' | 'eof' | 'timestamp_gap';
   export type TextFrameProfile = 'classic-v31-gpu-normal-text-frame-v2';
@@ -23922,18 +24126,18 @@ export namespace OpencutJobSubmitOutput {
   mime_type: string;
   size_bytes: string;
 }
-  export interface MediaFrameExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  decoder_profile: string;
-  gpu_backend: string;
-  gpu_device: string;
-  host_sha256: string;
-  mediabunny_version: string;
-  module_sha256: string;
-  playwright_version: string;
-  shader_sha256: string;
-  texture_format: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+  export interface NativePlatformIdentity {
+  architecture: string;
+  font_backend: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
   export interface MediaFrameIdentity {
   height: number;
@@ -23953,7 +24157,7 @@ export namespace OpencutJobSubmitOutput {
 }
   export interface MediaFrameSourceObservation {
   /**
-   * Mediabunny browser seconds, not a claim of exact original demux ticks.
+   * Observed presentation seconds. Exact demux ticks remain decoder facts.
    */
   actual_timestamp_seconds?: number | null;
   asset_id: string;
@@ -24914,6 +25118,41 @@ export namespace OpencutRenderSubmitOutput {
   export type AudioPitchProfile = 'unprepared-linear' | 'prepared-linear' | 'prepared-soundtouch';
   export type AudioProfile = 'classic-export-v31-web-audio';
   export type AudioSampleFormat = 'ieee_float32_le';
+  export type MediaFrameExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      gpu_backend: NativeGraphicsApi;
+      gpu_device: string;
+      gpu_device_id: number;
+      gpu_driver: string;
+      gpu_vendor_id: number;
+      host_sha256: string;
+      /**
+       * Absent only in immutable proofs captured before platform observation.
+       * New execution requires the observed OS/font/driver platform identity.
+       */
+      platform?: NativePlatformIdentity | null;
+      rasterizer: string;
+      renderer_sha256: string;
+      shader_sha256: string;
+      texture_format: string;
+      wgpu_version: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profile: string;
+      gpu_backend: string;
+      gpu_device: string;
+      host_sha256: string;
+      mediabunny_version: string;
+      module_sha256: string;
+      playwright_version: string;
+      shader_sha256: string;
+      texture_format: string;
+    };
+  export type NativeGraphicsApi = 'metal' | 'vulkan' | 'direct_x';
   export type MediaFrameProfile = 'classic-v31-gpu-normal-frame';
   export type MediaFrameNoSourceReason = 'outside_read_window' | 'eof' | 'timestamp_gap';
   export type TextFrameProfile = 'classic-v31-gpu-normal-text-frame-v2';
@@ -25485,18 +25724,18 @@ export namespace OpencutRenderSubmitOutput {
   mime_type: string;
   size_bytes: string;
 }
-  export interface MediaFrameExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  decoder_profile: string;
-  gpu_backend: string;
-  gpu_device: string;
-  host_sha256: string;
-  mediabunny_version: string;
-  module_sha256: string;
-  playwright_version: string;
-  shader_sha256: string;
-  texture_format: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+  export interface NativePlatformIdentity {
+  architecture: string;
+  font_backend: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
   export interface MediaFrameIdentity {
   height: number;
@@ -25516,7 +25755,7 @@ export namespace OpencutRenderSubmitOutput {
 }
   export interface MediaFrameSourceObservation {
   /**
-   * Mediabunny browser seconds, not a claim of exact original demux ticks.
+   * Observed presentation seconds. Exact demux ticks remain decoder facts.
    */
   actual_timestamp_seconds?: number | null;
   asset_id: string;
@@ -37200,6 +37439,41 @@ export namespace OpencutAnalysisSequenceTranscribeOutput {
   export type AudioPitchProfile = 'unprepared-linear' | 'prepared-linear' | 'prepared-soundtouch';
   export type AudioProfile = 'classic-export-v31-web-audio';
   export type AudioSampleFormat = 'ieee_float32_le';
+  export type MediaFrameExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      gpu_backend: NativeGraphicsApi;
+      gpu_device: string;
+      gpu_device_id: number;
+      gpu_driver: string;
+      gpu_vendor_id: number;
+      host_sha256: string;
+      /**
+       * Absent only in immutable proofs captured before platform observation.
+       * New execution requires the observed OS/font/driver platform identity.
+       */
+      platform?: NativePlatformIdentity | null;
+      rasterizer: string;
+      renderer_sha256: string;
+      shader_sha256: string;
+      texture_format: string;
+      wgpu_version: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profile: string;
+      gpu_backend: string;
+      gpu_device: string;
+      host_sha256: string;
+      mediabunny_version: string;
+      module_sha256: string;
+      playwright_version: string;
+      shader_sha256: string;
+      texture_format: string;
+    };
+  export type NativeGraphicsApi = 'metal' | 'vulkan' | 'direct_x';
   export type MediaFrameProfile = 'classic-v31-gpu-normal-frame';
   export type MediaFrameNoSourceReason = 'outside_read_window' | 'eof' | 'timestamp_gap';
   export type TextFrameProfile = 'classic-v31-gpu-normal-text-frame-v2';
@@ -37771,18 +38045,18 @@ export namespace OpencutAnalysisSequenceTranscribeOutput {
   mime_type: string;
   size_bytes: string;
 }
-  export interface MediaFrameExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  decoder_profile: string;
-  gpu_backend: string;
-  gpu_device: string;
-  host_sha256: string;
-  mediabunny_version: string;
-  module_sha256: string;
-  playwright_version: string;
-  shader_sha256: string;
-  texture_format: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+  export interface NativePlatformIdentity {
+  architecture: string;
+  font_backend: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
   export interface MediaFrameIdentity {
   height: number;
@@ -37802,7 +38076,7 @@ export namespace OpencutAnalysisSequenceTranscribeOutput {
 }
   export interface MediaFrameSourceObservation {
   /**
-   * Mediabunny browser seconds, not a claim of exact original demux ticks.
+   * Observed presentation seconds. Exact demux ticks remain decoder facts.
    */
   actual_timestamp_seconds?: number | null;
   asset_id: string;
@@ -45911,6 +46185,41 @@ export namespace OpencutAnalysisSpeakerTurnsOutput {
   export type AudioPitchProfile = 'unprepared-linear' | 'prepared-linear' | 'prepared-soundtouch';
   export type AudioProfile = 'classic-export-v31-web-audio';
   export type AudioSampleFormat = 'ieee_float32_le';
+  export type MediaFrameExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      gpu_backend: NativeGraphicsApi;
+      gpu_device: string;
+      gpu_device_id: number;
+      gpu_driver: string;
+      gpu_vendor_id: number;
+      host_sha256: string;
+      /**
+       * Absent only in immutable proofs captured before platform observation.
+       * New execution requires the observed OS/font/driver platform identity.
+       */
+      platform?: NativePlatformIdentity | null;
+      rasterizer: string;
+      renderer_sha256: string;
+      shader_sha256: string;
+      texture_format: string;
+      wgpu_version: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profile: string;
+      gpu_backend: string;
+      gpu_device: string;
+      host_sha256: string;
+      mediabunny_version: string;
+      module_sha256: string;
+      playwright_version: string;
+      shader_sha256: string;
+      texture_format: string;
+    };
+  export type NativeGraphicsApi = 'metal' | 'vulkan' | 'direct_x';
   export type MediaFrameProfile = 'classic-v31-gpu-normal-frame';
   export type MediaFrameNoSourceReason = 'outside_read_window' | 'eof' | 'timestamp_gap';
   export type TextFrameProfile = 'classic-v31-gpu-normal-text-frame-v2';
@@ -46482,18 +46791,18 @@ export namespace OpencutAnalysisSpeakerTurnsOutput {
   mime_type: string;
   size_bytes: string;
 }
-  export interface MediaFrameExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  decoder_profile: string;
-  gpu_backend: string;
-  gpu_device: string;
-  host_sha256: string;
-  mediabunny_version: string;
-  module_sha256: string;
-  playwright_version: string;
-  shader_sha256: string;
-  texture_format: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+  export interface NativePlatformIdentity {
+  architecture: string;
+  font_backend: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
   export interface MediaFrameIdentity {
   height: number;
@@ -46513,7 +46822,7 @@ export namespace OpencutAnalysisSpeakerTurnsOutput {
 }
   export interface MediaFrameSourceObservation {
   /**
-   * Mediabunny browser seconds, not a claim of exact original demux ticks.
+   * Observed presentation seconds. Exact demux ticks remain decoder facts.
    */
   actual_timestamp_seconds?: number | null;
   asset_id: string;
@@ -47371,6 +47680,41 @@ export namespace OpencutAnalysisTranscribeOutput {
   export type AudioPitchProfile = 'unprepared-linear' | 'prepared-linear' | 'prepared-soundtouch';
   export type AudioProfile = 'classic-export-v31-web-audio';
   export type AudioSampleFormat = 'ieee_float32_le';
+  export type MediaFrameExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      gpu_backend: NativeGraphicsApi;
+      gpu_device: string;
+      gpu_device_id: number;
+      gpu_driver: string;
+      gpu_vendor_id: number;
+      host_sha256: string;
+      /**
+       * Absent only in immutable proofs captured before platform observation.
+       * New execution requires the observed OS/font/driver platform identity.
+       */
+      platform?: NativePlatformIdentity | null;
+      rasterizer: string;
+      renderer_sha256: string;
+      shader_sha256: string;
+      texture_format: string;
+      wgpu_version: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profile: string;
+      gpu_backend: string;
+      gpu_device: string;
+      host_sha256: string;
+      mediabunny_version: string;
+      module_sha256: string;
+      playwright_version: string;
+      shader_sha256: string;
+      texture_format: string;
+    };
+  export type NativeGraphicsApi = 'metal' | 'vulkan' | 'direct_x';
   export type MediaFrameProfile = 'classic-v31-gpu-normal-frame';
   export type MediaFrameNoSourceReason = 'outside_read_window' | 'eof' | 'timestamp_gap';
   export type TextFrameProfile = 'classic-v31-gpu-normal-text-frame-v2';
@@ -47942,18 +48286,18 @@ export namespace OpencutAnalysisTranscribeOutput {
   mime_type: string;
   size_bytes: string;
 }
-  export interface MediaFrameExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  decoder_profile: string;
-  gpu_backend: string;
-  gpu_device: string;
-  host_sha256: string;
-  mediabunny_version: string;
-  module_sha256: string;
-  playwright_version: string;
-  shader_sha256: string;
-  texture_format: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+  export interface NativePlatformIdentity {
+  architecture: string;
+  font_backend: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
   export interface MediaFrameIdentity {
   height: number;
@@ -47973,7 +48317,7 @@ export namespace OpencutAnalysisTranscribeOutput {
 }
   export interface MediaFrameSourceObservation {
   /**
-   * Mediabunny browser seconds, not a claim of exact original demux ticks.
+   * Observed presentation seconds. Exact demux ticks remain decoder facts.
    */
   actual_timestamp_seconds?: number | null;
   asset_id: string;
@@ -48905,6 +49249,41 @@ export namespace OpencutAnalysisSilenceOutput {
   export type AudioPitchProfile = 'unprepared-linear' | 'prepared-linear' | 'prepared-soundtouch';
   export type AudioProfile = 'classic-export-v31-web-audio';
   export type AudioSampleFormat = 'ieee_float32_le';
+  export type MediaFrameExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      gpu_backend: NativeGraphicsApi;
+      gpu_device: string;
+      gpu_device_id: number;
+      gpu_driver: string;
+      gpu_vendor_id: number;
+      host_sha256: string;
+      /**
+       * Absent only in immutable proofs captured before platform observation.
+       * New execution requires the observed OS/font/driver platform identity.
+       */
+      platform?: NativePlatformIdentity | null;
+      rasterizer: string;
+      renderer_sha256: string;
+      shader_sha256: string;
+      texture_format: string;
+      wgpu_version: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profile: string;
+      gpu_backend: string;
+      gpu_device: string;
+      host_sha256: string;
+      mediabunny_version: string;
+      module_sha256: string;
+      playwright_version: string;
+      shader_sha256: string;
+      texture_format: string;
+    };
+  export type NativeGraphicsApi = 'metal' | 'vulkan' | 'direct_x';
   export type MediaFrameProfile = 'classic-v31-gpu-normal-frame';
   export type MediaFrameNoSourceReason = 'outside_read_window' | 'eof' | 'timestamp_gap';
   export type TextFrameProfile = 'classic-v31-gpu-normal-text-frame-v2';
@@ -49476,18 +49855,18 @@ export namespace OpencutAnalysisSilenceOutput {
   mime_type: string;
   size_bytes: string;
 }
-  export interface MediaFrameExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  decoder_profile: string;
-  gpu_backend: string;
-  gpu_device: string;
-  host_sha256: string;
-  mediabunny_version: string;
-  module_sha256: string;
-  playwright_version: string;
-  shader_sha256: string;
-  texture_format: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+  export interface NativePlatformIdentity {
+  architecture: string;
+  font_backend: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
   export interface MediaFrameIdentity {
   height: number;
@@ -49507,7 +49886,7 @@ export namespace OpencutAnalysisSilenceOutput {
 }
   export interface MediaFrameSourceObservation {
   /**
-   * Mediabunny browser seconds, not a claim of exact original demux ticks.
+   * Observed presentation seconds. Exact demux ticks remain decoder facts.
    */
   actual_timestamp_seconds?: number | null;
   asset_id: string;
@@ -50361,6 +50740,41 @@ export namespace OpencutAnalysisShotsOutput {
   export type AudioPitchProfile = 'unprepared-linear' | 'prepared-linear' | 'prepared-soundtouch';
   export type AudioProfile = 'classic-export-v31-web-audio';
   export type AudioSampleFormat = 'ieee_float32_le';
+  export type MediaFrameExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      gpu_backend: NativeGraphicsApi;
+      gpu_device: string;
+      gpu_device_id: number;
+      gpu_driver: string;
+      gpu_vendor_id: number;
+      host_sha256: string;
+      /**
+       * Absent only in immutable proofs captured before platform observation.
+       * New execution requires the observed OS/font/driver platform identity.
+       */
+      platform?: NativePlatformIdentity | null;
+      rasterizer: string;
+      renderer_sha256: string;
+      shader_sha256: string;
+      texture_format: string;
+      wgpu_version: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profile: string;
+      gpu_backend: string;
+      gpu_device: string;
+      host_sha256: string;
+      mediabunny_version: string;
+      module_sha256: string;
+      playwright_version: string;
+      shader_sha256: string;
+      texture_format: string;
+    };
+  export type NativeGraphicsApi = 'metal' | 'vulkan' | 'direct_x';
   export type MediaFrameProfile = 'classic-v31-gpu-normal-frame';
   export type MediaFrameNoSourceReason = 'outside_read_window' | 'eof' | 'timestamp_gap';
   export type TextFrameProfile = 'classic-v31-gpu-normal-text-frame-v2';
@@ -50932,18 +51346,18 @@ export namespace OpencutAnalysisShotsOutput {
   mime_type: string;
   size_bytes: string;
 }
-  export interface MediaFrameExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  decoder_profile: string;
-  gpu_backend: string;
-  gpu_device: string;
-  host_sha256: string;
-  mediabunny_version: string;
-  module_sha256: string;
-  playwright_version: string;
-  shader_sha256: string;
-  texture_format: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+  export interface NativePlatformIdentity {
+  architecture: string;
+  font_backend: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
   export interface MediaFrameIdentity {
   height: number;
@@ -50963,7 +51377,7 @@ export namespace OpencutAnalysisShotsOutput {
 }
   export interface MediaFrameSourceObservation {
   /**
-   * Mediabunny browser seconds, not a claim of exact original demux ticks.
+   * Observed presentation seconds. Exact demux ticks remain decoder facts.
    */
   actual_timestamp_seconds?: number | null;
   asset_id: string;
@@ -51817,6 +52231,41 @@ export namespace OpencutAnalysisWaveformOutput {
   export type AudioPitchProfile = 'unprepared-linear' | 'prepared-linear' | 'prepared-soundtouch';
   export type AudioProfile = 'classic-export-v31-web-audio';
   export type AudioSampleFormat = 'ieee_float32_le';
+  export type MediaFrameExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      gpu_backend: NativeGraphicsApi;
+      gpu_device: string;
+      gpu_device_id: number;
+      gpu_driver: string;
+      gpu_vendor_id: number;
+      host_sha256: string;
+      /**
+       * Absent only in immutable proofs captured before platform observation.
+       * New execution requires the observed OS/font/driver platform identity.
+       */
+      platform?: NativePlatformIdentity | null;
+      rasterizer: string;
+      renderer_sha256: string;
+      shader_sha256: string;
+      texture_format: string;
+      wgpu_version: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profile: string;
+      gpu_backend: string;
+      gpu_device: string;
+      host_sha256: string;
+      mediabunny_version: string;
+      module_sha256: string;
+      playwright_version: string;
+      shader_sha256: string;
+      texture_format: string;
+    };
+  export type NativeGraphicsApi = 'metal' | 'vulkan' | 'direct_x';
   export type MediaFrameProfile = 'classic-v31-gpu-normal-frame';
   export type MediaFrameNoSourceReason = 'outside_read_window' | 'eof' | 'timestamp_gap';
   export type TextFrameProfile = 'classic-v31-gpu-normal-text-frame-v2';
@@ -52388,18 +52837,18 @@ export namespace OpencutAnalysisWaveformOutput {
   mime_type: string;
   size_bytes: string;
 }
-  export interface MediaFrameExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  decoder_profile: string;
-  gpu_backend: string;
-  gpu_device: string;
-  host_sha256: string;
-  mediabunny_version: string;
-  module_sha256: string;
-  playwright_version: string;
-  shader_sha256: string;
-  texture_format: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+  export interface NativePlatformIdentity {
+  architecture: string;
+  font_backend: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
   export interface MediaFrameIdentity {
   height: number;
@@ -52419,7 +52868,7 @@ export namespace OpencutAnalysisWaveformOutput {
 }
   export interface MediaFrameSourceObservation {
   /**
-   * Mediabunny browser seconds, not a claim of exact original demux ticks.
+   * Observed presentation seconds. Exact demux ticks remain decoder facts.
    */
   actual_timestamp_seconds?: number | null;
   asset_id: string;
@@ -53269,6 +53718,41 @@ export namespace OpencutJobRequestCancelOutput {
   export type AudioPitchProfile = 'unprepared-linear' | 'prepared-linear' | 'prepared-soundtouch';
   export type AudioProfile = 'classic-export-v31-web-audio';
   export type AudioSampleFormat = 'ieee_float32_le';
+  export type MediaFrameExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      gpu_backend: NativeGraphicsApi;
+      gpu_device: string;
+      gpu_device_id: number;
+      gpu_driver: string;
+      gpu_vendor_id: number;
+      host_sha256: string;
+      /**
+       * Absent only in immutable proofs captured before platform observation.
+       * New execution requires the observed OS/font/driver platform identity.
+       */
+      platform?: NativePlatformIdentity | null;
+      rasterizer: string;
+      renderer_sha256: string;
+      shader_sha256: string;
+      texture_format: string;
+      wgpu_version: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profile: string;
+      gpu_backend: string;
+      gpu_device: string;
+      host_sha256: string;
+      mediabunny_version: string;
+      module_sha256: string;
+      playwright_version: string;
+      shader_sha256: string;
+      texture_format: string;
+    };
+  export type NativeGraphicsApi = 'metal' | 'vulkan' | 'direct_x';
   export type MediaFrameProfile = 'classic-v31-gpu-normal-frame';
   export type MediaFrameNoSourceReason = 'outside_read_window' | 'eof' | 'timestamp_gap';
   export type TextFrameProfile = 'classic-v31-gpu-normal-text-frame-v2';
@@ -53840,18 +54324,18 @@ export namespace OpencutJobRequestCancelOutput {
   mime_type: string;
   size_bytes: string;
 }
-  export interface MediaFrameExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  decoder_profile: string;
-  gpu_backend: string;
-  gpu_device: string;
-  host_sha256: string;
-  mediabunny_version: string;
-  module_sha256: string;
-  playwright_version: string;
-  shader_sha256: string;
-  texture_format: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+  export interface NativePlatformIdentity {
+  architecture: string;
+  font_backend: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
   export interface MediaFrameIdentity {
   height: number;
@@ -53871,7 +54355,7 @@ export namespace OpencutJobRequestCancelOutput {
 }
   export interface MediaFrameSourceObservation {
   /**
-   * Mediabunny browser seconds, not a claim of exact original demux ticks.
+   * Observed presentation seconds. Exact demux ticks remain decoder facts.
    */
   actual_timestamp_seconds?: number | null;
   asset_id: string;
@@ -60418,12 +60902,6 @@ export namespace OpencutVisualPreviewEditDraftFrameOutput {
   width: number;
 }
   export interface VisualDecodeAdmission {
-  /**
-   * Native-admitted working surfaces: direct video (1), canvas transfer (2),
-   * or the frozen four-surface decoder (4).
-   * Missing values retain the frozen four-surface decoder contract.
-   */
-  decoderSurfaces?: number;
   maxDecodedBytes: string;
   maxHeight: number;
   maxPixels: string;
@@ -64282,6 +64760,41 @@ export namespace JobRenderAudioResult {
 }
 
 export namespace JobRenderMediaFrameResult {
+  export type MediaFrameExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      gpu_backend: NativeGraphicsApi;
+      gpu_device: string;
+      gpu_device_id: number;
+      gpu_driver: string;
+      gpu_vendor_id: number;
+      host_sha256: string;
+      /**
+       * Absent only in immutable proofs captured before platform observation.
+       * New execution requires the observed OS/font/driver platform identity.
+       */
+      platform?: NativePlatformIdentity | null;
+      rasterizer: string;
+      renderer_sha256: string;
+      shader_sha256: string;
+      texture_format: string;
+      wgpu_version: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profile: string;
+      gpu_backend: string;
+      gpu_device: string;
+      host_sha256: string;
+      mediabunny_version: string;
+      module_sha256: string;
+      playwright_version: string;
+      shader_sha256: string;
+      texture_format: string;
+    };
+  export type NativeGraphicsApi = 'metal' | 'vulkan' | 'direct_x';
   export type MediaFrameProfile = 'classic-v31-gpu-normal-frame';
   export type MediaFrameNoSourceReason = 'outside_read_window' | 'eof' | 'timestamp_gap';
 
@@ -64309,18 +64822,18 @@ export namespace JobRenderMediaFrameResult {
   content_hash: string;
   size: number;
 }
-  export interface MediaFrameExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  decoder_profile: string;
-  gpu_backend: string;
-  gpu_device: string;
-  host_sha256: string;
-  mediabunny_version: string;
-  module_sha256: string;
-  playwright_version: string;
-  shader_sha256: string;
-  texture_format: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+  export interface NativePlatformIdentity {
+  architecture: string;
+  font_backend: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
   export interface MediaFrameIdentity {
   height: number;
@@ -64340,7 +64853,7 @@ export namespace JobRenderMediaFrameResult {
 }
   export interface MediaFrameSourceObservation {
   /**
-   * Mediabunny browser seconds, not a claim of exact original demux ticks.
+   * Observed presentation seconds. Exact demux ticks remain decoder facts.
    */
   actual_timestamp_seconds?: number | null;
   asset_id: string;
@@ -64365,6 +64878,41 @@ export namespace JobRenderMediaFrameResult {
 }
 
 export namespace JobRenderTextFrameResult {
+  export type MediaFrameExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      gpu_backend: NativeGraphicsApi;
+      gpu_device: string;
+      gpu_device_id: number;
+      gpu_driver: string;
+      gpu_vendor_id: number;
+      host_sha256: string;
+      /**
+       * Absent only in immutable proofs captured before platform observation.
+       * New execution requires the observed OS/font/driver platform identity.
+       */
+      platform?: NativePlatformIdentity | null;
+      rasterizer: string;
+      renderer_sha256: string;
+      shader_sha256: string;
+      texture_format: string;
+      wgpu_version: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profile: string;
+      gpu_backend: string;
+      gpu_device: string;
+      host_sha256: string;
+      mediabunny_version: string;
+      module_sha256: string;
+      playwright_version: string;
+      shader_sha256: string;
+      texture_format: string;
+    };
+  export type NativeGraphicsApi = 'metal' | 'vulkan' | 'direct_x';
   export type TextFrameProfile = 'classic-v31-gpu-normal-text-frame-v2';
   export type MediaFrameNoSourceReason = 'outside_read_window' | 'eof' | 'timestamp_gap';
   export type FontStyle = 'normal' | 'italic';
@@ -64395,18 +64943,18 @@ export namespace JobRenderTextFrameResult {
   content_hash: string;
   size: number;
 }
-  export interface MediaFrameExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  decoder_profile: string;
-  gpu_backend: string;
-  gpu_device: string;
-  host_sha256: string;
-  mediabunny_version: string;
-  module_sha256: string;
-  playwright_version: string;
-  shader_sha256: string;
-  texture_format: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+  export interface NativePlatformIdentity {
+  architecture: string;
+  font_backend: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
 /**
  * Font resources remain separate from media locks and never expose a CAS path.
@@ -64431,7 +64979,7 @@ export namespace JobRenderTextFrameResult {
 }
   export interface MediaFrameSourceObservation {
   /**
-   * Mediabunny browser seconds, not a claim of exact original demux ticks.
+   * Observed presentation seconds. Exact demux ticks remain decoder facts.
    */
   actual_timestamp_seconds?: number | null;
   asset_id: string;
@@ -64508,6 +65056,41 @@ export namespace JobRenderTextFrameResult {
 }
 
 export namespace JobRenderCaptionFrameResult {
+  export type MediaFrameExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      gpu_backend: NativeGraphicsApi;
+      gpu_device: string;
+      gpu_device_id: number;
+      gpu_driver: string;
+      gpu_vendor_id: number;
+      host_sha256: string;
+      /**
+       * Absent only in immutable proofs captured before platform observation.
+       * New execution requires the observed OS/font/driver platform identity.
+       */
+      platform?: NativePlatformIdentity | null;
+      rasterizer: string;
+      renderer_sha256: string;
+      shader_sha256: string;
+      texture_format: string;
+      wgpu_version: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profile: string;
+      gpu_backend: string;
+      gpu_device: string;
+      host_sha256: string;
+      mediabunny_version: string;
+      module_sha256: string;
+      playwright_version: string;
+      shader_sha256: string;
+      texture_format: string;
+    };
+  export type NativeGraphicsApi = 'metal' | 'vulkan' | 'direct_x';
   export type CaptionFrameProfile = 'classic-v31-gpu-normal-caption-frame-v3';
   export type MediaFrameNoSourceReason = 'outside_read_window' | 'eof' | 'timestamp_gap';
   export type FontStyle = 'normal' | 'italic';
@@ -64553,18 +65136,18 @@ export namespace JobRenderCaptionFrameResult {
   content: string;
   width: number;
 }
-  export interface MediaFrameExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  decoder_profile: string;
-  gpu_backend: string;
-  gpu_device: string;
-  host_sha256: string;
-  mediabunny_version: string;
-  module_sha256: string;
-  playwright_version: string;
-  shader_sha256: string;
-  texture_format: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+  export interface NativePlatformIdentity {
+  architecture: string;
+  font_backend: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
 /**
  * Font resources remain separate from media locks and never expose a CAS path.
@@ -64589,7 +65172,7 @@ export namespace JobRenderCaptionFrameResult {
 }
   export interface MediaFrameSourceObservation {
   /**
-   * Mediabunny browser seconds, not a claim of exact original demux ticks.
+   * Observed presentation seconds. Exact demux ticks remain decoder facts.
    */
   actual_timestamp_seconds?: number | null;
   asset_id: string;
@@ -64666,6 +65249,41 @@ export namespace JobRenderCaptionFrameResult {
 }
 
 export namespace JobRenderGraphicFrameResult {
+  export type MediaFrameExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      gpu_backend: NativeGraphicsApi;
+      gpu_device: string;
+      gpu_device_id: number;
+      gpu_driver: string;
+      gpu_vendor_id: number;
+      host_sha256: string;
+      /**
+       * Absent only in immutable proofs captured before platform observation.
+       * New execution requires the observed OS/font/driver platform identity.
+       */
+      platform?: NativePlatformIdentity | null;
+      rasterizer: string;
+      renderer_sha256: string;
+      shader_sha256: string;
+      texture_format: string;
+      wgpu_version: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profile: string;
+      gpu_backend: string;
+      gpu_device: string;
+      host_sha256: string;
+      mediabunny_version: string;
+      module_sha256: string;
+      playwright_version: string;
+      shader_sha256: string;
+      texture_format: string;
+    };
+  export type NativeGraphicsApi = 'metal' | 'vulkan' | 'direct_x';
   export type GraphicFrameProfile = 'classic-v31-gpu-normal-graphic-frame-v1';
   export type MediaFrameNoSourceReason = 'outside_read_window' | 'eof' | 'timestamp_gap';
   export type FontStyle = 'normal' | 'italic';
@@ -64712,18 +65330,18 @@ export namespace JobRenderGraphicFrameResult {
   content: string;
   width: number;
 }
-  export interface MediaFrameExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  decoder_profile: string;
-  gpu_backend: string;
-  gpu_device: string;
-  host_sha256: string;
-  mediabunny_version: string;
-  module_sha256: string;
-  playwright_version: string;
-  shader_sha256: string;
-  texture_format: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+  export interface NativePlatformIdentity {
+  architecture: string;
+  font_backend: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
 /**
  * Font resources remain separate from media locks and never expose a CAS path.
@@ -64755,7 +65373,7 @@ export namespace JobRenderGraphicFrameResult {
 }
   export interface MediaFrameSourceObservation {
   /**
-   * Mediabunny browser seconds, not a claim of exact original demux ticks.
+   * Observed presentation seconds. Exact demux ticks remain decoder facts.
    */
   actual_timestamp_seconds?: number | null;
   asset_id: string;
@@ -64850,6 +65468,41 @@ export namespace JobRenderMaskFrameResult {
   | 'saturation'
   | 'color'
   | 'luminosity';
+  export type MediaFrameExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      gpu_backend: NativeGraphicsApi;
+      gpu_device: string;
+      gpu_device_id: number;
+      gpu_driver: string;
+      gpu_vendor_id: number;
+      host_sha256: string;
+      /**
+       * Absent only in immutable proofs captured before platform observation.
+       * New execution requires the observed OS/font/driver platform identity.
+       */
+      platform?: NativePlatformIdentity | null;
+      rasterizer: string;
+      renderer_sha256: string;
+      shader_sha256: string;
+      texture_format: string;
+      wgpu_version: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profile: string;
+      gpu_backend: string;
+      gpu_device: string;
+      host_sha256: string;
+      mediabunny_version: string;
+      module_sha256: string;
+      playwright_version: string;
+      shader_sha256: string;
+      texture_format: string;
+    };
+  export type NativeGraphicsApi = 'metal' | 'vulkan' | 'direct_x';
   export type MaskFrameProfile = 'classic-v31-gpu-mask-frame-v1';
   export type MaskFeather =
   | {
@@ -64995,18 +65648,18 @@ export namespace JobRenderMaskFrameResult {
   content: string;
   width: number;
 }
-  export interface MediaFrameExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  decoder_profile: string;
-  gpu_backend: string;
-  gpu_device: string;
-  host_sha256: string;
-  mediabunny_version: string;
-  module_sha256: string;
-  playwright_version: string;
-  shader_sha256: string;
-  texture_format: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+  export interface NativePlatformIdentity {
+  architecture: string;
+  font_backend: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
 /**
  * Font resources remain separate from media locks and never expose a CAS path.
@@ -65113,7 +65766,7 @@ export namespace JobRenderMaskFrameResult {
 }
   export interface MediaFrameSourceObservation {
   /**
-   * Mediabunny browser seconds, not a claim of exact original demux ticks.
+   * Observed presentation seconds. Exact demux ticks remain decoder facts.
    */
   actual_timestamp_seconds?: number | null;
   asset_id: string;
@@ -65208,6 +65861,41 @@ export namespace JobRenderBlendFrameResult {
   | 'saturation'
   | 'color'
   | 'luminosity';
+  export type MediaFrameExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      gpu_backend: NativeGraphicsApi;
+      gpu_device: string;
+      gpu_device_id: number;
+      gpu_driver: string;
+      gpu_vendor_id: number;
+      host_sha256: string;
+      /**
+       * Absent only in immutable proofs captured before platform observation.
+       * New execution requires the observed OS/font/driver platform identity.
+       */
+      platform?: NativePlatformIdentity | null;
+      rasterizer: string;
+      renderer_sha256: string;
+      shader_sha256: string;
+      texture_format: string;
+      wgpu_version: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profile: string;
+      gpu_backend: string;
+      gpu_device: string;
+      host_sha256: string;
+      mediabunny_version: string;
+      module_sha256: string;
+      playwright_version: string;
+      shader_sha256: string;
+      texture_format: string;
+    };
+  export type NativeGraphicsApi = 'metal' | 'vulkan' | 'direct_x';
   export type BlendFrameProfile = 'classic-v31-gpu-blend-frame-v1';
   export type MediaFrameNoSourceReason = 'outside_read_window' | 'eof' | 'timestamp_gap';
   export type FontStyle = 'normal' | 'italic';
@@ -65259,18 +65947,18 @@ export namespace JobRenderBlendFrameResult {
   content: string;
   width: number;
 }
-  export interface MediaFrameExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  decoder_profile: string;
-  gpu_backend: string;
-  gpu_device: string;
-  host_sha256: string;
-  mediabunny_version: string;
-  module_sha256: string;
-  playwright_version: string;
-  shader_sha256: string;
-  texture_format: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+  export interface NativePlatformIdentity {
+  architecture: string;
+  font_backend: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
 /**
  * Font resources remain separate from media locks and never expose a CAS path.
@@ -65302,7 +65990,7 @@ export namespace JobRenderBlendFrameResult {
 }
   export interface MediaFrameSourceObservation {
   /**
-   * Mediabunny browser seconds, not a claim of exact original demux ticks.
+   * Observed presentation seconds. Exact demux ticks remain decoder facts.
    */
   actual_timestamp_seconds?: number | null;
   asset_id: string;
@@ -65408,6 +66096,41 @@ export namespace JobRenderFrameResult {
   | 'saturation'
   | 'color'
   | 'luminosity';
+  export type MediaFrameExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      gpu_backend: NativeGraphicsApi;
+      gpu_device: string;
+      gpu_device_id: number;
+      gpu_driver: string;
+      gpu_vendor_id: number;
+      host_sha256: string;
+      /**
+       * Absent only in immutable proofs captured before platform observation.
+       * New execution requires the observed OS/font/driver platform identity.
+       */
+      platform?: NativePlatformIdentity | null;
+      rasterizer: string;
+      renderer_sha256: string;
+      shader_sha256: string;
+      texture_format: string;
+      wgpu_version: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profile: string;
+      gpu_backend: string;
+      gpu_device: string;
+      host_sha256: string;
+      mediabunny_version: string;
+      module_sha256: string;
+      playwright_version: string;
+      shader_sha256: string;
+      texture_format: string;
+    };
+  export type NativeGraphicsApi = 'metal' | 'vulkan' | 'direct_x';
   export type SceneFrameProfile = 'classic-v31-gpu-scene-frame-v1';
   export type MediaFrameNoSourceReason = 'outside_read_window' | 'eof' | 'timestamp_gap';
   export type EffectKind =
@@ -65589,18 +66312,18 @@ export namespace JobRenderFrameResult {
   content: string;
   width: number;
 }
-  export interface MediaFrameExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  decoder_profile: string;
-  gpu_backend: string;
-  gpu_device: string;
-  host_sha256: string;
-  mediabunny_version: string;
-  module_sha256: string;
-  playwright_version: string;
-  shader_sha256: string;
-  texture_format: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+  export interface NativePlatformIdentity {
+  architecture: string;
+  font_backend: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
 /**
  * Font resources remain separate from media locks and never expose a CAS path.
@@ -65632,7 +66355,7 @@ export namespace JobRenderFrameResult {
 }
   export interface MediaFrameSourceObservation {
   /**
-   * Mediabunny browser seconds, not a claim of exact original demux ticks.
+   * Observed presentation seconds. Exact demux ticks remain decoder facts.
    */
   actual_timestamp_seconds?: number | null;
   asset_id: string;
@@ -65783,6 +66506,41 @@ export namespace JobRenderMediaVideoResult {
   export type AudioDecoderProfile = 'web-audio-decode-at-target-rate' | 'mediabunny-1.41.0-concatenate-offline-resample';
   export type AudioMasteringProfile = 'classic-export-whole-scene-web-audio-v31';
   export type AudioPitchProfile = 'unprepared-linear' | 'prepared-linear' | 'prepared-soundtouch';
+  export type MediaFrameExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      gpu_backend: NativeGraphicsApi;
+      gpu_device: string;
+      gpu_device_id: number;
+      gpu_driver: string;
+      gpu_vendor_id: number;
+      host_sha256: string;
+      /**
+       * Absent only in immutable proofs captured before platform observation.
+       * New execution requires the observed OS/font/driver platform identity.
+       */
+      platform?: NativePlatformIdentity | null;
+      rasterizer: string;
+      renderer_sha256: string;
+      shader_sha256: string;
+      texture_format: string;
+      wgpu_version: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profile: string;
+      gpu_backend: string;
+      gpu_device: string;
+      host_sha256: string;
+      mediabunny_version: string;
+      module_sha256: string;
+      playwright_version: string;
+      shader_sha256: string;
+      texture_format: string;
+    };
+  export type NativeGraphicsApi = 'metal' | 'vulkan' | 'direct_x';
   export type MediaVideoProfile = 'classic-v31-cfr-h264-aac-v1';
 
   export interface MediaVideoResult {
@@ -65849,18 +66607,18 @@ export namespace JobRenderMediaVideoResult {
   pixel_format: string;
   video_codec: string;
 }
-  export interface MediaFrameExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  decoder_profile: string;
-  gpu_backend: string;
-  gpu_device: string;
-  host_sha256: string;
-  mediabunny_version: string;
-  module_sha256: string;
-  playwright_version: string;
-  shader_sha256: string;
-  texture_format: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+  export interface NativePlatformIdentity {
+  architecture: string;
+  font_backend: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
 /**
  * Font resources remain separate from media locks and never expose a CAS path.
@@ -65910,6 +66668,41 @@ export namespace JobRenderCaptionVideoResult {
   export type AudioDecoderProfile = 'web-audio-decode-at-target-rate' | 'mediabunny-1.41.0-concatenate-offline-resample';
   export type AudioMasteringProfile = 'classic-export-whole-scene-web-audio-v31';
   export type AudioPitchProfile = 'unprepared-linear' | 'prepared-linear' | 'prepared-soundtouch';
+  export type MediaFrameExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      gpu_backend: NativeGraphicsApi;
+      gpu_device: string;
+      gpu_device_id: number;
+      gpu_driver: string;
+      gpu_vendor_id: number;
+      host_sha256: string;
+      /**
+       * Absent only in immutable proofs captured before platform observation.
+       * New execution requires the observed OS/font/driver platform identity.
+       */
+      platform?: NativePlatformIdentity | null;
+      rasterizer: string;
+      renderer_sha256: string;
+      shader_sha256: string;
+      texture_format: string;
+      wgpu_version: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profile: string;
+      gpu_backend: string;
+      gpu_device: string;
+      host_sha256: string;
+      mediabunny_version: string;
+      module_sha256: string;
+      playwright_version: string;
+      shader_sha256: string;
+      texture_format: string;
+    };
+  export type NativeGraphicsApi = 'metal' | 'vulkan' | 'direct_x';
   export type CaptionVideoProfile = 'classic-v31-cfr-h264-aac-caption-v2';
 
   export interface CaptionVideoResult {
@@ -65976,18 +66769,18 @@ export namespace JobRenderCaptionVideoResult {
   pixel_format: string;
   video_codec: string;
 }
-  export interface MediaFrameExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  decoder_profile: string;
-  gpu_backend: string;
-  gpu_device: string;
-  host_sha256: string;
-  mediabunny_version: string;
-  module_sha256: string;
-  playwright_version: string;
-  shader_sha256: string;
-  texture_format: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+  export interface NativePlatformIdentity {
+  architecture: string;
+  font_backend: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
 /**
  * Font resources remain separate from media locks and never expose a CAS path.
@@ -66037,6 +66830,41 @@ export namespace JobRenderGraphicVideoResult {
   export type AudioDecoderProfile = 'web-audio-decode-at-target-rate' | 'mediabunny-1.41.0-concatenate-offline-resample';
   export type AudioMasteringProfile = 'classic-export-whole-scene-web-audio-v31';
   export type AudioPitchProfile = 'unprepared-linear' | 'prepared-linear' | 'prepared-soundtouch';
+  export type MediaFrameExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      gpu_backend: NativeGraphicsApi;
+      gpu_device: string;
+      gpu_device_id: number;
+      gpu_driver: string;
+      gpu_vendor_id: number;
+      host_sha256: string;
+      /**
+       * Absent only in immutable proofs captured before platform observation.
+       * New execution requires the observed OS/font/driver platform identity.
+       */
+      platform?: NativePlatformIdentity | null;
+      rasterizer: string;
+      renderer_sha256: string;
+      shader_sha256: string;
+      texture_format: string;
+      wgpu_version: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profile: string;
+      gpu_backend: string;
+      gpu_device: string;
+      host_sha256: string;
+      mediabunny_version: string;
+      module_sha256: string;
+      playwright_version: string;
+      shader_sha256: string;
+      texture_format: string;
+    };
+  export type NativeGraphicsApi = 'metal' | 'vulkan' | 'direct_x';
   export type GraphicVideoProfile = 'classic-v31-cfr-h264-aac-graphic-v1';
 
   export interface GraphicVideoResult {
@@ -66103,18 +66931,18 @@ export namespace JobRenderGraphicVideoResult {
   pixel_format: string;
   video_codec: string;
 }
-  export interface MediaFrameExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  decoder_profile: string;
-  gpu_backend: string;
-  gpu_device: string;
-  host_sha256: string;
-  mediabunny_version: string;
-  module_sha256: string;
-  playwright_version: string;
-  shader_sha256: string;
-  texture_format: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+  export interface NativePlatformIdentity {
+  architecture: string;
+  font_backend: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
 /**
  * Font resources remain separate from media locks and never expose a CAS path.
@@ -66164,6 +66992,41 @@ export namespace JobRenderMaskVideoResult {
   export type AudioDecoderProfile = 'web-audio-decode-at-target-rate' | 'mediabunny-1.41.0-concatenate-offline-resample';
   export type AudioMasteringProfile = 'classic-export-whole-scene-web-audio-v31';
   export type AudioPitchProfile = 'unprepared-linear' | 'prepared-linear' | 'prepared-soundtouch';
+  export type MediaFrameExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      gpu_backend: NativeGraphicsApi;
+      gpu_device: string;
+      gpu_device_id: number;
+      gpu_driver: string;
+      gpu_vendor_id: number;
+      host_sha256: string;
+      /**
+       * Absent only in immutable proofs captured before platform observation.
+       * New execution requires the observed OS/font/driver platform identity.
+       */
+      platform?: NativePlatformIdentity | null;
+      rasterizer: string;
+      renderer_sha256: string;
+      shader_sha256: string;
+      texture_format: string;
+      wgpu_version: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profile: string;
+      gpu_backend: string;
+      gpu_device: string;
+      host_sha256: string;
+      mediabunny_version: string;
+      module_sha256: string;
+      playwright_version: string;
+      shader_sha256: string;
+      texture_format: string;
+    };
+  export type NativeGraphicsApi = 'metal' | 'vulkan' | 'direct_x';
   export type MaskVideoProfile = 'classic-v31-cfr-h264-aac-mask-v1';
 
   export interface MaskVideoResult {
@@ -66230,18 +67093,18 @@ export namespace JobRenderMaskVideoResult {
   pixel_format: string;
   video_codec: string;
 }
-  export interface MediaFrameExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  decoder_profile: string;
-  gpu_backend: string;
-  gpu_device: string;
-  host_sha256: string;
-  mediabunny_version: string;
-  module_sha256: string;
-  playwright_version: string;
-  shader_sha256: string;
-  texture_format: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+  export interface NativePlatformIdentity {
+  architecture: string;
+  font_backend: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
 /**
  * Font resources remain separate from media locks and never expose a CAS path.
@@ -66291,6 +67154,41 @@ export namespace JobRenderBlendVideoResult {
   export type AudioDecoderProfile = 'web-audio-decode-at-target-rate' | 'mediabunny-1.41.0-concatenate-offline-resample';
   export type AudioMasteringProfile = 'classic-export-whole-scene-web-audio-v31';
   export type AudioPitchProfile = 'unprepared-linear' | 'prepared-linear' | 'prepared-soundtouch';
+  export type MediaFrameExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      gpu_backend: NativeGraphicsApi;
+      gpu_device: string;
+      gpu_device_id: number;
+      gpu_driver: string;
+      gpu_vendor_id: number;
+      host_sha256: string;
+      /**
+       * Absent only in immutable proofs captured before platform observation.
+       * New execution requires the observed OS/font/driver platform identity.
+       */
+      platform?: NativePlatformIdentity | null;
+      rasterizer: string;
+      renderer_sha256: string;
+      shader_sha256: string;
+      texture_format: string;
+      wgpu_version: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profile: string;
+      gpu_backend: string;
+      gpu_device: string;
+      host_sha256: string;
+      mediabunny_version: string;
+      module_sha256: string;
+      playwright_version: string;
+      shader_sha256: string;
+      texture_format: string;
+    };
+  export type NativeGraphicsApi = 'metal' | 'vulkan' | 'direct_x';
   export type BlendVideoProfile = 'classic-v31-cfr-h264-aac-blend-v1';
 
   export interface BlendVideoResult {
@@ -66357,18 +67255,18 @@ export namespace JobRenderBlendVideoResult {
   pixel_format: string;
   video_codec: string;
 }
-  export interface MediaFrameExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  decoder_profile: string;
-  gpu_backend: string;
-  gpu_device: string;
-  host_sha256: string;
-  mediabunny_version: string;
-  module_sha256: string;
-  playwright_version: string;
-  shader_sha256: string;
-  texture_format: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+  export interface NativePlatformIdentity {
+  architecture: string;
+  font_backend: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
 /**
  * Font resources remain separate from media locks and never expose a CAS path.
@@ -66418,6 +67316,41 @@ export namespace JobRenderSceneVideoResult {
   export type AudioDecoderProfile = 'web-audio-decode-at-target-rate' | 'mediabunny-1.41.0-concatenate-offline-resample';
   export type AudioMasteringProfile = 'classic-export-whole-scene-web-audio-v31';
   export type AudioPitchProfile = 'unprepared-linear' | 'prepared-linear' | 'prepared-soundtouch';
+  export type MediaFrameExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      gpu_backend: NativeGraphicsApi;
+      gpu_device: string;
+      gpu_device_id: number;
+      gpu_driver: string;
+      gpu_vendor_id: number;
+      host_sha256: string;
+      /**
+       * Absent only in immutable proofs captured before platform observation.
+       * New execution requires the observed OS/font/driver platform identity.
+       */
+      platform?: NativePlatformIdentity | null;
+      rasterizer: string;
+      renderer_sha256: string;
+      shader_sha256: string;
+      texture_format: string;
+      wgpu_version: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profile: string;
+      gpu_backend: string;
+      gpu_device: string;
+      host_sha256: string;
+      mediabunny_version: string;
+      module_sha256: string;
+      playwright_version: string;
+      shader_sha256: string;
+      texture_format: string;
+    };
+  export type NativeGraphicsApi = 'metal' | 'vulkan' | 'direct_x';
   export type SceneVideoProfile = 'classic-v31-cfr-h264-aac-scene-v1';
 
   export interface SceneVideoResult {
@@ -66484,18 +67417,18 @@ export namespace JobRenderSceneVideoResult {
   pixel_format: string;
   video_codec: string;
 }
-  export interface MediaFrameExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  decoder_profile: string;
-  gpu_backend: string;
-  gpu_device: string;
-  host_sha256: string;
-  mediabunny_version: string;
-  module_sha256: string;
-  playwright_version: string;
-  shader_sha256: string;
-  texture_format: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+  export interface NativePlatformIdentity {
+  architecture: string;
+  font_backend: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
 /**
  * Font resources remain separate from media locks and never expose a CAS path.
@@ -66546,6 +67479,41 @@ export namespace JobRenderVideoResult {
   export type AudioMasteringProfile = 'classic-export-whole-scene-web-audio-v31';
   export type AudioPitchProfile = 'unprepared-linear' | 'prepared-linear' | 'prepared-soundtouch';
   export type VideoEncoderBackend = 'ffmpeg_libx264' | 'ffmpeg_libvpx_vp9' | 'webcodecs_avc';
+  export type MediaFrameExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      gpu_backend: NativeGraphicsApi;
+      gpu_device: string;
+      gpu_device_id: number;
+      gpu_driver: string;
+      gpu_vendor_id: number;
+      host_sha256: string;
+      /**
+       * Absent only in immutable proofs captured before platform observation.
+       * New execution requires the observed OS/font/driver platform identity.
+       */
+      platform?: NativePlatformIdentity | null;
+      rasterizer: string;
+      renderer_sha256: string;
+      shader_sha256: string;
+      texture_format: string;
+      wgpu_version: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profile: string;
+      gpu_backend: string;
+      gpu_device: string;
+      host_sha256: string;
+      mediabunny_version: string;
+      module_sha256: string;
+      playwright_version: string;
+      shader_sha256: string;
+      texture_format: string;
+    };
+  export type NativeGraphicsApi = 'metal' | 'vulkan' | 'direct_x';
   export type ExportFormat = 'mp4' | 'webm';
   export type ExportQuality = 'low' | 'medium' | 'high' | 'very_high';
 /**
@@ -66623,18 +67591,18 @@ export namespace JobRenderVideoResult {
   audio_bitrate?: number | null;
   video_bitrate: number;
 }
-  export interface MediaFrameExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  decoder_profile: string;
-  gpu_backend: string;
-  gpu_device: string;
-  host_sha256: string;
-  mediabunny_version: string;
-  module_sha256: string;
-  playwright_version: string;
-  shader_sha256: string;
-  texture_format: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+  export interface NativePlatformIdentity {
+  architecture: string;
+  font_backend: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
 /**
  * Font resources remain separate from media locks and never expose a CAS path.
@@ -66687,6 +67655,41 @@ export namespace JobRenderVideoRangeResult {
   export type AudioMasteringProfile = 'classic-export-whole-scene-web-audio-v31';
   export type AudioPitchProfile = 'unprepared-linear' | 'prepared-linear' | 'prepared-soundtouch';
   export type VideoEncoderBackend = 'ffmpeg_libx264' | 'ffmpeg_libvpx_vp9' | 'webcodecs_avc';
+  export type MediaFrameExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      gpu_backend: NativeGraphicsApi;
+      gpu_device: string;
+      gpu_device_id: number;
+      gpu_driver: string;
+      gpu_vendor_id: number;
+      host_sha256: string;
+      /**
+       * Absent only in immutable proofs captured before platform observation.
+       * New execution requires the observed OS/font/driver platform identity.
+       */
+      platform?: NativePlatformIdentity | null;
+      rasterizer: string;
+      renderer_sha256: string;
+      shader_sha256: string;
+      texture_format: string;
+      wgpu_version: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profile: string;
+      gpu_backend: string;
+      gpu_device: string;
+      host_sha256: string;
+      mediabunny_version: string;
+      module_sha256: string;
+      playwright_version: string;
+      shader_sha256: string;
+      texture_format: string;
+    };
+  export type NativeGraphicsApi = 'metal' | 'vulkan' | 'direct_x';
   export type ExportFormat = 'mp4' | 'webm';
   export type ExportQuality = 'low' | 'medium' | 'high' | 'very_high';
 /**
@@ -66799,18 +67802,18 @@ export namespace JobRenderVideoRangeResult {
   audio_bitrate?: number | null;
   video_bitrate: number;
 }
-  export interface MediaFrameExecutionSummary {
-  browser_sha256: string;
-  browser_version: string;
-  decoder_profile: string;
-  gpu_backend: string;
-  gpu_device: string;
-  host_sha256: string;
-  mediabunny_version: string;
-  module_sha256: string;
-  playwright_version: string;
-  shader_sha256: string;
-  texture_format: string;
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+  export interface NativePlatformIdentity {
+  architecture: string;
+  font_backend: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
 /**
  * Font resources remain separate from media locks and never expose a CAS path.

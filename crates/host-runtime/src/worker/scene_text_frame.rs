@@ -373,16 +373,7 @@ pub(super) fn execute(
     let runtime = runtime_identity.identity;
     let summary = MediaFrameExecutionSummary {
         host_sha256: host_sha256.clone(),
-        browser_version: runtime.browser_version,
-        browser_sha256: runtime.browser_sha256,
-        module_sha256: runtime.module_sha256,
-        shader_sha256: runtime.shader_sha256,
-        playwright_version: runtime.playwright_version,
-        mediabunny_version: runtime.mediabunny_version,
-        gpu_backend: runtime.gpu_backend,
-        gpu_device: runtime.gpu_device,
-        texture_format: runtime.texture_format,
-        decoder_profile: runtime.decoder_profile,
+        runtime: opencut_job_contracts::media_frame::VisualRuntimeIdentity::Native(runtime),
     };
     let sources = opencut_editor_application::media_frame_jobs::public_sources(
         prepared.execution().media(),

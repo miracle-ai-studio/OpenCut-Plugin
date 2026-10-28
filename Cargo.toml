@@ -3,6 +3,7 @@ resolver = "3"
 members = [
   'apps/desktop',
   'apps/cli',
+  'apps/render-worker',
   'crates/*',
 ]
 

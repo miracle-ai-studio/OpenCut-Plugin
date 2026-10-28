@@ -22,11 +22,10 @@ pub(crate) fn policy() -> LocalVisualExecutionPolicy {
         max_frame_pixels: 16_777_216,
         max_decoded_pixels: 16_777_216,
         max_gpu_bytes: 512 * 1024 * 1024,
-        // Two 1080p sources need ~64 MiB for admitted decoder surfaces alone,
-        // before the output, text and bounded encoded caches. Keep foreground
-        // multi-layer HD inside an explicit 128 MiB CPU ceiling and the existing
-        // 512 MiB GPU / 2 GiB process ceilings.
-        max_rgba_bytes: 128 * 1024 * 1024,
+        // Native codec reference frames, output and text share this explicit
+        // CPU ceiling. GPU and process limits remain independently enforced;
+        // each decoder receives a disjoint share before allocating frames.
+        max_rgba_bytes: 512 * 1024 * 1024,
         max_encoded_bytes: 32 * 1024 * 1024,
         max_output_bytes: 129 * 1024 * 1024,
         max_rss_bytes: 2 * 1024 * 1024 * 1024,

@@ -1,4 +1,4 @@
-//! Actual isolated WebGPU execution of fixed Classic visual frames.
+//! Isolated native execution of fixed composition frames.
 mod png;
 mod process;
 mod resources;
@@ -10,4 +10,4 @@ pub use process::{ClassicVisualProcess, ClassicVisualProcessConfig};
 pub use resources::VerifiedClassicVisualResources;
 pub(crate) use session_adapter::VisualProcessSession;
 
-pub(crate) use process::{validate_identity, validate_quota};
+pub(crate) use process::validate_quota;

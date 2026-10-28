@@ -11,7 +11,7 @@ OpenCut 是模块化单体。外部 Agent 负责创作规划，编辑系统执�
 | 分派 | automation | 注册表驱动的类型化工具与领域动作 |
 | 宿主 | host-runtime | 原生存储、媒体、插件与 Worker 装配 |
 | 存储 | sqlite-store、asset-store、storage-budget | SQLite、CAS、准入、发布日志和回收围栏 |
-| 媒体 | media、native-services、project-render | 探测、分析、IR 执行与受限子进程 |
+| 媒体 | media、native-services、project-render、renderer | 探测、分析、IR 执行、原生 GPU 与受限子进程 |
 | 调度与插件 | job-runtime、plugin-host | 领取、租约、取消、恢复、隔离和发布 |
 | 客户端 | sdk-rust、sdk-ts、apps/web | 输入、呈现、传输与观察 |
 
@@ -20,6 +20,8 @@ OpenCut 是模块化单体。外部 Agent 负责创作规划，编辑系统执�
 工程修改基于固定修订，先计划、后原子提交。幂等键绑定原始请求，未知结果使用原键恢复。Worker 的 attempt、lease、取消和 publication fence 决定能否发布，临时文件不代表成功。
 
 浏览器执行包消费 Rust 提供的固定事实与授权资源，不重新推导工程时间线。解码、DSP 和 GPU 保持准确的依赖身份。缓存、队列、PCM、RGBA 与子进程各自受准入约束，源文件大小与驻留预算分别处理。
+
+静态帧及导出的画面执行已接入独立 `opencut-render-worker`：原生 libav 通过授权字节端口解码，`renderer` 适配器执行固定 WGSL 和原生文字/图形栅格化，应用会话继续核验绑定、预算、取消和输出。父进程拥有二进制管道、RSS/期限监测和发布围栏。连续 Web 预览、来源图及音频仍在替换中；当前接线及其验收范围见[原生渲染方案](native-rendering.md)和[交付状态](status.md)。
 
 现有工程的格式读取、SQL 升级和共享渲染器继续支持已保存的数据。第三方 WGSL、SoundTouch、字体和图形的许可证及来源哈希属于必要运行和分发数据。
 

@@ -14,6 +14,7 @@ opencut-editor-application = { path = "../editor-application" }
 opencut-api-contracts = { path = "../api-contracts" }
 opencut-contracts = { path = "../contracts" }
 opencut-media = { path = "../media" }
+opencut-renderer = { path = "../renderer" }
 opencut-asset-store = { path = "../asset-store" }
 opencut-project-render = { path = "../project-render" }
 opencut-plugin-host = { path = "../plugin-host" }

@@ -16,7 +16,7 @@ FILTERS = {
     'visual': {'geq', 'eq', 'gblur'},
     'audio': {'anullsrc', 'atrim', 'asetpts', 'aresample', 'aformat', 'asetrate', 'volume', 'adelay', 'apad', 'amix'},
 }
-ENCODERS = {'libx264', 'libx265', 'libvpx-vp9', 'libopus', 'aac', 'png'}
+ENCODERS = {'libx264', 'aac', 'png'}
 CATALOG_FILES = {'bin/libexec/classic-visual-renderer/package.json',
                  'bin/libexec/classic-visual-renderer/host/catalog-archive.mjs'}
 

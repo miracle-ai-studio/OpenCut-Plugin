@@ -1600,11 +1600,12 @@
         "scope": "one 320x180 retained synthetic source; not 4K or a universal memory bound"
       },
       "remaining": [
-        "long independent pixel/PCM export and throughput",
+        "broader long/4K export and throughput beyond the retained 94-second case",
         "historical asset-free intermittent resume stall cause",
         "broader codecs/colors/orientation/default decode track, 4K, physical/manual and portable distribution"
       ],
-      "host_test_resolution": "See host_contract_conformance: 98 passed, zero failures/ignored; original failed reports retained."
+      "host_test_resolution": "See host_contract_conformance: 98 passed, zero failures/ignored; original failed reports retained.",
+      "long_export_resolution": "See native_long_export: retained 94-second 320x180 case passed; broader media/4K delivery remains open."
     },
     "host_contract_conformance": {
       "base_commit": "19dd4d39901e79605e599596667adf7f752fa32f",
@@ -1646,10 +1647,169 @@
         "opencut-render-worker_sha256": "cff628baf0d8320216a0aa31f404e3ef157baf37d4c5b0642d4b2ba0fd9e966c"
       },
       "remaining": [
-        "independent long audio/video export, encoder output and throughput",
+        "broader long/4K export and throughput beyond the retained 94-second case",
         "historical intermittent asset-free text resume stall",
         "broader codec/color/orientation/default-track decode, 4K and memory/performance matrix",
         "native worker/shared-library distribution, relocated installation and cross-platform/manual acceptance"
+      ],
+      "long_export_resolution": "See native_long_export: retained 94-second 320x180 case passed; broader media/4K delivery remains open."
+    },
+    "native_long_export": {
+      "verification_source_commit": "d01fb874",
+      "status": "retained 94-second whole WAV and video exports passed independent PCM/pixel and codec checks",
+      "delivery_ready": false,
+      "runtime": {
+        "opencut_sha256": "ee6a2b621ab333e92170f79ee3d0394426f2aaf3d982293aad73c353aca1537a",
+        "opencut-render-worker_sha256": "cff628baf0d8320216a0aa31f404e3ef157baf37d4c5b0642d4b2ba0fd9e966c"
+      },
+      "new_product_build": false,
+      "project_id": "native-long-media-acceptance",
+      "revision": "rev_6f73274b38fc46253eb9a1fd77196556f1a2079b9682107cd681f1fe2120ad66",
+      "source_sha256": "2826e87d1a60e4aaf8ce266b42b0c22fd736e04316208ac9ce2d9d1b610d2cc5",
+      "source_seconds": 94,
+      "canvas": {
+        "width": 320,
+        "height": 180,
+        "fps": "30/1",
+        "video_frames": 2820
+      },
+      "audio": {
+        "rate": 48000,
+        "channels": 2,
+        "frames": 4512000,
+        "authored_clips": 24,
+        "input_peak": 0.14627206325531006,
+        "export_mastering_applied": false,
+        "rule": "Export whole-scene peak <=.98 returns the unit-gain mix. Realtime preview always uses its independent continuous master chain; these original semantics are not forced to agree."
+      },
+      "jobs": {
+        "wav": {
+          "job_id": "job_98a5d48393334908bb145880a5fa5403",
+          "seconds": 13.831454141996801,
+          "artifact_sha256": "c90f8de39756ce1a6f97ef969922f094db4510be38669e9b3c78fa7c4bee623e",
+          "size_bytes": 36096058
+        },
+        "video": {
+          "job_id": "job_da8ac21782ff45f886b3eb8e971977b4",
+          "seconds": 54.059577596141025,
+          "artifact_sha256": "1e693d78859527d2273d344b8c89b95ff76877bf75286e014f07e951ed811eca",
+          "size_bytes": 4476180
+        }
+      },
+      "checks": {
+        "independent_whole_pcm": {
+          "frames": 4512000,
+          "maximum_absolute_error": 0.0,
+          "snr_db": 300.0,
+          "first_frame_over_1e_minus6": null,
+          "minimum_snr_db": 100,
+          "maximum_error_gate": 1e-06,
+          "fitting": "none",
+          "passed": true
+        },
+        "video_preencode_pcm": {
+          "frames": 4512000,
+          "maximum_absolute_error": 0.0,
+          "snr_db": 300.0,
+          "first_frame_over_1e_minus6": null,
+          "minimum_snr_db": 100,
+          "maximum_error_gate": 1e-06,
+          "fitting": "none",
+          "passed": true
+        },
+        "independent_pixels": [
+          {
+            "frame": 0,
+            "source_frame": 0,
+            "mae": 3.3577719907407406,
+            "gate": 5,
+            "passed": true
+          },
+          {
+            "frame": 29,
+            "source_frame": 29,
+            "mae": 2.7891666666666666,
+            "gate": 5,
+            "passed": true
+          },
+          {
+            "frame": 119,
+            "source_frame": 119,
+            "mae": 2.921244212962963,
+            "gate": 5,
+            "passed": true
+          },
+          {
+            "frame": 120,
+            "source_frame": 120,
+            "mae": 3.2230324074074073,
+            "gate": 5,
+            "passed": true
+          },
+          {
+            "frame": 1410,
+            "source_frame": 1410,
+            "mae": 2.6107118055555554,
+            "gate": 5,
+            "passed": true
+          },
+          {
+            "frame": 2700,
+            "source_frame": 2700,
+            "mae": 3.429027777777778,
+            "gate": 5,
+            "passed": true
+          },
+          {
+            "frame": 2819,
+            "source_frame": 2819,
+            "mae": 2.984826388888889,
+            "gate": 5,
+            "passed": true
+          }
+        ],
+        "encoded_aac": {
+          "frames": 4512000,
+          "maximum_absolute_error": 0.001479998230934143,
+          "snr_db": 57.76281596782658,
+          "first_frame_over_1e_minus6": 448,
+          "minimum_snr_db": 30,
+          "maximum_error_gate": null,
+          "fitting": "none",
+          "passed": true,
+          "decoded_padding_frames": 768,
+          "scope": "AAC is lossy; separate 30dB codec quality check. Whole WAV and video preencode keep original 1e-6/100dB independent gates; no gain/time fit."
+        }
+      },
+      "independent_references": {
+        "export_pcm_manifest_sha256": "edbc786f4e8f63c9b8ac973874238b64f452dd6ccd0c484b86710ce8146dab57",
+        "source_frame_manifest_sha256": "99434847f6b0142d64c593df8463a77318d43e58747e52166fd8746dc81c91f0",
+        "decoder": "fixed independently executed Mediabunny/Chromium source decoding, manual nonoverlapping timeline and original conditional export peak rule; no OpenCut compiler or DSP imports",
+        "pixels": "seven manually selected direct source RGB frames; no preview/export agreement as the only oracle"
+      },
+      "full_execution_proof_sha256": "7e573c5383bac01c9bb56bf81bd7946c32a9ed0176bb7fd51186fd6fa04bbcd1",
+      "execution_proof_scope": "Native host/worker, libav libraries/configuration, WGSL/rasterizer/GPU/platform, ordered frame receipts and actual FFmpeg/FFprobe encoder identities are retained in the typed public proof and hashed report.",
+      "report_sha256": "54559ed754d8f4cb634429861bc81282c29006cd6ba5d04e9df493cd044e8b52",
+      "rss": {
+        "native_worker_peak_kib": 48168,
+        "product_children_peak_kib": 88156,
+        "scope": "one-second process sampling, owned exporter/encoder children only; excludes verifier/browser and does not measure driver/GPU allocations or establish a universal bound"
+      },
+      "lifecycle": {
+        "active_jobs_remaining": 0,
+        "native_workers_remaining": false,
+        "project_unchanged": true,
+        "cleanup_report_sha256": "89b549ae5b82264090abd980921662fcc12c0abf125b80f3fc6aefdf8546c1c4"
+      },
+      "retained_verifier_failures": [
+        "First comparison incorrectly applied always-on preview mastering to export PCM: max error .11222930997610092, SNR26.778513493022675; independent raw source and existing export reference isolated the error. Correct export oracle uses the original peak gate, not fitted values. Original report/reference retained.",
+        "After the video succeeded, the verifier read a retired output wrapper; corrected it to the canonical direct result. Original WAV/video tasks, artifacts and execution RSS reused; neither task was resubmitted."
+      ],
+      "remaining": [
+        "long/4K and broader codec/color/orientation/default-track matrices beyond this sample",
+        "historical asset-free intermittent resume stall cause",
+        "distribution of native worker/shared libraries with licenses and relocated-installation proof",
+        "physical/manual and cross-platform acceptance"
       ]
     }
   }

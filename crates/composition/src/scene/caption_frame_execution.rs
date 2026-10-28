@@ -7,7 +7,7 @@ pub const CLASSIC_CAPTION_WRAP_PROFILE: &str = "classic-v31-greedy-whitespace-v1
 #[derive(Clone, Debug)]
 pub struct PreparedCaptionFrame {
     source_graph: SceneComposition,
-    execution: PreparedTextFrame,
+    pub(super) execution: PreparedTextFrame,
     captions: Vec<CaptionRasterPlan>,
 }
 impl PreparedCaptionFrame {

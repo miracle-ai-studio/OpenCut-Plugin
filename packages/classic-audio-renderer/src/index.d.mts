@@ -82,7 +82,7 @@ export interface ClassicAudioHost {
   releaseDecodedSource(resource: Readonly<CasResource>): Promise<{ released: true }>;
   /** Container decoding always uses Rust-planned logical and resident limits. */
   admitContainerDecode(resource: CasResource, primary: PrimaryAudioTrack): Promise<ContainerDecodeAllocation>;
-  /** Codec choice for native-rate signed16 audio, never host generation detection. */
+  /** Codec choice for native-rate signed16/float32 PCM audio, never host generation detection. */
   admitPcmAudioDecode(resource: CasResource, primary: PrimaryAudioTrack): Promise<{ mode: "whole" } | { mode: "windowed"; admission: ContainerDecodeAllocation }>;
   /** Original authored span plus actual sparse residency; dense PCM uses null. */
   compilePitchPreparation(input: { elementId: string; decodedSampleRate: number; decodedFrameCount: string; decodedChannels: number; residentFrameCount: string | null }): Promise<PitchFacts>;

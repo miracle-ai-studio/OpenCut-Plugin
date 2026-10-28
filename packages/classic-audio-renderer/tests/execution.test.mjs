@@ -101,7 +101,7 @@ test("primary format is captured immutably before admission; audio byte decoding
   result.release(); assert.equal(budget.used, 0);
   // Non-native-rate/float WAV must retain the original byte-decoder path,
   // even when the new private capability is available.
-  for (const [format, rate, bits] of [[1,48000,16], [3,44100,32]]) {
+  for (const [format, rate, bits] of [[1,48000,16], [3,48000,32], [1,44100,24]]) {
     const bytes = new Uint8Array(44), data = new DataView(bytes.buffer);
     bytes.set(new TextEncoder().encode("RIFF"),0); bytes.set(new TextEncoder().encode("WAVEfmt "),8);
     data.setUint32(16,16,true); data.setUint16(20,format,true); data.setUint16(22,1,true);
@@ -203,4 +203,16 @@ test("fixed plan metadata admits 256 voices while CAS resource admission remains
   assert.throws(() => validateBegin(extraVoice), { code: "INVALID_HOST_PROTOCOL" });
   const extraResource = structuredClone(begin); extraResource.plan.resources.push(resource(32)); extraResource.resources.push({ assetId: "a32", handle: "h32" });
   assert.throws(() => validateBegin(extraResource), { code: "INVALID_HOST_PROTOCOL" });
+});
+
+
+test("native-rate float32 RIFF negotiates the existing PCM path and short inputs keep Web Audio",async()=>{
+ const bytes=new Uint8Array(52),v=new DataView(bytes.buffer);
+ bytes.set(new TextEncoder().encode("RIFF"));v.setUint32(4,44,true);bytes.set(new TextEncoder().encode("WAVEfmt "),8);
+ v.setUint32(16,16,true);v.setUint16(20,3,true);v.setUint16(22,1,true);v.setUint32(24,44100,true);
+ v.setUint32(28,176400,true);v.setUint16(32,4,true);v.setUint16(34,32,true);bytes.set(new TextEncoder().encode("data"),36);v.setUint32(40,8,true);v.setFloat32(44,.25,true);v.setFloat32(48,.5,true);
+ let probes=0;const result=await decodeResource({assetId:"f32",kind:"audio"},bytes,
+  {sampleRate:44100,decodeAudioData:async()=>buffer([[.25,.5]])},
+  {admitPcmAudioDecode:async(_r,p)=>{assert.equal(p.codec,"pcm-f32");assert.equal(p.channels,1);probes++;return{mode:"whole"};},admitDecode:async(_r,p)=>{assert.equal(p,null);return{maxFrames:2,maxChannels:1};}},new PcmBudget(4096));
+ assert.equal(probes,1);assert.equal(result.profile,"web-audio-decode-at-target-rate");result.release();
 });

@@ -12,11 +12,14 @@
     "Web editing, fixed-revision preview/export, project history, resource authorization and project packages.",
     "Project covers support authorized source-video frames, uploaded images and automatic selection through cover_set.",
     "Responsive project cards, one-second tooltips and output-clock timeline following.",
-    "Portable local-plugin metadata, versioned checksummed installer/launcher, doctor and Web service helper; automatic output reservation retains database headroom without a fixed small file quota."
+    "Portable local-plugin metadata, versioned checksummed installer/launcher, doctor and Web service helper; automatic output reservation retains database headroom without a fixed small file quota.",
+    "Legacy per-scene preview and native source-space limited-range BT.601/BT.709 grading share the scene renderer without rewriting project settings.",
+    "Native-rate mono/stereo float32 PCM reuses bounded PCM windows and validates exact per-channel sample-byte evidence.",
+    "Unchanged native-authorized preview manifests retain encoded content and paused decoders for 30 seconds; live surface cold preparation keeps cancellation and backend fences."
   ],
   "validation": {
-    "source_base_commit": "4600c68ccdf12bbb1bc95012477348833baf9f27",
-    "source_state": "feature and publication-cleanup candidate",
+    "source_base_commit": "d0a781b797b91139bcce6f0c0cb1f0679a768aba",
+    "source_state": "uncommitted local repair candidate; plugin beta.2 is not published",
     "previous_cover_candidate": {
       "binary_sha256": "9595d79ef1dd400c39458e96a7cb3b8996802b105ee64b4aa5bf57db76ba9aae",
       "cli_release_build": "passed",
@@ -94,6 +97,93 @@
       "qualified_package_target": "x86_64-apple-darwin",
       "client_conversation_acceptance": "not_run",
       "clean_machine_acceptance": "not_run"
+    },
+    "repair_candidate": {
+      "binary_sha256": "74f670cd51be9b5c1810c7e05d7df21bc75cf2a2130597eecd27fcb13e2a4821",
+      "source_dirty": true,
+      "cli_release_build": "passed",
+      "web_production_build": "passed",
+      "generated_and_canonical_contracts": "passed for this explicit binary; 184 operations, 12 domains",
+      "visual_node_tests": 208,
+      "audio_node_tests": 73,
+      "frame_cache_canvas_web_tests": 37,
+      "picture_worker_lifecycle_tests": 6,
+      "pcm_admission_and_stored_proof_regression": "passed; unknown-channel float32, preserved snapshot, rejected forged sample extent",
+      "independent_grade_cases": 8,
+      "independent_orientation_cases": 3,
+      "native_scoped_video": {
+        "scope": "isolated imported legacy fixture; one second crossing a two-source transition, not full-film acceptance",
+        "resolution": [
+          3840,
+          2160
+        ],
+        "fps": 25,
+        "frames": 25,
+        "audio": "48kHz stereo AAC",
+        "published_result": "passed with continuous decoder and batch16 original RGBA handler",
+        "pixel_gate": 12,
+        "max_pixel_error": 8,
+        "pcm_gate": {
+          "min_snr_db": 30,
+          "max_lag_samples": 48,
+          "max_relative_rms_error": 0.01,
+          "gain_fitting": false
+        },
+        "pcm_observed": {
+          "snr_db": [
+            31.377159403977647,
+            32.54637735061716
+          ],
+          "lag_samples": [
+            0,
+            0
+          ],
+          "relative_rms_error": [
+            6.796507750150838e-05,
+            0.0003384075673976694
+          ]
+        }
+      },
+      "audio_range_suite": {
+        "passed": 9,
+        "failed": 0,
+        "unresolved": [],
+        "previous_failures_preserved": [
+          "decoder_windows_preserves_global_taps_resample_phase_budget_and_live_authority",
+          "dense_fixed_scene_admission_counts_unique_resources_separately",
+          "pcm_window_probe_keeps_legacy_state_and_long_source_admission_fences"
+        ],
+        "resolution": "Reconciled stale verifier assumptions with pre-existing contracts: minimum range-cache admission, observed format fields, whole mode, and demuxed audio-container windows. Retained under-budget, preview-only, primary-format, range and authority rejection coverage. Production CLI unchanged."
+      },
+      "manual_browser": "Owned imported 24s project reached 24s without picture/audio error; replay and pause/resume 14.49s to 21.62s and 21.92s to end passed. An earlier unavailable-session error remains recorded; intermittent robustness and whole-product acceptance are not claimed.",
+      "local_runtime": {
+        "ports": [
+          8791,
+          59790
+        ],
+        "binary_sha256": "74f670cd51be9b5c1810c7e05d7df21bc75cf2a2130597eecd27fcb13e2a4821",
+        "web_index_sha256": "6839e0122101b7ff0214fa9f24bd3ee16605aa2abb7e995a7ba3353c03b76b2f",
+        "served_assets_verified": true,
+        "original_project_snapshots_unchanged": true,
+        "public_release": false,
+        "manual_original_project": "Original 42s project played to end; replay reached 9.152s and paused with visible picture, timeline, thumbnails and waveforms.",
+        "unchanged_replay_new_render_jobs": 0,
+        "manual_cache_replay": "Reconnected original workbench, replayed and paused at 8.314666s, resumed to 42s without picture/audio error. Job inventory remained identical; zero new render jobs."
+      },
+      "plugin_install": {
+        "version": "0.5.0-beta.2",
+        "local_installed": true,
+        "enabled": true,
+        "global_marketplace_registered": true,
+        "runtime_binary_sha256": "74f670cd51be9b5c1810c7e05d7df21bc75cf2a2130597eecd27fcb13e2a4821",
+        "compact_mcp_tools": 11,
+        "capability_query": "passed",
+        "existing_project_inspect": "passed",
+        "project_snapshot_unchanged": true,
+        "other_plugin_configuration_unchanged": true,
+        "desktop_chat_tools": "client reload required; current conversation not verified",
+        "public_release": false
+      }
     }
   },
   "known_limits": [

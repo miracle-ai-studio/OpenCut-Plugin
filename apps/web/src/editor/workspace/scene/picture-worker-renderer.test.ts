@@ -80,6 +80,8 @@ it("transfers the surface once, fences live reports, and accepts only final stat
   expect(command).toMatchObject({kind:"startSurface",id:1,canvas,binding:{token:"clock"}});
   expect(worker.transfers[1]).toEqual([canvas,expect.anything()]);expect(bind).toHaveBeenCalledOnce();
   worker.emit({kind:"surfaceReport",runId:0,result:report,retired:false});expect(updated).not.toHaveBeenCalled();
+  await vi.advanceTimersByTimeAsync(11000);
+  expect(worker.messages.some(message=>message.kind==="close")).toBe(false);
   worker.emit({kind:"surfacePrepared",id:1,result:report});expect(await pending).toEqual(report);
   worker.emit({kind:"surfaceReport",runId:1,result:report,retired:false});expect(updated).toHaveBeenCalledTimes(1);
   worker.onerror?.();expect(failed).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({message:"Picture preparation worker failed."}));

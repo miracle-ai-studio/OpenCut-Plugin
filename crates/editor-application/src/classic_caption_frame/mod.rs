@@ -164,8 +164,10 @@ fn prepare_caption_receipts(
         visual.transform.position_x_px = x - f64::from(canvas.width) / 2.0;
         visual.transform.position_y_px = y - f64::from(canvas.height) / 2.0;
     }
-    let execution =
-        prepare_text_frame(&graph).map_err(|error| EditorError::new(error.code, error.message))?;
+    let execution = prepared
+        .execution()
+        .reflow_text(&graph)
+        .map_err(|error| EditorError::new(error.code, error.message))?;
     let mut observed_ids = BTreeSet::new();
     if rasters.len() != execution.texts().len() {
         return Err(invalid("V3 raster collection is incomplete"));

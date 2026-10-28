@@ -590,14 +590,18 @@ fn validate_decoder_evidence(
                 AssetKind::Audio,
                 "mediabunny-1.41.0-windowed-concatenate-offline-resample-v1",
                 Some(p),
-            ) if p.codec == "pcm-s16"
-                && p.sample_rate == d.sample_rate
-                && (1..=2).contains(&p.channels)
-                && d.channels == p.channels
-                && crate::classic_audio::decimal(&d.frame_count)
-                    .map_err(|_| stored_invalid())?
-                    <= r.version.size / (u64::from(p.channels) * 2) =>
-            {
+            ) => {
+                let sample_bytes = crate::classic_audio::native_pcm_sample_bytes(&p.codec)
+                    .ok_or_else(stored_invalid)?;
+                if p.sample_rate != d.sample_rate
+                    || !(1..=2).contains(&p.channels)
+                    || d.channels != p.channels
+                    || crate::classic_audio::decimal(&d.frame_count)
+                        .map_err(|_| stored_invalid())?
+                        > r.version.size / (u64::from(p.channels) * sample_bytes)
+                {
+                    return Err(stored_invalid());
+                }
                 negotiated_pcm = true;
                 AudioDecoderProfile::Mediabunny141ConcatenateOfflineResample
             }

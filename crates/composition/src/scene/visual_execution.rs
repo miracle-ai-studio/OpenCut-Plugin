@@ -10,8 +10,27 @@ pub const CLASSIC_VISUAL_PROFILE: &str = "classic-v31-gpu-normal-frame";
 pub struct PreparedVisualFrame {
     graph: SceneComposition,
     identity: VisualFrameIdentity,
+    pub(super) decoder_surfaces: u8,
 }
 impl PreparedVisualFrame {
+    pub fn decoder_surfaces(&self) -> u8 {
+        self.decoder_surfaces
+    }
+    pub fn decoder_surfaces_for(&self, kind: &opencut_contracts::AssetKind) -> u8 {
+        if self.decoder_surfaces == 1 && *kind != opencut_contracts::AssetKind::Video {
+            2
+        } else {
+            self.decoder_surfaces
+        }
+    }
+    pub fn decoder_surface_cost(&self) -> u8 {
+        self.resources()
+            .iter()
+            .map(|r| self.decoder_surfaces_for(&r.kind))
+            .max()
+            .unwrap_or(self.decoder_surfaces)
+    }
+
     pub fn identity(&self) -> &VisualFrameIdentity {
         &self.identity
     }
@@ -223,6 +242,7 @@ pub fn prepare_visual_frame_scene(
         return Err(invalid("Visual resource binding missing"));
     }
     Ok(PreparedVisualFrame {
+        decoder_surfaces: 4,
         identity: VisualFrameIdentity {
             project_id: graph.project_id.clone(),
             revision: graph.revision.clone(),

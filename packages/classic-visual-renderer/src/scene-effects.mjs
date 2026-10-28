@@ -1,9 +1,11 @@
 // Classic effects/definitions/blur.ts: exact per-axis sigma and bounded passes.
+import {legacyColorPasses} from './legacy-color.mjs';
 import { finite, reject } from './validation.mjs';
 export function sceneEffectPasses(effects,width,height) {
   if(!Array.isArray(effects)||effects.length>64)reject('INVALID_VISUAL_PLAN','Invalid ordered scene effects');
   const result=[];
   for(const entry of effects){if(!entry||typeof entry.enabled!=='boolean')reject('INVALID_VISUAL_PLAN','Invalid effect flag');if(!entry.enabled)continue;
+    if(entry.effect?.kind==='legacy_color_adjust'){legacyColorPasses([entry]);continue;}
     if(entry.effect?.kind!=='classic_blur')reject('INVALID_VISUAL_PLAN','Unsupported scene effect');
     const intensity=finite(entry.effect.intensity,'blur intensity');if(intensity<0)reject('INVALID_VISUAL_PLAN','Negative blur intensity');
     const sx=intensity/5*width/1920,sy=intensity/5*height/1080,m=Math.max(sx,sy);if(m<.001)continue;

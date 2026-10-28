@@ -31307,6 +31307,13 @@
           "VisualDecodeAdmission": {
             "additionalProperties": false,
             "properties": {
+              "decoderSurfaces": {
+                "description": "Native-admitted working surfaces: direct video (1), canvas transfer (2),\nor the frozen four-surface decoder (4).\nMissing values retain the frozen four-surface decoder contract.",
+                "format": "uint8",
+                "maximum": 255,
+                "minimum": 0,
+                "type": "integer"
+              },
               "maxDecodedBytes": {
                 "type": "string"
               },

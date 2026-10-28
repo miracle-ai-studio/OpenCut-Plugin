@@ -1,3 +1,4 @@
+import {encodeRgbaHex} from "../src/validation.mjs";
 globalThis.__opencutVisualRgbaBatch=async()=>{};
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -19,7 +20,7 @@ async function configured(request=async()=>({})){
 test('persistent graphic execution selects the shared graphic renderer and reuses all caches',async t=>{
   const oldFetch=globalThis.fetch;globalThis.fetch=async()=>({ok:true});t.after(()=>globalThis.fetch=oldFetch);
   const calls=[];
-  globalThis.__opencutVisualModule={VisualDecoderCache:class{},renderClassicGraphicFrame:async(...args)=>{calls.push(args);await args[1].rgba(0,new Uint8Array(4));return {graphics:[]};}};
+  globalThis.__opencutVisualModule={encodeRgbaHex,VisualDecoderCache:class{},renderClassicGraphicFrame:async(...args)=>{calls.push(args);await args[1].rgba(0,new Uint8Array(4));return {graphics:[]};}};
   try{
     for(let n=0;n<2;n++)assert.deepEqual(await executeVideoFrame({plan:{n,identity:{width:1,height:1}},admission:{},profile:'beginGraphicFrame'}),{ok:true,receipt:{graphics:[]}});
     for(const index of [4,5,6])assert.equal(calls[0][index],calls[1][index]);

@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
+import {parseArgs} from "node:util";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import {
@@ -8,14 +9,18 @@ import {
   dataDirectory,
   verifyRuntime,
   runtimeEnvironment,
+  workspaceDatabase,
+  readConfig,
 } from "./runtime.mjs";
 
 const source = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 try {
-  if (process.argv.length > 2)
-    throw new Error(
-      "Configure OPENCUT_PLUGIN_INSTALL_DIR and OPENCUT_PLUGIN_DATA_DIR rather than unknown command options",
-    );
+  const {values}=parseArgs({options:{database:{type:"string"}},allowPositionals:false});
+  const data=dataDirectory();
+  const previous=fs.existsSync(path.join(data,"install.json"))?readConfig():{};
+  const database=workspaceDatabase({...previous,...(values.database!==undefined?{database:values.database}:{})});
+  if(!fs.existsSync(path.join(source,"release.json")))
+    throw new Error("This is a source plugin, not an installable release bundle. Download the matching platform ZIP from GitHub Releases and run its scripts/install.mjs; see skills/setup/SKILL.md.");
   const release = JSON.parse(
     fs.readFileSync(path.join(source, "release.json"), "utf8"),
   );
@@ -118,7 +123,6 @@ try {
     throw new Error(
       "Existing installation belongs to another runtime candidate",
     );
-  const data = dataDirectory();
   fs.mkdirSync(data, { recursive: true, mode: 0o700 });
   const pending = path.join(data, `install.json.${process.pid}.tmp`);
   fs.writeFileSync(
@@ -128,6 +132,7 @@ try {
         format: "opencut.plugin-install.v1",
         runtime,
         version: release.version,
+        database,
       },
       null,
       2,
@@ -140,7 +145,7 @@ try {
       {
         installed: true,
         runtime,
-        database: path.join(data, "workspace.sqlite"),
+        database,
         marketplace: destination,
         command: "codex plugin marketplace add " + JSON.stringify(destination),
         next: "Install opencut@opencut-plugin in the desktop Plugins page or with codex plugin add. Restart the client after installation. No client configuration was changed automatically.",

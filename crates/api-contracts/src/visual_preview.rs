@@ -44,6 +44,21 @@ pub struct VisualDecodeAdmission {
     pub max_height: u32,
     pub max_pixels: String,
     pub max_decoded_bytes: String,
+    /// Native-admitted working surfaces: direct video (1), canvas transfer (2),
+    /// or the frozen four-surface decoder (4).
+    /// Missing values retain the frozen four-surface decoder contract.
+    #[serde(
+        default = "default_decoder_surfaces",
+        skip_serializing_if = "is_default_decoder_surfaces"
+    )]
+    pub decoder_surfaces: u8,
+}
+
+fn default_decoder_surfaces() -> u8 {
+    4
+}
+fn is_default_decoder_surfaces(value: &u8) -> bool {
+    *value == 4
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
@@ -88,7 +103,10 @@ pub enum VisualDecodeRequest {
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct VisualPreviewFrame {
-    #[serde(default, skip_serializing_if = "opencut_contracts::export_video::RasterResolution::is_source")]
+    #[serde(
+        default,
+        skip_serializing_if = "opencut_contracts::export_video::RasterResolution::is_source"
+    )]
     pub resolution: opencut_contracts::export_video::RasterResolution,
     pub session: AudioPreviewStream,
     /// Prepare a bounded future picture without claiming it was presented.
@@ -130,10 +148,12 @@ pub struct VisualPreviewFrameResult {
 pub struct VisualPreviewCachePrepare {
     pub session: AudioPreviewStream,
     /// Inspect already admitted derived pictures without creating render work.
-    #[serde(default, skip_serializing_if="is_false")]
+    #[serde(default, skip_serializing_if = "is_false")]
     pub reuse_only: bool,
 }
-fn is_false(value:&bool)->bool{!*value}
+fn is_false(value: &bool) -> bool {
+    !*value
+}
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct VisualPreviewCache {

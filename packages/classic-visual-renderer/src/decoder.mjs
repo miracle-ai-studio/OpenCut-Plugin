@@ -1,6 +1,7 @@
 import { isVerifiedRangeSource } from "@opencut/classic-audio-renderer/verified-range-source";
-import { Input, ALL_FORMATS, CanvasSink } from "mediabunny";
-import { staticImageHeader, admitDimensions } from "./image-format.mjs";
+import * as mediaBunny from "mediabunny";
+const {Input,ALL_FORMATS,CanvasSink,VideoSampleSink}=mediaBunny;
+import { staticImageHeader, admitDimensions, decoderSurfaces } from "./image-format.mjs";
 import { checkAbort, finite, reject } from "./validation.mjs";
 function verifiedSource(value) {
   if (!isVerifiedRangeSource(value)) reject("INVALID_VISUAL_PLAN", "Video requires a verified bounded source");
@@ -11,6 +12,19 @@ function canvasCopy(source,width,height) {
   if (!context) reject("VISUAL_DECODE_FAILED","Decoded source canvas is unavailable");
   context.drawImage(source,0,0,width,height);return canvas;
 }
+// Direct video samples avoid a CPU RGBA canvas in colour-background scenes.
+// Input owns compressed decoding; each returned VideoFrame has its own lifetime.
+function directFrame(sample) {
+  if(!sample)return null;
+  try {return {timestamp:sample.timestamp,duration:sample.duration,width:sample.displayWidth,height:sample.displayHeight,rotationDegrees:sample.rotation,canvas:sample.toVideoFrame()};}
+  finally {sample.close();}
+}
+class DirectVideoSink {
+  constructor(track){this.sink=new VideoSampleSink(track);}
+  async *canvases(start){for await(const sample of this.sink.samples(start))yield directFrame(sample);}
+  async getCanvas(time){return directFrame(await this.sink.getSample(time));}
+}
+function closeSurface(surface){if(typeof surface?.close==='function')surface.close();else if(surface){surface.width=0;surface.height=0;}}
 function eofWindow(decode) {
   const policy = decode.eofPolicy;
   if (policy?.kind === "noFrame") return null;
@@ -22,9 +36,9 @@ function eofWindow(decode) {
 function videoObservation(value, admission) {
   const timestamp = finite(value.timestamp, "decoded PTS"), duration = finite(value.duration, "decoded frame duration");
   if (duration <= 0 || !Number.isFinite(timestamp + duration)) reject("VISUAL_DECODE_FAILED", "Decoded video interval is invalid");
-  const width = value.canvas.width, height = value.canvas.height;
+  const width = value.width??value.canvas.width??value.canvas.displayWidth, height = value.height??value.canvas.height??value.canvas.displayHeight;
   admitDimensions(width, height, admission);
-  return { canvas: value.canvas, width, height, actualTimestampSeconds: timestamp, frameDurationSeconds: duration };
+  return { canvas: value.canvas, width, height, videoRotation:value.rotationDegrees??0, actualTimestampSeconds: timestamp, frameDurationSeconds: duration };
 }
 function terminalObservation(value, requested, window, admission) {
   if (!value || !window) return null;
@@ -56,7 +70,7 @@ export async function decodeVideo(bytes,decode,admission,signal) {
   checkAbort(signal);const requested=finite(decode.requestedTimeSeconds,"observed decode request");
   const window = eofWindow(decode);
   if (decode.selectedVideoStream !== null) reject("UNSUPPORTED_RENDER_FEATURE","Only primary video selection is supported");
-  const input=new Input({source:verifiedSource(bytes),formats:ALL_FORMATS});let iterator;
+  const input=new Input({source:verifiedSource(bytes),formats:ALL_FORMATS});let iterator,ownedFrame;
   try {
     const tracks=await input.getVideoTracks();checkAbort(signal);
     if(tracks.length!==1) reject("UNSUPPORTED_RENDER_FEATURE","Exactly one video stream is required");
@@ -69,23 +83,26 @@ export async function decodeVideo(bytes,decode,admission,signal) {
     if(!await track.canDecode()) reject("VISUAL_DECODE_FAILED","Primary video codec is unavailable");
     // Admit actual probed display dimensions before allocating a CanvasSink.
     admitDimensions(track.displayWidth,track.displayHeight,admission);
-    const sink=new CanvasSink(track,{poolSize:3,fit:"contain"});iterator=sink.canvases(requested);
-    const item=await iterator.next();checkAbort(signal);
+    const videoColorSpace=await track.getColorSpace?.()??{};
+    const sink=decoderSurfaces(admission)===1?new DirectVideoSink(track):new CanvasSink(track,{poolSize:decoderSurfaces(admission)-1,fit:"contain"});iterator=sink.canvases(requested);
+    const item=await iterator.next();if(decoderSurfaces(admission)===1)ownedFrame=item.value?.canvas;checkAbort(signal);
     let observed = item.done || !item.value ? null : videoObservation(item.value, admission);
     const covered = observed && observed.actualTimestampSeconds <= requested && requested < observed.actualTimestampSeconds + observed.frameDurationSeconds;
     if (!covered) {
       const reason = observed ? "timestamp_gap" : "eof";
       if (!window) return { reason };
-      await iterator.return(); iterator = null; checkAbort(signal);
+      await iterator.return(); iterator = null; closeSurface(ownedFrame);ownedFrame=null;checkAbort(signal);
       // Pinned Mediabunny selects the last presentation frame at Infinity.
       // No epsilon timestamp, complete PTS table or whole-source decode.
-      const terminal = await sink.getCanvas(Infinity); checkAbort(signal);
+      const terminal = await sink.getCanvas(Infinity); if(decoderSurfaces(admission)===1)ownedFrame=terminal?.canvas;checkAbort(signal);
       observed = terminalObservation(terminal, requested, window, admission);
       if (!observed) return { reason };
     }
-    return { ...observed, canvas: canvasCopy(observed.canvas, observed.width, observed.height) };
+    const canvas=decoderSurfaces(admission)<=2?observed.canvas:canvasCopy(observed.canvas, observed.width, observed.height);
+    if(decoderSurfaces(admission)===1)ownedFrame=null;
+    return { ...observed, videoColorSpace, canvas };
   } catch(error) {if(error.code)throw error;reject("VISUAL_DECODE_FAILED","Video decoder failed");}
-  finally {try{await iterator?.return();}finally{input.dispose();}}
+  finally {try{await iterator?.return();}finally{closeSurface(ownedFrame);input.dispose();}}
 }
 
 // One serial consumer per verified resource. Rust supplies every requested
@@ -128,7 +145,9 @@ export class VisualDecoderCache {
     // Input, whose source disposal revokes the verified range capability.
     try { await e.iterator?.return(); } catch { /* Retiring an aborted iterator. */ }
     e.input.dispose();
-    for (const canvas of e.canvases ?? []) { canvas.width = 0; canvas.height = 0; }
+    const owned=new Set(e.canvases??[]);
+    if(e.surfaces===1){owned.add(e.current?.canvas);owned.add(e.terminal?.canvas);}
+    for(const canvas of owned)if(canvas)closeSurface(canvas);
     e.current = null;
     })();
   }
@@ -139,6 +158,7 @@ export class VisualDecoderCache {
     let e = this.entries.get(key);
     // Fixed source dimensions do not change with a new frame budget. Recheck
     // them without disposing the source/decoder and reopening the entire asset.
+    if(e && e.surfaces !== decoderSurfaces(admission))reject("INVALID_VISUAL_PLAN","Retire the decoder before changing its surface contract");
     if (e) {
       try { admitDimensions(e.width, e.height, admission); e.admission = identity; }
       catch (error) { await this.dispose(e); this.entries.delete(key); this.sources.delete(key); await bytes.close(); throw error; }
@@ -156,11 +176,14 @@ export class VisualDecoderCache {
         if (!await track.canDecode()) reject("VISUAL_DECODE_FAILED", "Primary video codec is unavailable");
         admitDimensions(track.displayWidth, track.displayHeight, admission);
         e.width = track.displayWidth; e.height = track.displayHeight;
-        e.sink = new CanvasSink(track, { poolSize: 3, fit: "contain" });
-        e.bytes = track.displayWidth * track.displayHeight * 12;
+        e.videoColorSpace=await track.getColorSpace?.()??{};
+        e.surfaces=decoderSurfaces(admission);
+        e.sink = e.surfaces===1?new DirectVideoSink(track):new CanvasSink(track, { poolSize:e.surfaces-1, fit: "contain" });
+        e.poolSize=e.surfaces===1?1:e.surfaces-1;
+        e.bytes = track.displayWidth * track.displayHeight * e.poolSize * 4;
       } catch (error) { await this.dispose(e); this.entries.delete(key); this.sources.delete(key); await bytes.close(); throw error; }
     }
-    return e.width*e.height*16;
+    return e.width*e.height*decoderSurfaces(admission)*4;
   }
   async decode(key, bytes, decode, admission, signal) {
     checkAbort(signal);
@@ -175,6 +198,7 @@ export class VisualDecoderCache {
       // re-reads/decompresses the same GOP. Backward user seeks still restart.
       if ((!e.iterator && !e.ended) || requested < e.last) {
         await e.iterator?.return(); checkAbort(signal);
+        if(e.surfaces===1){for(const frame of new Set([...e.canvases,e.current?.canvas,e.terminal?.canvas]))if(frame)closeSurface(frame);e.canvases.clear();}
         e.iterator = e.sink.canvases(requested); e.current = null; e.ended = false; e.terminal = undefined;
       }
       e.last = requested;
@@ -189,8 +213,8 @@ export class VisualDecoderCache {
           const held = terminalObservation(e.terminal, requested, window, admission);
           if (!held) return { reason: "eof" };
           e.canvases.add(held.canvas);
-          if (e.canvases.size > 3) reject("VISUAL_BUDGET_EXCEEDED", "Decoder exceeded its admitted canvas pool");
-          return { ...held, borrowed: true };
+          if (e.canvases.size > e.poolSize) reject("VISUAL_BUDGET_EXCEEDED", "Decoder exceeded its admitted canvas pool");
+          return { ...held, videoColorSpace:e.videoColorSpace, borrowed: true };
         }
         const value = e.current;
         if (value) {
@@ -201,11 +225,12 @@ export class VisualDecoderCache {
             // next iterator request. Borrow its bounded pool without another
             // full-frame canvas copy; only this cache owns disposal.
             e.canvases.add(value.canvas);
-            if (e.canvases.size > 3) reject("VISUAL_BUDGET_EXCEEDED", "Decoder exceeded its admitted canvas pool");
-            return { ...observed, borrowed: true };
+            if (e.canvases.size > e.poolSize) reject("VISUAL_BUDGET_EXCEEDED", "Decoder exceeded its admitted canvas pool");
+            return { ...observed, videoColorSpace:e.videoColorSpace, borrowed: true };
           }
         }
-        const item = await e.iterator.next(); checkAbort(signal);
+        if(e.surfaces===1 && e.current){closeSurface(e.current.canvas);e.canvases.delete(e.current.canvas);e.current=null;}
+        const item = await e.iterator.next(); if(signal?.aborted && e.surfaces===1)closeSurface(item.value?.canvas);checkAbort(signal);
         if (item.done || !item.value) { e.current = null; e.ended = true; continue; }
         e.current = item.value;
       }

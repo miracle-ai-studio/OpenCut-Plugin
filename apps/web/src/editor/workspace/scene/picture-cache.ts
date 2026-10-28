@@ -51,6 +51,8 @@ const sleep=(signal:AbortSignal)=>new Promise<void>((resolve,reject)=>{
 /** Rust owns all time mappings. A partial manifest is extended in its existing
  * authorization scope; array reordering never changes Blob/decoder identity. */
 export class PictureCache {
+ private retirement:ReturnType<typeof setTimeout>|null=null;
+ private wake(){if(this.retirement){clearTimeout(this.retirement);this.retirement=null;}}
  private plan:PictureCachePlan|null=null;
  private entries=new Map<string,Entry>();
  private decoder=new PreviewSegmentDecoder();
@@ -73,23 +75,26 @@ export class PictureCache {
  /** Reuse a manifest only after the caller obtains a fresh authorized native
   * frame for this generation. Revision/raster changes still require preparation. */
  async rebind(session:Session,identity:ToolOutput<"opencut_visual_preview_frame">["plan"]["identity"],time:Time,signal:AbortSignal){
-  signal.throwIfAborted();
+  signal.throwIfAborted();this.wake();
   const plan=this.plan;
   if(!plan||this.backgroundFailure||plan.project_id!==identity.projectId||plan.revision!==identity.revision||plan.sequence_id!==identity.sequenceId||plan.width!==identity.width||plan.height!==identity.height)return false;
   this.scope.abort();const scope=new AbortController();this.scope=scope;this.loading.clear();this.refreshing=null;
   const abort=()=>scope.abort(signal.reason);signal.addEventListener("abort",abort,{once:true});scope.signal.addEventListener("abort",()=>signal.removeEventListener("abort",abort),{once:true});
-  signal.throwIfAborted();await this.decoder.close();this.current(scope);this.session=session;this.focus=time;this.playback=false;void this.prefetch(scope);return true;
+  signal.throwIfAborted();this.current(scope);this.session=session;this.focus=time;this.playback=false;void this.prefetch(scope);return true;
  }
  private current(scope:AbortController){scope.signal.throwIfAborted();if(scope!==this.scope)throw new DOMException("Preview cache replaced","AbortError");}
  async prepare(sdk:ReturnType<typeof createEditorClient>,session:Session,signal:AbortSignal,
    progress:(completed:number,total:number)=>void,priority?:Time,wait=true,generate=false) {
+  this.wake();
   const previous=this.plan,retained=this.entries,scope=new AbortController();
   this.scope.abort();this.scope=scope;this.plan=null;this.entries=new Map();this.loading.clear();this.refreshing=null;this.refreshedAt=-Infinity;this.backgroundFailure=null;
   const abort=()=>scope.abort(signal.reason);signal.addEventListener("abort",abort,{once:true});
   scope.signal.addEventListener("abort",()=>signal.removeEventListener("abort",abort),{once:true});
   try {
-   signal.throwIfAborted();await this.decoder.close();this.current(scope);
+   signal.throwIfAborted();this.current(scope);
    const plan=await sdk.call("opencut_visual_preview_cache_prepare",{session,reuse_only:!wait&&!generate},{signal:scope.signal});this.current(scope);validate(plan);
+   if(!previous||!sameIdentity(previous,plan))await this.decoder.close();
+   this.current(scope);
    this.plan=plan;this.sdk=sdk;this.session=session;this.playback=wait;
    for(const segment of plan.segments){
     // The newly authorized native manifest proves each receipt's content.
@@ -224,6 +229,7 @@ export class PictureCache {
   return {pixels,frame:{prepare_ahead:true,next_time:frame.next_time,plan:{identity:{time:frame.time}},time_seconds:frame.time_seconds},
    runtime:{cacheKey:plan.cache_key,cacheSegment:decoderKey(segment),rasterWidth:String(plan.width),rasterHeight:String(plan.height),totalMs:String(performance.now()-began)}};
  }
- async close(){this.scope.abort();this.plan=null;this.entries.clear();await this.decoder.close();}
- async suspend(stopLoading=true){if(stopLoading)this.scope.abort();await this.decoder.close();}
+ async park(){this.scope.abort();this.prefetchScope?.abort();this.wake();this.retirement=setTimeout(()=>{this.retirement=null;void this.decoder.close();},30000);}
+ async close(){this.wake();this.scope.abort();this.plan=null;this.entries.clear();await this.decoder.close();}
+ async suspend(stopLoading=true){this.wake();if(stopLoading)this.scope.abort();await this.decoder.close();}
 }

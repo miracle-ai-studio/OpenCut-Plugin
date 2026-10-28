@@ -98,10 +98,11 @@ impl<'a> ClassicVisualSession<'a> {
             .checked_sub(rgba_bytes)
             .and_then(|n| n.checked_sub(encoded_reserve))
             .ok_or_else(|| budget("Frame RGBA budget exceeded"))?;
+        let surface_bytes = u64::from(prepared.decoder_surface_cost()) * 4;
         let decoded_limit_pixels = policy
             .max_decoded_pixels
-            .min(gpu_remaining / 16)
-            .min(rgba_remaining / 16);
+            .min(gpu_remaining / surface_bytes)
+            .min(rgba_remaining / surface_bytes);
         if pixels == 0
             || pixels > policy.max_frame_pixels
             || prepared.layers().len() > 60
@@ -217,7 +218,9 @@ impl<'a> ClassicVisualSession<'a> {
             max_width: 16384,
             max_height: 16384,
             max_pixels: max_pixels.to_string(),
-            max_decoded_bytes: (max_pixels * 16).to_string(),
+            max_decoded_bytes: (max_pixels * u64::from(self.prepared.decoder_surface_cost()) * 4)
+                .to_string(),
+            decoder_surfaces: self.prepared.decoder_surface_cost(),
         })
     }
     /// Reserve fixed-source size hints first, then divide the remaining space.
@@ -251,6 +254,24 @@ impl<'a> ClassicVisualSession<'a> {
             }
         }
         let requested = requested.ok_or_else(|| invalid("Unknown decode admission layer"))?;
+        let layer = self
+            .prepared
+            .layers()
+            .iter()
+            .find(|l| l.element_id == element_id)
+            .ok_or_else(|| invalid("Unknown decode admission layer"))?;
+        let asset_id = match &layer.content {
+            SampledContent::Image { asset_id } | SampledContent::Video { asset_id, .. } => asset_id,
+            _ => return Err(invalid("Decode admission requires media")),
+        };
+        let resource = self
+            .prepared
+            .resources()
+            .iter()
+            .find(|r| &r.asset_id == asset_id)
+            .ok_or_else(|| invalid("Missing decode resource"))?;
+        admission.decoder_surfaces = self.prepared.decoder_surfaces_for(&resource.kind);
+
         // Oversized hints retain the prior conservative equal-share rejection;
         // they never claim space that the original frame policy did not grant.
         if total <= self.decoded_limit_pixels {
@@ -261,7 +282,8 @@ impl<'a> ClassicVisualSession<'a> {
                 return Err(budget("No decoded pixels available for this layer"));
             }
             admission.max_pixels = pixels.to_string();
-            admission.max_decoded_bytes = (pixels * 16).to_string();
+            admission.max_decoded_bytes =
+                (pixels * u64::from(admission.decoder_surfaces) * 4).to_string();
         }
         Ok(admission)
     }

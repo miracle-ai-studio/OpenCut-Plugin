@@ -240,3 +240,168 @@ fn scene_delegates_sticker_bytes_to_image_without_rewriting_its_source_node() {
     assert_eq!(prepared.stacks()[0].element_id, "front");
     assert_eq!(source, before);
 }
+
+#[test]
+fn four_k_legacy_two_sources_keep_grades_and_admit_bounded_serial_decoders() {
+    let mut source = graph();
+    source.format.canvas_size = CanvasSize {
+        width: 3840,
+        height: 2160,
+    };
+    source.fonts.clear();
+    source.resources.truncate(1);
+    source.resources[0].metadata.intrinsic_size = Some(source.format.canvas_size);
+    let mut front_resource = source.resources[0].clone();
+    front_resource.asset_id = "front-image".into();
+    front_resource.version.content_hash = "c".repeat(64);
+    front_resource.version.id = format!("av_{}", front_resource.version.content_hash);
+    source.resources.push(front_resource);
+    let mut back = source.layers[0].clone();
+    back.visual.as_mut().unwrap().masks.clear();
+    back.visual.as_mut().unwrap().effects = vec![SceneEffect {
+        id: "grade-back".into(),
+        enabled: true,
+        effect: EffectKind::LegacyColorAdjust {
+            exposure_ev: 0.0,
+            contrast: 1.1,
+            saturation: 1.06,
+        },
+    }];
+    let mut front = back.clone();
+    front.element_id = "front".into();
+    front.content = SampledContent::Image {
+        asset_id: "front-image".into(),
+    };
+    source.layers = vec![back, front];
+    let prepared = prepare_scene_frame(&source).unwrap();
+    assert_eq!(prepared.source_graph(), &source);
+    let mut policy = crate::classic_text_frame::tests::policy();
+    policy.max_frame_pixels = 16_777_216;
+    policy.max_decoded_pixels = 16_777_216;
+    policy.max_encoded_bytes = 32 * 1024 * 1024;
+    policy.max_rgba_bytes = 224 * 1024 * 1024;
+    policy.max_gpu_bytes = 512 * 1024 * 1024;
+    policy.max_output_bytes = 129 * 1024 * 1024;
+    let scene = scene_execution_policy(&prepared, &policy).unwrap();
+    let media =
+        crate::classic_graphic_frame::graphic_media_policy(prepared.execution(), &scene).unwrap();
+    let session = crate::classic_visual::ClassicVisualSession::new(
+        prepared.execution().execution().execution().media(),
+        &media,
+    )
+    .unwrap();
+    for layer in &source.layers {
+        let permit = session.decode_admission_for(&layer.element_id).unwrap();
+        assert_eq!(permit.decoder_surfaces, 2);
+        assert!(permit.max_pixels.parse::<u64>().unwrap() >= 3840 * 2160);
+        assert_eq!(
+            permit.max_decoded_bytes.parse::<u64>().unwrap(),
+            permit.max_pixels.parse::<u64>().unwrap() * 8
+        );
+    }
+    // Reproduce the real foreground budget and missing imported size hints.
+    let mut videos = source.clone();
+    for resource in &mut videos.resources {
+        resource.kind = opencut_contracts::AssetKind::Video;
+        resource.metadata.intrinsic_size = None;
+        resource.metadata.mime_type = Some("video/mp4".into());
+    }
+    let time = |n: i32| opencut_contracts::Time {
+        ticks: n.to_string(),
+        timebase: 25,
+    };
+    let range = opencut_contracts::TimeRange {
+        start: time(0),
+        duration: time(50),
+    };
+    for layer in &mut videos.layers {
+        let SampledContent::Image { asset_id } = &layer.content else {
+            unreachable!()
+        };
+        layer.content = SampledContent::Video {
+            asset_id: asset_id.clone(),
+            stream: None,
+            source_audio: SourceAudioDecision::ScopeExcluded,
+            source: SourceClock {
+                timeline_local: time(0),
+                source_time: time(0),
+                point_profile: SourcePointProfile::ClassicVideoRoundedTicks,
+                rate: RationalRate {
+                    numerator: 1,
+                    denominator: 1,
+                },
+                mapping: RetimeMapping::ClassicRoundedTicks { timebase: 120000 },
+                nominal_request: range.clone(),
+                requested_read_span: range.clone(),
+                declared_resize_extent: Some(time(50)),
+                read_window: BoundedReadWindow::Known {
+                    resource_extent: time(50),
+                    range: Some(range.clone()),
+                },
+                sample: SourceReadState::InBounds,
+                eof_policy: EofPolicy::RequiresBackendProfile,
+            },
+        };
+    }
+    let prepared = prepare_scene_frame(&videos).unwrap();
+    policy.max_rgba_bytes = 128 * 1024 * 1024;
+    let scene = scene_execution_policy(&prepared, &policy).unwrap();
+    let media =
+        crate::classic_graphic_frame::graphic_media_policy(prepared.execution(), &scene).unwrap();
+    let session = crate::classic_visual::ClassicVisualSession::new(
+        prepared.execution().execution().execution().media(),
+        &media,
+    )
+    .unwrap();
+    for layer in &videos.layers {
+        let permit = session.decode_admission_for(&layer.element_id).unwrap();
+        assert_eq!(permit.decoder_surfaces, 1);
+        assert!(permit.max_pixels.parse::<u64>().unwrap() >= 3840 * 2160);
+        assert_eq!(
+            permit.max_decoded_bytes.parse::<u64>().unwrap(),
+            permit.max_pixels.parse::<u64>().unwrap() * 4
+        );
+    }
+    let decoded: Vec<_> = videos
+        .layers
+        .iter()
+        .map(
+            |layer| opencut_contracts::visual_frame::DecodedVisualSource::ReadyVideo {
+                element_id: layer.element_id.clone(),
+                width: 3840,
+                height: 2160,
+                requested_time: time(0),
+                selected_video_stream: None,
+                actual_timestamp_seconds: 0.0,
+                frame_duration_seconds: 0.04,
+                eof_held: false,
+            },
+        )
+        .collect();
+    let bound = crate::classic_caption_frame::bind_caption_frame(
+        prepared.execution().execution(),
+        &policy,
+        &[],
+        &decoded,
+        &[],
+        &[],
+    )
+    .unwrap();
+    assert_eq!(bound.decoded.len(), 2);
+    source.layers[0]
+        .visual
+        .as_mut()
+        .unwrap()
+        .effects
+        .push(SceneEffect {
+            id: "mixed-blur".into(),
+            enabled: true,
+            effect: EffectKind::ClassicBlur { intensity: 1.0 },
+        });
+    assert!(
+        prepare_scene_frame(&source)
+            .unwrap_err()
+            .message
+            .contains("Mixed source-space")
+    );
+}

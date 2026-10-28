@@ -249,7 +249,7 @@ export async function renderFrame(fixedPlan,host,realm,signal,cache,decoders,com
       if(cap>BigInt(Number.MAX_SAFE_INTEGER))reject("VISUAL_BUDGET_EXCEEDED","Decoded admission cannot be allocated safely");
       // Metadata is probed before any CanvasSink canvas is materialized. Its
       // fixed display geometry is still checked against the fresh native cap;
-      // reserve four surfaces at that geometry instead of the policy maximum.
+      // reserve the admitted transfer surfaces at that geometry instead of the policy maximum.
       const retainedBefore=usePool?decoders.retainedBytes(key):0;
       let pooledRange=null,allocation=Number(cap);
       if(usePool&&typeof decoders.prepare==="function") {
@@ -287,7 +287,7 @@ export async function renderFrame(fixedPlan,host,realm,signal,cache,decoders,com
       decodedSources.set(sourceKey, source);
       if (!source.reason) {
         sources.set(layer.elementId, source);
-        if (!source.borrowed) releases.push(budget.reserve(source.width*source.height*16));
+        if (!source.borrowed) releases.push(budget.reserve(source.width*source.height*(permit.decoderSurfaces??4)*4));
       }
       }
       checkAbort(signal);
@@ -341,7 +341,7 @@ export async function renderFrame(fixedPlan,host,realm,signal,cache,decoders,com
     surfaceFrame?.close();
     host.observeExecution?.({ ...timings, executionMs: String(performance.now() - began) });
     await frameFontChecks?.close();
-    for(const canvas of canvases){canvas.width=0;canvas.height=0;}
+    for(const canvas of canvases){if(typeof canvas.close==='function')canvas.close();else{canvas.width=0;canvas.height=0;}}
     for(const item of encoded.values())item.release();for(const release of releases)release();
   }
 }

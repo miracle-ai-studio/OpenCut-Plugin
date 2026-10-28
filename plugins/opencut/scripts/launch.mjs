@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { spawn } from "node:child_process";
-import { readConfig, dataDirectory, runtimeEnvironment } from "./runtime.mjs";
+import { readConfig, dataDirectory, workspaceDatabase, runtimeEnvironment } from "./runtime.mjs";
 try {
   const config = readConfig();
   const env = await runtimeEnvironment(config.runtime);
@@ -11,7 +11,7 @@ try {
     path.join(config.runtime, "bin/opencut"),
     [
       "--database",
-      path.join(directory, "workspace.sqlite"),
+      workspaceDatabase(config),
       "mcp",
       "serve",
       "--with-worker",

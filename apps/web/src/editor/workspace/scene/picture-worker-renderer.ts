@@ -127,7 +127,11 @@ export class PictureWorkerRenderer {
     started?.(id);
     return new Promise((resolve,reject)=>{
       const abort=()=>this.send({kind:"cancel",id,intent:false});
-      const timer=setTimeout(()=>this.fail(Error("Preview cache preparation timed out.")),command.kind==="prepareCache"?1800000:10000);
+      // A live surface may prepare the same cold native cache as prepareCache.
+      // Keep cancellation and its backend fences, rather than treating that
+      // preparation as a ten-second ordinary worker acknowledgement.
+      const preparing=command.kind==="prepareCache"||command.kind==="startSurface";
+      const timer=setTimeout(()=>this.fail(Error(`Preview ${command.kind} timed out.`)),preparing?1800000:10000);
       this.pending={id,resolve,reject,progress,cleanup:()=>{clearTimeout(timer);signal.removeEventListener("abort",abort);}};
       signal.addEventListener("abort",abort,{once:true});this.send({...command,id},transfer);
     });

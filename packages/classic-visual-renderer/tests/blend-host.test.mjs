@@ -1,3 +1,4 @@
+import {encodeRgbaHex} from "../src/validation.mjs";
 globalThis.__opencutVisualRgbaBatch=async()=>{};
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -151,7 +152,7 @@ test("persistent blend protocol selects the same renderer and reuses byte/font/d
   );
   const previousFetch=globalThis.fetch;globalThis.fetch=async()=>({ok:true});t.after(()=>globalThis.fetch=previousFetch);
   const calls = [];
-  globalThis.__opencutVisualModule = {
+  globalThis.__opencutVisualModule = {encodeRgbaHex,
     VisualDecoderCache: class {},
     renderClassicBlendFrame: async (...args) => {
       calls.push(args);

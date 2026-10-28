@@ -99,6 +99,7 @@ fn paths() -> Result<(PathBuf, PathBuf, PathBuf), EditorError> {
         "src/decoder.mjs",
         "src/image-format.mjs",
         "src/gpu.mjs",
+        "src/legacy-color.mjs",
         "src/validation.mjs",
         "vendor/classic-v31/layer.wgsl",
         "vendor/classic-v31/blend.wgsl",

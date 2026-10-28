@@ -64,8 +64,21 @@ fn effect(effect: &SceneEffect) -> Result<(), CompositionError> {
     }
     match effect.effect {
         EffectKind::ClassicBlur { intensity } if intensity.is_finite() && intensity >= 0. => Ok(()),
+        EffectKind::LegacyColorAdjust {
+            exposure_ev,
+            contrast,
+            saturation,
+        } if exposure_ev.is_finite()
+            && (-8.0..=8.0).contains(&exposure_ev)
+            && contrast.is_finite()
+            && (0.0..=4.0).contains(&contrast)
+            && saturation.is_finite()
+            && (0.0..=4.0).contains(&saturation) =>
+        {
+            Ok(())
+        }
         _ => Err(unsupported(
-            "Scene V1 supports Classic blur; legacy effect profiles retain their renderer",
+            "Scene execution does not support this effect profile",
         )),
     }
 }
@@ -207,6 +220,18 @@ pub fn prepare_scene_frame(
             .visual
             .as_ref()
             .ok_or_else(|| unsupported("Scene visual style missing"))?;
+        let enabled_effects: Vec<_> = visual.effects.iter().filter(|e| e.enabled).collect();
+        if enabled_effects
+            .iter()
+            .any(|e| matches!(e.effect, EffectKind::LegacyColorAdjust { .. }))
+            && enabled_effects
+                .iter()
+                .any(|e| !matches!(e.effect, EffectKind::LegacyColorAdjust { .. }))
+        {
+            return Err(unsupported(
+                "Mixed source-space legacy and canvas-space Classic effects require explicit conversion",
+            ));
+        }
         for entry in &visual.effects {
             effect(entry)?;
         }
@@ -376,7 +401,16 @@ pub fn prepare_scene_frame(
         })
         .collect();
     raw.fonts.retain(|font| text_fonts.contains(&font.id));
-    let blend = prepare_blend_frame(&raw)?;
+    let mut blend = prepare_blend_frame(&raw)?;
+    // Colour backgrounds can consume opaque VideoFrames directly on the GPU.
+    // CPU backdrop painting keeps a bounded canvas transfer; frozen narrow
+    // profiles retain their original four-surface contract.
+    blend.execution.execution.execution.media.decoder_surfaces =
+        if matches!(&background, SceneBackground::Color { .. }) {
+            1
+        } else {
+            2
+        };
     for title in blend.execution().execution().execution().texts() {
         if synthesis_ids.contains(&title.font.id) {
             let font = graph

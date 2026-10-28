@@ -402,3 +402,16 @@ it("loads the complete renderer capability on initial project open", async () =>
     expect(frameAvailability(f.controller.getSnapshot().scene!)).toBeNull();
   } finally {f.controller.dispose();}
 });
+
+it("uses host frame capability for legacy scene settings without rewriting the project", async () => {
+  const f=await setupFrame();
+  try {
+    const state=structuredClone(f.controller.getSnapshot().scene!);
+    state.head.project.settings={profile:"legacy_per_scene",formats:[{sequence_id:state.sequenceId,canvas_size:{width:3840,height:2160},fps:{numerator:25,denominator:1},background:{kind:"color",color:{encoding:"srgb",red:0,green:0,blue:0,alpha:1}}}]};
+    expect(frameAvailability(state)).toBeNull();
+    state.frameCapability!.frame.available=false;
+    state.frameCapability!.frame.unavailable_reason="VISUAL_RUNTIME_NOT_CONFIGURED";
+    expect(frameAvailability(state)).toBe("VISUAL_RUNTIME_NOT_CONFIGURED");
+    expect(state.head.project.settings.profile).toBe("legacy_per_scene");
+  } finally {f.controller.dispose();}
+});

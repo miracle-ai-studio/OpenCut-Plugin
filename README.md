@@ -82,6 +82,12 @@ node scripts/web.mjs stop
 
 Open the returned `web_url`; it binds to loopback on an available port and uses the same private workspace. Stopping an MCP chat does not stop a separately started Web service.
 
+The current source candidate (`0.5.0-beta.2`, not yet published) adds explicit
+workspace selection: `node scripts/install.mjs --database /absolute/path/workspace.sqlite`.
+Both MCP and Web use that database; `OPENCUT_PLUGIN_DATABASE` is an explicit
+environment override. The setup skill explains runtime installation when the
+marketplace plugin is installed before its native runtime.
+
 ## MCP and CLI capabilities
 
 The current shared registry declares **184 named operations in 12 logical domains**. Default MCP discovery groups operations into domain tools; the administrative `workspace` domain is not included in the compact default list. `--tool-surface legacy` exposes the existing named operation surface. Both resolve to the same Rust application operations and permission checks.
@@ -141,8 +147,11 @@ npm ci --prefix packages/sdk-ts
 npm ci --prefix apps/web
 npm ci --prefix packages/classic-audio-renderer
 npm ci --prefix packages/classic-visual-renderer
+npm ci --prefix packages/classic-source-art-renderer
 cargo build --locked --release -p opencut-cli
 npm run build --prefix apps/web
+# Source host assembly supplies the renderer package, Node and Chromium paths.
+node scripts/opencut.mjs --binary target/release/opencut --database /absolute/path/workspace.sqlite --json server --directory /absolute/path/server start --web-root apps/web/dist --listen 127.0.0.1:0
 ```
 
 See runtime configuration before starting a media service. A production Web build does not automatically update running services. Publishable binaries are built with remapped personal source paths; packaging checks the final archive rather than trusting the checkout alone.

@@ -20,7 +20,7 @@ pub struct TextFrameIdentity {
 pub struct PreparedTextFrame {
     identity: TextFrameIdentity,
     graph: SceneComposition,
-    media: PreparedVisualFrame,
+    pub(super) media: PreparedVisualFrame,
     texts: Vec<TextRasterPlan>,
     order: Vec<LayerOrder>,
 }
@@ -32,6 +32,15 @@ enum LayerOrder {
 }
 
 impl PreparedTextFrame {
+    /// Caption layout may change text, never the already-admitted media transfer.
+    pub fn reflow_text(&self, graph: &SceneComposition) -> Result<Self, CompositionError> {
+        let mut reflowed = prepare_text_frame(graph)?;
+        if reflowed.media.graph() != self.media.graph() {
+            return Err(invalid("Text reflow cannot change fixed media sources"));
+        }
+        reflowed.media.decoder_surfaces = self.media.decoder_surfaces;
+        Ok(reflowed)
+    }
     pub fn identity(&self) -> &TextFrameIdentity {
         &self.identity
     }

@@ -5,7 +5,7 @@ pub const CLASSIC_GRAPHIC_FRAME_PROFILE: &str = "classic-v31-gpu-normal-graphic-
 #[derive(Clone, Debug)]
 pub struct PreparedGraphicFrame {
     source_graph: SceneComposition,
-    execution: PreparedCaptionFrame,
+    pub(super) execution: PreparedCaptionFrame,
     graphics: Vec<GraphicLayerPlan>,
     order: Vec<String>,
 }

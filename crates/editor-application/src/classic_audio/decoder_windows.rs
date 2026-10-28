@@ -154,12 +154,12 @@ impl ClassicAudioSession<'_> {
             .ok_or_else(|| invalid("PCM admission requires observed primary facts"))?;
         if self.preview.is_some()
             || request.resource.kind != "audio"
-            || primary.codec != "pcm-s16"
+            || native_pcm_sample_bytes(&primary.codec).is_none()
             || !(1..=2).contains(&primary.channels)
             || primary.sample_rate != self.prepared.identity().format.sample_rate
         {
             return Err(invalid(
-                "Windowed PCM requires native-rate mono/stereo signed16 audio",
+                "Windowed PCM requires native-rate mono/stereo signed16 or float32 PCM audio",
             ));
         }
         if !self

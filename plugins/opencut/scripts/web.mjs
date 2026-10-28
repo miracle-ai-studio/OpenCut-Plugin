@@ -1,6 +1,6 @@
 import path from "node:path";
 import { spawnSync } from "node:child_process";
-import { readConfig, dataDirectory, runtimeEnvironment } from "./runtime.mjs";
+import { readConfig, dataDirectory, workspaceDatabase, runtimeEnvironment } from "./runtime.mjs";
 try {
   const action = process.argv[2] || "start";
   if (!["start", "status", "stop"].includes(action))
@@ -8,7 +8,7 @@ try {
   const config = readConfig();
   const args = [
     "--database",
-    path.join(dataDirectory(), "workspace.sqlite"),
+    workspaceDatabase(config),
     "--json",
     "server",
     "--directory",

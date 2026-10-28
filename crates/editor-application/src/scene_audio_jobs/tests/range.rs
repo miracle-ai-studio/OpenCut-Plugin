@@ -211,7 +211,10 @@ fn dense_fixed_scene_admission_counts_unique_resources_separately() {
         })
         .collect();
     let audio = prepare(&snapshot, "scene", 48000).unwrap();
-    let session = ClassicAudioSession::new(&audio, 256 * 1024 * 1024, 1024).unwrap();
+    // The range transport must still reject a budget below its minimum cache.
+    let under_budget = ClassicAudioSession::new(&audio, 256 * 1024 * 1024, 1024).unwrap();
+    assert!(under_budget.plan().is_err());
+    let session = ClassicAudioSession::new(&audio, 256 * 1024 * 1024, 32 * 1024 * 1024).unwrap();
     let plan = session.plan().unwrap();
     assert_eq!(plan["voices"].as_array().unwrap().len(), 100);
     assert_eq!(plan["resources"].as_array().unwrap().len(), 1);
@@ -233,7 +236,7 @@ fn dense_fixed_scene_admission_counts_unique_resources_separately() {
         *asset_id = format!("resource-{index}");
     }
     let audio = prepare(&snapshot, "scene", 48000).unwrap();
-    assert!(ClassicAudioSession::new(&audio, 256 * 1024 * 1024, 1024).is_err());
+    assert!(ClassicAudioSession::new(&audio, 256 * 1024 * 1024, 32 * 1024 * 1024).is_err());
 }
 
 #[test]
@@ -631,7 +634,9 @@ fn decoder_windows_preserves_global_taps_resample_phase_budget_and_live_authorit
             &mut resources,
         )
         .unwrap();
-    assert_eq!(reply["schemaVersion"], 1);
+    assert_eq!(reply["sourceSampleRate"], 44100);
+    assert_eq!(reply["targetSampleRate"], 48000);
+    assert_eq!(reply["maxChannels"], 2);
     assert_eq!(reply["mode"], "windowed");
     assert_eq!(
         reply["windows"].as_array().unwrap().len(),
@@ -850,7 +855,7 @@ fn pcm_window_probe_keeps_legacy_state_and_long_source_admission_fences() {
                 &mut resources
             )
             .unwrap()["mode"],
-        "legacy"
+        "whole"
     );
     // Declining the new path cannot leave a selected primary or admission that
     // changes the old Web Audio callback contract.
@@ -894,14 +899,14 @@ fn pcm_window_probe_keeps_legacy_state_and_long_source_admission_fences() {
         resource: session.resource("audible").unwrap(),
         ..request
     };
-    assert!(
-        session
-            .callback(
-                AudioCallback::AdmitContainer(request.clone()),
-                &mut resources
-            )
-            .is_err()
-    );
+    // Demuxed audio containers also use bounded windows. Exercise that
+    // admission separately so it cannot pre-populate the PCM probe below.
+    let mut container_session =
+        ClassicAudioSession::new(&audio, 256 * 1024 * 1024, 32 * 1024 * 1024).unwrap();
+    let container_reply = container_session
+        .callback(AudioCallback::AdmitContainer(request.clone()), &mut resources)
+        .unwrap();
+    assert_eq!(container_reply["mode"], "windowed");
     let reply = session
         .callback(
             AudioCallback::AdmitPcmAudioWindowed(request.clone()),
@@ -969,5 +974,70 @@ fn pcm_window_probe_keeps_legacy_state_and_long_source_admission_fences() {
             .unwrap_err()
             .code,
         "NOT_AUTHORIZED"
+    );
+}
+
+
+#[test]
+fn native_rate_float_pcm_reuses_bounded_windows_without_changing_asset_metadata() {
+    let mut fixed = snapshot();
+    fixed.project.assets[0].duration = Some(time(42, 1));
+    fixed.project.assets[0].version.size = 16_132_096;
+    fixed.project.assets[0].metadata.audio = AudioPresence::Unknown {};
+    let before = fixed.clone();
+    let audio = prepare(&fixed, "scene", 48000).unwrap();
+    let mut session =
+        ClassicAudioSession::new(&audio, 256 * 1024 * 1024, 32 * 1024 * 1024).unwrap();
+    let mut resources = Resources::default();
+    let request = DecodeAdmission {
+        resource: session.resource("audible").unwrap(),
+        primary: Some(ClassicAudioPrimarySelection {
+            track_id: 1,
+            codec: "pcm-f32".into(),
+            sample_rate: 48000,
+            channels: 2,
+        }),
+    };
+    let reply = session
+        .callback(
+            AudioCallback::AdmitPcmAudioWindowed(request.clone()),
+            &mut resources,
+        )
+        .unwrap();
+    assert_eq!(reply["mode"], "windowed");
+    assert_eq!(reply["admission"]["mode"], "windowed");
+    assert_eq!(reply["admission"]["maxChannels"], 2);
+    assert_eq!(fixed, before);
+    let unique = audio
+        .resources()
+        .map(|r| (r.asset_id.as_str(), r))
+        .collect::<std::collections::BTreeMap<_, _>>();
+    let mut evidence = ClassicAudioDecoderEvidence {
+        sources: unique
+            .values()
+            .map(|r| ClassicAudioDecoderSource {
+                resource: session.resource(&r.asset_id).unwrap(),
+                decoder: ClassicAudioDecoderReceipt {
+                    asset_id: r.asset_id.clone(),
+                    profile: "mediabunny-1.41.0-windowed-concatenate-offline-resample-v1".into(),
+                    sample_rate: 48000,
+                    frame_count: "2016000".into(),
+                    channels: 2,
+                    primary: request.primary.clone(),
+                },
+            })
+            .collect(),
+    };
+    assert!(validate_decoder_evidence(&audio, &evidence).is_ok());
+    // A float source has four bytes per channel sample; its proof cannot claim
+    // the larger frame extent that a signed16 interpretation would allow.
+    evidence.sources[0].decoder.frame_count = "2016513".into();
+    assert!(validate_decoder_evidence(&audio, &evidence).is_err());
+    let mut denied = request;
+    denied.primary.as_mut().unwrap().codec = "pcm-f64".into();
+    assert!(
+        session
+            .callback(AudioCallback::AdmitPcmAudioWindowed(denied), &mut resources)
+            .is_err()
     );
 }

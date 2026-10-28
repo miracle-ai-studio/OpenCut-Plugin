@@ -51,7 +51,7 @@ async function decodeVideo(track, AudioBufferSink, primary, context, host, admis
   } finally { node?.disconnect(); }
 }
 
-function nativeSigned16Wave(bytes, targetRate) {
+function nativePcmWave(bytes, targetRate) {
   if (bytes.length < 12 || bytes[0] !== 82 || bytes[1] !== 73 || bytes[2] !== 70 || bytes[3] !== 70
     || bytes[8] !== 87 || bytes[9] !== 65 || bytes[10] !== 86 || bytes[11] !== 69) return false;
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength), limit = Math.min(bytes.length, 65536);
@@ -61,9 +61,11 @@ function nativeSigned16Wave(bytes, targetRate) {
     if (view.getUint32(offset, true) === 0x20746d66) { // fmt
       if (size < 16 || offset + 24 > limit) return false;
       const channels = view.getUint16(offset + 10, true), rate = view.getUint32(offset + 12, true);
-      return view.getUint16(offset + 8, true) === 1 && channels >= 1 && channels <= 2 && rate === targetRate
-        && view.getUint16(offset + 22, true) === 16 && view.getUint16(offset + 20, true) === channels * 2
-        && view.getUint32(offset + 16, true) === rate * channels * 2;
+      const format = view.getUint16(offset + 8, true), bits = view.getUint16(offset + 22, true);
+      const bytesPerSample = format === 1 && bits === 16 ? 2 : format === 3 && bits === 32 ? 4 : 0;
+      return bytesPerSample !== 0 && channels >= 1 && channels <= 2 && rate === targetRate
+        && view.getUint16(offset + 20, true) === channels * bytesPerSample
+        && view.getUint32(offset + 16, true) === rate * channels * bytesPerSample;
     }
     offset += 8 + size + (size & 1);
   }
@@ -75,18 +77,18 @@ export async function decodeResource(resource, bytes, context, host, budget, sig
   const rangeInput = isVerifiedRangeSource(bytes);
   try {
     checkAbort(signal);
-    // Native-rate signed16 RIFF PCM can reuse
+    // Native-rate signed16/float32 RIFF PCM can reuse
     // observed container chunks without changing Web Audio resampling/codec
     // semantics for short sources or other standalone audio formats.
     const pcmCandidate = !rangeInput && resource.kind === "audio"
-      && nativeSigned16Wave(bytes, context.sampleRate);
+      && nativePcmWave(bytes, context.sampleRate);
     if (pcmCandidate) {
       const media = await import("mediabunny");
       input = new media.Input({ source: rangeInput ? bytes.source : new media.BlobSource(new Blob([bytes])), formats: media.ALL_FORMATS });
       track = await cancellable(input.getPrimaryAudioTrack(), host, signal);
       if (track) {
         const observed = capturePrimaryAudioTrack(track);
-        if (observed.codec === "pcm-s16" && observed.sampleRate === context.sampleRate && observed.channels <= 2) {
+        if (["pcm-s16", "pcm-f32"].includes(observed.codec) && observed.sampleRate === context.sampleRate && observed.channels <= 2) {
           const proposal = await cancellable(host.admitPcmAudioDecode(resource, observed), host, signal);
           if (!proposal || !["whole", "windowed"].includes(proposal.mode)
             || Object.keys(proposal).length !== (proposal.mode === "whole" ? 1 : 2)

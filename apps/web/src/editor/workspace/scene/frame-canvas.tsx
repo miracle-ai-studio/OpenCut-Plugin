@@ -335,7 +335,7 @@ export function FrameCanvas({
       >
         {live.phase === "loading" && (
           <span className="editor-preview-cache-status" role="status">
-            {t("Preparing smooth playback…")} {live.cacheTotal > 0 ? `${live.cacheCompleted}/${live.cacheTotal}` : ""}
+            {t(live.cacheTotal===0?"Checking playback cache…":live.cacheCompleted>=live.cacheTotal?"Resuming prepared playback…":"Preparing smooth playback…")} {live.cacheTotal > 0 ? `${live.cacheCompleted}/${live.cacheTotal}` : ""}
           </span>
         )}
         {(!live.pixels||!matchesTarget)&&!keepPreparationFrame&&!live.surfaceActive && !(live.phase === "idle" && image?.stamp === stamp) && (live.phase==="loading"||working) && (

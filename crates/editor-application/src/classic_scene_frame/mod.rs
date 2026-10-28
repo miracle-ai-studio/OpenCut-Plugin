@@ -101,10 +101,10 @@ pub(crate) fn scene_execution_policy(
         || prepared
             .stacks()
             .iter()
-            .any(|stack| stack.effects.iter().any(|effect| effect.enabled))
+            .any(|stack| stack.effects.iter().any(|effect| effect.enabled && matches!(effect.effect, opencut_contracts::scene::EffectKind::ClassicBlur { .. })))
         || prepared.steps().iter().any(|step| {
             matches!(step,
-            SceneStep::Effect { effects, .. } if effects.iter().any(|effect| effect.enabled))
+            SceneStep::Effect { effects, .. } if effects.iter().any(|effect| effect.enabled && matches!(effect.effect, opencut_contracts::scene::EffectKind::ClassicBlur { .. })))
         });
     let cpu = pixels
         .checked_mul(
@@ -114,13 +114,11 @@ pub(crate) fn scene_execution_policy(
                 .ok_or_else(budget)?,
         )
         .ok_or_else(budget)?;
+    // The child visual budget already reserves eight full-canvas GPU textures
+    // plus readback (three targets, two effect ping/pong targets, backdrop and
+    // preview/capture). Charge only additional mask storage here, once.
     let gpu = pixels
-        .checked_mul(
-            masks
-                .checked_mul(48)
-                .and_then(|n| n.checked_add(32))
-                .ok_or_else(budget)?,
-        )
+        .checked_mul(masks.checked_mul(48).ok_or_else(budget)?)
         .ok_or_else(budget)?;
     let mut result = policy.clone();
     result.max_encoded_bytes = result

@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import {encodeRgbaHex} from "../src/validation.mjs";
 import {executeVideoFrame,videoBrowserHooks} from "../host/video-browser.mjs";
 import {openVideoRgbaTransport} from "../host/video-rgba.mjs";
 import {validateBlendBegin} from "../host/protocol.mjs";
@@ -63,22 +64,23 @@ test("abort closes the owned upload listener and prevents further chunks",async 
   await assert.rejects(gate.upload(new Uint8Array(gate.size())));assert.equal(gate.packets.length,1);
 });
 function install(t,render,fetcher) {
-  const keys=["__opencutVisualModule","__opencutVideoBytes","__opencutVideoDecoders","__opencutVideoFonts","fetch"];
+  const keys=["__opencutVisualModule","__opencutVideoBytes","__opencutVideoDecoders","__opencutVideoFonts","__opencutVisualRgbaBatch","fetch"];
   const previous=keys.map(key=>[key,Object.getOwnPropertyDescriptor(globalThis,key)]);
   t.after(()=>{for(const [key,descriptor] of previous)if(descriptor)Object.defineProperty(globalThis,key,descriptor);else delete globalThis[key];});
-  globalThis.__opencutVisualModule={VisualDecoderCache:class{},renderClassicTextFrame:render};globalThis.fetch=fetcher;
+  globalThis.__opencutVisualModule={encodeRgbaHex,VisualDecoderCache:class{},renderClassicTextFrame:render};globalThis.__opencutVisualRgbaBatch=async packets=>{assert(packets.length<=16);for(const packet of packets)await fetcher(packet);};globalThis.fetch=async()=>assert.fail("RGBA must not allocate a full-frame HTTP body");
 }
 test("browser owns exact copied bytes from a reused renderer buffer and waits for the upload acknowledgement",async t=>{
   let unblock,arrived,finished=false;const blocked=new Promise(r=>unblock=r),received=new Promise(r=>arrived=r);const expected=Buffer.alloc(9*65536);
-  install(t,async(_plan,host)=>{assert.equal(host.outputBufferBytes,expected.length*4);const bytes=new Uint8Array(65536);
+  install(t,async(_plan,host)=>{assert.equal(host.outputBufferBytes,16*65536*16);const bytes=new Uint8Array(65536);
     for(let i=0;i<9;i++){for(let j=0;j<bytes.length;j++)bytes[j]=expected[i*65536+j]=(i*17+j)%256;await host.rgba(i*bytes.length,bytes);bytes.fill(255);}return {complete:true};},
-    async(_url,request)=>{assert.deepEqual(Buffer.from(await request.body.arrayBuffer()),expected);arrived();await blocked;return {ok:true};});
+    async packet=>{const offset=Number(packet.offsetBytes),bytes=Buffer.from(packet.bytesHex,"hex");assert.deepEqual(bytes,expected.subarray(offset,offset+bytes.length));if(offset+bytes.length===expected.length){arrived();await blocked;}});
   const pending=executeVideoFrame({plan:{identity:{width:256,height:576}},admission:{},outputUrl:"http://127.0.0.1/fixed"}).then(v=>{finished=true;return v;});
   await received;assert.equal(finished,false);unblock();assert.deepEqual(await pending,{ok:true,receipt:{complete:true}});
 });
 test("failed upload or incomplete output never returns a successful frame receipt",async t=>{
-  install(t,async(_plan,host)=>{await host.rgba(0,Uint8Array.of(0,1,2,255));return {complete:true};},async()=>({ok:false,json:async()=>({code:"RESOURCE_SOURCE_CLOSED"})}));
+  install(t,async(_plan,host)=>{await host.rgba(0,Uint8Array.of(0,1,2,255));return {complete:true};},async()=>{throw Object.assign(Error("Retired"),{code:"RESOURCE_SOURCE_CLOSED"});});
   assert.deepEqual(await executeVideoFrame({plan:{identity:{width:1,height:1}},admission:{},outputUrl:"http://127.0.0.1/fixed"}),{ok:false,error:{code:"RESOURCE_SOURCE_CLOSED"}});
+  globalThis.__opencutVisualRgbaBatch=async()=>{};
   assert.deepEqual(await executeVideoFrame({plan:{identity:{width:2,height:1}},admission:{},outputUrl:"http://127.0.0.1/fixed"}),{ok:false,error:{code:"INVALID_OUTPUT_RGBA"}});
 });
 

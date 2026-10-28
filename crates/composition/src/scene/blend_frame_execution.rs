@@ -8,7 +8,7 @@ pub const CLASSIC_BLEND_FRAME_PROFILE: &str = "classic-v31-gpu-blend-frame-v1";
 #[derive(Clone, Debug)]
 pub struct PreparedBlendFrame {
     source_graph: SceneComposition,
-    execution: PreparedGraphicFrame,
+    pub(super) execution: PreparedGraphicFrame,
     blends: Vec<LayerBlend>,
 }
 impl PreparedBlendFrame {

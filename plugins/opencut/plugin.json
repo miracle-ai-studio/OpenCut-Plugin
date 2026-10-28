@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "opencut",
-  "version": "0.5.0-beta.1",
+  "version": "0.5.0-beta.2",
   "description": "Local video editing through shared OpenCut CLI, MCP and Web application services.",
   "author": {
     "name": "miracle-ai-studio"
@@ -42,7 +42,8 @@
         "logo": "./assets/icon.svg",
         "composerIcon": "./assets/icon.svg",
         "defaultPrompt": "Inspect my OpenCut projects and available capabilities before making changes."
-      }
+      },
+      "onboardingSkill": "./skills/setup/SKILL.md"
     }
   }
 }

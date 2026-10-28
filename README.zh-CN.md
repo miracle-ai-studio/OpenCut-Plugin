@@ -82,6 +82,11 @@ node scripts/web.mjs stop
 
 打开返回的 `web_url`。服务绑定本机回环地址上的可用端口，与插件共用独立工作区；关闭 MCP 会话不会停止另行启动的 Web 服务。
 
+当前源码候选版（`0.5.0-beta.2`，尚未发布）增加显式工作区选择：
+`node scripts/install.mjs --database /absolute/path/workspace.sqlite`。
+MCP 和 Web 共用选中的数据库；`OPENCUT_PLUGIN_DATABASE` 可显式覆盖它。
+安装引导 Skill 会说明仅安装 marketplace 插件后，还需完成原生运行时安装。
+
 ## MCP / CLI 当前能力
 
 同一份 Rust 注册表声明 **184 个具名操作、12 个逻辑领域**。MCP 默认按领域聚合工具；管理用 `workspace` 领域不进入默认紧凑列表。`--tool-surface legacy` 可以展开已有具名操作，业务实现和权限检查仍是同一套。
@@ -141,8 +146,11 @@ npm ci --prefix packages/sdk-ts
 npm ci --prefix apps/web
 npm ci --prefix packages/classic-audio-renderer
 npm ci --prefix packages/classic-visual-renderer
+npm ci --prefix packages/classic-source-art-renderer
 cargo build --locked --release -p opencut-cli
 npm run build --prefix apps/web
+# 源码启动器负责配置渲染包、Node 和 Chromium 路径。
+node scripts/opencut.mjs --binary target/release/opencut --database /absolute/path/workspace.sqlite --json server --directory /absolute/path/server start --web-root apps/web/dist --listen 127.0.0.1:0
 ```
 
 媒体服务启动前按运行文档配置依赖。构建网页不会自动更新已运行的服务。用于公开分发的程序会映射个人编译目录，打包时检查最终压缩包，而非只检查源码仓库。

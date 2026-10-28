@@ -34,7 +34,7 @@ const stopSurface=(clear:boolean)=>{
 const errorValue = (error: unknown): PictureError => {
   const value: PictureError = { name: error instanceof Error ? error.name : "Error",
     message: error instanceof Error ? error.message : "Picture preparation failed." };
-  if (error instanceof Error && "code" in error) value.code = String(error.code);
+  if (error instanceof Error && "code" in error) {value.code = String(error.code);value.message=`${value.code}: ${value.message}`;}
   if (error instanceof Error && "previewMetrics" in error && typeof error.previewMetrics === "object")
     value.metrics = error.previewMetrics as object;
   if (error instanceof OpenCutApiError) value.api = { details: error.details, status: error.status,
@@ -105,7 +105,7 @@ scope.onmessage = ({ data }) => {
   }
   if(data.kind==="suspend") {
     preparedFor=null;
-    void stopSurface(false).then(()=>cache.suspend()).then(()=>{
+    void stopSurface(false).then(()=>cache.park()).then(()=>{
       renderer!.close();renderer=new VisualPreviewRenderer();
       if(alive)scope.postMessage({token:token!,kind:"suspended",id:data.id});
     }).catch(error=>{if(alive)scope.postMessage({token:token!,kind:"error",id:data.id,error:errorValue(error)});})

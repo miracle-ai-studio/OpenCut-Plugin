@@ -6,6 +6,7 @@ import jfaInitSource from "/renderer/vendor/classic-v31/jfa_init.wgsl";
 import jfaStepSource from "/renderer/vendor/classic-v31/jfa_step.wgsl";
 import blurSource from "/renderer/vendor/classic-v31/gaussian_blur.wgsl";
 import { sceneFrameSources, rasterizeSceneMask, rasterizeSceneStroke, releaseSceneSources } from "./scene-source.mjs";
+import { legacyColorPasses, legacyColorShader } from "./legacy-color.mjs";
 import { sceneEffectPasses } from "./scene-effects.mjs";
 import jfaDistanceSource from "/renderer/vendor/classic-v31/jfa_distance.wgsl";
 import { byteBudget, checkAbort, finite, integer, reject } from "./validation.mjs";
@@ -217,6 +218,25 @@ export async function renderGpuFrame(frame, sources, admission, emit, signal, re
       }
       return current;
     };
+    // Frozen legacy grades precede placement/opacity, as in the original
+    // native filter graph. Reuse bounded ping/pong storage across equal sizes.
+    const colorTargets=new Map();
+    const applyLegacyColor=(input,effects,videoColorSpace,rotation=0,videoTransfer=0)=>{
+      if(![0,90,180,270].includes(rotation))reject('UNSUPPORTED_RENDER_FEATURE','Unsupported decoded video orientation');
+      const passes=legacyColorPasses(effects,videoColorSpace);
+      if(!passes.length&&!rotation&&!videoTransfer)return input;
+      if(!passes.length)passes.push(new Int32Array([4096,0,4096,0,0,0,0,1]));
+      passes[0][5]=videoTransfer;passes[0][6]=rotation;
+      realm.legacyColorPipeline??=realm.pipelines.pipeline(device.createShaderModule({code:legacyColorShader}));
+      const pipeline=realm.legacyColorPipeline,w=rotation%180?input.height:input.width,h=rotation%180?input.width:input.height,key=`${w}:${h}`;
+      let targets=colorTargets.get(key);if(!targets){targets=[texture(w,h)];colorTargets.set(key,targets);}
+      let current=input;
+      for(const pass of passes){const output=current===targets[0]?(targets[1]??=texture(w,h)):targets[0];
+        const binding=device.createBindGroup({layout:pipeline.getBindGroupLayout(0),entries:[{binding:0,resource:current.createView()}]});
+        maskPass(pipeline,output,[binding,uniforms(pipeline,1,pass)]);current=output;
+      }
+      return current;
+    };
     const fullQuad = {centerX:width/2,centerY:height/2,width,height,rotationRadians:0,opacity:1,flipX:false,flipY:false};
     if (sceneState?.backdrop) {
       const backdrop = texture(width,height);
@@ -250,14 +270,15 @@ export async function renderGpuFrame(frame, sources, admission, emit, signal, re
         tex = cache.sources.get(source)?.texture;
         if (!tex) {
           const retained = isRetainedGraphicSource(source);
-          tex = texture(source.width, source.height, retained);
+          const rawWidth=source.canvas.displayWidth??source.width,rawHeight=source.canvas.displayHeight??source.height;
+          tex = texture(rawWidth, rawHeight, retained);
           if (retained) cache.sources.set(source, { texture: tex, width: source.width, height: source.height });
-          device.queue.copyExternalImageToTexture({ source: source.canvas, flipY: false }, { texture: tex, colorSpace: "srgb", premultipliedAlpha: false }, [source.width, source.height]);
+          device.queue.copyExternalImageToTexture({ source: source.canvas, flipY: false }, { texture: tex, colorSpace: "srgb", premultipliedAlpha: false }, [rawWidth, rawHeight]);
         }
         uploaded.set(source, tex);
       }
       const stack = frame.scene?.layers[index]?.stack;
-      items.push({ elementId:layer.elementId, texture: tex, quad, effectQuad:frame.scene?.layers[index]?.quad, modeIndex: modeIndices[index], masks:sceneState?.masks.get(layer.elementId),effects:stack?.effects??[],maskSource:sceneState?null:maskSources.get(layer.elementId) });
+      items.push({ elementId:layer.elementId, videoColorSpace:source.videoColorSpace, videoRotation:source.videoRotation??0, videoTransfer:typeof VideoFrame!=='undefined'&&source.canvas instanceof VideoFrame&&source.canvas.colorSpace.primaries==='bt709'&&source.canvas.colorSpace.transfer==='bt709'?1:0, texture: tex, quad, effectQuad:frame.scene?.layers[index]?.quad, modeIndex: modeIndices[index], masks:sceneState?.masks.get(layer.elementId),effects:stack?.effects??[],maskSource:sceneState?null:maskSources.get(layer.elementId) });
     }
     if (sceneState) {
       const byId = new Map(items.filter(item=>item.elementId).map(item=>[item.elementId,item]));
@@ -271,16 +292,17 @@ export async function renderGpuFrame(frame, sources, admission, emit, signal, re
     for (const item of items) {
       checkAbort(signal);
       if (item.sceneEffect) {
-        const filtered = applyEffects(scene,item.sceneEffect);
+        const filtered = applyEffects(applyLegacyColor(scene,item.sceneEffect),item.sceneEffect);
         if (filtered !== scene) {encoder.copyTextureToTexture({texture:filtered},{texture:nextScene},[width,height]);[scene,nextScene]=[nextScene,scene];}
         continue;
       }
       // Resolve every distance texture before storing intermediate foreground
       // in shared mask scratch; a later JFA must never overwrite that foreground.
       const masks = (item.masks??(item.maskSource?[item.maskSource]:[])).map(source=>({texture:maskTexture(source),inverted:source.inverted===true}));
+      const gradedSource=applyLegacyColor(item.texture,item.effects,item.videoColorSpace,item.videoRotation,item.videoTransfer);
       const pass = encoder.beginRenderPass({ colorAttachments: [{ view: target.createView(), loadOp: "clear", storeOp: "store", clearValue: { r: 0, g: 0, b: 0, a: 0 } }] });
       pass.setPipeline(layerPipeline); pass.setVertexBuffer(0, vertices);
-      pass.setBindGroup(0, group(layerPipeline, 0, item.texture)); pass.setBindGroup(1, uniforms(layerPipeline, 1, uniformBytes(item.quad, frame.identity)));
+      pass.setBindGroup(0, group(layerPipeline, 0, gradedSource)); pass.setBindGroup(1, uniforms(layerPipeline, 1, uniformBytes(item.quad, frame.identity)));
       pass.draw(6); pass.end();
       let foreground = applyEffects(target,item.effects??[],item.effectQuad);
       for (const mask of masks) {

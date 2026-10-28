@@ -10,8 +10,6 @@ const message = (error: unknown) =>
   error instanceof Error ? error.message : String(error);
 
 export function frameAvailability(state: SessionState) {
-  if ((state.historical ?? state.head).project.settings.profile !== "classic_global")
-    return "Scene frames require Classic scene settings.";
   const capability = state.frameCapability;
   if (!capability) return state.frameCapabilityError ?? "Scene frame availability is being checked.";
   return capability.frame.available ? null : capability.frame.unavailable_reason ?? "Scene frames are unavailable on this service.";

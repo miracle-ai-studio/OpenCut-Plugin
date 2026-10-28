@@ -13499,6 +13499,12 @@ export namespace OpencutVisualPreviewFrameOutput {
   width: number;
 }
   export interface VisualDecodeAdmission {
+  /**
+   * Native-admitted working surfaces: direct video (1), canvas transfer (2),
+   * or the frozen four-surface decoder (4).
+   * Missing values retain the frozen four-surface decoder contract.
+   */
+  decoderSurfaces?: number;
   maxDecodedBytes: string;
   maxHeight: number;
   maxPixels: string;
@@ -60412,6 +60418,12 @@ export namespace OpencutVisualPreviewEditDraftFrameOutput {
   width: number;
 }
   export interface VisualDecodeAdmission {
+  /**
+   * Native-admitted working surfaces: direct video (1), canvas transfer (2),
+   * or the frozen four-surface decoder (4).
+   * Missing values retain the frozen four-surface decoder contract.
+   */
+  decoderSurfaces?: number;
   maxDecodedBytes: string;
   maxHeight: number;
   maxPixels: string;

@@ -88,7 +88,7 @@ export function AudioPreviewControls({ compact = false }: { compact?: boolean } 
     </div></details>
     <span ref={diagnostic} className="workbench-transport-status" role="status" data-playback-error={state.error??""} data-buffered-frames={state.session?.buffered_frames} data-produced-through-sample={state.session?.produced_through_sample} data-consumed-frames={state.session?.consumed_frames} data-output-frames={state.session?.output?.frames} data-output-clock-source={state.session?.output?.source} data-underflow-events={state.deviceUnderflowEvents} data-underflow-frames={state.deviceUnderflowFrames}>{t(status)}</span>
     {state.phase === "unconfirmed" && <Button onClick={() => run(() => preview.retry())}>{t("Retry original audio session")}</Button>}
-    {state.error && <span className="workbench-play-error" role="alert">{friendlyError(state.error)}</span>}
+    {state.error && <span className="workbench-play-error" role="alert" data-audio-error={state.error}>{friendlyError(state.error)}</span>}
     {state.pictureError && <span className="workbench-play-error" role="alert" data-picture-error={state.pictureError}>{friendlyError(state.pictureError)}</span>}
     {!capability?.available && capability?.unavailable_reason && <span className="workbench-play-error" role="status">{t(capability.unavailable_reason)}</span>}
   </div>;

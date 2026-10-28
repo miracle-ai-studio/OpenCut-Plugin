@@ -184,3 +184,20 @@ it("does not extend a native manifest for an already cancelled frame consumer",a
  await expect(f.cache.frame(time(6),abort.signal)).rejects.toMatchObject({name:"AbortError"});
  expect(f.call.mock.calls.filter(([name])=>name==="opencut_visual_preview_cache_prepare")).toHaveLength(before);await f.cache.close();
 });
+it("reauthorizes an unchanged replay without discarding warm decoders or downloading the same blobs",async()=>{
+ const f=await fixture(),signal=new AbortController().signal;
+ await f.cache.prepare(f.sdk,session,signal,f.progress);
+ const downloads=f.downloadArtifact.mock.calls.length,closes=calls.close.mock.calls.length;
+ await f.cache.park();
+ await f.cache.prepare(f.sdk,{...session,generation:session.generation+1},signal,f.progress);
+ expect(calls.close).toHaveBeenCalledTimes(closes);
+ expect(f.downloadArtifact).toHaveBeenCalledTimes(downloads);
+ expect(f.cache.hasFrame(time(0))).toBe(true);
+ await f.cache.close();
+});
+it("releases parked decoders after the bounded idle grace period",async()=>{
+ const f=await fixture();await f.cache.prepare(f.sdk,session,new AbortController().signal,f.progress);
+ vi.useFakeTimers();const closes=calls.close.mock.calls.length;
+ await f.cache.park();await vi.advanceTimersByTimeAsync(29999);expect(calls.close).toHaveBeenCalledTimes(closes);
+ await vi.advanceTimersByTimeAsync(1);expect(calls.close).toHaveBeenCalledTimes(closes+1);await f.cache.close();
+});

@@ -12,6 +12,12 @@ export const dataDirectory = () =>
     process.env.OPENCUT_PLUGIN_DATA_DIR ||
       path.join(os.homedir(), ".opencut-plugin"),
   );
+export function workspaceDatabase(config={}) {
+  const selected=process.env.OPENCUT_PLUGIN_DATABASE??config.database;
+  if(selected!==undefined && (typeof selected!=="string" || !path.isAbsolute(selected)))
+    throw new Error("OPENCUT_PLUGIN_DATABASE / database must be an absolute SQLite file path");
+  return selected??path.join(dataDirectory(),"workspace.sqlite");
+}
 export function readConfig() {
   const file = path.join(dataDirectory(), "install.json");
   if (!fs.existsSync(file))
@@ -65,12 +71,16 @@ export async function runtimeEnvironment(root) {
     throw new Error(
       `This runtime targets ${manifest.target}; current system is ${process.platform}/${process.arch}`,
     );
-  const [major, minor] = process.versions.node.split(".").map(Number);
-  if (major < 22 || (major === 22 && minor < 12))
-    throw new Error("Node.js 22.12+ is required");
   const binary = path.join(root, "bin/opencut");
   if (digest(binary) !== manifest.binary_sha256)
     throw new Error("OpenCut executable identity differs");
+  return rendererEnvironment(binary,path.join(root,"bin/libexec"));
+}
+// Host assembly shared by the verified installed runtime and explicit source CLI.
+export async function rendererEnvironment(binary,libexec) {
+  const [major, minor] = process.versions.node.split(".").map(Number);
+  if (major < 22 || (major === 22 && minor < 12))
+    throw new Error("Node.js 22.12+ is required");
   for (const executable of ["ffmpeg", "ffprobe"]) {
     const result = spawnSync(executable, ["-version"], {
       encoding: "utf8",
@@ -81,7 +91,7 @@ export async function runtimeEnvironment(root) {
         `${executable} is unavailable; install FFmpeg and expose it on PATH`,
       );
   }
-  const libexec = path.join(root, "bin/libexec");
+
   const { chromium } = await import(
     pathToFileURL(
       path.join(

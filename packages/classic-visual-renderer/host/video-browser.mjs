@@ -74,6 +74,10 @@ export async function configureVideoPageCallbacks(realm) {
     realm.videoCallback=(op,args)=>invoke("__opencutVisualCallback",[op,args]);
     realm.videoReadResource=(transferId,offset,count)=>invoke("__opencutVisualCallback",["readVerifiedBytes",{transferId,offset:String(offset),count}]);
     await realm.page.exposeFunction("__opencutVisualCallback",(...args)=>invoke("__opencutVisualCallback",args));
+    await realm.page.exposeFunction("__opencutVisualRgbaBatch",async packets=>{
+      if(!Array.isArray(packets)||packets.length<1||packets.length>16)reject("INVALID_OUTPUT_RGBA","Invalid bounded RGBA batch");
+      for(const packet of packets)await invoke("__opencutVisualRgba",[packet]);
+    });
     return invoke;
 }
 export const videoBrowserHooks={...browserHooks,loopbackTransport:true,
@@ -82,7 +86,6 @@ export const videoBrowserHooks={...browserHooks,loopbackTransport:true,
     realm.rgbaTransport=await openVideoRgbaTransport(realm,
       (packet,encoded)=>encoded?realm.writer.send({...packet,type:"encoded"}):invoke("__opencutVisualRgba",[packet]),"http://127.0.0.1:49199");
     const endpoint=realm.rgbaTransport.endpoint;
-    realm.page.on("request",request=>{if(request.url().startsWith(endpoint))realm.uploadPostDataBytes=request.postDataBuffer()?.length??0;});
     // Only this fresh capability may leave the captured module registry.
     // All other HTTP/WebSocket requests retain the existing deny-by-default routes.
     realm.fixedModules.csp=realm.fixedModules.csp.replace("connect-src 'none'",`connect-src ${endpoint}/`);
@@ -91,7 +94,7 @@ export const videoBrowserHooks={...browserHooks,loopbackTransport:true,
     // Block all other URLs in Chromium itself; only module requests need the
     // JavaScript route; encoded output crosses this capability once per window.
     const network=await realm.context.newCDPSession(realm.page);
-    await network.send("Network.enable");
+    await network.send("Network.enable",{maxPostDataSize:0});
     await network.send("Network.setBlockedURLs",{urls:["*"],urlPatterns:[
       {urlPattern:`${ORIGIN}/*`,block:false},{urlPattern:`${endpoint}/*`,block:false}]});
     await realm.context.unroute("**/*");
@@ -132,13 +135,14 @@ export async function executeVideoFrame({plan,admission,outputUrl,resourceUrl,ca
     const expected=plan.identity.width*plan.identity.height*4;
     const timings={};let callbackMs=0;
     const video=canvasEncoding?(globalThis.__opencutCanvasVideo??=await module.createCanvasVideo(plan.identity,canvasEncoding)):null;
-    const chunks=[];let offset=0;
+    let offset=0,batch=[];
+    const flush=async()=>{if(batch.length){const packets=batch;batch=[];await globalThis.__opencutVisualRgbaBatch(packets);}};
     const callback=resourceUrl?async(op,args)=>{
       const response=await fetch(`${resourceUrl.replace(/\/resource\/[0-9]+$/,"/callback")}`,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({op,args})});
       const result=await response.json();if(!response.ok)throw Object.assign(Error("Fixed callback rejected"),{code:result.code});return result;
     }:globalThis.__opencutVisualCallback;
     const host={admission,rangePrefetch:false,requireResolveCached:true,rangeCacheLimit:512*1024,
-      ...(video?{accountOutputBytes:reserve=>video.account(reserve),completeOutput:()=>video.add(plan.identity,frameIndex)}:{outputBufferBytes:expected*4}),
+      ...(video?{accountOutputBytes:reserve=>video.account(reserve),completeOutput:()=>video.add(plan.identity,frameIndex)}:{outputBufferBytes:16*65536*16}),
       ...(video?{surface:video.canvas}:{}),
       ...(resourceUrl?{readVerifiedResource:async(transferId)=>{
         const response=await fetch(`${resourceUrl}/${encodeURIComponent(transferId)}`);
@@ -148,14 +152,16 @@ export async function executeVideoFrame({plan,admission,outputUrl,resourceUrl,ca
       observeExecution:value=>Object.assign(timings,value),callback:async(op,args)=>{const start=performance.now();try{return await callback(op,args);}finally{callbackMs+=performance.now()-start;}},rgba:async(at,bytes)=>{
         if(at!==offset||bytes.length<1||bytes.length>65536||bytes.length%4||bytes.length>expected-offset)
           throw Object.assign(Error("Invalid bounded RGBA output"),{code:"INVALID_OUTPUT_RGBA"});
-        chunks.push(bytes.slice());offset+=bytes.length;
+        // Reuse the original bounded native handler. Each acknowledged 64KiB
+        // chunk retires before the GPU reuses its scratch buffer. A full-frame
+        // POST/Blob also duplicates its body through CDP network observation.
+        batch.push({offsetBytes:String(at),bytesHex:module.encodeRgbaHex(bytes)});offset+=bytes.length;
+        if(batch.length===16)await flush();
       }};
     const receipt=await render(plan,host,globalThis.__opencutVisualGpu,undefined,globalThis.__opencutVideoBytes,globalThis.__opencutVideoDecoders,globalThis.__opencutVideoFonts);
     if(video){return {ok:true,receipt,...(profileTimings?{timings:{...timings,callbackMs}}:{})};}
     if(offset!==expected)throw Object.assign(Error("Incomplete RGBA output"),{code:"INVALID_OUTPUT_RGBA"});
-    const uploadStarted=performance.now();
-    const response=await fetch(outputUrl,{method:"POST",headers:{"Content-Type":"application/octet-stream"},body:new Blob(chunks)});
-    if(!response.ok){const error=await response.json();throw Object.assign(Error("RGBA upload was rejected"),{code:error.code});}
-    return {ok:true,receipt,...(profileTimings?{timings:{...timings,callbackMs,uploadRoundtripMs:performance.now()-uploadStarted}}:{})};
+    await flush();
+    return {ok:true,receipt,...(profileTimings?{timings:{...timings,callbackMs}}:{})};
   } catch(error) {return {ok:false,error:{code:error.code??"VISUAL_BROWSER_EXECUTION_FAILED"},...(profileTimings&&error.code==="VISUAL_BUDGET_EXCEEDED"?{timings:{admissionError:error.message}}:{})};}
 }

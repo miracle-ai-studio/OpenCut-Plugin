@@ -17,10 +17,11 @@ class Input {
   dispose() { this.disposed = true; this.source.dispose(); }
 }
 class CanvasSink {
+  constructor(_track,options={}){this.compact=options.poolSize===1?{width:4,height:2}:null;}
   frames = structuredClone(values);
   async getCanvas(timestamp) { assert.equal(timestamp, Infinity); return this.frames.at(-1); }
   canvases(start) {
-    const frames = this.frames;
+    const frames = this.frames.map(frame=>this.compact?{...frame,canvas:this.compact}:frame);
     let index = values.findIndex(v => v.timestamp + v.duration > start);
     if (index < 0) index = values.length;
     const iterator = { start, returned: false, next: async () => ({ value: frames[index++], done: index > frames.length }),
@@ -28,7 +29,11 @@ class CanvasSink {
     iterators.push(iterator); return iterator;
   }
 }
-mock.module("mediabunny", { namedExports: { Input, CanvasSink, StreamSource: class { constructor(options) { this.options = options; } dispose() { this.options.dispose(); } }, ALL_FORMATS: [] } });
+class VideoSampleSink {
+ samples(start){const iterator=new CanvasSink({},{}).canvases(start);return {async *[Symbol.asyncIterator](){for(;;){const item=await iterator.next();if(item.done)return;const value=item.value;yield {timestamp:value.timestamp,duration:value.duration,displayWidth:4,displayHeight:2,rotation:0,toVideoFrame:()=>({displayWidth:4,displayHeight:2,close:mock.fn()}),close:mock.fn()};}}};}
+ async getSample(time){const value=[...values].reverse().find(v=>v.timestamp<=time);return value?{timestamp:value.timestamp,duration:value.duration,displayWidth:4,displayHeight:2,rotation:0,toVideoFrame:()=>({displayWidth:4,displayHeight:2,close:mock.fn()}),close:mock.fn()}:null;}
+}
+mock.module("mediabunny", { namedExports: { Input, CanvasSink, VideoSampleSink, StreamSource: class { constructor(options) { this.options = options; } dispose() { this.options.dispose(); } }, ALL_FORMATS: [] } });
 mock.module("../src/gpu.mjs", { namedExports: {
   openGpuRealm: async () => ({}),
     clearGpuFrameCaches: clearGraphicSourceCache,
@@ -42,7 +47,7 @@ globalThis.OffscreenCanvas = class {
   constructor(width, height) { this.width = width; this.height = height; }
   getContext() { return { drawImage() {} }; }
 };
-const { VisualDecoderCache, decodeImage } = await import("../src/decoder.mjs");
+const { VisualDecoderCache, decodeImage, decodeVideo } = await import("../src/decoder.mjs");
 const { openVerifiedRangeSource } = await import("@opencut/classic-audio-renderer/verified-range-source");
 const resource = { assetId: "asset", contentHash: "a".repeat(64), size: "1", kind: "video" };
 const openSource = async cache => {
@@ -305,4 +310,36 @@ test("metadata preparation reserves exact fixed sink geometry without decoding, 
  assert.equal(iterators.length,before,"metadata preparation must not materialize a decoder canvas");
  await assert.rejects(cache.prepare("verified-actual",source,{...allowance,maxPixels:"7",maxDecodedBytes:"112"},signal),e=>e.code==="VISUAL_BUDGET_EXCEEDED");
  assert.equal(cache.retainedBytes(),0);assert.equal(opened.at(-1).disposed,true);await cache.close();
+});
+
+test("scene two-surface admission keeps a single borrowed canvas pool and preserves seek clocks",async()=>{
+ const cache=new VisualDecoderCache(),source=await openSource(cache),permit={...admission,decoderSurfaces:2,maxDecodedBytes:"64"};
+ try {
+  assert.equal(await cache.prepare("compact",source,permit,signal),64);
+  const first=await cache.decode("compact",source,decode(0),permit,signal);
+  assert.equal(first.borrowed,true);assert.equal(first.actualTimestampSeconds,0);
+  const next=await cache.decode("compact",source,decode(.5),permit,signal);
+  assert.equal(next.actualTimestampSeconds,.5);assert.equal(next.canvas,first.canvas);
+  assert.equal(cache.retainedBytes(),32);
+  await assert.rejects(cache.prepare("compact",source,{...admission,maxDecodedBytes:"128"},signal),{code:"INVALID_VISUAL_PLAN"});
+ } finally {await cache.close();}
+});
+test("direct scene video retains one frame, closes expired frames and seeks without a CPU canvas",async()=>{
+ const cache=new VisualDecoderCache(),source=await openSource(cache),permit={...admission,decoderSurfaces:1,maxDecodedBytes:"32"};
+ try{
+  const before=iterators.length;
+  assert.equal(await cache.prepare("direct",source,permit,signal),32);
+  const a=await cache.decode("direct",source,decode(0),permit,signal);assert.equal(a.width,4);assert.equal(a.videoRotation,0);
+  const b=await cache.decode("direct",source,decode(.5),permit,signal);assert.equal(b.actualTimestampSeconds,.5);assert.equal(a.canvas.close.mock.callCount(),1);
+  assert.equal(cache.retainedBytes(),32);assert.equal(cache.entries.get("direct").canvases.size,1);
+  assert.equal(iterators.length,before+1,"Monotonic direct frames reuse one decoder iterator");
+  const back=await cache.decode("direct",source,decode(.1),permit,signal);assert.equal(back.actualTimestampSeconds,0);
+  assert.equal(iterators.length,before+2,"Backward seek replaces the prior decoder iterator");
+  await cache.close();assert.equal(back.canvas.close.mock.callCount(),1);assert.equal(b.canvas.close.mock.callCount(),1);
+ }finally{await cache.close();}
+});
+test("one-shot direct video transfers the selected frame after disposing its input",async()=>{
+ const cache=new VisualDecoderCache(),source=await openSource(cache);
+ const result=await decodeVideo(source,decode(0),{...admission,decoderSurfaces:1,maxDecodedBytes:"32"},signal);
+ assert.equal(result.width,4);assert.equal(result.canvas.close.mock.callCount(),0);result.canvas.close();await cache.close();
 });

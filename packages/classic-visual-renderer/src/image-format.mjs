@@ -44,7 +44,12 @@ export function staticImageHeader(bytes) {
   }
   unsupported();
 }
+export function decoderSurfaces(admission) {
+  const count=admission.decoderSurfaces??4;
+  if(count!==1&&count!==2&&count!==4)reject("INVALID_VISUAL_PLAN","Unknown decoded surface admission");
+  return count;
+}
 export function admitDimensions(width,height,admission) {
   integer(width,"decoded width",1);integer(height,"decoded height",1);
-  if (width > admission.maxWidth || height > admission.maxHeight || BigInt(width)*BigInt(height)>BigInt(admission.maxPixels) || BigInt(width)*BigInt(height)*16n>BigInt(admission.maxDecodedBytes)) reject("VISUAL_BUDGET_EXCEEDED","Actual decoded dimensions exceed admission");
+  if (width > admission.maxWidth || height > admission.maxHeight || BigInt(width)*BigInt(height)>BigInt(admission.maxPixels) || BigInt(width)*BigInt(height)*BigInt(decoderSurfaces(admission)*4)>BigInt(admission.maxDecodedBytes)) reject("VISUAL_BUDGET_EXCEEDED","Actual decoded dimensions exceed admission");
 }

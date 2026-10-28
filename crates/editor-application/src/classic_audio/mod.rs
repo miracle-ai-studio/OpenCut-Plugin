@@ -9,6 +9,15 @@ pub use receipt::*;
 pub use session::*;
 pub use wav_layout::ClassicAudioWavLayout;
 
+/// One codec declaration shared by PCM admission and stored-proof validation.
+pub(crate) fn native_pcm_sample_bytes(codec: &str) -> Option<u64> {
+    match codec {
+        "pcm-s16" => Some(2),
+        "pcm-f32" => Some(4),
+        _ => None,
+    }
+}
+
 /// A host holds verified CAS descriptors and the shared collection gate for the
 /// entire execution. Every method must recheck cancellation and live policy.
 pub trait ClassicAudioResources {

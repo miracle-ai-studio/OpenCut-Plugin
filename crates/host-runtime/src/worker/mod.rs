@@ -60,13 +60,19 @@ use sha2::{Digest, Sha256};
 const HEARTBEAT_BUSY_RUNWAY_MS: u64 = 5_000;
 
 use opencut_job_runtime::{ExecutorPort, JobStore, JobStoreFactory, LEASE_MS};
-struct SqliteJobStore(EditorApplication,PathBuf,opencut_editor_application::preview_cache::PreviewClaimBudget);
+struct SqliteJobStore(
+    EditorApplication,
+    PathBuf,
+    opencut_editor_application::preview_cache::PreviewClaimBudget,
+);
 struct SqliteFactory<'a>(&'a Path);
 impl JobStoreFactory for SqliteFactory<'_> {
     fn open(&self) -> Result<Box<dyn JobStore>, EditorError> {
-        Ok(Box::new(SqliteJobStore(EditorApplication::open_managed(
-            self.0,
-        )?,self.0.to_path_buf(),Default::default())))
+        Ok(Box::new(SqliteJobStore(
+            EditorApplication::open_managed(self.0)?,
+            self.0.to_path_buf(),
+            Default::default(),
+        )))
     }
 }
 impl JobStore for SqliteJobStore {
@@ -74,9 +80,19 @@ impl JobStore for SqliteJobStore {
         self.0.live_jobs().recover()
     }
     fn claim(&mut self, worker: &str, lease_ms: i64) -> Result<Option<JobRecord>, EditorError> {
-        let preferred=if self.2.allows_preference(){crate::audio_preview::cache::preferred_jobs(&self.1,&self.0)?}else{Vec::new()};
-        let job=self.0.live_jobs().claim_preferred(worker, lease_ms,&preferred)?;
-        self.2.claimed(job.as_ref().is_some_and(|job|preferred.contains(&job.job_id)));
+        let preferred = if self.2.allows_preference() {
+            crate::audio_preview::cache::preferred_jobs(&self.1, &self.0)?
+        } else {
+            Vec::new()
+        };
+        let job = self
+            .0
+            .live_jobs()
+            .claim_preferred(worker, lease_ms, &preferred)?;
+        self.2.claimed(
+            job.as_ref()
+                .is_some_and(|job| preferred.contains(&job.job_id)),
+        );
         Ok(job)
     }
     fn get_job(&self, id: &str) -> Result<JobRecord, EditorError> {
@@ -1140,22 +1156,20 @@ fn execute(
                 // This project resource does not grant access to the owner-only catalog.
                 asset.metadata.remove("media_url");
                 if asset.kind == opencut_contracts::AssetKind::Video {
-                    let config = crate::classic_audio_runtime::packet_rate_config()?;
-                    #[cfg(unix)]
-                    let packet_admission: Option<
-                        &dyn opencut_media::OutputAdmission,
-                    > = Some(admission.as_ref());
-                    #[cfg(not(unix))]
-                    let packet_admission: Option<
-                        &dyn opencut_media::OutputAdmission,
-                    > = None;
-                    let observed = opencut_media::run_classic_packet_rate(
-                        &config,
+                    let observed = opencut_native_services::packet_rate::probe(
+                        &crate::native_worker_runtime::worker()?,
                         &file,
-                        cancel,
-                        packet_admission,
-                    )
-                    .map_err(media_error)?;
+                        input.size_bytes,
+                        &mut || {
+                            if cancel.is_cancelled() {
+                                return Err(EditorError::new(
+                                    "JOB_CANCELLED",
+                                    "Import was cancelled",
+                                ));
+                            }
+                            app.authorize_sealed_import(&input, &job.job_id, worker, job.attempt)
+                        },
+                    )?;
                     asset.metadata.insert(
                         opencut_media::CLASSIC_PACKET_RATE_METADATA_KEY.into(),
                         serde_json::to_value(observed).map_err(|_| {

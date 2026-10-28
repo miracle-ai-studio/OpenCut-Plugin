@@ -5,6 +5,7 @@ members = [
   'apps/cli',
   'apps/render-worker',
   'crates/*',
+  'crates/media/vendor/matroska-demuxer',
 ]
 
 [workspace.package]

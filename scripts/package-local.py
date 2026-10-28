@@ -122,56 +122,29 @@ def copy_web_build(source, destination):
         shutil.copy2(file, target)
 
 
-def copy_packet_rate_runtime(packages_root, destination):
-    """Copy only the fixed Node packet probe, not the browser/DSP runtime."""
-    selected = [
-        'classic-audio-renderer/package.json',
-        'classic-audio-renderer/node_modules/mediabunny/package.json',
-        'classic-audio-renderer/node_modules/mediabunny/dist/bundles/mediabunny.mjs',
-        'classic-audio-renderer/node_modules/mediabunny/LICENSE',
-        'classic-source-art-renderer/package.json',
-        'classic-source-art-renderer/host/packet-rate.mjs',
-    ]
-    packages_root = Path(packages_root)
-    resolved_root = packages_root.resolve(strict=True)
-    for relative in selected:
-        file = packages_root / relative
-        for ancestor in [file, *file.parents]:
-            if ancestor.is_symlink():
-                raise ValueError(f'Symlink in packet runtime: {relative}')
-            if ancestor == packages_root:
-                break
-        if not file.resolve(strict=True).is_relative_to(resolved_root) or not file.is_file():
-            raise ValueError(f'Invalid packet runtime file: {relative}')
-        limit = 64 * 1024 if file.name == 'package.json' else 8 * 1024 * 1024
-        if not 0 < file.stat().st_size <= limit:
-            raise ValueError(f'Packet runtime file exceeds budget: {relative}')
-    expected = [
-        ('classic-audio-renderer/package.json', '@opencut/classic-audio-renderer', '0.1.0'),
-        ('classic-source-art-renderer/package.json', '@opencut/classic-source-art-renderer', '0.1.0'),
-        ('classic-audio-renderer/node_modules/mediabunny/package.json', 'mediabunny', '1.41.0'),
-    ]
-    manifests = {}
-    for relative, name, version in expected:
-        manifest = json.loads((packages_root / relative).read_text())
-        if manifest.get('name') != name or manifest.get('version') != version or manifest.get('type') != 'module':
-            raise ValueError(f'Unpinned packet runtime package: {relative}')
-        manifests[name] = manifest
-    dependencies = manifests['@opencut/classic-audio-renderer'].get('dependencies', {})
-    if dependencies.get('mediabunny') != '1.41.0' or dependencies.get('playwright-core') != '1.63.0':
-        raise ValueError('Unpinned packet runtime dependencies')
-    for relative in selected:
-        target = destination / relative
-        target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(packages_root / relative, target)
-    return {
-        'profile': 'classic-packet-rate-v1-node-only',
-        'mediabunny_version': '1.41.0',
-        'library_license': manifests['mediabunny'].get('license'),
-        'scope': 'packet-only runtime; package names preserve trusted discovery',
-        'external_runtime': 'node',
-        'excluded': 'Chromium, full audio/visual rendering and preview require separately configured runtimes',
-    }
+def copy_packet_probe_provenance(source, destination):
+    """Keep the native metadata parser's reviewed source, patch and license identity."""
+    source = Path(source)
+    if source.is_symlink():
+        raise ValueError('Symlink in native packet provenance')
+    manifest = json.loads((source / 'source.json').read_text())
+    if (manifest.get('name'), manifest.get('version'), manifest.get('license')) != ('matroska-demuxer', '0.8.1', 'MIT'):
+        raise ValueError('Unpinned native packet provenance')
+    for relative, digest in manifest['files'].items():
+        path = source / relative
+        if not path.resolve(strict=True).is_relative_to(source.resolve(strict=True)) or any(p.is_symlink() for p in [path, *path.parents] if p == source or source in p.parents):
+            raise ValueError('Symlink or escape in native packet provenance')
+        if sha(path) != digest:
+            raise ValueError('Native packet source differs from provenance')
+    if sha(source / 'opencut.patch') != manifest['patch_sha256']:
+        raise ValueError('Native packet patch differs')
+    destination = Path(destination)
+    destination.mkdir(parents=True, exist_ok=True)
+    for name in ['LICENSE-MIT', 'LICENSE-APACHE', 'LICENSE-ZLIB', 'source.json', 'opencut.patch']:
+        shutil.copy2(source / name, destination / name)
+    return {'implementation': 'native-worker', 'provenance': 'THIRD_PARTY/matroska-demuxer/source.json',
+            'provenance_sha256': sha(destination / 'source.json'), 'license': 'MIT',
+            'scope': 'isolated native packet statistics; no Node or browser packet probe'}
 
 
 def copy_catalog_runtime(packages_root, destination):
@@ -280,12 +253,10 @@ def package_with_web_root(output, skip_build, supplied_binary, web_root, runtime
         (host / 'bin').mkdir(parents=True)
         shutil.copy2(binary, host / 'bin/opencut')
         copy_web_build(web_root, host / 'web')
-        packet_runtime = copy_packet_rate_runtime(ROOT / 'packages', host / 'bin/libexec')
+        packet_runtime = copy_packet_probe_provenance(ROOT / 'crates/media/vendor/matroska-demuxer', host / 'THIRD_PARTY/matroska-demuxer')
         catalog_runtime = copy_catalog_runtime(ROOT / 'packages', host / 'bin/libexec')
         runtime = runtime_bundle.bundle(ROOT, host / 'bin/libexec', target, runtime_spec)
         runtime_bundle.verify(host / 'bin/libexec')
-        packet_runtime['scope'] = 'fixed packet probe inside the complete renderer module delivery; executable selection is declared by runtime_bundle'
-        packet_runtime['excluded'] = 'No project/source media or implicit runtime acquisition; full renderer acceptance remains separate'
         catalog_runtime['excluded'] = 'No resource audio/source archive; executable installations are declared by runtime_bundle'
         shutil.copy2(ROOT / 'LICENSE', host / 'LICENSE')
         shutil.copy2(ROOT / 'scripts/distribution/doctor.py', host / 'doctor.py')
@@ -331,7 +302,7 @@ def package_with_web_root(output, skip_build, supplied_binary, web_root, runtime
                     'external_dependencies': runtime['external_dependencies'], 'links': links,
                     'runtime_bundle': {'manifest': 'bin/libexec/runtime-bundle.json', 'sha256': sha(host / 'bin/libexec/runtime-bundle.json'),
                                        'delivery': runtime['delivery']},
-                    'classic_packet_rate_runtime': packet_runtime,
+                    'native_packet_probe': packet_runtime,
                     'catalog_archive_runtime': catalog_runtime,
                     'scope': 'local Web, CLI, HTTP, MCP and SDKs; complete renderer and font scripts; explicitly declared runtime installations require relocated doctor and project acceptance; full R0-R7 acceptance not complete'}
         (host / 'manifest.json').write_text(json.dumps(manifest, indent=2)+'\n')

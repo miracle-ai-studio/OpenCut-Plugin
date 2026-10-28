@@ -494,3 +494,46 @@ fn thumbnail(
         output_bytes,
     })
 }
+
+/// Import packet probing shares this exact bounded source channel, not a native
+/// path or another process/pipe implementation. No rasterizer/GPU is created.
+pub(crate) fn serve_packet_rate(
+    packet: wire::Packet,
+    input: &mut dyn Read,
+    output: &mut dyn Write,
+) -> Result<()> {
+    let plan: crate::packet_rate::Plan = serde_json::from_value(packet.meta["plan"].clone())
+        .map_err(|_| crate::packet_rate::protocol("Invalid native packet probe plan"))?;
+    plan.validate()?;
+    let deadline = Instant::now() + crate::packet_rate::DEADLINE;
+    let identity = crate::packet_rate::identity()?;
+    wire::send(
+        output,
+        json!({"type":"ready","purpose":"packet_rate","pid":std::process::id(),"identity":identity}),
+        &[],
+    )?;
+    let channel = Rc::new(RefCell::new(Channel {
+        input,
+        output,
+        deadline,
+        sequence: 0,
+        output_bytes: 0,
+        output_limit: 0,
+    }));
+    let mut source = Source {
+        channel: channel.clone(),
+        size: plan.size,
+    };
+    let observed = opencut_media::probe_packet_rate(&mut source, deadline)
+        .map_err(crate::media::execution_error)?;
+    channel.borrow().check()?;
+    if crate::packet_rate::identity()? != identity {
+        return Err(crate::packet_rate::protocol("Packet probe runtime changed"));
+    }
+    wire::send(
+        channel.borrow_mut().output,
+        json!({"type":"packet_complete","identity":identity,"observation":observed}),
+        &[],
+    )?;
+    Ok(())
+}

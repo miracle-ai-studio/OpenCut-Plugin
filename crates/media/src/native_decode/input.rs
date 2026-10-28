@@ -29,7 +29,7 @@ struct Shared {
     size: u64,
     bytes_read: u64,
 }
-pub(super) struct Bridge {
+pub(crate) struct Bridge {
     shared: Arc<Mutex<Shared>>,
 }
 struct Reader {
@@ -74,7 +74,7 @@ impl Shared {
     }
 }
 impl Bridge {
-    pub(super) fn new(size: u64) -> MediaResult<Self> {
+    pub(crate) fn new(size: u64) -> MediaResult<Self> {
         if size == 0 || size > i64::MAX as u64 {
             return Err(invalid("Invalid native source length"));
         }
@@ -89,13 +89,13 @@ impl Bridge {
             })),
         })
     }
-    pub(super) fn bytes_read(&self) -> u64 {
+    pub(crate) fn bytes_read(&self) -> u64 {
         self.shared
             .lock()
             .unwrap_or_else(|e| e.into_inner())
             .bytes_read
     }
-    pub(super) fn run<T>(
+    pub(crate) fn run<T>(
         &mut self,
         source: &mut dyn ByteSource,
         deadline: Instant,
@@ -133,7 +133,7 @@ impl Bridge {
         result
     }
 
-    pub(super) fn open(
+    pub(crate) fn open(
         &mut self,
         source: &mut dyn ByteSource,
         max_io_bytes: u64,

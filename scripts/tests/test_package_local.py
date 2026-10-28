@@ -90,51 +90,30 @@ class PackageContentsTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'Unpinned'):
                 package.copy_catalog_runtime(source, root / 'wrong-package')
 
-    def test_packet_runtime_copies_only_pinned_files_and_rejects_escape(self):
+    def test_native_packet_provenance_is_complete_and_rejects_changed_or_linked_source(self):
+        import shutil
+        original = Path(__file__).resolve().parents[2] / 'crates/media/vendor/matroska-demuxer'
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            source = root / 'packages'
-            audio = source / 'classic-audio-renderer'
-            art = source / 'classic-source-art-renderer'
-            media = audio / 'node_modules/mediabunny'
-            manifests = {
-                audio: {'name': '@opencut/classic-audio-renderer', 'version': '0.1.0', 'type': 'module',
-                        'dependencies': {'mediabunny': '1.41.0', 'playwright-core': '1.63.0'}},
-                art: {'name': '@opencut/classic-source-art-renderer', 'version': '0.1.0', 'type': 'module'},
-                media: {'name': 'mediabunny', 'version': '1.41.0', 'type': 'module', 'license': 'MPL-2.0'},
-            }
-            for folder, manifest in manifests.items():
-                folder.mkdir(parents=True, exist_ok=True)
-                (folder / 'package.json').write_text(json.dumps(manifest))
-            for folder, relative in [(media, 'dist/bundles/mediabunny.mjs'), (media, 'LICENSE'),
-                                     (art, 'host/packet-rate.mjs'), (art, 'host/browser.mjs')]:
-                file = folder / relative
-                file.parent.mkdir(parents=True, exist_ok=True)
-                file.write_text('fixture')
-            destination = root / 'bin/libexec'
-            scope = package.copy_packet_rate_runtime(source, destination)
-            copied = {str(p.relative_to(destination)) for p in destination.rglob('*') if p.is_file()}
-            self.assertEqual(len(copied), 6)
-            self.assertNotIn('classic-source-art-renderer/host/browser.mjs', copied)
-            self.assertEqual(scope['profile'], 'classic-packet-rate-v1-node-only')
-            self.assertEqual(scope['external_runtime'], 'node')
-            self.assertEqual(scope['library_license'], 'MPL-2.0')
-            self.assertEqual(package.sha(destination / 'classic-source-art-renderer/host/packet-rate.mjs'),
-                             package.sha(art / 'host/packet-rate.mjs'))
-            (media / 'package.json').write_text(json.dumps({**manifests[media], 'version': '1.42.0'}))
-            with self.assertRaisesRegex(ValueError, 'Unpinned'):
-                package.copy_packet_rate_runtime(source, root / 'wrong-version')
-            (media / 'package.json').write_text(json.dumps(manifests[media]))
-            (art / 'host/packet-rate.mjs').unlink()
-            (art / 'host/packet-rate.mjs').symlink_to(art / 'host/browser.mjs')
-            with self.assertRaisesRegex(ValueError, 'Symlink'):
-                package.copy_packet_rate_runtime(source, root / 'linked-file')
-            (art / 'host/packet-rate.mjs').unlink()
-            (art / 'host/packet-rate.mjs').write_text('fixture')
-            (audio / 'node_modules').rename(root / 'outside-modules')
-            (audio / 'node_modules').symlink_to(root / 'outside-modules', target_is_directory=True)
-            with self.assertRaisesRegex(ValueError, 'Symlink'):
-                package.copy_packet_rate_runtime(source, root / 'linked-directory')
+            source = root / 'source'
+            shutil.copytree(original, source)
+            destination = root / 'delivery'
+            metadata = package.copy_packet_probe_provenance(source, destination)
+            self.assertEqual(metadata['implementation'], 'native-worker')
+            self.assertEqual(metadata['license'], 'MIT')
+            self.assertEqual({p.name for p in destination.iterdir()}, {'LICENSE-MIT', 'LICENSE-APACHE', 'LICENSE-ZLIB', 'source.json', 'opencut.patch'})
+            self.assertEqual(package.sha(destination / 'source.json'), metadata['provenance_sha256'])
+            module = source / 'src/lib.rs'
+            original_bytes = module.read_bytes()
+            module.write_bytes(original_bytes + b'\n// changed\n')
+            with self.assertRaisesRegex(ValueError, 'differs'):
+                package.copy_packet_probe_provenance(source, root / 'changed')
+            module.unlink()
+            outside = root / 'outside.rs'
+            outside.write_bytes(original_bytes)
+            module.symlink_to(outside)
+            with self.assertRaisesRegex(ValueError, 'Symlink|escape'):
+                package.copy_packet_probe_provenance(source, root / 'linked')
 
     def test_rust_source_retains_test_modules_but_excludes_local_residue(self):
         with tempfile.TemporaryDirectory() as directory:

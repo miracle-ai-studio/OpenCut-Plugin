@@ -1302,14 +1302,14 @@
       "delivery_ready": false
     },
     "native_import_packet_probe_gap": {
-      "status": "confirmed actual video import failure with browser audio runtime unconfigured; native replacement not yet implemented",
+      "status": "native packet probe integrated and actual retained video imported; broader delivery incomplete",
       "source_commit": "785d7db1b8c1",
       "failed_job_id": "job_8a845f77c6944c618e6acce7cc356a6e",
       "failure_code": "CAPABILITY_UNAVAILABLE",
       "failure_message": "Classic packet-rate runtime is not configured or unavailable",
       "source_sha256": "2826e87d1a60e4aaf8ce266b42b0c22fd736e04316208ac9ce2d9d1b610d2cc5",
       "original_failed_job_retained": true,
-      "long_fixture_ready": false,
+      "long_fixture_ready": true,
       "independent_reference_sha256": "5388728cee6f5bbc730840c2e855f213fd7a6a7fad671b53854f60e129bfbd2e",
       "reference_cases": [
         {
@@ -1363,8 +1363,184 @@
         "keep exact historical ClassicPacketRate data readable; no backend selector, silent Node fallback or wider acceptance gates",
         "retire packet-probe Node assembly and package dependencies only with corresponding native behavior and distribution proof"
       ],
-      "remaining": "implement and integrate native packet observation; resume actual long preview/export/RSS acceptance on retained sources; resolve historical stall and other delivery gates",
+      "remaining": "94-second startup/continuous behavior, long export, historical stall, broader codecs/4K, full host tests and portable distribution remain subject to recorded current gates",
       "delivery_ready": false
+    },
+    "native_import_packet_probe": {
+      "base_commit": "5a57b5060b4d3250ba9ef00a4f0602faa585651f",
+      "status": "native import replacement and scoped current renderer checks passed; full host suite and long-media acceptance not all green",
+      "delivery_ready": false,
+      "runtime": {
+        "opencut_sha256": "ee6a2b621ab333e92170f79ee3d0394426f2aaf3d982293aad73c353aca1537a",
+        "opencut-render-worker_sha256": "cff628baf0d8320216a0aa31f404e3ef157baf37d4c5b0642d4b2ba0fd9e966c"
+      },
+      "public_contract": "unchanged 184 operations and 12 domains; same explicit CLI generated/canonical checks pass",
+      "implementation": "One isolated native metadata probe over bounded authorized bytes, 30-second deadline, 256MiB RSS monitoring, current lease/cancel checks and process-group reap. Default track, B-frame packet prefix and exact Matroska signed cluster/lace timing retain upstream statistics; no Node fallback. Existing stored packet metadata remains exact.",
+      "dependency": "reviewed media -> vendored matroska-demuxer 0.8.1; MIT selected, three original licenses preserved, normalized upstream plus stored patch reproduces exact sources",
+      "checks": {
+        "architecture_unit_tests": 14,
+        "architecture_modules": 25,
+        "temporary_exception_edges": 0,
+        "boundaries": "passed",
+        "package_provenance_tests": 7,
+        "vendored_parser_unit_tests": 23,
+        "pure_statistics_tests_reused": 2,
+        "independent_container_cases": 20,
+        "isolated_probe_lifecycle_tests": 3,
+        "native_audio_tests": 21,
+        "native_source_art_tests": 12,
+        "native_process_tests": 1,
+        "host_all": {
+          "passed": 82,
+          "failed": 15,
+          "ignored": 1,
+          "overall_passed": false,
+          "scope": "Failures include retired export/frame tools, client observations and font/timeline assertions. Their source is unchanged from base; no baseline execution equivalence claimed. Original failures retained, update current-contract coverage before whole delivery."
+        }
+      },
+      "actual_import": {
+        "state": "succeeded",
+        "job_id": "job_29c1a563794f4ca0b2208dd7ff9d9600",
+        "source_sha256": "2826e87d1a60e4aaf8ce266b42b0c22fd736e04316208ac9ce2d9d1b610d2cc5",
+        "source_seconds": 94,
+        "packet_observation": {
+          "average_packet_rate": 30.0,
+          "packet_count": 102,
+          "schema_version": 1
+        },
+        "old_runtime_environment": "unset",
+        "old_failed_job_retained": true,
+        "original_project_unchanged": true,
+        "placement_verifier": "First read-only plan reused asset ID as element ID; corrected verifier identity only, retained failure and same successful upload/import."
+      },
+      "actual_short_editor": {
+        "passed": true,
+        "cases": 3,
+        "preview_responses": 984,
+        "source_art_responses": 50,
+        "http_and_page_errors": 0,
+        "report_sha256": "8c5e285b314e2688b13aec1268ac0a3f9cc4b085b498084435cd23f37e5243c9"
+      },
+      "actual_http": {
+        "ordinary_aac_rates": [
+          48000,
+          44100
+        ],
+        "primary_and_replay_pcm_maximum_absolute_error": 0,
+        "same_worker_pause_seek_replay": true,
+        "source_waveform_maximum_absolute_error": 0,
+        "four_independent_source_frame_mae": [
+          1.9427358217592592,
+          2.0959751157407407,
+          2.0095081018518517,
+          2.4528385416666665
+        ],
+        "pixel_gate": 5
+      },
+      "long_editor": {
+        "first_attempt": "failed original 5-second visible-frame startup gate; still preparing, no observed HTTP/page errors; retained",
+        "diagnostic": {
+          "passed": false,
+          "phase": "startup-gate-failed",
+          "error": null,
+          "startup": {
+            "seconds": 5.541441726000001,
+            "original_gate_seconds": 5,
+            "diagnostic": true,
+            "original_gate_passed": false
+          },
+          "continuous": {
+            "seconds": 100.004451522,
+            "final": {
+              "role": "img",
+              "class": "editor-scene-frame",
+              "aria-label": "Live scene preview",
+              "data-time": "93.96666666666667",
+              "data-generation": "1",
+              "data-runtime": "{\"renderer\":\"native\",\"rendererSha256\":\"cff628baf0d8320216a0aa31f404e3ef157baf37d4c5b0642d4b2ba0fd9e966c\",\"gpuBackend\":\"metal\",\"gpuDevice\":\"AMD Radeon Pro 5300M\",\"peakWorkerRssBytes\":\"18198528\",\"maxRetainedBytes\":\"67108864\",\"nativeFrameMs\":\"625.4000000953674\",\"pictureReadMs\":\"8.099999904632568\",\"totalMs\":\"633.5\"}",
+              "width": "320",
+              "height": "180"
+            }
+          },
+          "last_continuous_run": {
+            "generation": "1",
+            "lastFrameTime": 93.96666666666667,
+            "presentedFrames": 2820,
+            "discardedFrames": 0,
+            "runtime": {
+              "renderer": "native",
+              "rendererSha256": "cff628baf0d8320216a0aa31f404e3ef157baf37d4c5b0642d4b2ba0fd9e966c",
+              "gpuBackend": "metal",
+              "gpuDevice": "AMD Radeon Pro 5300M",
+              "peakWorkerRssBytes": "20635648",
+              "maxRetainedBytes": "67108864",
+              "nativeFrameMs": "16",
+              "pictureReadMs": "10.700000047683716",
+              "totalMs": "26.700000047683716",
+              "cacheState": "disabled",
+              "cacheHits": "0"
+            },
+            "observations": 4096,
+            "lagP95Ms": 31.729166666666668,
+            "lagP99Ms": 32.895833333333336,
+            "maxLagMs": 33.333333333333336,
+            "missedCachedFrames": 0,
+            "maxFrameGapMs": 41.666666666666664,
+            "maxWallFrameGapMs": 41.200000047683716,
+            "maxWallFrameGapAtSeconds": 48.333333333333336,
+            "maxWallFrameGapBufferedFrames": 17,
+            "skippedIntervals": [],
+            "presentationThread": "dedicated-worker",
+            "preparedFrames": 0,
+            "validatingFrames": 0,
+            "capacity": 18,
+            "readyThroughSeconds": 94,
+            "slowPreparations": [
+              {
+                "time": 8.466666666666667,
+                "totalMs": 181.70000004768372
+              },
+              {
+                "time": 80.7,
+                "totalMs": 121
+              }
+            ],
+            "submittedDeviceFrames": "4512000",
+            "projectedDeviceFrames": "4512000",
+            "pictureCreditFrames": "4512000",
+            "projectionAgeMs": 45.90000009536743,
+            "nextPreparation": {
+              "ticks": "4512000",
+              "timebase": 48000
+            },
+            "firstQueued": null,
+            "lastQueued": null,
+            "filling": false,
+            "producerPreparedFrames": 0,
+            "producerNext": {
+              "ticks": "4512000",
+              "timebase": 48000
+            },
+            "producerFilling": false,
+            "producerServing": false,
+            "producerRetainedBytes": 4147200
+          },
+          "preview_responses": 9180,
+          "observed_http_or_page_errors": 0,
+          "project_unchanged": true,
+          "report_sha256": "7709a02224f46d323c85388e8174bb2c552fdf3fa89bfe229dca08c4f4cf1458"
+        },
+        "sampled_native_worker_peak_rss_kib": 20148,
+        "sampled_owned_tree_peak_rss_kib": 2150584,
+        "scope": "Extended observation retains the original 5-second gate. Single 320x180 synthetic source with 24 repeated AAC clips; no physical output, 4K, independent long export or universal memory claim."
+      },
+      "remaining": [
+        "cold startup performance and historical asset-free resume stall",
+        "long independent pixel/PCM exports and throughput, codec/color/orientation/default decode track coverage",
+        "15 host test failures and complete current-contract behavior coverage",
+        "native worker/shared libraries and provenance in relocated installation; retire remaining browser distribution modules",
+        "physical/manual and cross-platform acceptance"
+      ]
     }
   }
 }

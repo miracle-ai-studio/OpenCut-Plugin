@@ -1,0 +1,32 @@
+{
+  "name": "matroska-demuxer",
+  "version": "0.8.1",
+  "upstream": "https://github.com/hasenbanck/matroska-demuxer",
+  "archive": "https://crates.io/api/v1/crates/matroska-demuxer/0.8.1/download",
+  "archive_sha256": "4cbf36668475a45a46bf8710e927e7458b7c387e7c46ddb5457ae0c71cf5e817",
+  "license": "MIT",
+  "licenses_preserved": [
+    "LICENSE-MIT",
+    "LICENSE-APACHE",
+    "LICENSE-ZLIB"
+  ],
+  "patch": "opencut.patch",
+  "patch_sha256": "2ccee9df5849ce85945760bf96fc6c419a666547b950584d7bb717dd9d3a16d3",
+  "purpose": "Exact signed packet/cluster/lace metadata without payload allocation; optional descriptive muxer labels; all EBML unknown-size widths and fixed/unknown Segment scope for retained upstream statistics.",
+  "exit_plan": "Return to unpatched upstream once equivalent metadata-only and exact packet-boundary APIs are available and the independent packet/retirement matrix passes.",
+  "files": {
+    "Cargo.toml": "f4394fa9bbe0e984d69ce7c86f5f9c568fec2d61d673197398af0d9c68d958b1",
+    "LICENSE-APACHE": "1ac50a5abd5cff5331d59928d83369b66b0099a88f0111dc2175526b3c666dec",
+    "LICENSE-MIT": "64f38a5b82116b70e87f1098c8fec97a8d041bc7e040ea6d653e3dc162e1d8ee",
+    "LICENSE-ZLIB": "32eeb538a1323164d33f0d10ae7d007b7bee65c5a39b63f11c68349776d1f755",
+    "README.md": "d3a953df5e5a14090b0e7a5897b1bed302c82462b8d3a227f7612a829a7a54ce",
+    "opencut.patch": "2ccee9df5849ce85945760bf96fc6c419a666547b950584d7bb717dd9d3a16d3",
+    "src/block.rs": "3dbdb0731e624618e0452dd2367e10565ad1befd7fbe4212fd214bc8cf103590",
+    "src/ebml.rs": "c1e2f86bedc516769db51a45592d00ab5e254c18df88b7b6c3b407b7b0be9aa5",
+    "src/element_id.rs": "80a5aefbe7b43393654743245eea13362bfae27e556ec8af73ec2da1eda6f0df",
+    "src/enums.rs": "9045a8a5f28443350c4b3af4f790f24131ce200ee731c5c150b3858da456733a",
+    "src/error.rs": "535fbf2d8ef6f55cb65d6f425376ab9297f57b680e98a6c9b3ef6febef2a4662",
+    "src/lib.rs": "a453896fa61da70de53e790b251db72ecbbf2a98a078fb11e5c51c175f97fe24"
+  },
+  "text_normalization": "Patched Cargo.toml, src/block.rs, src/lib.rs and src/ebml.rs use UTF-8 with LF; normalize original CRLF text before applying opencut.patch."
+}

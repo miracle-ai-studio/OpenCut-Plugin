@@ -1,0 +1,297 @@
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -37,6 +37,4 @@
+ name = "matroska_demuxer"
+ path = "src/lib.rs"
+ 
+-[[test]]
+-name = "lib"
+-path = "tests/lib.rs"
++
+--- a/src/block.rs
++++ b/src/block.rs
+@@ -32,6 +32,10 @@
+ 
+ #[derive(Clone, Copy, Debug)]
+ pub(crate) struct LacedFrame {
++    pub(crate) signed_timestamp: i128,
++    pub(crate) block_offset: u64,
++    pub(crate) frame_index: u16,
++    pub(crate) frame_count: u16,
+     pub(crate) track: u64,
+     pub(crate) timestamp: u64,
+     pub(crate) size: u64,
+@@ -59,7 +63,9 @@
+     is_simple_block: bool,
+ ) -> Result<()> {
+     let track = parse_variable_u64(r)?;
+-    let timestamp = parse_timestamp(r, cluster_timestamp)?;
++    let relative = parse_i16(r)?;
++    let signed_timestamp = i128::from(cluster_timestamp) + i128::from(relative);
++    let timestamp = u64::try_from(signed_timestamp).unwrap_or(0);
+ 
+     let mut header_byte = [0_u8];
+     r.read_exact(&mut header_byte)?;
+@@ -87,6 +93,10 @@
+             .ok_or(DemuxError::InvalidBlockSize)?;
+ 
+         let frame = LacedFrame {
++            signed_timestamp,
++            block_offset: header_start,
++            frame_index: 0,
++            frame_count: 1,
+             track,
+             timestamp,
+             size: data_size,
+@@ -119,6 +129,10 @@
+                     encoded_sizes = encoded_sizes.saturating_add(size);
+ 
+                     frames.push_back(LacedFrame {
++                        signed_timestamp,
++                        block_offset: header_start,
++                        frame_index: 0,
++                        frame_count: 1,
+                         track,
+                         timestamp,
+                         size,
+@@ -137,6 +151,10 @@
+                     .ok_or(DemuxError::InvalidBlockSize)?;
+ 
+                 frames.push_back(LacedFrame {
++                    signed_timestamp,
++                    block_offset: header_start,
++                    frame_index: 0,
++                    frame_count: 1,
+                     track,
+                     timestamp,
+                     size,
+@@ -162,6 +180,10 @@
+                 let mut encoded_size = size;
+ 
+                 frames.push_back(LacedFrame {
++                    signed_timestamp,
++                    block_offset: header_start,
++                    frame_index: 0,
++                    frame_count: 1,
+                     track,
+                     timestamp,
+                     size,
+@@ -183,6 +205,10 @@
+                         encoded_size = encoded_size.saturating_add(size);
+ 
+                         frames.push_back(LacedFrame {
++                            signed_timestamp,
++                            block_offset: header_start,
++                            frame_index: 0,
++                            frame_count: 1,
+                             track,
+                             timestamp,
+                             size,
+@@ -203,6 +229,10 @@
+                     .ok_or(DemuxError::InvalidBlockSize)?;
+ 
+                 frames.push_back(LacedFrame {
++                    signed_timestamp,
++                    block_offset: header_start,
++                    frame_index: 0,
++                    frame_count: 1,
+                     track,
+                     timestamp,
+                     size,
+@@ -230,6 +260,10 @@
+ 
+                 for _ in 0..frame_count {
+                     frames.push_back(LacedFrame {
++                        signed_timestamp,
++                        block_offset: header_start,
++                        frame_index: 0,
++                        frame_count: 1,
+                         track,
+                         timestamp,
+                         size,
+@@ -243,6 +277,12 @@
+         }
+     }
+ 
++    let count = u16::try_from(frames.len())?;
++    for (index, frame) in frames.iter_mut().enumerate() {
++        frame.frame_index = u16::try_from(index)?;
++        frame.frame_count = count;
++    }
++
+     Ok(())
+ }
+ 
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -67,6 +67,16 @@
+ /// A data frame inside the Matroska container.
+ #[derive(Clone, Debug, Default)]
+ pub struct Frame {
++    /// Exact signed container timestamp, before any compatibility saturation.
++    pub signed_timestamp: i128,
++    /// Cluster payload offset identifying the packet duration scope.
++    pub cluster_offset: u64,
++    /// Source block payload offset; all lace members share it.
++    pub block_offset: u64,
++    /// Member index in the source lace.
++    pub frame_index: u16,
++    /// Number of members in the source lace.
++    pub frame_count: u16,
+     /// The ID of the track.
+     pub track: u64,
+     /// The timestamp of the frame.
+@@ -221,8 +231,8 @@
+         let duration = try_find_float(fields, ElementId::Duration)?;
+         let date_utc = try_find_date(fields, ElementId::DateUtc)?;
+         let title = try_find_string(fields, ElementId::Title)?;
+-        let muxing_app = find_string(fields, ElementId::MuxingApp)?;
+-        let writing_app = find_string(fields, ElementId::WritingApp)?;
++        let muxing_app = try_find_string(fields, ElementId::MuxingApp)?.unwrap_or_default();
++        let writing_app = try_find_string(fields, ElementId::WritingApp)?.unwrap_or_default();
+ 
+         if let Some(duration) = duration {
+             if duration < 0.0 {
+@@ -1454,6 +1464,8 @@
+ 
+     /// The timestamp of the current cluster.
+     cluster_timestamp: u64,
++    cluster_offset: u64,
++    metadata_primary_unknown: bool,
+     /// Queued frames of a block we are currently reading.
+     queued_frames: VecDeque<LacedFrame>,
+ }
+@@ -1463,7 +1475,7 @@
+     pub fn open(mut file: R) -> Result<Self> {
+         let ebml_header = parse_ebml_header(&mut file)?;
+ 
+-        let (segment_data_offset, _) = expect_master(&mut file, ElementId::Segment, None)?;
++        let (segment_data_offset, segment_size) = expect_master(&mut file, ElementId::Segment, None)?;
+ 
+         let optional_seek_head = search_seek_head(&mut file, segment_data_offset)?;
+         let mut seek_head = parse_seek_head(&mut file, segment_data_offset, optional_seek_head)?;
+@@ -1525,6 +1537,8 @@
+             chapters,
+             tags,
+             cluster_timestamp: 0,
++            cluster_offset: 0,
++            metadata_primary_unknown: segment_size == u64::MAX,
+             queued_frames: VecDeque::with_capacity(8),
+         })
+     }
+@@ -1559,7 +1573,16 @@
+     ///
+     /// Returns `false` if the end of the file is reached.
+     pub fn next_frame(&mut self, frame: &mut Frame) -> Result<bool> {
+-        if self.try_pop_frame(frame)? {
++        self.next_frame_impl(frame, true)
++    }
++
++    /// Read packet metadata without allocating or copying its encoded payload.
++    pub fn next_frame_metadata(&mut self, frame: &mut Frame) -> Result<bool> {
++        self.next_frame_impl(frame, false)
++    }
++
++    fn next_frame_impl(&mut self, frame: &mut Frame, payload: bool) -> Result<bool> {
++        if self.try_pop_frame(frame, payload)? {
+             return Ok(true);
+         };
+ 
+@@ -1568,8 +1591,16 @@
+         loop {
+             match next_element(&mut self.file) {
+                 Ok((element_id, element_data)) => match element_id {
++                    // A fixed primary Segment ends before a new header. An
++                    // unknown-length primary Segment retains later clusters in
++                    // the same packet scope, matching the captured upstream.
++                    ElementId::Segment if !payload && self.metadata_primary_unknown => {
++                        self.enter_data_location(&element_data)?;
++                    }
++                    ElementId::Segment | ElementId::Ebml if !payload && !self.metadata_primary_unknown => return Ok(false),
+                     // We enter cluster and block groups.
+                     ElementId::Cluster => {
++                        if let ElementData::Location { offset, .. } = &element_data { self.cluster_offset = *offset; }
+                         self.enter_data_location(&element_data)?;
+                     }
+                     ElementId::BlockGroup => {
+@@ -1601,7 +1632,7 @@
+                                 header_start,
+                                 element_id == ElementId::SimpleBlock,
+                             )?;
+-                            self.try_pop_frame(frame)?;
++                            self.try_pop_frame(frame, payload)?;
+ 
+                             // If simple block, set end of block to current position, to go out of the loop
+                             block_end.get_or_insert(self.file.stream_position()?);
+@@ -1649,9 +1680,14 @@
+     }
+ 
+     /// Read a frame that is left inside the block.
+-    fn try_pop_frame(&mut self, frame: &mut Frame) -> Result<bool> {
++    fn try_pop_frame(&mut self, frame: &mut Frame, payload: bool) -> Result<bool> {
+         if let Some(queued_frame) = self.queued_frames.pop_front() {
+             frame.timestamp = queued_frame.timestamp;
++            frame.signed_timestamp = queued_frame.signed_timestamp;
++            frame.cluster_offset = self.cluster_offset;
++            frame.block_offset = queued_frame.block_offset;
++            frame.frame_index = queued_frame.frame_index;
++            frame.frame_count = queued_frame.frame_count;
+             frame.track = queued_frame.track;
+             frame.is_discardable = queued_frame.is_discardable;
+             frame.is_invisible = queued_frame.is_invisible;
+@@ -1666,8 +1702,13 @@
+                 });
+             }
+             let size: usize = queued_frame.size.try_into()?;
+-            frame.data.resize(size, 0_u8);
+-            self.file.read_exact(frame.data.as_mut_slice())?;
++            if payload {
++                frame.data.resize(size, 0_u8);
++                self.file.read_exact(frame.data.as_mut_slice())?;
++            } else {
++                frame.data.clear();
++                self.file.seek(SeekFrom::Current(i64::try_from(size)?))?;
++            }
+ 
+             Ok(true)
+         } else {
+--- a/src/ebml.rs
++++ b/src/ebml.rs
+@@ -473,7 +473,17 @@
+     let id = parse_variable_u32(r)?;
+     let element_id = id_to_element_id(id);
+ 
++    let size_start = r.stream_position()?;
+     let size = parse_variable_u64(r)?;
++    let width = r.stream_position()? - size_start;
++    // Unknown element sizes use all value bits, for every VINT width.
++    // Normalize only element sizes: track numbers and lace values also use
++    // VINTs, but do not share the unknown-size sentinel semantics.
++    let size = if (1..=8).contains(&width) && size == (1u64 << (7 * width)) - 1 {
++        u64::MAX
++    } else {
++        size
++    };
+     Ok((element_id, size))
+ }
+ 
+@@ -650,6 +660,19 @@
+ 
+     use std::io::Cursor;
+ 
++    #[test]
++    fn element_unknown_size_accepts_every_vint_width() -> Result<()> {
++        for width in 1..=8 {
++            let mut data = vec![0x18, 0x53, 0x80, 0x67];
++            data.push(0xffu8 >> (width - 1));
++            data.extend(std::iter::repeat_n(0xff, width - 1));
++            assert_eq!(parse_element_header(&mut Cursor::new(&data), None)?.1, u64::MAX);
++            *data.last_mut().unwrap() -= 1;
++            assert_eq!(parse_element_header(&mut Cursor::new(data), None)?.1, (1u64 << (7 * width)) - 2);
++        }
++        Ok(())
++    }
++
+     use super::*;
+ 
+     #[test]

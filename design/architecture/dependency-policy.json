@@ -243,6 +243,7 @@
           "ffmpeg-next",
           "image",
           "libc",
+          "matroska-demuxer",
           "opencut-media-contracts",
           "schemars",
           "serde",
@@ -507,6 +508,17 @@
         "normal": [
           "opencut-native-services"
         ],
+        "build": [],
+        "dev": []
+      }
+    },
+    "matroska-demuxer": {
+      "path": "crates/media/vendor/matroska-demuxer",
+      "layer": "adapter",
+      "owner": "Media",
+      "responsibility": "固定第三方 Matroska/WebM 元数据解析；只由 opencut-media 使用，不依赖领域、应用、存储或宿主；元数据补丁和来源见 source.json，边界及回归见 docs/native-rendering.md。",
+      "dependencies": {
+        "normal": [],
         "build": [],
         "dev": []
       }

@@ -221,71 +221,6 @@ fn resolve(configuration: &HostConfiguration) -> Result<RuntimePaths, Unavailabl
     })
 }
 
-pub(crate) fn packet_rate_config() -> Result<opencut_media::ClassicPacketRateConfig, EditorError> {
-    resolve_packet_rate(
-        &HostConfiguration::capture(),
-        env::var_os("OPENCUT_SOURCE_ART_PACKAGE").as_deref(),
-    )
-    .map_err(|_| {
-        EditorError::new(
-            "CAPABILITY_UNAVAILABLE",
-            "Classic packet-rate runtime is not configured or unavailable",
-        )
-    })
-}
-
-fn resolve_packet_rate(
-    configuration: &HostConfiguration,
-    source_package: Option<&std::ffi::OsStr>,
-) -> Result<opencut_media::ClassicPacketRateConfig, Unavailable> {
-    let (audio, node) = resolve_package_node(configuration)?;
-    dependency(
-        &audio,
-        "mediabunny",
-        "1.41.0",
-        "dist/bundles/mediabunny.mjs",
-    )?;
-    let source = match source_package {
-        Some(path) => PathBuf::from(path),
-        None => audio
-            .parent()
-            .ok_or(Unavailable::Unavailable)?
-            .join("classic-source-art-renderer"),
-    };
-    let source = absolute(&source)?;
-    let manifest = metadata(&source.join("package.json"))?;
-    if manifest["name"] != "@opencut/classic-source-art-renderer"
-        || manifest["version"] != "0.1.0"
-        || manifest["type"] != "module"
-    {
-        return Err(Unavailable::Unavailable);
-    }
-    let helper = package_file(&source, "host/packet-rate.mjs")?;
-    let media = absolute(&audio.join("node_modules/mediabunny"))?;
-    let bundle = package_file(&media, "dist/bundles/mediabunny.mjs")?;
-    Ok(opencut_media::ClassicPacketRateConfig {
-        node,
-        expected_helper_sha256: packet_module_hash(&helper)?,
-        expected_bundle_sha256: packet_module_hash(&bundle)?,
-        helper,
-        bundle,
-    })
-}
-
-fn packet_module_hash(path: &Path) -> Result<String, Unavailable> {
-    use sha2::{Digest, Sha256};
-    use std::io::Read;
-    let file = std::fs::File::open(path).map_err(|_| Unavailable::Unavailable)?;
-    let mut bytes = Vec::new();
-    file.take(8 * 1024 * 1024 + 1)
-        .read_to_end(&mut bytes)
-        .map_err(|_| Unavailable::Unavailable)?;
-    if bytes.is_empty() || bytes.len() > 8 * 1024 * 1024 {
-        return Err(Unavailable::Unavailable);
-    }
-    Ok(format!("{:x}", Sha256::digest(&bytes)))
-}
-
 #[cfg(all(test, unix))]
 mod tests {
     use super::*;
@@ -431,37 +366,5 @@ mod tests {
         );
         assert_eq!(reply.submit_tool, "opencut_job_audio_wav");
         assert_eq!(reply.schema_version, 1);
-    }
-
-    #[test]
-    fn packet_rate_runtime_uses_pinned_modules_without_chromium() {
-        let directory = tempfile::tempdir().unwrap();
-        let mut configuration = installation(directory.path());
-        fs::remove_file(PathBuf::from(configuration.chromium.take().unwrap())).unwrap();
-        let source = directory.path().join("classic-source-art-renderer");
-        put(
-            &source,
-            "package.json",
-            br#"{"name":"@opencut/classic-source-art-renderer","version":"0.1.0","type":"module"}"#,
-        );
-        put(&source, "host/packet-rate.mjs", b"export {};");
-        let config = resolve_packet_rate(&configuration, None).unwrap();
-        assert!(config.node.is_absolute());
-        assert_eq!(config.expected_helper_sha256.len(), 64);
-        assert_eq!(config.expected_bundle_sha256.len(), 64);
-        assert_eq!(
-            resolve(&configuration).err(),
-            Some(Unavailable::NotConfigured)
-        );
-        let audio = PathBuf::from(configuration.package.as_ref().unwrap());
-        put(
-            &audio,
-            "node_modules/mediabunny/package.json",
-            br#"{"name":"mediabunny","version":"1.42.0"}"#,
-        );
-        assert_eq!(
-            resolve_packet_rate(&configuration, None).err(),
-            Some(Unavailable::Unavailable)
-        );
     }
 }

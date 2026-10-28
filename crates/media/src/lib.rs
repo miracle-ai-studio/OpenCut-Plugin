@@ -18,7 +18,7 @@ mod error;
 mod historical_visual_composition;
 pub mod packet_rate;
 pub use opencut_media_contracts::{CLASSIC_PACKET_RATE_METADATA_KEY, ClassicPacketRate};
-pub use packet_rate::{ClassicPacketRateConfig, run_classic_packet_rate};
+pub use packet_rate::probe_packet_rate;
 mod preview_stream;
 mod process;
 mod speaker_turns;

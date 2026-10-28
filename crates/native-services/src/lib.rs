@@ -39,6 +39,7 @@ pub mod gc;
 pub mod native_audio;
 mod native_process;
 pub mod native_visual;
+pub mod packet_rate;
 
 pub mod artifacts;
 pub mod budget;

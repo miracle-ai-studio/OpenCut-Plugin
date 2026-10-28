@@ -4016,6 +4016,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "47e1ffaa40ddd1f3ed91f717a33c8c0ee23fff369e3aa8772b9605cc1d22f4c3"
 
 [[package]]
+name = "matroska-demuxer"
+version = "0.8.1"
+
+[[package]]
 name = "maybe-owned"
 version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4833,6 +4837,7 @@ dependencies = [
  "ffmpeg-next",
  "image",
  "libc",
+ "matroska-demuxer",
  "opencut-media-contracts",
  "schemars",
  "serde",

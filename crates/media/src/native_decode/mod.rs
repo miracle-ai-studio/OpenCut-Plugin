@@ -2,7 +2,7 @@
 //! No path, URL, project document or authorization grant enters the decoder.
 mod audio;
 pub mod identity;
-mod input;
+pub(crate) mod input;
 mod video;
 use crate::{MediaError, MediaResult};
 pub use audio::{AudioDecodeLimits, DecodedAudioFrame, NativeAudioDecoder, NativeAudioTrack};

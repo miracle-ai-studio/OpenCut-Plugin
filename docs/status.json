@@ -1082,7 +1082,8 @@
         "timeline_waveform_pixels": "nontransparent actual canvas bars verified",
         "source_thumbnail": "actual media/timeline thumbnail visible",
         "project_unchanged": true,
-        "scope": "three short owned synthetic scenes with play/pause/resume/seek, native source receipts and actual device consumption; historical intermittent resume stall remains open"
+        "scope": "three short owned synthetic scenes with play/pause/resume/seek, native source receipts and actual device consumption; historical intermittent resume stall remains open",
+        "seek_coverage_limit": "Old UI harness entered .25, rejected by the decimal-time input; AAC go-to followed by play-to-end did not establish a nonzero start. Harness now uses 0.25 and requires the returned actual_start_sample to equal the requested device-rate position."
       },
       "shared_audio_regression": {
         "actual_http_pcm_maximum_absolute_error": 0.0,
@@ -1092,6 +1093,109 @@
         "actual_export_pcm_maximum_absolute_error": 0.0,
         "actual_export_video_sha256": "5a2ec9a189b97147a4dde805f97690d5c2229ef5985f2de684c6e45a47d9f969",
         "scope": "retained one-second AAC two-cut fixture, 48k/44.1k/range WAV and 24-frame video; no long throughput claim"
+      }
+    },
+    "realtime_resume_working_tree": {
+      "base_commit": "76d0b0ba8c81",
+      "status": "native AAC rewind correction passed integrated build/contracts, combined independent tails, 21 native audio checks, 10 surface checks and actual HTTP/UI; historical text stall, picture busy race and complete delivery remain open",
+      "diagnostic_candidate": {
+        "cli_sha256": "4e8d329f2389e5e3d00596b8e4c5453094dd0dfa2f842c60c0b6159bd6b74635",
+        "worker_sha256": "5fbe8d5cb712593f101df4b04884de157c7a135a4a6438cab55c3e9c234c730b",
+        "web_digest": "4a0dfdf571cb"
+      },
+      "diagnostics": "bounded surface queue/device cursor/picture credit and producer observations through existing private statistics",
+      "actual_editor": {
+        "completed_text_scenarios": 8,
+        "overall_passed": false,
+        "failed_phase": "native-source-art-ui:resume",
+        "new_failure": "one-second source/audio scene resumed near 44288/48000; PCM stream interrupted, session eventually failed INVALID_AUDIO_PLAN",
+        "retained_busy_responses": 1,
+        "report_sha256": "5d0c5046bb1f3bbe5cf6cc0243dc8eab81234cd5ad87f7bc06f5f37b7f531875"
+      },
+      "http_isolation": {
+        "anchor": 44288,
+        "sample_rate": 48000,
+        "remaining_frames": 3712,
+        "cold_tail": "passed; 3712 PCM frames plus framing",
+        "same_worker_whole_then_seek_tail": "failed; zero tail bytes and incomplete HTTP stream; final stop raced failure",
+        "report_sha256": "a99dcf9e6ff1ff4619804d3628549947764aa548fb773e27852920444332f22b"
+      },
+      "source_correction": "tag retained PCM by codec restart epoch; replace duplicate PTS samples observed after restart while retaining other current windows and checking repeats within the same decode context; replacing an observed interval does not advance the discarded-data frontier or cause another seek on the following block",
+      "independent_reference": "pinned upstream AudioBufferSink at source sample 164288 and browser compressor reset; no product compiler/DSP import",
+      "checks": {
+        "web_surface_tests": 10,
+        "architecture_tests": 14,
+        "build": "passed integrated CLI and worker; same explicit CLI generated/canonical checks passed, 184 operations/12 domains",
+        "behavior_after_correction": "passed combined 44288/40800 native and public independent tail PCM, standard AAC HTTP and exact-start editor checks",
+        "native_audio_tests_passed": 21
+      },
+      "remaining": [
+        "historical asset-free text-scene stall near 1.87 seconds: AAC rolling-cache correction cannot establish its cause",
+        "native picture retirement busy race retained from diagnostic run; current zero-error success does not establish the race resolved",
+        "broader codec/long/4K memory and throughput, physical/manual and distribution acceptance"
+      ],
+      "delivery_ready": false,
+      "first_correction_candidate": {
+        "cli_sha256": "db852b35e57d62eeaf6e57603ffd74b19d4a3377a0a398901a2a9ba4689fb5ee",
+        "worker_sha256": "7e1478e756a1220e8776ca4d4a06e97f99e8421362fb7487e7512aa662d8517b",
+        "build": "passed",
+        "generated_and_canonical_contracts": "passed, 184 operations and 12 domains",
+        "native_audio_tests_passed": 21,
+        "public_44288_tail": "cold and warm rewind both exact independent PCM",
+        "public_40800_tail": {
+          "cold_maximum_absolute_error": 0,
+          "warm_maximum_absolute_error": 0.11173101468011737,
+          "warm_snr_db": 13.084912089476244,
+          "first_changed_frame": 4096,
+          "original_gate_passed": false
+        },
+        "scope": "intermediate failed candidate; no broad resume acceptance"
+      },
+      "seek_verifier_gap": "Old UI harness entered .25, rejected by the decimal-time input; AAC go-to followed by play-to-end did not establish a nonzero start. Harness now uses 0.25 and requires the returned actual_start_sample to equal the requested device-rate position.",
+      "current_candidate": {
+        "cli_sha256": "3472ba0a0f7b6320f514c5c6a0177f6cde0de7a423a33995599353ca31456c40",
+        "worker_sha256": "d3618b2d3ae7018074bf4d371642a34a403d22220d12b70b2bf0e28c93ef71c7",
+        "web_artifact_reused": "4a0dfdf571cb; exact frontend source/assets verified, no Web rebuild for subsequent Rust-only corrections",
+        "independent_tail_cases": [
+          {
+            "anchor": 44288,
+            "frames": 3712,
+            "cold_maximum_absolute_error": 0.0,
+            "warm_maximum_absolute_error": 0.0
+          },
+          {
+            "anchor": 40800,
+            "frames": 7200,
+            "cold_maximum_absolute_error": 0.0,
+            "warm_maximum_absolute_error": 0.0
+          }
+        ],
+        "actual_editor": {
+          "passed": true,
+          "report_sha256": "5ada995effc6334cc4304ca6616d446717a53b25d23c112e9fb69fd49caecab6",
+          "scenarios": 3,
+          "actual_seek_start_assertions_passed": 3,
+          "preview_responses": 974,
+          "preview_errors": 0,
+          "source_art_responses": 49,
+          "source_art_errors": 0,
+          "page_errors": []
+        },
+        "standard_aac_http": {
+          "sample_rates": [
+            48000,
+            44100
+          ],
+          "primary_and_replay_maximum_absolute_error": 0.0,
+          "same_worker_pause_seek_replay": true,
+          "project_and_durable_jobs_unchanged": true
+        },
+        "public_stop_fault_injection": {
+          "passed": true,
+          "sigstop_owned_native_child": true,
+          "stop_seconds": 0.05624493188224733
+        },
+        "scope": "retained short AAC sources and synthetic scenes; no fitted gain/time, physical output or long/4K throughput acceptance"
       }
     }
   }

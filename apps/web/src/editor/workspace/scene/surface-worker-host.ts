@@ -53,7 +53,8 @@ export class SurfaceWorkerRun {
  }
  timestamp(timestamp:DeviceTimestamp){if(!this.closed)this.host.post({token:this.token,kind:'timestamp',timestamp});}
  snapshot(){return this.report;}
- private decorate(report:SurfaceReport){return {...report,statistics:JSON.stringify({...JSON.parse(report.statistics),presentationThread:'dedicated-worker',producerPreparedFrames:this.queue.length})};}
+ private decorate(report:SurfaceReport){return {...report,statistics:JSON.stringify({...JSON.parse(report.statistics),presentationThread:'dedicated-worker',producerPreparedFrames:this.queue.length,
+  producerNext:this.next,producerFilling:!!this.filling,producerServing:this.serving,producerRetainedBytes:this.retained})};}
  event(data:SurfaceEvent){
   if(data.kind==='stopped'){this.report=this.decorate(data.report);this.stopResolve?.(this.report);if(this.host.current===this)this.host.current=null;return;}
   if(this.closed)return;

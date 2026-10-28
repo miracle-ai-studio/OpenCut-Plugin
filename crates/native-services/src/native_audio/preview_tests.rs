@@ -55,6 +55,115 @@ fn worker_config() -> NativeAudioPreviewProcessConfig {
 }
 
 #[test]
+#[ignore = "requires retained owned AAC snapshot/CAS, native worker and independent tail PCM"]
+fn native_aac_tail_after_rewind_replaces_prior_decoder_observations() {
+    let directory = PathBuf::from(
+        std::env::var_os("OPENCUT_AUDIO_AAC_REFERENCE").expect("AAC reference directory"),
+    );
+    let media =
+        PathBuf::from(std::env::var_os("OPENCUT_AUDIO_AAC_SOURCE").expect("owned AAC source"));
+    assert_eq!(
+        format!("{:x}", Sha256::digest(std::fs::read(&media).unwrap())),
+        "42969447c3213113d8847ab9cb24f627f03682af7d81bde962361e77cef51328"
+    );
+    let snapshot: EditorSnapshot = serde_json::from_slice(
+        &std::fs::read(directory.join("aac-preview-fixed-snapshot.json")).unwrap(),
+    )
+    .unwrap();
+    let root = media.parent().unwrap().join("asset-store");
+    assert!(root.is_dir());
+    let prepared = prepare_preview_audio_scene(
+        &snapshot,
+        &snapshot.project.default_sequence_id,
+        PcmFormat {
+            sample_rate: 48000,
+            channels: 2,
+        },
+    )
+    .unwrap();
+    assert_eq!(prepared.extent(), 48000);
+    let mut session =
+        ClassicAudioSession::new_preview(&prepared, 64 * 1024 * 1024, 32 * 1024 * 1024).unwrap();
+    session.set_preview_state(0, None).unwrap();
+    let mut resources =
+        VerifiedClassicAudioResources::new(&root, prepared.audio(), || Ok(())).unwrap();
+    let handles = resources.handles();
+    let mut producer =
+        NativeAudioPreviewProducer::start(&worker_config(), &mut session, &mut resources, &handles)
+            .unwrap();
+    let pid = producer.worker_pid().unwrap();
+    let mut generation = 0;
+    for anchor in [44288u64, 40800] {
+        let oracle: Value = serde_json::from_slice(
+            &std::fs::read(directory.join(if anchor == 44288 {
+                "aac-tail-oracle.json"
+            } else {
+                "aac-tail-oracle-40800.json"
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+        assert_eq!(
+            oracle["source_sha256"],
+            "42969447c3213113d8847ab9cb24f627f03682af7d81bde962361e77cef51328"
+        );
+        assert_eq!(
+            oracle["browser_sha256"],
+            "b5626938028f718a6cdb0c8eff9d0346b186d68b4e04b43df4f9f579c81ecf28"
+        );
+        assert_eq!(
+            oracle["mediabunny_sha256"],
+            "0e978df952d606fdeafef1e90ad695886ffa1a4e64f4a39d77654ada006b4b99"
+        );
+        let expected_file = directory.join(oracle["mastered_file"].as_str().unwrap());
+        assert_eq!(
+            format!(
+                "{:x}",
+                Sha256::digest(std::fs::read(&expected_file).unwrap())
+            ),
+            oracle["mastered_sha256"].as_str().unwrap()
+        );
+        let expected = floats(&expected_file);
+        session.set_preview_state(0, None).unwrap();
+        generation += 1;
+        // Traverse the original cuts before reusing their overlapping packets.
+        let mut start = 0;
+        while start < prepared.extent() {
+            let frames = (prepared.extent() - start).min(4096) as u32;
+            producer
+                .next(&mut session, &mut resources, generation, 0, start, frames)
+                .unwrap();
+            start += u64::from(frames);
+        }
+        session.set_preview_state(anchor, None).unwrap();
+        generation += 1;
+        let mut actual = Vec::new();
+        let mut start = anchor;
+        while start < prepared.extent() {
+            let frames = (prepared.extent() - start).min(4096) as u32;
+            let block = producer
+                .next(&mut session, &mut resources, generation, 0, start, frames)
+                .unwrap();
+            actual.extend(
+                block.channels[0]
+                    .iter()
+                    .zip(&block.channels[1])
+                    .flat_map(|(a, b)| [*a, *b]),
+            );
+            start += u64::from(frames);
+        }
+        let (maximum, snr) = error(&actual, &expected);
+        assert!(
+            maximum <= 0.000001 && snr >= 100.0,
+            "Independent AAC tail at {anchor} differs: max={maximum}, SNR={snr}"
+        );
+    }
+    producer.stop(&mut session, &mut resources).unwrap();
+    #[cfg(unix)]
+    reaped(pid);
+}
+
+#[test]
 #[ignore = "requires native worker and retained independent SoundTouch/prepared preview PCM"]
 fn native_prepared_pitch_preview_matches_independent_soundtouch_and_mastered_pcm() {
     let directory = PathBuf::from(

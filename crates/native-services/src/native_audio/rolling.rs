@@ -14,6 +14,7 @@ type Result<T> = std::result::Result<T, EditorError>;
 type Key = (u64, usize);
 struct Piece {
     timestamp: f64,
+    decoder_epoch: u64,
     data: Window,
     _metadata: PcmReservation,
 }
@@ -44,6 +45,7 @@ pub(super) struct RollingSource {
     previous: Vec<(f64, f64)>,
     resident: u64,
     memory: PcmMemory,
+    decoder_epoch: u64,
     _metadata: PcmReservation,
 }
 impl RollingSource {
@@ -84,6 +86,7 @@ impl RollingSource {
             previous: Vec::new(),
             resident: 0,
             memory: memory.clone(),
+            decoder_epoch: 0,
             _metadata: metadata,
         })
     }
@@ -119,6 +122,10 @@ impl RollingSource {
     ) -> Result<()> {
         self.retain(windows, false);
         self.input.restart(resources, start, config)?;
+        self.decoder_epoch = self
+            .decoder_epoch
+            .checked_add(1)
+            .ok_or_else(|| invalid("Native rolling decoder epoch overflow"))?;
         self.origin = Some(start);
         self.through = start;
         self.ended = false;
@@ -199,6 +206,22 @@ impl RollingSource {
                     ));
                 }
                 let key = (timestamp.to_bits(), frames);
+                // A seek reconstructs codec state. Compressed formats such as
+                // AAC can emit different priming samples at the same PTS when
+                // reached from another decode origin. Replace that observation
+                // rather than mixing the old and new decoder contexts. Other
+                // currently borrowed windows remain retained and accounted.
+                if let Some(index) = self
+                    .pieces
+                    .iter()
+                    .position(|p| p.key() == key && p.decoder_epoch != self.decoder_epoch)
+                {
+                    // Replacement keeps this interval resident. It must not
+                    // advance the missing-data frontier, which would force a
+                    // second seek (and a fresh codec priming state) next block.
+                    let replaced = self.pieces.remove(index);
+                    self.resident -= replaced.data.samples.frames() as u64;
+                }
                 if let Some(old) = self.pieces.iter().find(|p| p.key() == key) {
                     for (c, channel) in frame.channels.iter().enumerate() {
                         if channel.iter().enumerate().any(|(i, value)| {
@@ -237,6 +260,7 @@ impl RollingSource {
                     }
                     self.pieces.push(Piece {
                         timestamp,
+                        decoder_epoch: self.decoder_epoch,
                         data: Window::new(0, Samples::Planar(planes), &self.memory)?,
                         _metadata: metadata,
                     });

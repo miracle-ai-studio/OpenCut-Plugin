@@ -57,6 +57,7 @@ export class SurfacePlayer {
   private validating=0;
   private slowPreparations:Record<string,number>[]=[];
   private credited=0n;
+  private projectedFrames:string|null=null;
   private wallDrawAt:number|null=null;
   private maximumWallGap=0;
   private maximumWallGapAt=0;
@@ -152,6 +153,7 @@ export class SurfacePlayer {
         const observed=this.clock.sample({contextTime:projection.contextTime,
           performanceTime:projection.timeOrigin+projection.performanceTime-this.screen.timeOrigin},this.screen.now());
         if(observed?.output) {
+          this.projectedFrames=observed.output.frames;
           if(this.wallDrawAt===null&&BigInt(observed.output.frames)>0n)this.wallDrawAt=this.screen.now();
           this.binding.outputPort?.postMessage({kind:'output',token:this.binding.token,observation:observed.output,stalled:observed.stalled});
           const at={ticks:String(BigInt(this.session.actual_start_sample)+BigInt(observed.output.frames)),timebase:this.binding.sampleRate};
@@ -193,7 +195,10 @@ export class SurfacePlayer {
       presentedFrames:this.presented,discardedFrames:this.discarded,statistics:JSON.stringify({observations:sorted.length,
         lagP95Ms:percentile(.95),lagP99Ms:percentile(.99),maxLagMs:sorted.at(-1)??null,missedCachedFrames:this.missed,
         maxFrameGapMs:this.maximumGap,maxWallFrameGapMs:this.maximumWallGap,maxWallFrameGapAtSeconds:this.maximumWallGapAt,maxWallFrameGapBufferedFrames:this.maximumWallGapBuffered,skippedIntervals:this.skipped,presentationThread:"worker",
-        preparedFrames:this.queue.length,validatingFrames:this.validating,capacity:this.capacity,readyThroughSeconds:Number(readyThrough.ticks)/readyThrough.timebase,slowPreparations:this.slowPreparations})};
+        preparedFrames:this.queue.length,validatingFrames:this.validating,capacity:this.capacity,readyThroughSeconds:Number(readyThrough.ticks)/readyThrough.timebase,slowPreparations:this.slowPreparations,
+        submittedDeviceFrames:this.clock.submittedFrames,projectedDeviceFrames:this.projectedFrames,pictureCreditFrames:String(this.credited),
+        projectionAgeMs:this.projection?this.screen.now()-(this.projection.timeOrigin+this.projection.performanceTime-this.screen.timeOrigin):null,
+        nextPreparation:this.next,firstQueued:this.queue[0]?.frame.plan.identity.time??null,lastQueued:this.queue.at(-1)?.frame.next_time??null,filling:!!this.filling})};
   }
   private readyThrough(){
     let time=this.last?.next_time??this.session.presentation_time;

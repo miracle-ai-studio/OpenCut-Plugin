@@ -540,23 +540,110 @@
       ]
     },
     "native_auxiliary_distribution": {
-      "status": "pinned standalone Python and Node acquired with original notices; three actual worker identities match unchanged locks after restoring immutable validator; integrated Rust build and relocated cold font imports pending",
+      "status": "pinned standalone font Python and catalog Node bundled; restored immutable validator, actual relocated doctor and three offline cold public font imports/replay/Undo passed; export tools remain external and complete delivery false",
+      "source_commit": "0820ed5ee171b2ebc603d192b91897e18ad03719",
       "delivery_ready": false,
-      "source_base_commit": "10ada9fb",
-      "cause": "generate.py maintenance-only path/type/atlas changes altered its whole-file identity (1b4b30d8...), while all saved derived locks and proofs still bind 948dce6b...; actual independent Python revealed the mismatch",
-      "repair": "restore exact source from 1b261849 as immutable imported dependency; current generate_catalog.py publication entry imports unchanged helpers; no font lock/proof/output identity updates",
+      "runtime": {
+        "opencut": {
+          "path": "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/auxiliary/relocated install/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+          "sha256": "0a78fdc06375678ab91def065ade38f7a23554a64ea2fedd4391cff40f41f237"
+        },
+        "opencut-render-worker": {
+          "path": "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/auxiliary/relocated install/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+          "sha256": "c970294ef4540b9224638ab75fcc26de4261e88ed208a9d0d8798f81ca20c3b1"
+        }
+      },
+      "archive": "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/auxiliary/packages/opencut-0.1.0-dev-c18f08a2558b-x86_64-apple-darwin.tar.gz",
+      "archive_sha256": "8f8dd2f5a0322974ff9cad11b396b6e42329c041dd15cb59d6a6aa8dac5c3bca",
+      "archive_qualification": "development native/auxiliary package; FFmpeg/ffprobe declared external; shipped status was captured before acceptance",
+      "cause": {
+        "maintained_file_sha256_before_restoration": "1b4b30d81a5b5fbc7fc4a2d240672c5f9cb0e236e6ec8ebc2b7175f5bb9a3169",
+        "required_immutable_validator_sha256": "948dce6b6727f6243315b466f6cba6db53c42f8325e555320ed8e5d95ac8cb73",
+        "reason": "maintenance-only output/type/atlas edits changed whole-file identity; all non-main helper ASTs unchanged",
+        "repair": "restore exact dependency from 1b261849; current generate_catalog.py imports the same validation helpers; no lock, proof or font output edits"
+      },
+      "components": {
+        "python": "CPython3.14.7+20260929 standalone, regular GIL build; exact pinned fontTools4.61.1 wheel/implementation",
+        "node": "official24.19.0 executable and complete original notices; built-in zlib catalog profile",
+        "licenses": "original full Python artifact metadata/notices matched exact interpreter/libpython bytes; missing upstream static Zstd1.5.7 BSD notice restored from exact upstream tag; fontTools and Node original notices included",
+        "runtime_files_unchanged_after_execution": true
+      },
       "checks": {
         "font_python_tests_passed": 23,
         "architecture_unit_tests_passed": 14,
-        "architecture_and_contract_boundaries": "passed without baseline extensions",
-        "actual_worker_identities": "all three match exact existing runtime locks with Python 3.14.7/fontTools4.61.1",
-        "native_linkage": "Node and full standalone Python component closures contain no unresolved external libraries"
+        "architecture_and_contract_boundaries": "passed without dependency baseline extensions",
+        "actual_worker_identities": "all three exactly match unchanged locks",
+        "native_font_guards_passed": 2,
+        "all_face_inspector_check": "explicitly ignored; requires full retained approved derived-output cache, not covered by three-case scope",
+        "host_tests_passed": 99,
+        "generated_and_canonical_contracts": "same exact relocated0a78fdc06375 CLI;184operations/12domains",
+        "doctor_checks_passed": 2410,
+        "doctor_failed": 0,
+        "doctor_limit": "uses external /usr/local/bin/ffmpeg and ffprobe; does not establish clean-machine export availability"
+      },
+      "cold_imports": [
+        {
+          "category": "font_derived",
+          "catalog_id": "google-workbench-regular-derived-v1",
+          "output_sha256": "ec97e73bfaa5538c387c67022f952b9d9b5edef76753c58ffa12a57737c74515",
+          "seconds": 4.584465403808281,
+          "pinned_proof_equal": true,
+          "actual_cold_derivation": true,
+          "idempotent_replay": true
+        },
+        {
+          "category": "font_named",
+          "catalog_id": "google-orbitron-bold-derived-v2",
+          "output_sha256": "b36622bf501e75600bd5c2e0b13f11a3154e81b81097445f87b2c3ac892c5e8c",
+          "seconds": 4.72629410517402,
+          "pinned_proof_equal": true,
+          "actual_cold_derivation": true,
+          "idempotent_replay": true
+        },
+        {
+          "category": "font_color_static",
+          "catalog_id": "google-sixtyfourconvergence-regular-color-static-v1",
+          "output_sha256": "bd86921db5f4fcd9e1009c6c0e5130154f7b9f593cef2d7433f6664f95958301",
+          "seconds": 5.552663636859506,
+          "pinned_proof_equal": true,
+          "actual_cold_derivation": true,
+          "idempotent_replay": true
+        }
+      ],
+      "lifecycle": {
+        "font_project_graph_restored": true,
+        "existing_projects_unchanged": true,
+        "durable_jobs_unchanged": true,
+        "remaining_python_children": 0,
+        "active_jobs": 0,
+        "replay_and_historical_proof_reads_with_explicitly_unavailable_runtime": true
+      },
+      "reuse_scope": {
+        "native_worker_and_five_media_libraries": "exact relocated bytes unchanged from10ada9fb accepted package",
+        "web": "exact delivered files unchanged, source digestd77fea26d5fd",
+        "prior_independent_pixels_pcm_and_continuous_playback": "retain original CLIab12bc4d2644 candidate reports; reuse exact worker-level evidence only, do not relabel as a new0a78fdc06375 host run",
+        "new_host_behavior_verified": "cold public font acquisition/import, immutable proof reads, replay and atomic Undo"
+      },
+      "evidence_sha256": {
+        "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/auxiliary/acquisition.json": "e354a4f6bd6ab35f759d37e5b92618a7714189bba9676e537f7b2bb63ee1dfd5",
+        "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/auxiliary/python-full-acquisition.json": "cbf3d013ab23e454912087e5517f7f3892a58467f4892009202015033dfa266a",
+        "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/auxiliary/python-notices-proof.json": "7a231c62128e7b0bf5fa2af5051742d61cc8770fc3766e0c530dfeaad9f4dbe5",
+        "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/auxiliary/exact-worker-identities.json": "d2d7f5f88a27b5371254d23d7ffb0893fc25f9a26e9794b89f1f3b74963de78b",
+        "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/auxiliary/validator-restoration-proof.json": "7484b5c2d7595709575a6daa0b75d145c7e5dfe9aa4618b01db0a90207a75578",
+        "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/auxiliary/integrated-build.json": "cea13d2500bf2eeac1d1906b42c91dc069375492529e2283af187f4668130d6d",
+        "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/auxiliary/affected-rust-checks.json": "57f4195fd647b3de54e915c5e68ace65d5dc14386285d8b13659a1e21f805ca1",
+        "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/auxiliary/relocated-doctor.json": "36e7ac380120b71efa7e4208cef0865e4c66455e40e2c028adc20e3f313ad48d",
+        "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/auxiliary/relocated-canonical-contract.json": "31dd88f95893f672180d285d9cbbb6105444190c401f3d2f0077a3b681736509",
+        "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/auxiliary/cold-font-imports-0a78fdc06375.json": "5fbab1be34ce6f4c6a5b799e4598be8c194fe1e2f2717be79daaf7b57c6e5af0",
+        "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/auxiliary/font-replay-without-runtime.json": "5aad01ae0aa057eeea2cb1fd29cfde73a1c200e37965848c96f308083b05f993",
+        "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/auxiliary/pinned-source-and-test-binaries.json": "de51dfc155c94d1442c0813f93098b2ab9c4ea7cca5299a0b079e4cbd9b13953",
+        "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/auxiliary/font-python-checks.log": "0c7df2d1907a581f4398ef9f53d0bc7530f3d8644b41fa69a8b846f52b546e55"
       },
       "remaining": [
-        "integrated binary embeds the restored validator source",
-        "package original Python dependency notices, exact fontTools implementation and minimal Node catalog executable",
-        "relocated doctor and cold public font imports with unchanged pinned output bytes",
-        "export-tool distribution and remaining broader native-rendering acceptance"
+        "bundle FFmpeg/ffprobe with original source/licenses and one shared host discovery policy",
+        "broader codec/container/color/orientation/default-track and4K performance matrices",
+        "historical intermittent asset-free text resume stall cause",
+        "clean-machine, physical/manual and cross-platform delivery acceptance"
       ]
     }
   },

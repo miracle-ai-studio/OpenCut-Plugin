@@ -8,8 +8,8 @@ pub(crate) fn capability() -> ExportVideoCapability {
 }
 pub(crate) fn encoder_support() -> Result<ExportEncoderSupport, opencut_contracts::EditorError> {
     crate::classic_visual_runtime::check_export_video_runtime()?;
-    let ffmpeg = opencut_native_services::classic_video::crate::media_tool_runtime::ffmpeg()?;
-    opencut_native_services::classic_video::crate::media_tool_runtime::ffprobe()?;
+    let ffmpeg = crate::media_tool_runtime::ffmpeg()?;
+    crate::media_tool_runtime::ffprobe()?;
     opencut_native_services::export_video::probe_encoder_support(
         &ffmpeg,
         &opencut_media::CancellationToken::new(),

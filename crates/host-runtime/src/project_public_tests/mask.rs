@@ -42,22 +42,25 @@ fn mask_geometry_and_jobs_dispatch_with_fixed_revision_and_original_authority() 
         host.call("opencut_mask_geometry", geometry.clone()),
         "REVISION_CONFLICT",
     );
-    let frame = json!({"project_id":"p","revision":receipt["revision"],"sequence_id":"main","time":{"ticks":"0","timebase":1},"idempotency_key":"mask-png"});
-    let video = json!({"project_id":"p","revision":receipt["revision"],"sequence_id":"main","idempotency_key":"mask-video"});
+    let frame = json!({"kind":"frame","request":{"project_id":"p","revision":receipt["revision"],"sequence_id":"main","time":{"ticks":"0","timebase":1},"idempotency_key":"mask-png"}});
+    let video = json!({"kind":"video","request":{"project_id":"p","revision":receipt["revision"],"sequence_id":"main","idempotency_key":"mask-video","options":{"format":"mp4","quality":"high","include_audio":false}}});
     for (tool, input, kind) in [
-        (
-            "opencut_job_mask_frame_png",
-            frame.clone(),
-            "render.project_mask_frame.v4",
-        ),
-        (
-            "opencut_job_mask_video_mp4",
-            video.clone(),
-            "render.project_mask_video.v4",
-        ),
+        ("opencut_render_submit", frame.clone(), "render.frame"),
+        ("opencut_render_submit", video.clone(), "render.video"),
     ] {
         let job = data(host.call(tool, input.clone()));
         assert_eq!(job["kind"], kind);
+        assert_eq!(
+            host.app
+                .get_job(job["job_id"].as_str().unwrap())
+                .unwrap()
+                .kind,
+            if kind == "render.frame" {
+                "render.project_scene_frame.v4"
+            } else {
+                "render.export_video.v2"
+            }
+        );
         assert_eq!(job["target"]["revision"], receipt["revision"]);
         assert_eq!(data(host.call(tool, input)), job);
         no_locator(&job, dir.path());
@@ -71,12 +74,6 @@ fn mask_geometry_and_jobs_dispatch_with_fixed_revision_and_original_authority() 
         host.call("opencut_mask_geometry", geometry),
         "NOT_AUTHORIZED",
     );
-    error(
-        host.call("opencut_job_mask_frame_png", frame),
-        "NOT_AUTHORIZED",
-    );
-    error(
-        host.call("opencut_job_mask_video_mp4", video),
-        "NOT_AUTHORIZED",
-    );
+    error(host.call("opencut_render_submit", frame), "NOT_AUTHORIZED");
+    error(host.call("opencut_render_submit", video), "NOT_AUTHORIZED");
 }

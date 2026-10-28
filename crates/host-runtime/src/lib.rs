@@ -1259,10 +1259,8 @@ mod integration_tests {
     }
 
     #[test]
-    fn in_memory_bind_preflight_and_job_share_private_asset_store() {
+    fn in_memory_native_setup_preflight_and_public_job_share_private_asset_store() {
         let directory = tempfile::tempdir().unwrap();
-        let source = directory.path().join("media.bin");
-        std::fs::write(&source, b"captured bytes").unwrap();
         let mut automation = Automation::open(":memory:").unwrap();
         let asset_store_root = automation.app.asset_store_root().to_path_buf();
         assert!(asset_store_root.starts_with(std::env::temp_dir()));
@@ -1270,41 +1268,44 @@ mod integration_tests {
             asset_store_root,
             std::env::current_dir().unwrap().join("asset-store")
         );
-
-        let created = data(automation.call(
-            "opencut_project_create",
-            json!({"project":{"id":"memory","name":"Memory","sequence_id":"main","width":64,"height":48,"fps":{"numerator":10,"denominator":1}},"idempotency_key":"create"}),
-        ));
-        let span =
-            json!({"start":{"ticks":"0","timebase":10},"duration":{"ticks":"10","timebase":10}});
-        let applied = data(automation.call(
-            "opencut_edit_apply",
-            json!({"project_id":"memory","request":{"expected_revision":created["revision"],"idempotency_key":"bind","label":"bind","operations":[
-                {"type":"asset.bind","asset":{"id":"asset","name":"Asset","kind":"video","uri":source,"duration":{"ticks":"10","timebase":10},"metadata":{}}},
-                {"type":"track.create","sequence_id":"main","track":{"id":"video","name":"Video","kind":"video","enabled":true,"muted":false,"locked":false,"clips":[],"params":{}}},
-                {"type":"clip.insert","sequence_id":"main","track_id":"video","clip":{"id":"clip","asset_id":"asset","timeline_range":span,"source_range":span,"params":{},"channels":[]}}
-            ]}}),
-        ));
+        // Native-only synthetic CAS setup cannot grant a public path/URL bind.
+        // This fixture is deliberately opaque: admission and lifetime, not codec pixels.
+        let (source, _) =
+            crate::project_public_tests::seed_source_video(&mut automation, directory.path());
+        let snapshot = data(automation.call(
+            "opencut_project_inspect",
+            json!({"project_id":"p","revision":null}),
+        ))["snapshot"]
+            .clone();
         std::fs::remove_file(&source).unwrap();
-
-        let preflight = data(automation.call(
-            "opencut_render_preflight",
-            json!({"project_id":"memory","revision":applied["revision"],"sequence_id":"main","container":"mp4","video_codec":"h264"}),
-        ));
-        assert_eq!(preflight["revision"], applied["revision"]);
+        let preflight = data(automation.call("opencut_render_preflight", json!({"project_id":"p","revision":snapshot["revision"],"sequence_id":"main","options":{"format":"mp4","quality":"high","include_audio":false}})));
+        assert_eq!(preflight["revision"], snapshot["revision"]);
         assert!(
             preflight["issues"]
                 .as_array()
                 .unwrap()
                 .iter()
-                .all(|issue| { !issue["code"].as_str().unwrap().starts_with("ASSET_") })
+                .all(|issue| !matches!(
+                    issue["code"].as_str(),
+                    Some("ASSET_MISSING" | "ASSET_CHANGED" | "ASSET_SOURCE_CHANGED")
+                ))
         );
-
-        let job = data(automation.call(
-            "opencut_job_start",
-            json!({"kind":"render.project","idempotency_key":"render","input":{"project_id":"memory","revision":applied["revision"],"sequence_id":"main","container":"mp4","video_codec":"h264"}}),
-        ));
-        assert_eq!(job["input"]["asset_lock"]["assets"][0]["asset_id"], "asset");
+        let job = data(automation.call("opencut_render_submit", json!({"kind":"frame","request":{"project_id":"p","revision":snapshot["revision"],"sequence_id":"main","idempotency_key":"render","time":{"ticks":"0","timebase":1}}})));
+        let private = automation
+            .app
+            .get_job(job["job_id"].as_str().unwrap())
+            .unwrap();
+        assert_eq!(
+            private.input["asset_lock"]["assets"][0]["asset_id"],
+            "asset"
+        );
+        assert_eq!(
+            private.input["asset_lock"]["assets"][0]["content_hash"],
+            snapshot["project"]["assets"][0]["version"]["content_hash"]
+        );
+        let public = serde_json::to_string(&job).unwrap();
+        assert!(!public.contains(asset_store_root.to_str().unwrap()));
+        assert!(!public.contains(source.to_str().unwrap()));
         assert!(asset_store_root.exists());
         drop(automation);
         assert!(!asset_store_root.exists());

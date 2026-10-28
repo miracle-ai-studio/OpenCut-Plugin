@@ -37,7 +37,7 @@ fn seconds(value: &Value, expected: i64) {
 }
 
 #[test]
-fn element_timeline_public_profile_preserves_old_entry_and_rechecks_edit_authority() {
+fn timeline_public_and_domain_plans_share_one_profile_and_recheck_edit_authority() {
     let directory = tempfile::tempdir().unwrap();
     let mut automation = Automation::open(directory.path().join("workspace.sqlite")).unwrap();
     create(&mut automation);
@@ -49,12 +49,13 @@ fn element_timeline_public_profile_preserves_old_entry_and_rechecks_edit_authori
             "kind":"add_track", "id":"titles", "name":"Titles", "track_kind":"text"
         }),
     );
-    error(
-        automation.call("opencut_edit_timeline_plan", input.clone()),
-        "INVALID_ARGUMENT",
-    );
+    let domain = data(automation.call(
+        "opencut_edit",
+        json!({"action":"timeline.plan","input":input.clone()}),
+    ));
     let tool = "opencut_edit_timeline_plan";
     let planned = data(automation.call(tool, input.clone()));
+    assert_eq!(domain, planned);
     assert_eq!(data(automation.call(tool, input.clone())), planned);
     assert_eq!(inspect(&mut automation), fixed);
     assert_eq!(planned["decision"]["created_ids"], json!(["titles"]));

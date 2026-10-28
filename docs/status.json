@@ -1537,10 +1537,10 @@
       "remaining": [
         "cold startup performance and historical asset-free resume stall",
         "long independent pixel/PCM exports and throughput, codec/color/orientation/default decode track coverage",
-        "15 host test failures and complete current-contract behavior coverage",
         "native worker/shared libraries and provenance in relocated installation; retire remaining browser distribution modules",
         "physical/manual and cross-platform acceptance"
-      ]
+      ],
+      "host_test_resolution": "See host_contract_conformance: 98 passed, zero failures/ignored; original failed reports retained."
     },
     "native_preview_startup_prefix": {
       "base_commit": "ecca84e59e536ce60d336974a5c8296542222736",
@@ -1600,10 +1600,56 @@
         "scope": "one 320x180 retained synthetic source; not 4K or a universal memory bound"
       },
       "remaining": [
-        "15 host test failures and current-contract coverage",
         "long independent pixel/PCM export and throughput",
         "historical asset-free intermittent resume stall cause",
         "broader codecs/colors/orientation/default decode track, 4K, physical/manual and portable distribution"
+      ],
+      "host_test_resolution": "See host_contract_conformance: 98 passed, zero failures/ignored; original failed reports retained."
+    },
+    "host_contract_conformance": {
+      "base_commit": "19dd4d39901e79605e599596667adf7f752fa32f",
+      "status": "full current host test suite passed, including explicitly enabled actual native source-art case",
+      "delivery_ready": false,
+      "changes": "Tests now use sole public render/catalog/edit-recovery contracts, reject retired aliases and client text-measurement observations, distinguish canonical public task kinds from exact private execution identities, and preserve fixed revision/idempotency/authority/CAS/no-path-leak checks. No production operation/DTO/registry/runtime implementation changed.",
+      "build": "release test target only, original release cache reused; CLI/worker/Web unchanged; no regeneration or browser rerun for verifier-only edits",
+      "test_binary_sha256": "52a437c72d82b9d485ae8ab8190e10a354c6a4ac14cbcee0303f5fe125517571",
+      "build_log_sha256": "ae45e2994708c1c6b9048421ab1cd266d134e0654f4ce6bcd08fe24b6ed6820f",
+      "test_report_sha256": "f39e97375f0237392ba7da11849637b2ca7774db22d25aac6a99f55faf8462aa",
+      "checks": {
+        "passed": 98,
+        "failed": 0,
+        "ignored": 0,
+        "test_threads": 1,
+        "include_ignored": true,
+        "seconds": 87.62847215402871
+      },
+      "real_native_source_art": "100 requests use one decode; new credential cannot borrow owner cache; revoked warm credential rejected; source handles released before exclusive CAS gate; browser renderer environment unset and fixed native worker used",
+      "retained_failures": [
+        {
+          "scope": "previous complete host gate",
+          "passed": 82,
+          "failed": 15,
+          "ignored": 1
+        },
+        {
+          "scope": "first current-contract test conversion",
+          "passed": 92,
+          "failed": 6,
+          "ignored": 0,
+          "cause": "Assertions still used private stored task tags in public projections; corrected to check public and private identities separately.",
+          "report_sha256": "2df00d56c26d899c4f44bf24f8da1fd98d0e9abd8597170fce6ee3da95d0ea8a"
+        }
+      ],
+      "cancelled_build": "Initial test command accidentally selected debug instead of retained release profile; stopped the verified owned process group with exit 130, retained logs, then used release cache. No production CLI/worker rebuild.",
+      "runtime_reused": {
+        "opencut_sha256": "ee6a2b621ab333e92170f79ee3d0394426f2aaf3d982293aad73c353aca1537a",
+        "opencut-render-worker_sha256": "cff628baf0d8320216a0aa31f404e3ef157baf37d4c5b0642d4b2ba0fd9e966c"
+      },
+      "remaining": [
+        "independent long audio/video export, encoder output and throughput",
+        "historical intermittent asset-free text resume stall",
+        "broader codec/color/orientation/default-track decode, 4K and memory/performance matrix",
+        "native worker/shared-library distribution, relocated installation and cross-platform/manual acceptance"
       ]
     }
   }

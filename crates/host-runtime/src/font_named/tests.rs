@@ -1,7 +1,7 @@
 use super::*;
 use opencut_contracts::{CreateProject, FrameRate, scene_ops::CreateProjectRequest};
 #[test]
-fn v2_source_is_registered_and_old_public_entrypoints_remain_v1_only() {
+fn approved_named_source_uses_one_public_catalog_and_import_contract() {
     let tmp = tempfile::tempdir().unwrap();
     let mut host = Automation::open(tmp.path().join("workspace.sqlite")).unwrap();
     let snapshot = host
@@ -27,20 +27,19 @@ fn v2_source_is_registered_and_old_public_entrypoints_remain_v1_only() {
         serde_json::json!({"catalog_id":pin.source.face.id}),
     );
     assert!(public.error.is_none());
+    let source = public.data.unwrap();
+    assert_eq!(source["details"]["kind"], "derived");
     assert_eq!(
-        public.data.unwrap(),
+        source["details"]["source"],
         serde_json::to_value(&pin.source).unwrap()
     );
-    assert_eq!(
-        host.call(
-            "opencut_font_source",
-            serde_json::json!({"catalog_id":pin.source.face.id})
-        )
-        .error
-        .unwrap()
-        .code,
-        "NOT_FOUND"
+    assert_eq!(source["face"]["id"], pin.source.face.id);
+    let repeated = host.call(
+        "opencut_font_source",
+        serde_json::json!({"catalog_id":pin.source.face.id}),
     );
+    assert!(repeated.error.is_none());
+    assert_eq!(repeated.data.unwrap(), source);
     let request = ImportFont {
         project_id: "p".into(),
         expected_revision: snapshot.revision.clone(),
@@ -55,10 +54,12 @@ fn v2_source_is_registered_and_old_public_entrypoints_remain_v1_only() {
             serde_json::json!({"project_id":"p","revision":null}),
         )
         .data;
+    let mut unknown = request.clone();
+    unknown.catalog_id = "unapproved-font-source".into();
     assert_eq!(
         host.call(
             "opencut_font_import",
-            serde_json::to_value(&request).unwrap()
+            serde_json::to_value(unknown).unwrap()
         )
         .error
         .unwrap()

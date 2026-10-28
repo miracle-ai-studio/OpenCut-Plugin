@@ -52,7 +52,7 @@ fn plan(snapshot: &Value) -> Value {
         .clone();
     style["content"] = json!("");
     style["font"] = json!({"kind":"locked","font_id":"missing-font"});
-    json!({"project_id":"p","expected_revision":snapshot["revision"],"sequence_id":"main","idempotency_key":"plan-subtitles","track":{"kind":"existing","track_id":"subs"},"source":{"kind":"file","format":"srt","content":"1\n00:00:00,000 --> 00:00:01,000\nHello\n\n"},"style":style,"max_width_px":null,"observations":null})
+    json!({"project_id":"p","expected_revision":snapshot["revision"],"sequence_id":"main","idempotency_key":"plan-subtitles","track":{"kind":"existing","track_id":"subs"},"source":{"kind":"file","format":"srt","content":"1\n00:00:00,000 --> 00:00:01,000\nHello\n\n"},"style":style,"max_width_px":null})
 }
 fn unchanged(host: &mut Automation, before: &Value, history: &Value) {
     assert_eq!(inspect(host), *before);
@@ -74,6 +74,12 @@ fn public_plan_errors_are_read_only_and_domain_dispatch_is_registered() {
         json!({"project_id":"p","revision":null}),
     ));
     let input = plan(&before);
+    let mut forged = input.clone();
+    forged["observations"] = json!([]);
+    error(
+        host.call("opencut_subtitle_text_plan", forged),
+        "INVALID_ARGUMENT",
+    );
     error(
         host.call("opencut_subtitle_text_plan", input.clone()),
         "INVALID_PROJECT",
@@ -153,7 +159,7 @@ fn ass_plan_resolves_fonts_without_mutation_and_requires_current_edit_authority(
         json!({"project_id":"p","revision":null}),
     ));
     let content = "[Script Info]\nScriptType: v4.00+\nPlayResX: 64\nPlayResY: 48\nWrapStyle: 2\n[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\nStyle: Default,Lato,12,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,0,0,2,4,4,4,1\n[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\nDialogue: 0,0:00:00.00,0:00:01.00,Default,,0,0,0,,Hello\n";
-    let request = json!({"project_id":"p","expected_revision":before["revision"],"sequence_id":"main","idempotency_key":"ass-plan","track":{"kind":"new","track_id":"ass-text"},"content":content,"font_bindings":[],"observations":null});
+    let request = json!({"project_id":"p","expected_revision":before["revision"],"sequence_id":"main","idempotency_key":"ass-plan","track":{"kind":"new","track_id":"ass-text"},"content":content,"font_bindings":[]});
     let result = data(host.call(
         "opencut_edit",
         json!({"action":"subtitle.ass.plan","input":request}),
@@ -192,7 +198,7 @@ fn classic_ass_registered_plan_keeps_fixed_head_and_requires_current_edit_author
     // Missing PlayRes, V4 Styles, border3, q0, overrides and warnings are actual
     // Classic inputs. No native font bytes are opened while unresolved.
     let content = "[Script Info]\nWrapStyle: 0\n[V4 Styles]\nFormat: Name,Fontname,Fontsize,BackColour,Bold,BorderStyle\nStyle: Default,Lato,24,&H80000000,0,3\n[Events]\nFormat: Start,End,Style,Effect,Text\nDialogue: 0:00:00.0,0:00:01.0,Default,scroll,{\\move(0,0,1,1)}Hello\n";
-    let request = json!({"project_id":"p","expected_revision":before["revision"],"sequence_id":"main","idempotency_key":"classic-ass-plan","track":{"kind":"new","track_id":"classic-ass-text"},"content":content,"font_bindings":[],"observations":null});
+    let request = json!({"project_id":"p","expected_revision":before["revision"],"sequence_id":"main","idempotency_key":"classic-ass-plan","track":{"kind":"new","track_id":"classic-ass-text"},"content":content,"font_bindings":[]});
     let result = data(host.call("opencut_subtitle_classic_ass_plan", request.clone()));
     assert_eq!(result["revision"], before["revision"]);
     assert_eq!(result["width"], 64);

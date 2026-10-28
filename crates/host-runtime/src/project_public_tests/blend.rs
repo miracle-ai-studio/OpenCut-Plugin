@@ -42,21 +42,32 @@ fn blend_public_plan_apply_and_fixed_frame_dispatch_share_original_authority() {
             json!({"type":"element_put","sequence_id":"main","track_id":"graphics","element":element}),
         ],
     );
-    let frame = json!({"project_id":"p","revision":receipt["revision"],"sequence_id":"main","time":{"ticks":"0","timebase":1},"idempotency_key":"graphic-png"});
-    let job = data(host.call("opencut_job_blend_frame_png", frame.clone()));
-    assert_eq!(job["kind"], "render.project_blend_frame.v4");
-    assert_eq!(job["target"]["revision"], receipt["revision"]);
+    let frame = json!({"kind":"frame","request":{"project_id":"p","revision":receipt["revision"],"sequence_id":"main","time":{"ticks":"0","timebase":1},"idempotency_key":"graphic-png"}});
+    let job = data(host.call("opencut_render_submit", frame.clone()));
+    assert_eq!(job["kind"], "render.frame");
     assert_eq!(
-        data(host.call("opencut_job_blend_frame_png", frame.clone())),
-        job
+        host.app
+            .get_job(job["job_id"].as_str().unwrap())
+            .unwrap()
+            .kind,
+        "render.project_scene_frame.v4"
     );
+    assert_eq!(job["target"]["revision"], receipt["revision"]);
+    assert_eq!(data(host.call("opencut_render_submit", frame.clone())), job);
     no_locator(&job, dir.path());
-    let video = json!({"project_id":"p","revision":receipt["revision"],"sequence_id":"main","idempotency_key":"graphic-video"});
-    let video_job = data(host.call("opencut_job_blend_video_mp4", video.clone()));
-    assert_eq!(video_job["kind"], "render.project_blend_video.v4");
+    let video = json!({"kind":"video","request":{"project_id":"p","revision":receipt["revision"],"sequence_id":"main","idempotency_key":"graphic-video","options":{"format":"mp4","quality":"high","include_audio":false}}});
+    let video_job = data(host.call("opencut_render_submit", video.clone()));
+    assert_eq!(video_job["kind"], "render.video");
+    assert_eq!(
+        host.app
+            .get_job(video_job["job_id"].as_str().unwrap())
+            .unwrap()
+            .kind,
+        "render.export_video.v2"
+    );
     assert_eq!(video_job["target"]["revision"], receipt["revision"]);
     assert_eq!(
-        data(host.call("opencut_job_blend_video_mp4", video.clone())),
+        data(host.call("opencut_render_submit", video.clone())),
         video_job
     );
     no_locator(&video_job, dir.path());
@@ -65,12 +76,6 @@ fn blend_public_plan_apply_and_fixed_frame_dispatch_share_original_authority() {
     host.caller = host.app.authenticate(&credential.secret).unwrap();
     request["expected_revision"] = receipt["revision"].clone();
     error(host.call("opencut_graphic_plan", request), "NOT_AUTHORIZED");
-    error(
-        host.call("opencut_job_blend_frame_png", frame),
-        "NOT_AUTHORIZED",
-    );
-    error(
-        host.call("opencut_job_blend_video_mp4", video),
-        "NOT_AUTHORIZED",
-    );
+    error(host.call("opencut_render_submit", frame), "NOT_AUTHORIZED");
+    error(host.call("opencut_render_submit", video), "NOT_AUTHORIZED");
 }

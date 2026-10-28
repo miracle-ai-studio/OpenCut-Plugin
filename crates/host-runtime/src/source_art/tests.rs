@@ -812,7 +812,7 @@ fn stereo_wave() -> Vec<u8> {
     out
 }
 #[test]
-#[ignore = "Requires configured local Chromium; root runs once after unit gates"]
+#[ignore = "Requires the explicit native render worker; run serially with --include-ignored"]
 fn real_public_source_art_uses_all_channels_and_reuses_hundred_requests() {
     let (_temp, mut host, mut request) = source(&stereo_wave());
     for index in 0..100 {

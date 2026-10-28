@@ -2,7 +2,12 @@ use super::*;
 
 fn derived_request(host: &mut Automation, snapshot: &Value) -> Value {
     let catalog = data(host.call("opencut_font_catalog", json!({})));
-    let face = &catalog["fonts"].as_array().unwrap()[0];
+    let face = catalog["fonts"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|face| face["kind"] == "derived")
+        .expect("approved derived source");
     json!({"project_id":"p","expected_revision":snapshot["revision"],"idempotency_key":"derived-font","catalog_id":face["id"],"font_id":"derived","required_text":"AV To"})
 }
 
@@ -13,11 +18,22 @@ fn font_derived_metadata_and_recovery_dispatch_preserve_fixed_request_without_lo
     let before = create(&mut host);
     let request = derived_request(&mut host, &before);
     let source = data(host.call(
-        "opencut_media",
-        json!({"action":"font.derived.v1.source","input":{"catalog_id":request["catalog_id"]}}),
+        "opencut_catalog",
+        json!({"action":"font.source","input":{"catalog_id":request["catalog_id"]}}),
     ));
     assert_eq!(source["face"]["id"], request["catalog_id"]);
-    assert_ne!(source["source_sha256"], source["face"]["content_hash"]);
+    assert_eq!(source["details"]["kind"], "derived");
+    assert_eq!(
+        source["details"]["source"]["source_sha256"]
+            .as_str()
+            .unwrap()
+            .len(),
+        64
+    );
+    assert_ne!(
+        source["details"]["source"]["source_sha256"],
+        source["face"]["content_hash"]
+    );
     no_locator(&source, dir.path());
     error(
         host.call(
@@ -26,37 +42,37 @@ fn font_derived_metadata_and_recovery_dispatch_preserve_fixed_request_without_lo
         ),
         "NOT_FOUND",
     );
-    let staged = data(host.call("opencut_media", json!({"action":"font.derived.v1.recovery.stage","input":{"context":{"request":request,"sequence_id":"main"}}})));
-    assert_eq!(staged["context"]["request"], request);
+    let staged = data(host.call("opencut_edit", json!({"action":"recovery.stage","input":{"context":{"intent":{"kind":"font_import","request":request},"sequence_id":"main"}}})));
+    assert_eq!(staged["context"]["intent"]["request"], request);
     assert!(staged["receipt"].is_null());
     assert_eq!(inspect(&mut host), before);
     assert_eq!(
         data(host.call(
-            "opencut_font_derived_recovery_read",
+            "opencut_edit_recovery_inspect",
             json!({"project_id":"p","recovery_id":staged["recovery_id"]})
         ))["record"],
         staged
     );
-    assert!(
+    assert_eq!(
         data(host.call(
-            "opencut_font_recovery_inspect",
+            "opencut_edit_recovery_inspect",
             json!({"project_id":"p","recovery_id":null})
-        ))["record"]
-            .is_null()
+        ))["record"],
+        staged
     );
     // Advancing the head proves this uncommitted fixed request can no longer
     // publish; acknowledgement never runs its Python provider or imports a font.
     apply(&mut host, "advance", vec![marker("other")]);
     let advanced = inspect(&mut host);
     let ack = data(host.call(
-        "opencut_font_derived_recovery_ack",
+        "opencut_edit_recovery_ack",
         json!({"project_id":"p","recovery_id":staged["recovery_id"]}),
     ));
     assert_eq!(ack["resolution"], "not_saved");
     assert_eq!(inspect(&mut host), advanced);
     assert!(
         data(host.call(
-            "opencut_font_derived_recovery_read",
+            "opencut_edit_recovery_inspect",
             json!({"project_id":"p","recovery_id":null})
         ))["record"]
             .is_null()
@@ -78,8 +94,8 @@ fn font_derived_import_stage_and_fixed_proof_enforce_current_public_authority() 
     );
     error(
         host.call(
-            "opencut_font_derived_recovery_stage",
-            json!({"context":{"request":request,"sequence_id":"main"}}),
+            "opencut_edit_recovery_stage",
+            json!({"context":{"intent":{"kind":"font_import","request":request},"sequence_id":"main"}}),
         ),
         "NOT_AUTHORIZED",
     );

@@ -623,6 +623,10 @@ mod tests {
                 root: root.clone(),
                 runtime: None,
                 allow_download,
+                probe: || {
+                    opencut_media::FfmpegBackend::discover()
+                        .map_err(|e| EditorError::new(e.code(), e.to_string()))
+                },
             };
             let error = source
                 .archive(Instant::now() + Duration::from_secs(1), &mut || Ok(()))

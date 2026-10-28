@@ -1280,6 +1280,91 @@
         "short-scene pause timing in first combined UI attempt retained; targeted observed clicks passed",
         "long/4K residency and throughput, broader media matrix, physical/manual and portable distribution acceptance"
       ]
+    },
+    "preview_backpressure_diagnostic": {
+      "source_commit": "785d7db1b8c1",
+      "cli_sha256": "7ea10d8429275c9616f08a228e4132c68895c25a7a92ca543b870b7fe4c78fd3",
+      "worker_sha256": "d3618b2d3ae7018074bf4d371642a34a403d22220d12b70b2bf0e28c93ef71c7",
+      "product_rebuilt": false,
+      "actual_editor_cases": [
+        "deferred frame release recovers after picture-credit buffering",
+        "seek while future picture request is held",
+        "pause while future picture request is held, then resume"
+      ],
+      "scoped_http_and_control_gate_passed": true,
+      "report_sha256": "a2d926c12a68186fdafabd44c03a0596220de75d41d60fd7b8265cc75b70a0b4",
+      "preview_responses": 1148,
+      "http_or_page_errors": 0,
+      "network_request_failed_events": 307,
+      "network_failure_limit": "Includes picture-stream ERR_ABORTED and retired audio ERR_INCOMPLETE_CHUNKED_ENCODING; no zero-requestfailed claim or exact correlation proof",
+      "project_and_durable_jobs_unchanged": true,
+      "historical_stall_cause_resolved": false,
+      "delivery_ready": false
+    },
+    "native_import_packet_probe_gap": {
+      "status": "confirmed actual video import failure with browser audio runtime unconfigured; native replacement not yet implemented",
+      "source_commit": "785d7db1b8c1",
+      "failed_job_id": "job_8a845f77c6944c618e6acce7cc356a6e",
+      "failure_code": "CAPABILITY_UNAVAILABLE",
+      "failure_message": "Classic packet-rate runtime is not configured or unavailable",
+      "source_sha256": "2826e87d1a60e4aaf8ce266b42b0c22fd736e04316208ac9ce2d9d1b610d2cc5",
+      "original_failed_job_retained": true,
+      "long_fixture_ready": false,
+      "independent_reference_sha256": "5388728cee6f5bbc730840c2e855f213fd7a6a7fad671b53854f60e129bfbd2e",
+      "reference_cases": [
+        {
+          "label": "cfr-aac-mp4",
+          "schema_version": 1,
+          "packet_count": 96,
+          "average_packet_rate": 24
+        },
+        {
+          "label": "long-bframes-mp4",
+          "schema_version": 1,
+          "packet_count": 102,
+          "average_packet_rate": 30
+        },
+        {
+          "label": "vfr",
+          "schema_version": 1,
+          "packet_count": 41,
+          "average_packet_rate": 10.25
+        },
+        {
+          "label": "multiple-tracks",
+          "schema_version": 1,
+          "packet_count": 96,
+          "average_packet_rate": 24
+        },
+        {
+          "label": "matroska",
+          "schema_version": 1,
+          "packet_count": 96,
+          "average_packet_rate": 24.00200017068122
+        },
+        {
+          "label": "fragmented",
+          "schema_version": 1,
+          "packet_count": 96,
+          "average_packet_rate": 24
+        },
+        {
+          "label": "audio-only",
+          "schema_version": 1,
+          "packet_count": 0,
+          "average_packet_rate": null
+        }
+      ],
+      "requirements": [
+        "preserve default-track ordering, not simply first physical video stream",
+        "target 100 packets includes additional out-of-presentation-order packets until the next packet starts at or after observed end",
+        "preserve actual timestamp/duration precision and original 16-significant-digit statistics; libav rounded Matroska duration alone is insufficient",
+        "reuse bounded byte ports and isolated native worker with cancellation, lease/authorization, identity, RSS/deadline and reap fences",
+        "keep exact historical ClassicPacketRate data readable; no backend selector, silent Node fallback or wider acceptance gates",
+        "retire packet-probe Node assembly and package dependencies only with corresponding native behavior and distribution proof"
+      ],
+      "remaining": "implement and integrate native packet observation; resume actual long preview/export/RSS acceptance on retained sources; resolve historical stall and other delivery gates",
+      "delivery_ready": false
     }
   }
 }

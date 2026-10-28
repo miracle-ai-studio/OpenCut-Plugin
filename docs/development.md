@@ -49,4 +49,8 @@ python3 scripts/verify-package-exchange.py --help
 
 包内程序、Web、SDK、运行时与许可证必须绑定准确身份。构建成功不等于完整发行验收；解包、搬迁、签名、安装与升级各自验证，见[交付状态](status.md)。
 
+当前 macOS 装配要求 `--native-media-spec /absolute/path/to/native-media.json`。该可信构建输入使用 `opencut.native-media-input`，声明 `target`、媒体库安装 `root` 和对应源码/许可证的 `provenance_root`。后者的 `build.json` 记录五个已识别 FFmpeg 共享库的字节、禁用 GPL/nonfree/version3 的配置和静态 dav1d 来源；同时保留 `build-media-runtime.py`、`sources` 中的对应源码归档和 `licenses` 中的原文。打包只修改副本，拒绝未记录的非系统动态依赖；尚不支持的平台明确失败。
+
+`--binary` 可复用已构建的 CLI，`--render-worker` 指定同批 worker，缺省取 CLI 的相邻文件。`--web-root` 和 `--reuse-sdk-dist` 复用已验证的构建。可选 `--runtime-spec` 使用 `opencut.native-runtime-input`，只接受 Node/Python 安装及原始再分发许可证；不再接受旧 Chromium 构建输入。旧清单读取不构成后端回退。搬迁会改变程序和库哈希，生成契约检查使用装配后的确切 CLI，媒体验收也必须绑定实际分发身份。
+
 需要独立 Classic 源码作为预期值的专项检查，通过 `OPENCUT_CLASSIC_SOURCE_ROOT` 指定仓库外固定对照源码的绝对路径。该路径不是产品运行依赖；测试继续校验实际源码内容与来源身份。字体目录生成使用仓库内随产品交付的固定字体 atlas。

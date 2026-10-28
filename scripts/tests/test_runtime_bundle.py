@@ -46,39 +46,35 @@ class RuntimeBundleTest(unittest.TestCase):
     def repository(self, root):
         repository = root / 'repo'
         self.write(repository / 'LICENSE', b'project license')
-        for name in runtime.PACKAGES:
+        for name in ('classic-audio-renderer', 'classic-visual-renderer', 'classic-source-art-renderer'):
             package_root = repository / 'packages' / name
-            self.write(package_root / 'package.json', json.dumps({'name': '@opencut/' + name, 'version': '0.1.0', 'type': 'module', 'dependencies': runtime.PACKAGE_DEPENDENCIES[name]}).encode())
-            self.write(package_root / 'host/runner.mjs', b'export {};')
-            self.write(package_root / 'src/index.mjs', b'export {};')
-            self.write(package_root / 'vendor/LICENSE', b'upstream license')
-        for name, (version, dependencies) in runtime.DEPENDENCIES.items():
-            dependency = repository / 'packages/classic-audio-renderer/node_modules' / name
-            self.write(dependency / 'package.json', json.dumps({'name': name, 'version': version, 'dependencies': dependencies}).encode())
-            self.write(dependency / 'LICENSE', b'original dependency license')
-            self.write(dependency / 'index.mjs', b'export {};')
+            self.write(package_root / 'package.json', json.dumps({'name': '@opencut/' + name, 'version': '0.1.0', 'type': 'module'}).encode())
+            self.write(package_root / 'host/browser.mjs', b'never copied')
+            self.write(package_root / 'src/index.mjs', b'never copied')
+            self.write(package_root / 'node_modules/playwright-core/index.mjs', b'never copied')
         for name in runtime.SCRIPTS:
             self.write(repository / 'scripts/font-catalog' / name, b'{}' if name.endswith('.json') else b'# fixed script')
         return repository
 
-    def test_default_delivery_has_full_modules_and_scripts_but_no_executable_claim(self):
+    def test_native_delivery_has_fixed_scripts_and_no_browser_execution_payload(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp); repository = self.repository(root)
             destination = root / 'relocated/bin/libexec'
             manifest = runtime.bundle(repository, destination, 'x86_64-apple-darwin')
             self.assertEqual(manifest['delivery'], 'external_executables')
             self.assertEqual(manifest['components'], {})
-            self.assertEqual(manifest['external_dependencies'], ['ffmpeg', 'ffprobe', 'chromium', 'node', 'python'])
+            self.assertEqual(manifest['external_dependencies'], ['ffmpeg', 'ffprobe', 'node', 'python'])
             self.assertEqual(runtime.verify(destination), manifest)
-            for name in runtime.PACKAGES:
-                self.assertIn(name + '/host/runner.mjs', manifest['files'])
-                self.assertIn(name + '/src/index.mjs', manifest['files'])
+            self.assertFalse(any(name.startswith('classic-') for name in manifest['files']))
             self.assertIn('font-catalog/run_derived_v2.py', manifest['files'])
             self.assertIn('font-catalog/run_color_static_v1.py', manifest['files'])
-            self.assertEqual((manifest['format'],manifest['schema_version']), ('opencut.runtime-bundle.v2',2))
+            self.assertEqual((manifest['format'],manifest['schema_version']), ('opencut.native-runtime-bundle',1))
             legacy = json.loads(json.dumps(manifest))
-            legacy.update(format='opencut.runtime-bundle.v1',schema_version=1)
+            legacy.update(format='opencut.runtime-bundle.v1',schema_version=1, external_dependencies=['ffmpeg','ffprobe','chromium','node','python'])
             del legacy['scripts']['run_color_static_v1.py']
+            (destination / 'runtime-bundle.json').write_text(json.dumps(legacy))
+            self.assertEqual(runtime.verify(destination),legacy)
+            legacy.update(format='opencut.runtime-bundle.v2',schema_version=2, scripts=manifest['scripts'])
             (destination / 'runtime-bundle.json').write_text(json.dumps(legacy))
             self.assertEqual(runtime.verify(destination),legacy)
             (destination / 'runtime-bundle.json').write_text(json.dumps(manifest))
@@ -143,26 +139,29 @@ class RuntimeBundleTest(unittest.TestCase):
 
     def spec(self, root):
         components = {}
-        for name in sorted(runtime.COMPONENTS):
+        for name in sorted(runtime.NATIVE_COMPONENTS):
             directory = root / name
             self.write(directory / 'bin/tool', macho(), 0o755)
             self.write(directory / 'LICENSE', b'explicit upstream license')
             components[name] = {'root': str(directory), 'entry': 'bin/tool', 'version': '3.14.7',
                                 'license_spdx': 'MIT', 'license_files': ['LICENSE'], 'redistributable': True}
-        spec = {'format': 'opencut.runtime-input.v1', 'target': 'x86_64-apple-darwin', 'components': components}
+        spec = {'format': 'opencut.native-runtime-input', 'target': 'x86_64-apple-darwin', 'components': components}
         filename = root / 'runtime-spec.json'; filename.write_text(json.dumps(spec))
         return filename, spec
 
-    def test_spec_requires_all_components_licenses_fixed_target_and_no_private_fields(self):
+    def test_spec_accepts_auxiliary_subsets_and_requires_licenses_target_no_private_fields(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp); filename, spec = self.spec(root)
             self.assertEqual(runtime.validate_spec(filename, spec['target']), spec)
-            for edit in [lambda value: value['components'].pop('python'),
+            subset = json.loads(json.dumps(spec)); subset['components'].pop('python')
+            filename.write_text(json.dumps(subset))
+            self.assertEqual(runtime.validate_spec(filename, spec['target']), subset)
+            for edit in [lambda value: value['components'].update(chromium=value['components']['node']),
                          lambda value: value.update(env={'TOKEN': 'not permitted'}),
                          lambda value: value['components']['node'].update(cache='/private/cache'),
                          lambda value: value['components']['node'].update(redistributable=False),
                          lambda value: value['components']['python'].update(license_files=[]),
-                         lambda value: value['components']['chromium'].update(entry='../outside')]:
+                         lambda value: value['components']['node'].update(entry='../outside')]:
                 candidate = json.loads(json.dumps(spec)); edit(candidate); filename.write_text(json.dumps(candidate))
                 with self.assertRaises(ValueError):
                     runtime.validate_spec(filename, spec['target'])
@@ -173,8 +172,9 @@ class RuntimeBundleTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'virtual environment'):
                 runtime.validate_spec(filename, spec['target'])
             (root / 'python/pyvenv.cfg').unlink()
-            (root / 'chromium/Google Chrome for Testing.app').mkdir()
-            with self.assertRaisesRegex(ValueError, 'relabeled'):
+            spec['format'] = 'opencut.runtime-input.v1'
+            filename.write_text(json.dumps(spec))
+            with self.assertRaisesRegex(ValueError, 'Native runtime spec'):
                 runtime.validate_spec(filename, spec['target'])
 
     def test_duplicate_manifest_keys_and_fonttools_without_original_license_refused(self):
@@ -244,7 +244,7 @@ class RuntimeBundleTest(unittest.TestCase):
                      'links': {name: value['target'] for name, value in entries.items() if value['kind'] == 'symlink'},
                      'runtime_bundle': {'manifest': 'bin/libexec/runtime-bundle.json', 'sha256': runtime.sha(libexec / 'runtime-bundle.json'), 'delivery': 'external_executables'}}
             doctor.declared_runtime(host, outer)
-            outer['links'] = {}
+            outer['links'] = {'bin/libexec/unregistered': 'some-target'}
             with self.assertRaisesRegex(ValueError, 'links'):
                 doctor.declared_runtime(host, outer)
 

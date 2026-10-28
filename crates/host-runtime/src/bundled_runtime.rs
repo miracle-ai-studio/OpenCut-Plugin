@@ -227,7 +227,16 @@ fn load_uncached(root: &Path) -> Result<Option<(PathBuf, Manifest)>, EditorError
         .keys()
         .map(String::as_str)
         .eq(["chromium", "node", "python"]);
-    let dependencies: Vec<&str> = if complete {
+    let native = manifest.format == "opencut.native-runtime-bundle" && manifest.schema_version == 1;
+    let dependencies: Vec<&str> = if native {
+        let mut dependencies = vec!["ffmpeg", "ffprobe"];
+        for component in ["node", "python"] {
+            if !manifest.components.contains_key(component) {
+                dependencies.push(component);
+            }
+        }
+        dependencies
+    } else if complete {
         vec!["ffmpeg", "ffprobe"]
     } else {
         vec!["ffmpeg", "ffprobe", "chromium", "node", "python"]
@@ -244,17 +253,24 @@ fn load_uncached(root: &Path) -> Result<Option<(PathBuf, Manifest)>, EditorError
             "font-catalog/run_derived_v2.py".to_owned(),
         ),
     ]);
-    if current {
+    if current || native {
         scripts.insert(
             "run_color_static_v1.py".to_owned(),
             "font-catalog/run_color_static_v1.py".to_owned(),
         );
     }
-    if !(legacy || current)
+    if !(legacy || current || native)
         || !text(&manifest.target)
-        || (!complete && !manifest.components.is_empty())
+        || if native {
+            manifest
+                .components
+                .keys()
+                .any(|name| !matches!(name.as_str(), "node" | "python"))
+        } else {
+            !complete && !manifest.components.is_empty()
+        }
         || manifest.delivery
-            != if complete {
+            != if !manifest.components.is_empty() {
                 "bundled_unverified"
             } else {
                 "external_executables"
@@ -272,6 +288,9 @@ fn load_uncached(root: &Path) -> Result<Option<(PathBuf, Manifest)>, EditorError
     }
     let mut total = 0_u64;
     for (name, entry) in &manifest.files {
+        if native && !native_payload(name, &manifest.components) {
+            return Err(invalid());
+        }
         let path = root.join(relative(name)?);
         let metadata = fs::symlink_metadata(&path).map_err(|_| invalid())?;
         inside(&root, name)?;
@@ -368,6 +387,29 @@ fn load_uncached(root: &Path) -> Result<Option<(PathBuf, Manifest)>, EditorError
         }
     }
     Ok(Some((root, manifest)))
+}
+
+fn native_payload(name: &str, components: &BTreeMap<String, Runtime>) -> bool {
+    matches!(
+        name,
+        "LICENSE"
+            | "classic-visual-renderer/package.json"
+            | "classic-visual-renderer/host/catalog-archive.mjs"
+            | "font-catalog/LICENSE"
+            | "font-catalog/run_derived.py"
+            | "font-catalog/run_derived_v2.py"
+            | "font-catalog/derive_static.py"
+            | "font-catalog/derive_renamed_v2.py"
+            | "font-catalog/generate.py"
+            | "font-catalog/fonttools-lock.json"
+            | "font-catalog/derived-runtime-lock.json"
+            | "font-catalog/derived-v2-runtime-lock.json"
+            | "font-catalog/run_color_static_v1.py"
+            | "font-catalog/derive_color_static_v1.py"
+            | "font-catalog/color-static-runtime-lock.json"
+    ) || components
+        .keys()
+        .any(|component| name.starts_with(&format!("runtimes/{component}/")))
 }
 
 // Integrity belongs to the installation, shared by the host's adapters. Each
@@ -581,6 +623,39 @@ mod tests {
             b"changed bytes",
         )
         .unwrap();
+        assert!(resolve(&exe, "run_derived.py", true).is_err());
+    }
+    #[test]
+    fn native_auxiliary_manifest_resolves_scripts_and_rejects_browser_payload() {
+        let root = tempfile::tempdir().unwrap();
+        let exe = fixture(root.path());
+        let directory = root.path().join("bin/libexec");
+        let path = directory.join("runtime-bundle.json");
+        let mut manifest: serde_json::Value =
+            serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+        manifest["format"] = json!("opencut.native-runtime-bundle");
+        manifest["external_dependencies"] = json!(["ffmpeg", "ffprobe", "node", "python"]);
+        let name = "font-catalog/run_color_static_v1.py";
+        let script = directory.join(name);
+        fs::write(&script, b"fixed fixture").unwrap();
+        manifest["scripts"]["run_color_static_v1.py"] = json!(name);
+        manifest["files"][name] =
+            json!({"kind":"file","size":13,"sha256":hash(&script,13).unwrap(),"executable":false});
+        fs::write(&path, serde_json::to_vec(&manifest).unwrap()).unwrap();
+        assert!(
+            resolve(&exe, "run_color_static_v1.py", true)
+                .unwrap()
+                .is_some()
+        );
+        assert_eq!(resolve(&exe, "chromium", false).unwrap(), None);
+        // Even a correctly hashed and inventoried old renderer is forbidden in
+        // a new native installation; historical manifests retain exact reads.
+        fs::create_dir_all(directory.join("classic-audio-renderer/src")).unwrap();
+        let browser = directory.join("classic-audio-renderer/src/index.mjs");
+        fs::write(&browser, b"fixed fixture").unwrap();
+        manifest["files"]["classic-audio-renderer/src/index.mjs"] =
+            json!({"kind":"file","size":13,"sha256":hash(&browser,13).unwrap(),"executable":false});
+        fs::write(&path, serde_json::to_vec(&manifest).unwrap()).unwrap();
         assert!(resolve(&exe, "run_derived.py", true).is_err());
     }
     #[test]

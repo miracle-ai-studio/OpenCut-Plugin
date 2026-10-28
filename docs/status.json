@@ -388,6 +388,27 @@
         "terminal_assertion": "failed due to two same-named status elements; failure and screenshot retained",
         "scope": "Automated one-second actual workbench observation plus screenshot inspection; not full UI or manual audiovisual acceptance"
       }
+    },
+    "native_runtime_distribution": {
+      "status": "integrated source and scoped Python/boundary checks passed; new media libraries still building; Rust build, relocation and independent media acceptance pending",
+      "delivery_ready": false,
+      "implementation": [
+        "adjacent native worker and five identified FFmpeg libraries in bin/lib; relative Mach-O loads and ad-hoc signatures on copies only",
+        "native auxiliary manifest accepts only Node/Python; new distributions exclude Chromium and browser renderer modules; exact historical manifest reads retained",
+        "native startup/source-byte protocol probe replaces Chromium module import doctor; provenance and corresponding source required"
+      ],
+      "checks": {
+        "runtime_and_native_distribution_python_tests_passed": 12,
+        "package_python_tests_passed": 7,
+        "architecture_unit_tests_passed": 14,
+        "architecture_and_contract_boundaries": "passed; no baseline extensions"
+      },
+      "remaining": [
+        "finish LGPL FFmpeg/shared and static dav1d build with complete corresponding source/licenses",
+        "integrated release build and exact delivered binary contract checks",
+        "relocated package execution and independent pixels/PCM on the new decoder identity",
+        "external encoder/tools and auxiliary runtime distribution, clean install and cross-platform/manual acceptance"
+      ]
     }
   },
   "known_limits": [

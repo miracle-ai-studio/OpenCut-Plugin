@@ -29,7 +29,7 @@ def runtime_module():
 
 
 def runtime_probe(args, timeout=20):
-    # Probes can create Chromium children. Terminate the whole owned process
+    # Probes may create child processes. Terminate the whole owned process
     # group on failure/timeout, including when the direct Node child exits first.
     child = subprocess.Popen([str(p) for p in args], stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE, start_new_session=True)
@@ -82,56 +82,17 @@ def runtime_executable(root, runtime, component, variables, path_fallback=False)
 def check_renderer_and_fonts(root, runtime, checks):
     libexec = root / 'bin/libexec'
     try:
-        node = runtime_executable(root, runtime, 'node', ('OPENCUT_CLASSIC_VISUAL_NODE', 'OPENCUT_CLASSIC_AUDIO_NODE'), True)
-        chromium = runtime_executable(root, runtime, 'chromium', ('OPENCUT_CLASSIC_VISUAL_CHROMIUM', 'OPENCUT_CLASSIC_AUDIO_CHROMIUM'))
-        # Import from the relocated package paths; no npm install, source-tree
-        # fallback, download or project material is involved.
-        probe = """import {pathToFileURL} from 'node:url';
-const root=process.argv[1], executablePath=process.argv[2];
-const load=p=>import(pathToFileURL(root+'/'+p).href);
-const {chromium}=await load('classic-audio-renderer/node_modules/playwright-core/index.mjs');
-const {moduleResponse,ORIGIN}=await load('classic-audio-renderer/host/shared.mjs');
-const browser=await chromium.launch({executablePath,headless:true,timeout:12000,args:['--disable-background-networking','--disable-component-update','--no-first-run']});
-try{
-  const identities={};
-  for(const [name,entry,exports] of [
-    ['classic-visual-renderer','src/index.mjs',['renderClassicSceneFrameV1','renderClassicMaskFrameV1']],
-    ['classic-audio-renderer','src/index.mjs',['renderClassicExport']],
-    ['classic-source-art-renderer','src/art.mjs',['thumbnailSize','executeSourceArt']],
-  ]){
-    const host=await load(name+'/host/modules.mjs');
-    const modules=await host.moduleRegistry({});
-    const context=await browser.newContext();
-    try{
-      await context.route('**/*',async route=>{
-        const reply=moduleResponse(modules,route.request().url(),route.request().method());
-        if(reply)await route.fulfill(reply);else await route.abort('blockedbyclient');
-      });
-      const page=await context.newPage();await page.goto(ORIGIN);
-      await page.evaluate(async({entry,exports})=>{
-        const module=await import('/renderer/'+entry);
-        if(exports.some(name=>typeof module[name]!=='function'))throw Error('missing runtime export');
-      },{entry,exports});
-      identities[name]=modules.moduleSha256;
-    }finally{await context.close();}
-  }
-  process.stdout.write(JSON.stringify({node:process.version,chromium:browser.version(),module_imports:true,module_identities:identities}));
-}finally{await browser.close();}
-"""
-        value = json.loads(runtime_probe([node, '--input-type=module', '-e', probe, libexec, chromium]))
-        for name, path in [('node', node), ('chromium', chromium)]:
-            if name in runtime['components'] and path.is_relative_to((libexec / 'runtimes' / name).resolve()):
-                actual = value[name].removeprefix('v') if name == 'node' else value[name]
-                if actual != runtime['components'][name]['version'].removeprefix('v'):
-                    raise ValueError('Actual bundled runtime version differs from declaration')
-        bundled = bool(runtime['components']) and all(
-            path.is_relative_to((libexec / 'runtimes' / name).resolve()) for name, path in [('node', node), ('chromium', chromium)])
-        checks.append({'check': 'renderer_runtime_executes', 'passed': value.get('module_imports') is True,
-                       'node_sha256': sha(node), 'chromium_sha256': sha(chromium), 'versions': value,
-                       'bundled_executables_used': bundled,
-                       'scope': 'delivered host registries and browser module imports under their unchanged CSP/routes, plus explicit browser launch; no project render or pixel/PCM acceptance'})
+        spec = importlib.util.spec_from_file_location('opencut_native_runtime_doctor', Path(__file__).with_name('native_runtime.py'))
+        native = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(native)
+        outer = json.loads((root / 'manifest.json').read_text())
+        declaration = native.verify(root, outer['native_renderer'])
+        if any(outer['files'].get(name) != entry for name, entry in declaration['files'].items()):
+            raise ValueError('Native renderer differs from outer bundle inventory')
+        value = native.probe_worker(root, declaration)
+        checks.append({'check': 'native_renderer_runtime_executes', 'passed': True, **value})
     except (OSError, subprocess.SubprocessError, ValueError, KeyError, TypeError) as error:
-        checks.append({'check': 'renderer_runtime_executes', 'passed': False, 'error': str(error)})
+        checks.append({'check': 'native_renderer_runtime_executes', 'passed': False, 'error': str(error)})
     try:
         python = runtime_executable(root, runtime, 'python', ('OPENCUT_FONT_DERIVE_PYTHON',))
         provenance = json.loads(runtime_probe([python, '-I', '-B', '-c',
@@ -286,7 +247,7 @@ def inspect(root):
                            'profile': declaration['profile'], 'files': declaration['files'],
                            'node_path': str(node), 'node_version': version, 'node_sha256': sha(node),
                            'public_download_enabled': os.environ.get('OPENCUT_ALLOW_PUBLIC_RESOURCE_DOWNLOAD') == '1',
-                           'source_archive_verified': False, 'browser_runtime_included': bool(runtime and runtime['components']),
+                           'source_archive_verified': False, 'browser_runtime_included': bool(runtime and 'chromium' in runtime['components']),
                            'scope': 'fixed archive adapter and media probe available; source audio and project use require separate admission'})
         except (OSError, subprocess.SubprocessError, ValueError, KeyError, TypeError) as error:
             checks.append({'check': 'catalog_archive_runtime', 'passed': False, 'error': str(error)})
@@ -302,7 +263,7 @@ def inspect(root):
             checks.append({'check': 'configurable_export_codec_inventory', 'passed': True,
                            'video_formats': [format for format, encoder in [('mp4', 'libx264'), ('webm', 'libvpx-vp9')] if encoder in encoders],
                            'audio_formats': [format for format, video, audio in [('mp4', 'libx264', 'aac'), ('webm', 'libvpx-vp9', 'libopus')] if {video, audio} <= encoders],
-                           'scope': 'codec inventory only; full browser visual/audio runtime and fixed project admission remain required'})
+                           'scope': 'codec inventory only; native renderer execution and fixed project admission remain required'})
         except (OSError, subprocess.SubprocessError) as error:
             checks.append({'check': 'media_capabilities', 'passed': False, 'error': str(error)})
     if {'ffmpeg', 'ffprobe'} <= installed.keys():
@@ -322,7 +283,7 @@ def inspect(root):
             'scope': 'Bundle integrity and baseline H.264/AAC runtime; project fonts, alternate codecs and exact rendering require project preflight'
                      + ('; declared Node runtime executable checked, source media acceptance remains separate' if needs_node else '')
                      + ('; fixed catalog helper identity and Node DEFLATE checked; source audio acceptance remains separate' if 'catalog_archive_runtime' in manifest else '')
-                     + ('; complete renderer and font runtime identities checked; bundled executables require relocated execution checks and project acceptance' if 'runtime_bundle' in manifest else '')}
+                     + ('; native worker/media and font runtime identities checked; project rendering still requires independent acceptance' if 'runtime_bundle' in manifest else '')}
 
 
 if __name__ == '__main__':

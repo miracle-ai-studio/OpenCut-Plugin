@@ -17,6 +17,9 @@ ROOT = Path(__file__).resolve().parents[1]
 _runtime_spec = importlib.util.spec_from_file_location('opencut_runtime_bundle', ROOT / 'scripts/distribution/runtime_bundle.py')
 runtime_bundle = importlib.util.module_from_spec(_runtime_spec)
 _runtime_spec.loader.exec_module(runtime_bundle)
+_native_spec = importlib.util.spec_from_file_location('opencut_native_runtime', ROOT / 'scripts/distribution/native_runtime.py')
+native_runtime = importlib.util.module_from_spec(_native_spec)
+_native_spec.loader.exec_module(native_runtime)
 
 
 def run(args, cwd=ROOT):
@@ -179,34 +182,32 @@ def copy_catalog_runtime(packages_root, destination):
         'source_archive_sha256': '946fc23a63d535d693eb31b2eabb80c8c28d6351e2186b344ceb71b2cb1d5eb6',
         'download_switch': 'OPENCUT_ALLOW_PUBLIC_RESOURCE_DOWNLOAD',
         'scope': 'fixed Kenney archive extraction; original audio acquisition also requires ffprobe and host download permission or the exact local cache',
-        'excluded': 'Chromium, full audio/visual rendering and preview remain external; no resource audio is bundled',
+        'excluded': 'No source audio is bundled; rendering uses the adjacent native worker',
     }
 
 
-def package(output, skip_build, supplied_binary=None, runtime_spec=None, supplied_web_root=None, reuse_sdk_dist=False):
+def package(output, skip_build, supplied_binary=None, runtime_spec=None, supplied_web_root=None, reuse_sdk_dist=False, supplied_worker=None, native_media_spec=None):
     if supplied_web_root is not None:
         if supplied_binary is None:
             raise ValueError('Reusing a Web build requires an explicit already-built binary')
-        return package_with_web_root(output, True, supplied_binary, supplied_web_root, runtime_spec, prebuilt_web=True, reuse_sdk_dist=reuse_sdk_dist)
+        return package_with_web_root(output, True, supplied_binary, supplied_web_root, runtime_spec, prebuilt_web=True, reuse_sdk_dist=reuse_sdk_dist, supplied_worker=supplied_worker, native_media_spec=native_media_spec)
     # Build assets away from the directory a running service may be serving.
     with tempfile.TemporaryDirectory(prefix='opencut-package-web-') as web_directory:
-        return package_with_web_root(output, skip_build, supplied_binary, Path(web_directory), runtime_spec, reuse_sdk_dist=reuse_sdk_dist)
+        return package_with_web_root(output, skip_build, supplied_binary, Path(web_directory), runtime_spec, reuse_sdk_dist=reuse_sdk_dist, supplied_worker=supplied_worker, native_media_spec=native_media_spec)
 
 
-def package_with_web_root(output, skip_build, supplied_binary, web_root, runtime_spec=None, *, prebuilt_web=False, reuse_sdk_dist=False):
+def package_with_web_root(output, skip_build, supplied_binary, web_root, runtime_spec=None, *, prebuilt_web=False, reuse_sdk_dist=False, supplied_worker=None, native_media_spec=None):
+    if native_media_spec is None:
+        raise ValueError('Native renderer packaging requires --native-media-spec with built libraries and corresponding source/licenses')
     if not skip_build and supplied_binary is None:
-        run(['cargo', 'build', '--locked', '--release', '-p', 'opencut-cli'])
+        run(['cargo', 'build', '--locked', '--release', '-p', 'opencut-cli', '-p', 'opencut-render-worker'])
     if not prebuilt_web:
         run(['npm', 'ci', '--ignore-scripts', '--no-audit', '--no-fund'], ROOT / 'apps/web')
         run(['npm', 'run', 'build', '--', '--outDir', web_root], ROOT / 'apps/web')
     binary = supplied_binary or ROOT / 'target/release/opencut'
-    assert binary.is_file(), 'Build the release CLI first'
-    run(['node', ROOT / 'packages/sdk-ts/scripts/generate.mjs', '--check', '--skip-build', '--binary', binary])
+    worker = supplied_worker or binary.with_name('opencut-render-worker')
+    assert binary.is_file() and worker.is_file(), 'Build the integrated release CLI and native worker first'
     tools = json.loads(run([binary, '--json', 'system', 'schema']))['data']
-    assert tools == json.loads(
-        (ROOT / 'packages/contract-fixtures/tools.generated.json').read_text()), 'Release binary and generated contracts differ'
-    assert json.loads(run([binary, '--json', 'system', 'events-schema']))['data'] == json.loads(
-        (ROOT / 'packages/contract-fixtures/event-stream.generated.json').read_text()), 'Release binary and event stream schema differ'
     target = next(line.split(': ', 1)[1] for line in run(['rustc', '-vV']).splitlines() if line.startswith('host: '))
     version = tomllib.loads((ROOT / 'Cargo.toml').read_text())['workspace']['package']['version']
     with tempfile.TemporaryDirectory(prefix='opencut-package-schema-') as schema_temp:
@@ -251,7 +252,12 @@ def package_with_web_root(output, skip_build, supplied_binary, web_root, runtime
         archive(rust, rust_archive)
         host = stage / f'opencut-{version}-{target}'
         (host / 'bin').mkdir(parents=True)
-        shutil.copy2(binary, host / 'bin/opencut')
+        native_renderer = native_runtime.bundle(host, binary, worker, target, native_media_spec)
+        packaged_binary = host / 'bin/opencut'
+        # Relocation changes executable identities. Check the exact delivered CLI.
+        run(['node', ROOT / 'packages/sdk-ts/scripts/generate.mjs', '--check', '--skip-build', '--binary', packaged_binary])
+        assert json.loads(run([packaged_binary, '--json', 'system', 'schema']))['data'] == json.loads((ROOT / 'packages/contract-fixtures/tools.generated.json').read_text())
+        assert json.loads(run([packaged_binary, '--json', 'system', 'events-schema']))['data'] == json.loads((ROOT / 'packages/contract-fixtures/event-stream.generated.json').read_text())
         copy_web_build(web_root, host / 'web')
         packet_runtime = copy_packet_probe_provenance(ROOT / 'crates/media/vendor/matroska-demuxer', host / 'THIRD_PARTY/matroska-demuxer')
         catalog_runtime = copy_catalog_runtime(ROOT / 'packages', host / 'bin/libexec')
@@ -261,18 +267,19 @@ def package_with_web_root(output, skip_build, supplied_binary, web_root, runtime
         shutil.copy2(ROOT / 'LICENSE', host / 'LICENSE')
         shutil.copy2(ROOT / 'scripts/distribution/doctor.py', host / 'doctor.py')
         shutil.copy2(ROOT / 'scripts/distribution/runtime_bundle.py', host / 'runtime_bundle.py')
+        shutil.copy2(ROOT / 'scripts/distribution/native_runtime.py', host / 'native_runtime.py')
         shutil.copy2(ROOT / 'scripts/distribution/agent-config.py', host / 'agent-config.py')
         shutil.copy2(ROOT / 'docs/package.md', host / 'README.md')
         with (host / 'README.md').open('a') as readme:
             readme.write('\n\nExplicit local runtime delivery\n\n'
-                         'bin/libexec contains the complete Classic renderer modules and locked Node dependencies, '
-                         'the fixed catalog adapter, and three font derivation implementations and locks. '
-                         'runtime-bundle.json records every file, executable bit and permitted internal link. '
+                         'bin contains the native CLI, renderer worker and the five identified media libraries. '
+                         'THIRD_PARTY/native-media preserves corresponding sources, licenses and the build recipe. '
+                         'bin/libexec contains the fixed catalog adapter and three font derivation implementations and locks. '
+                         'runtime-bundle.json records every auxiliary file, executable bit and permitted internal link. '
                          'Runtime state: ' + runtime['delivery'] + '. '
-                         'Without an explicit build-time --runtime-spec, Node, Chromium and standalone Python with locked fontTools remain external. '
-                         'A complete spec includes those installations and original redistribution licenses; it does not constitute relocated execution acceptance. '
-                         'Run doctor.py after extracting elsewhere. Explicit OPENCUT runtime environment variables take priority. '
-                         'FFmpeg/ffprobe remain external. No runtime is downloaded automatically. '
+                         'Optional --runtime-spec supplies explicit Node and standalone Python installations with redistribution licenses. '
+                         'Node catalog extraction, Python/fontTools and FFmpeg/ffprobe export tools remain external when not explicitly bundled. '
+                         'Run doctor.py after extracting elsewhere, then run actual project acceptance. No runtime is downloaded automatically. '
                          'Catalog downloads remain disabled unless OPENCUT_ALLOW_PUBLIC_RESOURCE_DOWNLOAD=1; no source archive, user media or font cache is bundled.\n')
         shutil.copy2(ROOT / 'docs/status.json', host / 'status.json')
         (host / 'sdk').mkdir()
@@ -284,7 +291,7 @@ def package_with_web_root(output, skip_build, supplied_binary, web_root, runtime
         host_metadata = json.loads(run(['cargo', 'metadata', '--locked', '--format-version', '1']))
         nodes = {n['id']: n for n in host_metadata['resolve']['nodes']}
         packages = {p['id']: p for p in host_metadata['packages']}
-        pending = [p['id'] for p in packages.values() if p['name'] == 'opencut-cli']
+        pending = [p['id'] for p in packages.values() if p['name'] in ('opencut-cli', 'opencut-render-worker')]
         reached = set()
         while pending:
             current = pending.pop()
@@ -298,13 +305,14 @@ def package_with_web_root(output, skip_build, supplied_binary, web_root, runtime
         links = {'bin/libexec/' + name: entry['target'] for name, entry in runtime['files'].items() if entry['kind'] == 'symlink'}
         manifest = {'format': 'opencut.local-bundle.v1', 'version': version, 'maturity': 'development', 'target': target,
                     'database_schema': database_schema, 'operation_count': len(tools),
-                    'domain_count': len(domains), 'binary_sha256': sha(binary), 'files': files,
+                    'domain_count': len(domains), 'binary_sha256': sha(packaged_binary), 'files': files,
                     'external_dependencies': runtime['external_dependencies'], 'links': links,
                     'runtime_bundle': {'manifest': 'bin/libexec/runtime-bundle.json', 'sha256': sha(host / 'bin/libexec/runtime-bundle.json'),
                                        'delivery': runtime['delivery']},
+                    'native_renderer': native_renderer,
                     'native_packet_probe': packet_runtime,
                     'catalog_archive_runtime': catalog_runtime,
-                    'scope': 'local Web, CLI, HTTP, MCP and SDKs; complete renderer and font scripts; explicitly declared runtime installations require relocated doctor and project acceptance; full R0-R7 acceptance not complete'}
+                    'scope': 'local Web, CLI, HTTP, MCP and SDKs; native worker/media libraries and font scripts; explicitly declared auxiliary installations require relocated doctor and project acceptance; full R0-R7 acceptance not complete'}
         (host / 'manifest.json').write_text(json.dumps(manifest, indent=2)+'\n')
         bundle_id = sha(host / 'manifest.json')[:12]
         destination = output / f'opencut-{version}-dev-{bundle_id}-{target}.tar.gz'
@@ -316,7 +324,7 @@ def package_with_web_root(output, skip_build, supplied_binary, web_root, runtime
             shutil.copy2(assembled, destination)
         digest = sha(destination)
         Path(str(destination)+'.sha256').write_text(f'{digest}  {destination.name}\n')
-        receipt = {'status': 'packaged_not_yet_accepted', 'archive': str(destination), 'sha256': digest, 'binary_sha256': sha(binary), 'target': target, 'manifest': manifest}
+        receipt = {'status': 'packaged_not_yet_accepted', 'archive': str(destination), 'sha256': digest, 'binary_sha256': sha(packaged_binary), 'target': target, 'manifest': manifest}
         Path(str(destination)+'.json').write_text(json.dumps(receipt, indent=2)+'\n')
         print(json.dumps({k: v for k, v in receipt.items() if k != 'manifest'}, indent=2))
 
@@ -326,10 +334,13 @@ if __name__ == '__main__':
     parser.add_argument('--output', type=Path, default=ROOT / 'dist/local')
     parser.add_argument('--skip-build', action='store_true')
     parser.add_argument('--binary', type=Path, help='Package an already-built local CLI instead of building release')
-    parser.add_argument('--runtime-spec', type=Path, help='Trusted explicit Node/Chromium/standalone-Python installation and license spec; never downloads runtimes')
+    parser.add_argument('--runtime-spec', type=Path, help='Trusted explicit Node/standalone-Python installation and license spec; never downloads runtimes')
     parser.add_argument('--web-root', type=Path, help='Reuse an already-built public Web tree with --binary; skip Web install/build, retain contract and delivery-file checks')
     parser.add_argument('--reuse-sdk-dist', action='store_true', help='Reuse the already-built local TypeScript SDK dist; public contents and generated contracts are still checked')
+    parser.add_argument('--render-worker', type=Path, help='Explicit native worker built with the CLI; defaults to its adjacent worker')
+    parser.add_argument('--native-media-spec', type=Path, required=True, help='Trusted native shared libraries, source, build and license input')
     args = parser.parse_args()
     package(args.output.resolve(), args.skip_build, args.binary.resolve() if args.binary else None,
             args.runtime_spec.resolve() if args.runtime_spec else None,
-            args.web_root.resolve() if args.web_root else None, args.reuse_sdk_dist)
+            args.web_root.resolve() if args.web_root else None, args.reuse_sdk_dist,
+            args.render_worker.resolve() if args.render_worker else None, args.native_media_spec.resolve())

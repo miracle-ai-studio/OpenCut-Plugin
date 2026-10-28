@@ -14,29 +14,19 @@ import struct
 
 FORMAT_V1 = 'opencut.runtime-bundle.v1'
 FORMAT = 'opencut.runtime-bundle.v2'
+NATIVE_FORMAT = 'opencut.native-runtime-bundle'
 MAX_FILES = 100000
 MAX_FILE = 512 * 1024 * 1024
 MAX_TOTAL = 8 * 1024 * 1024 * 1024
 MAX_MANIFEST = 16 * 1024 * 1024
 COMPONENTS = {'node', 'chromium', 'python'}
+NATIVE_COMPONENTS = {'node', 'python'}
 SCRIPTS = ('run_derived.py', 'run_derived_v2.py', 'derive_static.py',
            'derive_renamed_v2.py', 'generate.py', 'fonttools-lock.json',
            'derived-runtime-lock.json', 'derived-v2-runtime-lock.json',
            'run_color_static_v1.py', 'derive_color_static_v1.py', 'color-static-runtime-lock.json')
 WORKERS_V1 = ('run_derived.py', 'run_derived_v2.py')
 WORKERS = WORKERS_V1 + ('run_color_static_v1.py',)
-PACKAGES = ('classic-audio-renderer', 'classic-visual-renderer', 'classic-source-art-renderer')
-DEPENDENCIES = {
-    'mediabunny': ('1.41.0', {'@types/dom-mediacapture-transform': '^0.1.11', '@types/dom-webcodecs': '0.1.13'}),
-    'playwright-core': ('1.63.0', {}),
-    '@types/dom-mediacapture-transform': ('0.1.12', {'@types/dom-webcodecs': '*'}),
-    '@types/dom-webcodecs': ('0.1.13', {}),
-}
-PACKAGE_DEPENDENCIES = {
-    'classic-audio-renderer': {'mediabunny': '1.41.0', 'playwright-core': '1.63.0'},
-    'classic-visual-renderer': {'mediabunny': '1.41.0', 'playwright-core': '1.63.0', '@opencut/classic-audio-renderer': 'file:../classic-audio-renderer'},
-    'classic-source-art-renderer': {'@opencut/classic-audio-renderer': 'file:../classic-audio-renderer'},
-}
 
 
 def sha(path):
@@ -269,51 +259,12 @@ def verify_macos_linkage(root, entry):
                         raise ValueError('Runtime dynamic library is not bundled')
 
 
-def copy_renderer(packages, destination):
-    for name in PACKAGES:
-        source, target = Path(packages) / name, destination / name
-        if (source / 'package.json').is_symlink():
-            raise ValueError('Renderer metadata must not be a link')
-        metadata = read_json(source / 'package.json', 65536)
-        if (metadata.get('name'), metadata.get('version'), metadata.get('type')) != ('@opencut/' + name, '0.1.0', 'module'):
-            raise ValueError('Unpinned renderer package')
-        if metadata.get('dependencies', {}) != PACKAGE_DEPENDENCIES[name] or metadata.get('optionalDependencies'):
-            raise ValueError('Renderer package graph needs an explicit update')
-        target.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(source / 'package.json', target / 'package.json')
-        for folder in ('host', 'src', 'vendor'):
-            if (source / folder).exists():
-                copy_tree(source / folder, target / folder)
-        for filename in ('README.md', 'LICENSE', 'package-lock.json'):
-            if (source / filename).is_file():
-                if (source / filename).is_symlink():
-                    raise ValueError('Renderer metadata must not be a link')
-                shutil.copyfile(source / filename, target / filename)
-    audio = destination / PACKAGES[0]
-    for name, (version, dependencies) in DEPENDENCIES.items():
-        source = Path(packages) / PACKAGES[0] / 'node_modules' / name
-        metadata = read_json(source / 'package.json', 65536)
-        if metadata.get('name') != name or metadata.get('version') != version or not (source / 'LICENSE').is_file():
-            raise ValueError('Renderer dependency identity or license missing')
-        # Include Mediabunny's declared type dependencies too. Versions come
-        # from the reviewed package-lock; do not resolve ranges during packaging.
-        if metadata.get('dependencies', {}) != dependencies or metadata.get('optionalDependencies'):
-            raise ValueError('Renderer dependency graph needs an explicit update')
-        copy_tree(source, audio / 'node_modules' / name)
-    for name in PACKAGES[1:]:
-        target = destination / name / 'node_modules'
-        (target / '@opencut').mkdir(parents=True)
-        (target / '@opencut/classic-audio-renderer').symlink_to('../../../classic-audio-renderer')
-        for dependency in ('mediabunny', 'playwright-core'):
-            (target / dependency).symlink_to('../../classic-audio-renderer/node_modules/' + dependency)
-
-
 def validate_spec(path, target):
     spec = read_json(path, 65536)
     if (set(spec) != {'format', 'target', 'components'}
-            or spec['format'] != 'opencut.runtime-input.v1' or spec['target'] != target
-            or not isinstance(spec['components'], dict) or set(spec['components']) != COMPONENTS):
-        raise ValueError('Runtime spec must name the target and all three components')
+            or spec['format'] != 'opencut.native-runtime-input' or spec['target'] != target
+            or not isinstance(spec['components'], dict) or not set(spec['components']) <= NATIVE_COMPONENTS):
+        raise ValueError('Native runtime spec must name the target and only Node/Python components')
     if target not in ('x86_64-apple-darwin', 'aarch64-apple-darwin'):
         raise ValueError('Bundled executable linkage validation currently supports macOS only; use explicit external runtimes on this target')
     for name, component in spec['components'].items():
@@ -328,8 +279,6 @@ def validate_spec(path, target):
         if not root.is_absolute() or root.is_symlink() or not root.is_dir():
             raise ValueError('Runtime input must be an absolute real directory')
         root = root.resolve(strict=True)
-        if name == 'chromium' and (root.name.startswith('Google Chrome') or any(p.name.startswith('Google Chrome') for p in root.rglob('*.app'))):
-            raise ValueError('Google Chrome installations must not be relabeled as redistributable Chromium')
         entry = root / relative(component['entry'])
         if not entry.resolve(strict=True).is_relative_to(root) or not entry.is_file() or not entry.stat().st_mode & 0o111:
             raise ValueError('Runtime entry must be an internal executable')
@@ -369,7 +318,8 @@ def python_identity(root, lock):
 def bundle(repository, destination, target, spec_path=None):
     repository, destination = Path(repository), Path(destination)
     destination.mkdir(parents=True, exist_ok=True)
-    copy_renderer(repository / 'packages', destination)
+    # The catalog adapter is copied by the host assembler. Native execution
+    # requires no browser renderer modules or third-party Node packages.
     shutil.copyfile(repository / 'LICENSE', destination / 'LICENSE')
     scripts = destination / 'font-catalog'
     scripts.mkdir()
@@ -400,11 +350,11 @@ def bundle(repository, destination, target, spec_path=None):
                 if component['version'] != lock['python_version']:
                     raise ValueError('Python version declaration differs from derivation lock')
                 components[name]['fonttools'] = python_identity(copied, lock)
-    result = {'format': FORMAT, 'schema_version': 2, 'target': target,
+    result = {'format': NATIVE_FORMAT, 'schema_version': 1, 'target': target,
               'delivery': 'bundled_unverified' if components else 'external_executables',
               'components': components,
               'scripts': {name: 'font-catalog/' + name for name in WORKERS},
-              'external_dependencies': ['ffmpeg', 'ffprobe'] + ([] if components else sorted(COMPONENTS)),
+              'external_dependencies': ['ffmpeg', 'ffprobe'] + sorted(NATIVE_COMPONENTS - set(components)),
               'files': inventory(destination)}
     serialized = json.dumps(result, indent=2) + '\n'
     if len(serialized.encode()) > MAX_MANIFEST:
@@ -420,14 +370,21 @@ def verify(root):
         raise ValueError('Runtime manifest must not be a link')
     manifest = read_json(path)
     version = (manifest.get('format'), manifest.get('schema_version'))
+    native = version == (NATIVE_FORMAT, 1)
+    components = set(manifest.get('components', {}))
+    allowed_components = components <= NATIVE_COMPONENTS if native else components in (set(), COMPONENTS)
+    dependencies = (['ffmpeg', 'ffprobe'] + sorted(NATIVE_COMPONENTS - components) if native
+                    else ['ffmpeg', 'ffprobe'] + ([] if components else sorted(COMPONENTS)))
     workers = WORKERS_V1 if version == (FORMAT_V1, 1) else WORKERS
     if (set(manifest) != {'format', 'schema_version', 'target', 'delivery', 'components', 'scripts', 'external_dependencies', 'files'}
-            or version not in ((FORMAT_V1, 1), (FORMAT, 2))
-            or set(manifest['components']) not in (set(), COMPONENTS)
+            or version not in ((FORMAT_V1, 1), (FORMAT, 2), (NATIVE_FORMAT, 1))
+            or not allowed_components
             or manifest['delivery'] != ('bundled_unverified' if manifest['components'] else 'external_executables')
             or manifest['scripts'] != {name: 'font-catalog/' + name for name in workers}
-            or manifest['external_dependencies'] != ['ffmpeg', 'ffprobe'] + ([] if manifest['components'] else sorted(COMPONENTS))):
+            or manifest['external_dependencies'] != dependencies):
         raise ValueError('Invalid runtime bundle declaration')
+    if native and any(not native_payload(name, components) for name in manifest['files']):
+        raise ValueError('Native runtime contains an undeclared or browser renderer payload')
     if inventory(root, ('runtime-bundle.json',)) != manifest['files']:
         raise ValueError('Runtime mirror differs from manifest')
     for name, component in manifest['components'].items():
@@ -454,3 +411,9 @@ def verify(root):
             if component['version'] != lock['python_version'] or component['fonttools'] != python_identity(prefix, lock):
                 raise ValueError('Bundled fontTools identity differs from lock')
     return manifest
+
+
+def native_payload(name, components):
+    return (name == 'LICENSE' or name in {'font-catalog/' + p for p in (*SCRIPTS, 'LICENSE')}
+            or name in {'classic-visual-renderer/package.json', 'classic-visual-renderer/host/catalog-archive.mjs'}
+            or any(name.startswith('runtimes/' + component + '/') for component in components))

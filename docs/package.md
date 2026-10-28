@@ -1,5 +1,7 @@
 # OpenCut 本地运行包
 
+原生渲染运行包包含相邻的 `bin/opencut`、`bin/opencut-render-worker` 和 `bin/lib` 媒体库；对应源码、构建记录与许可证保存在 `THIRD_PARTY/native-media`。程序无需浏览器渲染运行时。资源目录解包所需的 Node、字体派生所需的 Python/fontTools，以及导出所需的 FFmpeg/ffprobe，是否随包提供以清单为准；未提供的依赖必须显式安装。环境诊断通过也不能代替项目渲染验收。
+
 解包后先运行环境诊断：
 
 ```sh

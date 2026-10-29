@@ -4241,7 +4241,7 @@
       "preview": "Existing 540p canvas bound; no further reduction.",
       "export": "Original source; 720p/1080p/1440p/2160p; new Web default 1080p unchanged.",
       "preflight": "14architecture checks and both boundary gates pass for exact sealed Rust candidate.",
-      "build": "Source a4a5bedb CLI eb49383046312e9c2a6ee50ab175114f377441817f7f3298fcc15f9fe74416bb and worker88afb9b80c73c9e982726ab6247b7768b57ed6893f49d90c2be6badfe0e63694 built in382.462s.18scoped native checks pass. Ordinary paused-picture Web change pending its own build; no Rust rebuild.",
+      "build": "Source a4a5bedb CLI eb49383046312e9c2a6ee50ab175114f377441817f7f3298fcc15f9fe74416bb and worker88afb9b80c73c9e982726ab6247b7768b57ed6893f49d90c2be6badfe0e63694 built in382.462s.18scoped native checks pass. Web e7839eb8 built once in18.442s;92client checks pass; Rust unchanged.",
       "behavior": "Seven actualHTTP4K-source540p frames exact independent original references; seven rejection guards pass.8authored transparentRGBAframes including hiddenRGB pass actual source producer; small source not upscaled. Formal playback failed at14.967s despite4.870s startup; diagnostic complete129.768s but6.329s startup fails. No qualification promotion.",
       "delivery_ready": false,
       "access": "Internal native proxy bytes retain original preview Read/RunJobs; public artifact downloads retain ReadArtifacts. Four SQLite source lifecycle/authority/publication regressions executed and passed.",
@@ -4272,7 +4272,30 @@
       },
       "web_scoped_checks": 43,
       "sdk_scoped_checks": 60,
-      "paused_editor_picture": "Ordinary static editor frames now request preview540. Precise hit and transform intent retain existing coordinates; Web build/behavior pending; original-source export unchanged."
+      "paused_editor_picture": "Ordinary static editor frames request preview540; actual ended picture960x540. Web e7839eb8:4K startup4.810s/94s content124.109s,seek/pause/resume pass; small startup6.229s fails5s despite100.721s completion. Overall unqualified. Precise hit and transform keep existing coordinates; original-source export unchanged."
+    },
+    "causal_performance_diagnosis": {
+      "state": "confirmed_head_wait_fixed_pending_single_web_build_and_controlled_editor_check",
+      "evidence_root": "/Users/vincent/Movies/OpenCut-native-rendering/4k/causal-diagnosis",
+      "candidate_rust_sha256": {
+        "cli": "eb49383046312e9c2a6ee50ab175114f377441817f7f3298fcc15f9fe74416bb",
+        "worker": "88afb9b80c73c9e982726ab6247b7768b57ed6893f49d90c2be6badfe0e63694"
+      },
+      "method": "Falsifiable hypothesis, bounded single-variable comparison, explicit fixable/acceptable/platform-limited/unresolved verdict. No repeated whole-timeline retry.",
+      "results": {
+        "decoder": "Median prepared540p decode/scale upper bound6.16ms; fixed-frame public request25.7-27.9ms. Decoder is not sole cause.",
+        "bitmap": "Browser SDK SHA2567.8ms,ImageBitmap1.4ms,total41.4ms. Bitmap minor; integrity retained.",
+        "cookie": "Cookie/Bearer ABBA38.8-42.2ms,no supported material difference.",
+        "alternate_sha256": "Noble37-38ms vs WebCrypto6.8ms offline; rejected.",
+        "output_buffer": "Same exact worker/proxy/360frames/64KiB/7independent pixel references:pipe7.44ms vs socket8.89ms median emission.19.5percent worse; rejected, no product change. Source ACK protocol is not visual transport timing.",
+        "head_wait": "Deterministic actual producer:fully verified and claimed head withheld by later preparation. Red test recorded then fixed; old real Web1000ms future-request hold first presented1280ms after hold began.84related client checks pass. New Web/build/behavior pending.",
+        "intermittent_stall": "Unresolved; prior queued incomplete head at14.967s lacks live blocking stack. Later completions do not close failure.",
+        "export": "Current original6s4K53.218s; profile212105checkpoints13.399s,overlapping render. Authorization/cancel/lease/publication fences retained; no accepted speedup."
+      },
+      "delivery_ready": false,
+      "rust_rebuilt": false,
+      "public_contract_changed": false,
+      "manual_acceptance": false
     }
   }
 }

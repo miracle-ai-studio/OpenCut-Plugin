@@ -6,7 +6,7 @@ import {surfaceError,PRODUCER_AHEAD} from './surface-worker-protocol';
 import type {SurfaceCommand,SurfaceEvent} from './surface-worker-protocol';
 const isPressure=(error:unknown)=>error instanceof Error&&'code' in error&&['VISUAL_BUDGET_EXCEEDED','PREVIEW_FRAME_STALE'].includes(String(error.code));
 const compare=(a:{ticks:string;timebase:number},b:{ticks:string;timebase:number})=>BigInt(a.ticks)*BigInt(b.timebase)-BigInt(b.ticks)*BigInt(a.timebase);
-type StagedPicture={frame:CachedPicture['frame'];picture?:CachedPicture;ready:Promise<void>;released:boolean};
+type StagedPicture={frame:CachedPicture['frame'];picture?:CachedPicture;claimed:Promise<void>;ready:Promise<void>;released:boolean};
 async function waitFor<T>(pending:Promise<T>,signal:AbortSignal):Promise<T>{
  signal.throwIfAborted();let abort!:()=>void;
  try{return await Promise.race([pending,new Promise<never>((_yes,no)=>{abort=()=>no(signal.reason);signal.addEventListener('abort',abort,{once:true});if(signal.aborted)abort();})]);}
@@ -35,6 +35,7 @@ export class SurfaceWorkerRun {
  private reading=new Set<Promise<void>>();
  private next:AudioPreviewSession['presentation_time'];
  private filling:Promise<void>|null=null;
+ private headAvailable:(()=>void)|null=null;
  private retained=0;
  private closed=false;
  private serving=false;
@@ -73,7 +74,7 @@ export class SurfaceWorkerRun {
  }
  private release(stage:StagedPicture){if(stage.picture&&!stage.released){stage.released=true;stage.picture.pixels.close();}}
  private stage(pending:PreparedSurfacePicture):StagedPicture{
-  const stage:StagedPicture={frame:pending.frame,ready:Promise.resolve(),released:false};
+  const stage:StagedPicture={frame:pending.frame,claimed:pending.claimed,ready:Promise.resolve(),released:false};
   stage.ready=(async()=>{
    const picture=await pending.complete;stage.picture=picture;
    if(this.closed){this.release(stage);return;}
@@ -102,7 +103,7 @@ export class SurfaceWorkerRun {
     catch(error){if(isPressure(error)&&this.queue.length)return;throw error;}
     void pending.claimed.catch(()=>{});
     if(this.closed){void pending.complete.then(p=>p.pixels.close(),()=>{});return;}
-    const stage=this.stage(pending);this.next=stage.frame.next_time;this.queue.push(stage);
+    const stage=this.stage(pending);this.next=stage.frame.next_time;this.queue.push(stage);this.headAvailable?.();
     if(this.source.prepareFrame){this.reading.add(stage.ready);void stage.ready.finally(()=>this.reading.delete(stage.ready)).catch(()=>{});}
     // A new native intent retires an unclaimed ticket. Response headers prove
     // the host already owns this reader; byte/hash/bitmap work may continue.
@@ -110,20 +111,29 @@ export class SurfaceWorkerRun {
    }
   })();this.filling=task;void task.finally(()=>{if(this.filling===task)this.filling=null;}).catch(()=>{});return task;
  }
+ private async head(){
+  if(this.queue.length)return;
+  let wake!:()=>void;const queued=new Promise<void>(resolve=>{wake=resolve;});this.headAvailable=wake;
+  try{await waitFor(Promise.race([queued,this.fill()]),this.abort.signal);}
+  finally{if(this.headAvailable===wake)this.headAvailable=null;}
+ }
  private refill(){void this.fill().catch(error=>{if(!isPressure(error))this.fail(error instanceof Error?error:Error(String(error)));});}
  private async serve(request:Extract<SurfaceEvent,{kind:'frame'}>){
   if(this.serving||!Number.isSafeInteger(request.retainedBytes)||request.retainedBytes<0||request.retainedBytes>64*1024*1024)throw Error('Invalid presentation preparation credit');
   this.serving=true;this.retained=request.retainedBytes;let exported:ImageBitmap|undefined;
   try{
-   if(!this.queue.length)await this.fill();else this.refill();
+   // A ready head must not wait for unrelated later preparation or body reads.
+   await this.head();this.refill();
    const stage=this.queue[0];if(!stage)throw Object.assign(Error('Presentation has no admitted next frame'),{code:'VISUAL_BUDGET_EXCEEDED'});
    const at=stage.frame.plan.identity.time;
    if(compare(request.time,at)<0n||compare(request.time,stage.frame.next_time)>=0n)throw Error('Presentation requested a discontinuous frame');
-   await stage.ready;this.abort.signal.throwIfAborted();
+   await waitFor(Promise.all([stage.claimed,stage.ready]),this.abort.signal);this.abort.signal.throwIfAborted();
    const picture=stage.picture;if(!picture)throw Error('Presentation pixels did not complete');
    exported=picture.pixels;this.abort.signal.throwIfAborted();
    const result:CachedPicture={pixels:exported,frame:{prepare_ahead:true,next_time:picture.frame.next_time,plan:{identity:{time:at}},time_seconds:picture.frame.time_seconds},runtime:picture.runtime};
    this.host.post({token:this.token,kind:'picture',id:request.id,picture:result},[exported]);exported=undefined;
+   // Keep the transferred bitmap charged until the next worker credit report.
+   const plan=this.source.descriptor();this.retained+=plan.width*plan.height*4;
    this.queue.shift();this.release(stage);this.refill();
   }catch(error){
    exported?.close();

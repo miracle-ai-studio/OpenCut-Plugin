@@ -72,15 +72,15 @@ it('waits for each host claim, overlaps at most two incomplete reads, and retire
  stages[1].claim.resolve();await flush();expect(prepare).toHaveBeenCalledTimes(2);
  stages[0].pixels.resolve();await flush();expect(prepare).toHaveBeenCalledTimes(3);
  stages[2].claim.resolve();await flush();expect(prepare).toHaveBeenCalledTimes(3);
- expect(prepare.mock.calls.map(c=>c[2])).toEqual([16,48,80]);
- expect(f.worker.messages.some(m=>m.kind==='picture')).toBe(false);
+ expect(prepare.mock.calls.map(c=>c[2])).toEqual([16,48,64]);
+ expect(f.worker.messages.filter(m=>m.kind==='picture')).toMatchObject([{id:1,picture:{frame:{time_seconds:0}}}]);
  // Stop must finish even when two body reads never finish; late completions
  // must release their bitmaps without reaching the presentation worker.
  abort.abort();await expect(starting).rejects.toMatchObject({name:'AbortError'});f.event({kind:'stopped',report:f.report});
  await f.finish();stages[1].pixels.resolve();stages[2].pixels.resolve();await flush();
  expect(prepare).toHaveBeenCalledTimes(3);expect(f.raw.every(p=>p.close.mock.calls.length===1)).toBe(true);
  expect(f.bitmaps.every(p=>p.close.mock.calls.length===1)).toBe(true);
- expect(f.worker.messages.some(m=>m.kind==='picture')).toBe(false);expect(f.failed).not.toHaveBeenCalled();
+ expect(f.worker.messages.filter(m=>m.kind==='picture')).toHaveLength(1);expect(f.failed).not.toHaveBeenCalled();
 });
 it('stops the native intent stream when its reader claim is denied',async()=>{
  const f=fixture();let deny!:(error:Error)=>void;const claim=new Promise<void>((_yes,no)=>{deny=no;});
@@ -95,4 +95,48 @@ it('stops the native intent stream when its reader claim is denied',async()=>{
  await expect(starting).rejects.toMatchObject({code:'NOT_AUTHORIZED'});
  f.event({kind:'stopped',report:f.report});await f.finish();finishPixels();await flush();
  expect(prepare).toHaveBeenCalledOnce();expect(f.failed).toHaveBeenCalledOnce();expect(f.raw[0].close).toHaveBeenCalledOnce();
+});
+it('delivers a verified head without waiting for a later native preparation',async()=>{
+ const f=fixture(),later=deferred();
+ const prepare=vi.fn(async(time:Parameters<SurfacePictureSource['frame']>[0],signal:AbortSignal,retained:number)=>{
+  if(time.ticks==='1')await later.promise;
+  const picture=await f.frame(time,signal,retained);
+  return {frame:picture.frame,claimed:Promise.resolve(),complete:Promise.resolve(picture)};
+ });
+ f.source.prepareFrame=prepare;
+ const starting=f.run.start(new AbortController().signal);f.event({kind:'started',report:f.report});await starting;
+ try{
+  f.event({kind:'frame',id:1,time:{ticks:'0',timebase:25},retainedBytes:16} as never);await flush();
+  expect(prepare).toHaveBeenCalledTimes(2);
+  expect(f.worker.messages.filter(m=>m.kind==='picture')).toMatchObject([{id:1,picture:{frame:{time_seconds:0}}}]);
+  expect(f.failed).not.toHaveBeenCalled();
+ }finally{later.resolve();await flush();await f.finish();}
+ expect(f.raw.every(p=>p.close.mock.calls.length===1)).toBe(true);
+ expect(f.bitmaps.every(p=>p.close.mock.calls.length===1)).toBe(true);
+});
+it('requires the head claim even when its pixels have completed',async()=>{
+ const f=fixture(),claim=deferred(),later=deferred();
+ f.source.prepareFrame=async(time,signal,retained)=>{
+  if(time.ticks!=='0')await later.promise;
+  const picture=await f.frame(time,signal,retained);
+  return {frame:picture.frame,claimed:time.ticks==='0'?claim.promise:Promise.resolve(),complete:Promise.resolve(picture)};
+ };
+ const starting=f.run.start(new AbortController().signal);f.event({kind:'started',report:f.report});await starting;
+ try{
+  f.event({kind:'frame',id:1,time:{ticks:'0',timebase:25},retainedBytes:16} as never);await flush();
+  expect(f.exporter).toHaveBeenCalledOnce();expect(f.worker.messages.some(m=>m.kind==='picture')).toBe(false);
+  claim.resolve();await flush();expect(f.worker.messages.filter(m=>m.kind==='picture')).toHaveLength(1);
+ }finally{claim.resolve();later.resolve();await flush();await f.finish();}
+});
+it('charges an early transferred bitmap until the next presentation credit report',async()=>{
+ const f=fixture(),capacity=64*1024*1024,bytes=16;
+ const starting=f.run.start(new AbortController().signal);f.event({kind:'started',report:f.report});await starting;
+ try{
+  f.event({kind:'frame',id:1,time:{ticks:'0',timebase:25},retainedBytes:capacity-3*bytes} as never);await flush();
+  expect(f.frame.mock.calls.map(c=>c[2])).toEqual([capacity-3*bytes,capacity-2*bytes]);
+  expect(f.worker.messages.filter(m=>m.kind==='picture')).toHaveLength(1);
+  expect(f.failed).not.toHaveBeenCalled();
+ }finally{await f.finish();}
+ expect(f.raw.every(p=>p.close.mock.calls.length===1)).toBe(true);
+ expect(f.bitmaps.every(p=>p.close.mock.calls.length===1)).toBe(true);
 });

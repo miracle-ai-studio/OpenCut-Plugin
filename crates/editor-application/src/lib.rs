@@ -92,6 +92,7 @@ pub mod source_art;
 pub mod source_art_waveform_display;
 pub mod source_audio;
 pub mod source_evidence;
+pub mod source_preview;
 pub mod speaker_turns;
 mod storage_records;
 pub mod subtitle_ass;

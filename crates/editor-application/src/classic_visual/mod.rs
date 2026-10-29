@@ -9,6 +9,16 @@ pub use protocol::*;
 pub use session::*;
 
 pub trait ClassicVisualResources {
+    fn preview_source(
+        &mut self,
+        request: &VisualPreviewSourceRequest,
+    ) -> Result<VisualPreviewSourceResolution, EditorError> {
+        Ok(VisualPreviewSourceResolution::original(
+            request,
+            opencut_contracts::source_preview::SourcePreviewState::NotRequested,
+            None,
+        ))
+    }
     fn resolve(
         &mut self,
         resource: &VisualResource,

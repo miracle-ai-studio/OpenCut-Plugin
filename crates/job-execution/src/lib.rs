@@ -9,6 +9,7 @@ pub mod scene_blend_video;
 pub mod scene_caption_video;
 pub mod scene_graphic_video;
 pub mod scene_text_frame;
+pub mod source_preview;
 use opencut_media_contracts::{Container, FrameAlignment, VideoCodec};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};

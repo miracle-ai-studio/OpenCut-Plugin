@@ -69,7 +69,7 @@ impl MediaFrameJobSubmissionStore for EditorApplication {
         )
     }
 }
-struct Assets(opencut_asset_store::AssetStore);
+pub(super) struct Assets(pub(super) opencut_asset_store::AssetStore);
 impl MediaFrameAssetCapture for Assets {
     fn capture(
         &self,

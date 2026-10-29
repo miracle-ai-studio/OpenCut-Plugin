@@ -66,6 +66,7 @@ pub mod sqlite_scene_text_frame_jobs;
 pub mod sqlite_scene_transcription;
 pub mod sqlite_scene_video_jobs;
 mod sqlite_source_art;
+pub mod sqlite_source_preview;
 mod sqlite_upload_retention;
 mod sqlite_uploads;
 use std::{path::Path, time::Duration};
@@ -83,6 +84,7 @@ use uuid::Uuid;
 
 const DATABASE_SCHEMA_VERSION: i64 = 33;
 const SUPPORTED_JOB_KINDS: &[&str] = &[
+    "media.preview_source",
     "media.probe",
     "preview.frame",
     "preview.project_frame",
@@ -686,6 +688,9 @@ impl EditorApplication {
             .transaction_with_behavior(TransactionBehavior::Immediate)
             .map_err(storage_error)?;
         sqlite_access::require_submission(&tx, &context, &request)?;
+        if request.kind == opencut_editor_application::source_preview::KIND {
+            sqlite_source_preview::validate_acceptance(&tx, &context, &request, &execution_input)?;
+        }
         if request.kind == "analysis.sequence_transcribe.v4" {
             sqlite_scene_transcription::validate_acceptance(
                 &tx,
@@ -790,6 +795,10 @@ impl EditorApplication {
             sqlite_access::require_live_input(&tx, &execution_input)?;
         }
         if !context.caller().is_owner()
+            // This source-only canonical declaration deliberately omits the
+            // producer revision. Its typed identity, fixed snapshot and caller
+            // are compared above in this same acceptance transaction.
+            && request.kind != opencut_editor_application::source_preview::KIND
             && sqlite_access::verified_target(&tx, &request.kind, &execution_input)?
                 != sqlite_access::verified_target(&tx, &request.kind, &request.input)?
         {

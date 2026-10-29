@@ -1,5 +1,6 @@
 use super::*;
 use crate::classic_visual::VisualProcessSession;
+use opencut_contracts::source_preview::{SourcePreviewMatrix, SourcePreviewUse};
 use opencut_contracts::visual_frame::{
     DecodedVisualSource, VisualNoFrameReason, VisualVideoEofPolicy,
 };
@@ -20,11 +21,13 @@ use std::{
 struct CachedDecoder {
     decoder: NativeVideoDecoder,
     limits: DecodeLimits,
+    representation: Option<String>,
 }
 pub struct NativeMediaDecoders {
     entries: BTreeMap<String, CachedDecoder>,
 }
 pub struct MediaFrameSources {
+    pub source_preparation: Vec<SourcePreviewUse>,
     pub decoded: Vec<DecodedVisualSource>,
     pub sources: BTreeMap<String, Arc<DecodedVideoFrame>>,
     pub encoded_bytes_read: u64,
@@ -193,6 +196,7 @@ impl NativeMediaDecoders {
             let mut sources = BTreeMap::new();
             let mut decoded = Vec::new();
             let mut bytes_read = 0u64;
+            let mut source_preparation = Vec::new();
             for (layer, admission) in plan.layers.iter().zip(admissions) {
                 resources.checkpoint()?;
                 if let VisualDecodeRequest::Video {
@@ -208,41 +212,122 @@ impl NativeMediaDecoders {
                     });
                     continue;
                 }
+                let resolution = if matches!(source_raster, SourceRaster::Preview)
+                    && matches!(layer.decode, VisualDecodeRequest::Video { .. })
+                    && plan.identity.width.max(plan.identity.height) <= 960
+                    && plan.identity.width.min(plan.identity.height) <= 540
+                {
+                    Some(
+                        serde_json::from_value::<VisualPreviewSourceResolution>(callback(
+                            session,
+                            resources,
+                            "resolvePreviewSource",
+                            json!({"elementId":layer.element_id}),
+                        )?)
+                        .map_err(|_| invalid("Invalid typed preview source resolution"))?,
+                    )
+                } else {
+                    None
+                };
+                if let Some(resolution) = &resolution {
+                    source_preparation.push(resolution.source_preparation.clone());
+                }
+                let proxy = resolution.as_ref().and_then(|resolution| {
+                    match &resolution.source_preparation {
+                        SourcePreviewUse::Prepared { source, frame, .. } => {
+                            Some((source.as_ref(), frame.as_ref()))
+                        }
+                        SourcePreviewUse::Original { .. } => None,
+                    }
+                });
+                if matches!(proxy, Some((_, None))) {
+                    let VisualDecodeRequest::Video { requested_time, .. } = &layer.decode else {
+                        return Err(invalid("Prepared source requires video"));
+                    };
+                    self.entries.remove(&key(layer));
+                    decoded.push(DecodedVisualSource::NoFrame {
+                        element_id: layer.element_id.clone(),
+                        requested_time: requested_time.clone(),
+                        reason: VisualNoFrameReason::TimestampGap,
+                    });
+                    continue;
+                }
+                let proxy = proxy.map(|(source, frame)| {
+                    (source, frame.expect("selected prepared source frame"))
+                });
+                let representation = proxy.map(|(source, _)| source.video.content_hash.clone());
+                let resource_key =
+                    if let Some(resolution) = resolution.as_ref().filter(|_| proxy.is_some()) {
+                        let transfer = resolution
+                            .transfer_id
+                            .as_ref()
+                            .ok_or_else(|| invalid("Prepared source omitted verified transfer"))?;
+                        let size = resolution
+                            .byte_length
+                            .as_ref()
+                            .ok_or_else(|| invalid("Prepared source omitted byte length"))?;
+                        let key = format!("prepared:{}", layer.element_id);
+                        opened.insert(key.clone(), (transfer.clone(), number(size)?));
+                        key
+                    } else {
+                        layer.resource.asset_id.clone()
+                    };
                 let (transfer, size) = opened
-                    .get(&layer.resource.asset_id)
+                    .get(&resource_key)
                     .ok_or_else(|| invalid("Native layer has no verified source"))?;
                 let mut source = Source {
                     resources,
                     transfer,
                     size: *size,
                 };
-                let limits = DecodeLimits {
+                let mut limits = DecodeLimits {
                     max_pixels: number(&admission.max_pixels)?,
                     max_resident_bytes: number(&admission.max_decoded_bytes)?,
                     max_io_bytes_per_operation: 512 * 1024 * 1024,
                     max_packets_per_operation: 100_000,
                 };
+                if let Some((_, frame)) = proxy {
+                    limits.max_resident_bytes = limits
+                        .max_resident_bytes
+                        .checked_sub(
+                            u64::from(frame.source_video.raster_width)
+                                * u64::from(frame.source_video.raster_height)
+                                * 4,
+                        )
+                        .filter(|n| *n >= 65536)
+                        .ok_or_else(|| {
+                            invalid("Prepared source restoration exceeds decoded admission")
+                        })?;
+                }
                 let key = key(layer);
-                if self
-                    .entries
-                    .get(&key)
-                    .is_some_and(|entry| entry.limits != limits)
-                {
+                if self.entries.get(&key).is_some_and(|entry| {
+                    entry.limits != limits || entry.representation != representation
+                }) {
                     self.entries.remove(&key);
                 }
                 let new = !self.entries.contains_key(&key);
                 if new {
-                    let stream = match &layer.decode {
-                        VisualDecodeRequest::Video {
-                            selected_video_stream,
-                            ..
-                        } => *selected_video_stream,
-                        _ => None,
+                    let stream = if proxy.is_some() {
+                        Some(0)
+                    } else {
+                        match &layer.decode {
+                            VisualDecodeRequest::Video {
+                                selected_video_stream,
+                                ..
+                            } => *selected_video_stream,
+                            _ => None,
+                        }
                     };
                     let decoder = NativeVideoDecoder::open(&mut source, stream, limits, deadline)
                         .map_err(media_error)?;
-                    self.entries
-                        .insert(key.clone(), CachedDecoder { decoder, limits });
+                    self.entries.insert(
+                        key.clone(),
+                        CachedDecoder {
+                            decoder,
+                            limits,
+                            representation,
+                        },
+                    );
                 }
                 let decoder = &mut self
                     .entries
@@ -250,32 +335,119 @@ impl NativeMediaDecoders {
                     .expect("admitted native decoder")
                     .decoder;
                 let before = if new { 0 } else { decoder.encoded_bytes_read() };
-                let frame = match &layer.decode {
+                let mut frame = match &layer.decode {
                     VisualDecodeRequest::Image => decoder
                         .first_image(&mut source, deadline)
                         .map_err(media_error)?,
                     VisualDecodeRequest::Video { requested_time, .. } => decoder
                         .sample_with_output(
                             &mut source,
-                            MediaTime {
-                                ticks: requested_time
-                                    .ticks
-                                    .parse()
-                                    .map_err(|_| invalid("Invalid fixed source time"))?,
-                                timebase: requested_time.timebase,
+                            if let Some((prepared, frame)) = proxy {
+                                MediaTime {
+                                    ticks: frame
+                                        .proxy_pts
+                                        .parse::<i64>()
+                                        .ok()
+                                        .and_then(|pts| {
+                                            pts.checked_mul(i64::from(
+                                                prepared.proxy_time_base.numerator,
+                                            ))
+                                        })
+                                        .ok_or_else(|| invalid("Prepared source PTS overflow"))?,
+                                    timebase: prepared.proxy_time_base.denominator,
+                                }
+                            } else {
+                                MediaTime {
+                                    ticks: requested_time
+                                        .ticks
+                                        .parse()
+                                        .map_err(|_| invalid("Invalid fixed source time"))?,
+                                    timebase: requested_time.timebase,
+                                }
                             },
-                            match source_raster {
-                                SourceRaster::Original => VideoOutputSize::Source,
-                                SourceRaster::Preview => VideoOutputSize::Fit {
-                                    width: plan.identity.width,
-                                    height: plan.identity.height,
-                                },
+                            if proxy.is_some() {
+                                VideoOutputSize::Source
+                            } else {
+                                match source_raster {
+                                    SourceRaster::Original => VideoOutputSize::Source,
+                                    SourceRaster::Preview => VideoOutputSize::Fit {
+                                        width: plan.identity.width,
+                                        height: plan.identity.height,
+                                    },
+                                }
                             },
                             deadline,
                         )
                         .map_err(media_error)?,
                 };
                 bytes_read = bytes_read.saturating_add(decoder.encoded_bytes_read() - before);
+                let reached_eof =
+                    proxy.map_or_else(|| decoder.reached_eof(), |(_, frame)| frame.last_frame);
+                if let Some((prepared, selected)) = proxy {
+                    let actual = frame
+                        .take()
+                        .ok_or_else(|| invalid("Prepared video has no actual indexed frame"))?;
+                    if actual.pts.to_string() != selected.proxy_pts
+                        || actual.duration.to_string() != selected.proxy_duration
+                        || actual.time_base_numerator != prepared.proxy_time_base.numerator
+                        || actual.time_base_denominator != prepared.proxy_time_base.denominator
+                        || actual.source_width != prepared.identity.raster_bound.width
+                        || actual.source_height != prepared.identity.raster_bound.height
+                        || actual.width != prepared.identity.raster_bound.width
+                        || actual.height != prepared.identity.raster_bound.height
+                        || actual.rotation_degrees != 0
+                    {
+                        return Err(invalid(
+                            "Actual prepared frame differs from independently indexed proxy clock/raster",
+                        ));
+                    }
+                    let video = &selected.source_video;
+                    let rgba = crate::source_preview::raster::restore(
+                        &actual.rgba,
+                        video,
+                        prepared.identity.raster_bound,
+                        &mut || source.resources.checkpoint(),
+                    )?;
+                    frame = Some(Arc::new(DecodedVideoFrame {
+                        source_width: video.source_width,
+                        source_height: video.source_height,
+                        width: video.raster_width,
+                        height: video.raster_height,
+                        rgba,
+                        pts: selected
+                            .source_pts
+                            .parse()
+                            .map_err(|_| invalid("Invalid original source PTS"))?,
+                        duration: selected
+                            .source_duration
+                            .parse()
+                            .map_err(|_| invalid("Invalid original source duration"))?,
+                        time_base_numerator: prepared.source_time_base.numerator,
+                        time_base_denominator: prepared.source_time_base.denominator,
+                        rotation_degrees: video.rotation_degrees,
+                        matrix: match video.matrix {
+                            SourcePreviewMatrix::Bt601 => {
+                                opencut_media::native_decode::VideoColorMatrix::Bt601
+                            }
+                            SourcePreviewMatrix::Bt709 => {
+                                opencut_media::native_decode::VideoColorMatrix::Bt709
+                            }
+                            SourcePreviewMatrix::Bt2020 => {
+                                opencut_media::native_decode::VideoColorMatrix::Bt2020
+                            }
+                            SourcePreviewMatrix::Rgb => {
+                                opencut_media::native_decode::VideoColorMatrix::Rgb
+                            }
+                            SourcePreviewMatrix::Unspecified => {
+                                opencut_media::native_decode::VideoColorMatrix::Unspecified
+                            }
+                        },
+                        full_range: video.full_range,
+                        pixel_aspect_numerator: video.pixel_aspect_numerator,
+                        pixel_aspect_denominator: video.pixel_aspect_denominator,
+                        source_has_alpha: video.has_alpha,
+                    }));
+                }
                 match (&layer.decode, frame) {
                     (VisualDecodeRequest::Image, Some(frame)) => {
                         let (width, height) = display_size(&frame);
@@ -310,7 +482,7 @@ impl NativeMediaDecoders {
                             .as_ref()
                             .is_none_or(|frame| frame.ends_before(request));
                         let hold = expired
-                            && decoder.reached_eof()
+                            && reached_eof
                             && matches!(eof_policy,VisualVideoEofPolicy::HoldLastFrame{read_window_start_seconds,read_window_end_seconds}
                             if requested_time_seconds>=read_window_start_seconds&&requested_time_seconds<read_window_end_seconds);
                         if let Some(frame) = frame.filter(|_| !expired || hold) {
@@ -330,7 +502,7 @@ impl NativeMediaDecoders {
                             decoded.push(DecodedVisualSource::NoFrame {
                                 element_id: layer.element_id.clone(),
                                 requested_time: requested_time.clone(),
-                                reason: if decoder.reached_eof() {
+                                reason: if reached_eof {
                                     VisualNoFrameReason::Eof
                                 } else {
                                     VisualNoFrameReason::TimestampGap
@@ -341,6 +513,7 @@ impl NativeMediaDecoders {
                 }
             }
             Ok(MediaFrameSources {
+                source_preparation,
                 decoded,
                 sources,
                 encoded_bytes_read: bytes_read,

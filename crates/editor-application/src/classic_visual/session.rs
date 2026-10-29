@@ -9,6 +9,7 @@ pub struct ClassicVisualSession<'a> {
     prepared: &'a PreparedVisualFrame,
     policy: LocalVisualExecutionPolicy,
     admissions: BTreeSet<String>,
+    source_selections: BTreeSet<String>,
     bound: Option<BoundVisualFrame>,
     received_bytes: u64,
     rgba_bytes: u64,
@@ -86,6 +87,7 @@ impl<'a> ClassicVisualSession<'a> {
             prepared,
             policy: policy.clone(),
             admissions: BTreeSet::new(),
+            source_selections: BTreeSet::new(),
             bound: None,
             received_bytes: 0,
             rgba_bytes,
@@ -335,6 +337,57 @@ impl<'a> ClassicVisualSession<'a> {
                     .map_err(|_| invalid("Cannot serialize bound frame"))?;
                 self.bound = Some(bound);
                 Ok(value)
+            }
+            VisualCallback::PreviewSource(v) => {
+                if self.bound.is_some()
+                    || !self.admissions.contains(&v.element_id)
+                    || !self.source_selections.insert(v.element_id.clone())
+                {
+                    return Err(invalid(
+                        "Preview source selection must follow one admitted layer",
+                    ));
+                }
+                let layer = self
+                    .prepared
+                    .layers()
+                    .iter()
+                    .find(|layer| layer.element_id == v.element_id)
+                    .ok_or_else(|| invalid("Unknown preview source layer"))?;
+                let SampledContent::Video {
+                    asset_id,
+                    stream,
+                    source,
+                    ..
+                } = &layer.content
+                else {
+                    return Err(invalid("Preview source requires a video layer"));
+                };
+                let resource = self
+                    .prepared
+                    .resources()
+                    .iter()
+                    .find(|resource| resource.asset_id == *asset_id)
+                    .ok_or_else(|| invalid("Preview original source is missing"))?;
+                let identity = self.prepared.identity();
+                let request = VisualPreviewSourceRequest {
+                    project_id: identity.project_id.clone(),
+                    revision: identity.revision.clone(),
+                    element_id: v.element_id,
+                    asset_id: asset_id.clone(),
+                    source_version: resource.version.clone(),
+                    selected_video_stream: *stream,
+                    requested_time: source.source_time.clone(),
+                    raster_bound: crate::source_preview::SourcePreviewRaster {
+                        width: identity.width,
+                        height: identity.height,
+                    },
+                };
+                crate::source_preview::validate_raster(request.raster_bound)?;
+                let resolution = resources.preview_source(&request)?;
+                crate::source_preview::validate_resolution(&request, &resolution)?;
+                resources.checkpoint()?;
+                serde_json::to_value(resolution)
+                    .map_err(|_| invalid("Cannot serialize preview source selection"))
             }
         }
     }

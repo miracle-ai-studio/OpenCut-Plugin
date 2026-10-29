@@ -135,6 +135,11 @@ pub struct ClassicVideoEncoderObservation {
     pub video_duration_seconds: f64,
     pub audio_duration_seconds: f64,
 }
+pub struct SourcePreviewEncoderObservation {
+    pub ffmpeg_sha256: String,
+    pub ffprobe_sha256: String,
+    pub time_base: opencut_contracts::source_preview::SourcePreviewTimeBase,
+}
 pub struct ClassicVideoEncoder<F: FnMut(bool) -> Result<(), EditorError>> {
     process: Option<Box<dyn OutputProcess>>,
     input: Option<ChildStdin>,
@@ -149,6 +154,7 @@ pub struct ClassicVideoEncoder<F: FnMut(bool) -> Result<(), EditorError>> {
     next_frame: u64,
     offset: u64,
     export_options: Option<opencut_contracts::export_video::ExportVideoOptions>,
+    source_preview: bool,
 }
 impl<F: FnMut(bool) -> Result<(), EditorError>> ClassicVideoEncoder<F> {
     #[cfg(unix)]
@@ -157,7 +163,7 @@ impl<F: FnMut(bool) -> Result<(), EditorError>> ClassicVideoEncoder<F> {
         admission: &dyn OutputAdmission,
         checkpoint: F,
     ) -> Result<Self, EditorError> {
-        Self::start_internal(config, admission, checkpoint, None)
+        Self::start_internal(config, admission, checkpoint, None, false)
     }
     #[cfg(unix)]
     pub fn start_export(
@@ -166,7 +172,18 @@ impl<F: FnMut(bool) -> Result<(), EditorError>> ClassicVideoEncoder<F> {
         admission: &dyn OutputAdmission,
         checkpoint: F,
     ) -> Result<Self, EditorError> {
-        Self::start_internal(config, admission, checkpoint, Some(options))
+        Self::start_internal(config, admission, checkpoint, Some(options), false)
+    }
+    /// Source preparation supplies a maximum frame count first and seals the
+    /// independently observed complete count at EOF. The output is lossless
+    /// RGBA FFV1; it never consumes a project, original source path or audio.
+    #[cfg(unix)]
+    pub fn start_source_preview(
+        config: ClassicVideoEncoderConfig,
+        admission: &dyn OutputAdmission,
+        checkpoint: F,
+    ) -> Result<Self, EditorError> {
+        Self::start_internal(config, admission, checkpoint, None, true)
     }
     #[cfg(unix)]
     fn start_internal(
@@ -174,11 +191,11 @@ impl<F: FnMut(bool) -> Result<(), EditorError>> ClassicVideoEncoder<F> {
         admission: &dyn OutputAdmission,
         mut checkpoint: F,
         export_options: Option<opencut_contracts::export_video::ExportVideoOptions>,
+        source_preview: bool,
     ) -> Result<Self, EditorError> {
         if config.width == 0
             || config.height == 0
-            || config.width % 2 != 0
-            || config.height % 2 != 0
+            || (!source_preview && (config.width % 2 != 0 || config.height % 2 != 0))
             || config.fps_numerator == 0
             || config.fps_denominator == 0
             || config.frame_count == 0
@@ -192,7 +209,59 @@ impl<F: FnMut(bool) -> Result<(), EditorError>> ClassicVideoEncoder<F> {
         let ffmpeg_hash = hash(&config.ffmpeg, &mut checkpoint)?;
         let ffprobe_hash = hash(&config.ffprobe, &mut checkpoint)?;
         let mut command = Command::new(&config.ffmpeg);
-        if let Some(options) = &export_options {
+        if source_preview {
+            command
+                .args([
+                    "-hide_banner",
+                    "-loglevel",
+                    "error",
+                    "-nostdin",
+                    "-n",
+                    "-protocol_whitelist",
+                    "file,pipe",
+                    "-f",
+                    "rawvideo",
+                    "-pixel_format",
+                    "rgba",
+                    "-video_size",
+                ])
+                .arg(format!("{}x{}", config.width, config.height))
+                .arg("-framerate")
+                .arg(format!(
+                    "{}/{}",
+                    config.fps_numerator, config.fps_denominator
+                ))
+                .args([
+                    "-i",
+                    "pipe:0",
+                    "-an",
+                    "-sn",
+                    "-dn",
+                    "-c:v",
+                    "ffv1",
+                    "-level",
+                    "3",
+                    "-g",
+                    "1",
+                    "-coder",
+                    "1",
+                    "-context",
+                    "1",
+                    "-slicecrc",
+                    "1",
+                    "-slices",
+                    "4",
+                    "-threads",
+                    "2",
+                    "-filter_threads",
+                    "1",
+                    "-pix_fmt",
+                    "bgra",
+                    "-f",
+                    "matroska",
+                ])
+                .arg(&config.output);
+        } else if let Some(options) = &export_options {
             crate::export_video::append_arguments(&mut command, &config, options)?;
         } else {
             command
@@ -286,6 +355,7 @@ impl<F: FnMut(bool) -> Result<(), EditorError>> ClassicVideoEncoder<F> {
             next_frame: 0,
             offset: 0,
             export_options,
+            source_preview,
         })
     }
     fn check(&mut self) -> Result<(), EditorError> {
@@ -343,10 +413,11 @@ impl<F: FnMut(bool) -> Result<(), EditorError>> ClassicVideoEncoder<F> {
         Ok(())
     }
     #[cfg(unix)]
-    pub fn finish(
-        mut self,
+    fn finish_probe(
+        &mut self,
         admission: &dyn OutputAdmission,
-    ) -> Result<ClassicVideoEncoderObservation, EditorError> {
+        frame_observer: Option<&mut dyn FnMut(u64, i64, i64) -> Result<(), EditorError>>,
+    ) -> Result<Value, EditorError> {
         if self.next_frame != self.config.frame_count || self.offset != 0 {
             return Err(err("Encoder lacks all complete CFR frames"));
         }
@@ -390,7 +461,7 @@ impl<F: FnMut(bool) -> Result<(), EditorError>> ClassicVideoEncoder<F> {
         drop(self.process.take());
         self.check()?;
         self.completed_work()?;
-        let probe = probe(
+        let probe = probe_observed(
             &self.config.ffprobe,
             &self.config.output,
             admission,
@@ -399,6 +470,7 @@ impl<F: FnMut(bool) -> Result<(), EditorError>> ClassicVideoEncoder<F> {
                 .remaining_after(self.started.elapsed()),
             self.config.max_rss_bytes,
             &mut self.checkpoint,
+            frame_observer,
         )?;
         self.completed_work()?;
         self.check()?;
@@ -410,6 +482,82 @@ impl<F: FnMut(bool) -> Result<(), EditorError>> ClassicVideoEncoder<F> {
                 "Encoder/probe binary changed during execution",
             ));
         }
+        Ok(probe)
+    }
+    #[cfg(unix)]
+    pub fn finish_source_preview(
+        mut self,
+        actual_frames: u64,
+        admission: &dyn OutputAdmission,
+        frame_observer: &mut dyn FnMut(u64, i64, i64) -> Result<(), EditorError>,
+    ) -> Result<SourcePreviewEncoderObservation, EditorError> {
+        if !self.source_preview
+            || actual_frames == 0
+            || actual_frames > self.config.frame_count
+            || actual_frames != self.next_frame
+            || self.offset != 0
+        {
+            return Err(err(
+                "Source encoder lacks its complete actual frame sequence",
+            ));
+        }
+        self.config.frame_count = actual_frames;
+        let observed = self.finish_probe(admission, Some(frame_observer))?;
+        let streams = observed["streams"]
+            .as_array()
+            .ok_or_else(|| err("Missing source proxy stream"))?;
+        if streams.len() != 1 {
+            return Err(err("Source proxy must contain only one video stream"));
+        }
+        let video = &streams[0];
+        if video["codec_type"] != "video"
+            || video["codec_name"] != "ffv1"
+            || video["pix_fmt"] != "bgra"
+            || video["width"].as_u64() != Some(u64::from(self.config.width))
+            || video["height"].as_u64() != Some(u64::from(self.config.height))
+            || video["nb_read_frames"]
+                .as_str()
+                .and_then(|s| s.parse::<u64>().ok())
+                != Some(actual_frames)
+        {
+            return Err(err(
+                "Lossless source proxy changed its observed format or count",
+            ));
+        }
+        let base = video["time_base"]
+            .as_str()
+            .and_then(|s| s.split_once('/'))
+            .ok_or_else(|| err("Source proxy has no observed time base"))?;
+        let numerator = base
+            .0
+            .parse::<u32>()
+            .ok()
+            .filter(|n| *n > 0)
+            .ok_or_else(|| err("Invalid source proxy time base"))?;
+        let denominator = base
+            .1
+            .parse::<u32>()
+            .ok()
+            .filter(|n| *n > 0)
+            .ok_or_else(|| err("Invalid source proxy time base"))?;
+        Ok(SourcePreviewEncoderObservation {
+            ffmpeg_sha256: self.ffmpeg_hash.clone(),
+            ffprobe_sha256: self.ffprobe_hash.clone(),
+            time_base: opencut_contracts::source_preview::SourcePreviewTimeBase {
+                numerator,
+                denominator,
+            },
+        })
+    }
+    #[cfg(unix)]
+    pub fn finish(
+        mut self,
+        admission: &dyn OutputAdmission,
+    ) -> Result<ClassicVideoEncoderObservation, EditorError> {
+        if self.source_preview {
+            return Err(err("Source proxy requires observed source completion"));
+        }
+        let probe = self.finish_probe(admission, None)?;
         if let Some(options) = &self.export_options {
             let observed = crate::export_video::verify_probe(&probe, &self.config, options)?;
             return Ok(ClassicVideoEncoderObservation {
@@ -560,6 +708,13 @@ fn read_probe_output(
     reader: impl Read,
     progress: mpsc::SyncSender<u64>,
 ) -> Result<Value, EditorError> {
+    read_probe_output_observed(reader, progress, None)
+}
+fn read_probe_output_observed(
+    reader: impl Read,
+    progress: mpsc::SyncSender<u64>,
+    frames: Option<mpsc::SyncSender<(u64, i64, i64)>>,
+) -> Result<Value, EditorError> {
     let mut reader = BufReader::new(reader);
     let mut counts = BTreeMap::<u64, (String, u64)>::new();
     let mut streams = BTreeMap::<u64, Value>::new();
@@ -611,6 +766,8 @@ fn read_probe_output(
                     | "duration"
                     | "tag:DURATION"
                     | "format_name"
+                    | "pts"
+                    | "time_base"
             ) {
                 continue;
             }
@@ -642,6 +799,26 @@ fn read_probe_output(
                 .1
                 .checked_add(1)
                 .ok_or_else(|| err("Probe frame count overflow"))?;
+            if let Some(frames) = &frames {
+                if kind != "video" {
+                    return Err(err("Source proxy contains a non-video frame"));
+                }
+                let pts = fields
+                    .get("pts")
+                    .and_then(|v| v.parse::<i64>().ok())
+                    .ok_or_else(|| err("Missing observed encoded frame PTS"))?;
+                let duration = fields
+                    .get("duration")
+                    .and_then(|v| v.parse::<i64>().ok())
+                    .filter(|v| *v > 0)
+                    .ok_or_else(|| err("Missing observed encoded frame duration"))?;
+                // Unlike coalescible progress, exact frame observations cannot
+                // be dropped. The owning loop drains this bounded queue and
+                // drops its receiver before any reader join on failure.
+                frames
+                    .send((counter.1 - 1, pts, duration))
+                    .map_err(|_| err("Source frame observer retired"))?;
+            }
             decoded = decoded
                 .checked_add(1)
                 .ok_or_else(|| err("Probe progress overflow"))?;
@@ -700,12 +877,32 @@ fn probe(
     max_rss_bytes: u64,
     checkpoint: &mut dyn FnMut(bool) -> Result<(), EditorError>,
 ) -> Result<Value, EditorError> {
+    probe_observed(
+        path,
+        output,
+        admission,
+        limit,
+        max_rss_bytes,
+        checkpoint,
+        None,
+    )
+}
+#[cfg(unix)]
+fn probe_observed(
+    path: &Path,
+    output: &Path,
+    admission: &dyn OutputAdmission,
+    limit: VideoExecutionLimit,
+    max_rss_bytes: u64,
+    checkpoint: &mut dyn FnMut(bool) -> Result<(), EditorError>,
+    mut frame_observer: Option<&mut dyn FnMut(u64, i64, i64) -> Result<(), EditorError>>,
+) -> Result<Value, EditorError> {
     checkpoint(false)?;
     let mut command = Command::new(path);
     command.args([
         "-v", "error", "-protocol_whitelist", "file,pipe", "-count_frames",
         "-show_frames", "-show_streams", "-show_format", "-show_entries",
-        "frame=media_type,stream_index:stream=index,codec_type,codec_name,width,height,pix_fmt,r_frame_rate,avg_frame_rate,sample_rate,channels,nb_read_frames,duration:stream_tags=DURATION:format=format_name,duration",
+        "frame=media_type,stream_index,pts,duration:stream=index,codec_type,codec_name,width,height,pix_fmt,r_frame_rate,avg_frame_rate,sample_rate,channels,nb_read_frames,duration,time_base:stream_tags=DURATION:format=format_name,duration",
         "-of", "compact=p=1:nk=0",
     ]).arg(output).stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::piped());
     let mut process = admission.spawn(command, None).map_err(media)?;
@@ -720,7 +917,17 @@ fn probe(
         .take()
         .ok_or_else(|| err("Missing probe diagnostics"))?;
     let (sender, observations) = mpsc::sync_channel(4);
-    let mut out = Some(thread::spawn(move || read_probe_output(stdout, sender)));
+    let (frame_sender, frame_rows) = if frame_observer.is_some() {
+        let (sender, rows) = mpsc::sync_channel(4);
+        (Some(sender), Some(rows))
+    } else {
+        (None, None)
+    };
+    let mut out = Some(thread::spawn(move || {
+        read_probe_output_observed(stdout, sender, frame_sender)
+    }));
+    let mut pending_frame = None;
+    let mut source_frames = 0u64;
     let mut parsed = None;
     let errors = thread::spawn(move || bounded_read(stderr, 16384));
     let start = Instant::now();
@@ -730,6 +937,20 @@ fn probe(
     let status = (|| {
         loop {
             let mut advanced = false;
+            if let Some(rows) = &frame_rows {
+                for _ in 0..256 {
+                    let row = pending_frame.take().or_else(|| rows.try_recv().ok());
+                    let Some((ordinal, pts, duration)) = row else {
+                        break;
+                    };
+                    if ordinal != source_frames {
+                        return Err(err("Encoded frame observer order changed"));
+                    }
+                    frame_observer.as_mut().expect("source observer")(ordinal, pts, duration)?;
+                    source_frames += 1;
+                    advanced = true;
+                }
+            }
             for _ in 0..4 {
                 let Ok(count) = observations.try_recv() else {
                     break;
@@ -787,13 +1008,39 @@ fn probe(
                 }
             }
             if let Some(status) = process.child().try_wait().map_err(io)? {
-                return Ok(status);
+                if frame_rows.is_none() {
+                    return Ok(status);
+                }
+                if parsed.is_some() {
+                    // A finished reader can leave its final bounded rows in
+                    // the queue after this loop's first drain. Consume them
+                    // before accepting process exit and sealing the index.
+                    while let Some((ordinal, pts, duration)) =
+                        frame_rows.as_ref().and_then(|rows| rows.try_recv().ok())
+                    {
+                        if ordinal != source_frames {
+                            return Err(err("Final source frame order changed"));
+                        }
+                        frame_observer.as_mut().expect("source observer")(ordinal, pts, duration)?;
+                        source_frames += 1;
+                    }
+                    return Ok(status);
+                }
             }
-            thread::sleep(Duration::from_millis(20));
+            if let Some(rows) = &frame_rows {
+                match rows.recv_timeout(Duration::from_millis(5)) {
+                    Ok(row) => pending_frame = Some(row),
+                    Err(mpsc::RecvTimeoutError::Timeout) => {}
+                    Err(mpsc::RecvTimeoutError::Disconnected) => thread::yield_now(),
+                }
+            } else {
+                thread::sleep(Duration::from_millis(20));
+            }
         }
     })();
     drop(process);
     drop(observations);
+    drop(frame_rows);
     let observed = if let Some(reader) = out {
         reader
             .join()

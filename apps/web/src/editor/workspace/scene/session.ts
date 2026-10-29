@@ -288,6 +288,20 @@ export class Session {
         ? current
         : null;
     };
+    const sourceView = currentView();
+    if (sourceView) {
+      // Rust chooses participating source versions and tracks. Accept once on
+      // opening the scene so preparation can finish before playback starts.
+      void api.sdk.call("opencut_source_preview_prepare", {
+        project_id: head.project.id,
+        revision: head.revision,
+        sequence_id: sourceView.sequenceId,
+        asset_id: null,
+        selected_video_stream: null,
+      }).then(result => {
+        if (currentView() && result.jobs.length) return this.host.refreshTasks();
+      }).catch(error => { if (currentView()) this.host.report?.(error); });
+    }
     const loadCapabilities = async () => {
       const capability = await api.sdk.call("opencut_render_capability", {});
       const current = currentView();

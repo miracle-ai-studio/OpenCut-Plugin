@@ -141,6 +141,7 @@ pub(super) enum CurrentPolicy {
     Audio(opencut_job_execution::scene_audio::LocalAudioExecutionPolicy),
     Video(opencut_job_execution::media_video::LocalVideoExecutionPolicy),
     SourceArt(opencut_editor_application::source_art::SourceArtPolicy),
+    SourcePreview(opencut_job_execution::source_preview::SourcePreviewPolicy),
 }
 impl From<&opencut_job_execution::media_frame::LocalVisualExecutionPolicy> for CurrentPolicy {
     fn from(value: &opencut_job_execution::media_frame::LocalVisualExecutionPolicy) -> Self {
@@ -160,6 +161,11 @@ impl From<&opencut_job_execution::media_video::LocalVideoExecutionPolicy> for Cu
 impl From<&opencut_editor_application::source_art::SourceArtPolicy> for CurrentPolicy {
     fn from(value: &opencut_editor_application::source_art::SourceArtPolicy) -> Self {
         Self::SourceArt(value.clone())
+    }
+}
+impl From<&opencut_job_execution::source_preview::SourcePreviewPolicy> for CurrentPolicy {
+    fn from(value: &opencut_job_execution::source_preview::SourcePreviewPolicy) -> Self {
+        Self::SourcePreview(value.clone())
     }
 }
 pub(super) struct FixedJobInput {

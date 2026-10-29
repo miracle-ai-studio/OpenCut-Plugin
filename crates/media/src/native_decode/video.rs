@@ -39,6 +39,9 @@ pub struct DecodedVideoFrame {
     pub rotation_degrees: u16,
     pub matrix: VideoColorMatrix,
     pub full_range: bool,
+    pub pixel_aspect_numerator: i32,
+    pub pixel_aspect_denominator: i32,
+    pub source_has_alpha: bool,
 }
 
 /// Presentation output only. Codec surfaces, time and source observations keep
@@ -128,11 +131,18 @@ pub struct NativeVideoDecoder {
     draining: bool,
     ended: bool,
     retired: bool,
-    image_mode: Option<bool>,
+    access: Option<DecodeAccess>,
     reference_frames: u64,
     decode_threads: usize,
     threading_resolved: bool,
     output_size: VideoOutputSize,
+    max_decode_threads: usize,
+}
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum DecodeAccess {
+    Image,
+    Timed,
+    Sequential,
 }
 struct Operation {
     packets: usize,
@@ -146,7 +156,22 @@ impl NativeVideoDecoder {
         limits: DecodeLimits,
         deadline: Instant,
     ) -> MediaResult<Self> {
+        Self::open_with_threads(source, selected_stream, limits, deadline, 4)
+    }
+
+    /// A trusted execution owner may reduce codec concurrency, without changing
+    /// byte/surface admission or allowing codec workers to read the source.
+    pub fn open_with_threads(
+        source: &mut dyn ByteSource,
+        selected_stream: Option<u32>,
+        limits: DecodeLimits,
+        deadline: Instant,
+        max_decode_threads: usize,
+    ) -> MediaResult<Self> {
         limits.validate()?;
+        if !(1..=4).contains(&max_decode_threads) {
+            return Err(invalid("Invalid native video thread admission"));
+        }
         // avcodec registration is automatic. Avoid network/device registration
         // and global log mutations; this adapter cannot open URLs or devices.
         let mut bridge = Bridge::new(source.len())?;
@@ -183,7 +208,8 @@ impl NativeVideoDecoder {
             | av::codec::Id::GIF => 0,
             _ => 16,
         };
-        let decode_threads = decode_threads(&context, reference_frames, limits);
+        let decode_threads =
+            decode_threads(&context, reference_frames, limits).min(max_decode_threads);
         context.set_threading(av::codec::threading::Config {
             count: decode_threads,
             kind: if decode_threads > 1 {
@@ -214,11 +240,12 @@ impl NativeVideoDecoder {
             draining: false,
             ended: false,
             retired: false,
-            image_mode: None,
+            access: None,
             reference_frames,
             decode_threads,
             threading_resolved: decode_threads > 1,
             output_size: VideoOutputSize::Source,
+            max_decode_threads,
         })
     }
 
@@ -259,10 +286,10 @@ impl NativeVideoDecoder {
         deadline: Instant,
     ) -> MediaResult<Option<Arc<DecodedVideoFrame>>> {
         checkpoint(source, deadline)?;
-        if self.retired || self.image_mode == Some(false) {
+        if self.retired || self.access.is_some_and(|mode| mode != DecodeAccess::Image) {
             return Err(invalid("Native decoder was retired"));
         }
-        self.image_mode = Some(true);
+        self.access = Some(DecodeAccess::Image);
         if let Some(frame) = &self.converted {
             return Ok(Some(frame.clone()));
         }
@@ -310,11 +337,11 @@ impl NativeVideoDecoder {
         if requested.timebase == 0
             || requested.ticks < 0
             || self.retired
-            || self.image_mode == Some(true)
+            || self.access.is_some_and(|mode| mode != DecodeAccess::Timed)
         {
             return Err(invalid("Invalid native sample or retired decoder"));
         }
-        self.image_mode = Some(false);
+        self.access = Some(DecodeAccess::Timed);
         self.output_size = output_size;
         let result = self
             .sample_inner(source, requested, deadline)
@@ -326,6 +353,69 @@ impl NativeVideoDecoder {
             self.retire();
         }
         result
+    }
+
+    /// Read every actual source frame in presentation order. No authored clock,
+    /// guessed FPS or proxy timestamp participates. The one-frame lookahead is
+    /// also used by timed sampling to resolve an observed missing duration.
+    pub fn next_frame_with_output(
+        &mut self,
+        source: &mut dyn ByteSource,
+        output_size: VideoOutputSize,
+        deadline: Instant,
+    ) -> MediaResult<Option<Arc<DecodedVideoFrame>>> {
+        checkpoint(source, deadline)?;
+        output_size.validate()?;
+        if self.retired
+            || self
+                .access
+                .is_some_and(|mode| mode != DecodeAccess::Sequential)
+        {
+            return Err(invalid("Invalid sequential sample or retired decoder"));
+        }
+        self.access = Some(DecodeAccess::Sequential);
+        self.output_size = output_size;
+        let result = self.next_frame_inner(source, deadline).and_then(|frame| {
+            checkpoint(source, deadline)?;
+            Ok(frame)
+        });
+        if result.is_err() {
+            self.retire();
+        }
+        result
+    }
+
+    fn next_frame_inner(
+        &mut self,
+        source: &mut dyn ByteSource,
+        deadline: Instant,
+    ) -> MediaResult<Option<Arc<DecodedVideoFrame>>> {
+        let mut operation = Operation {
+            packets: 0,
+            first_byte: self.bridge.bytes_read(),
+        };
+        self.positioned = true;
+        loop {
+            if self.next.is_none() && !self.ended {
+                self.next = self.read_frame(source, deadline, &mut operation)?;
+            }
+            let Some(frame) = self.next.as_ref() else {
+                return Ok(None);
+            };
+            let pts = frame
+                .timestamp()
+                .or(frame.pts())
+                .ok_or_else(|| invalid("Decoded video has no PTS"))?;
+            if self.resolve_threading_at_pts(source, pts, deadline, &operation)? {
+                continue;
+            }
+            self.previous = self.next.take();
+            if !self.ended {
+                self.next = self.read_frame(source, deadline, &mut operation)?;
+            }
+            let (pts, duration) = self.previous_observation()?;
+            return self.convert(pts, duration).map(Some);
+        }
     }
 
     fn sample_inner(
@@ -357,7 +447,13 @@ impl NativeVideoDecoder {
             if self.next.is_none() && !self.ended {
                 self.next = self.read_frame(source, deadline, &mut operation)?;
                 if self.next.is_some()
-                    && self.resolve_threading(source, requested, deadline, &operation)?
+                    && self.resolve_threading_at_pts(
+                        source,
+                        i64::try_from(timestamp(requested, self.time_base[0], self.time_base[1]))
+                            .map_err(|_| invalid("Native seek timestamp overflow"))?,
+                        deadline,
+                        &operation,
+                    )?
                 {
                     continue;
                 }
@@ -376,9 +472,28 @@ impl NativeVideoDecoder {
             // allocating and clearing another full-resolution RGBA frame.
         }
         self.last_request = Some(requested);
-        let Some(frame) = &self.previous else {
+        if self.previous.is_none() {
             return Ok(None);
-        };
+        }
+        let (pts, duration) = self.previous_observation()?;
+        if let Some(frame) = &self.converted
+            && frame.pts == pts
+            && frame.duration == duration
+            && [frame.width, frame.height]
+                == self
+                    .output_size
+                    .extent(frame.source_width, frame.source_height, self.rotation)
+        {
+            return Ok(Some(frame.clone()));
+        }
+        self.convert(pts, duration).map(Some)
+    }
+
+    fn previous_observation(&self) -> MediaResult<(i64, i64)> {
+        let frame = self
+            .previous
+            .as_ref()
+            .ok_or_else(|| invalid("Missing decoded source frame"))?;
         let pts = frame
             .timestamp()
             .or(frame.pts())
@@ -395,23 +510,13 @@ impl NativeVideoDecoder {
                 .filter(|n| *n > 0)
                 .ok_or_else(|| invalid("Decoded video has no observed frame duration"))?
         };
-        if let Some(frame) = &self.converted
-            && frame.pts == pts
-            && frame.duration == duration
-            && [frame.width, frame.height]
-                == self
-                    .output_size
-                    .extent(frame.source_width, frame.source_height, self.rotation)
-        {
-            return Ok(Some(frame.clone()));
-        }
-        self.convert(pts, duration).map(Some)
+        Ok((pts, duration))
     }
 
-    fn resolve_threading(
+    fn resolve_threading_at_pts(
         &mut self,
         source: &mut dyn ByteSource,
-        requested: MediaTime,
+        seek_pts: i64,
         deadline: Instant,
         operation: &Operation,
     ) -> MediaResult<bool> {
@@ -424,7 +529,8 @@ impl NativeVideoDecoder {
         // parallelism after the first admitted real frame exposes it. Reopen
         // once, then seek to the original request; no probe pixels are emitted
         // and the same operation's packet/byte accounting continues.
-        let threads = decode_threads(&self.decoder, self.reference_frames, self.limits);
+        let threads = decode_threads(&self.decoder, self.reference_frames, self.limits)
+            .min(self.max_decode_threads);
         if threads <= 1 {
             return Ok(false);
         }
@@ -455,7 +561,7 @@ impl NativeVideoDecoder {
             .ok_or(MediaError::OutputLimit {
                 limit_bytes: self.limits.max_io_bytes_per_operation,
             })?;
-        self.seek(source, requested, deadline, remaining)?;
+        self.seek_pts(source, seek_pts, deadline, remaining)?;
         checkpoint(source, deadline)?;
         Ok(true)
     }
@@ -469,6 +575,16 @@ impl NativeVideoDecoder {
     ) -> MediaResult<()> {
         let pts = i64::try_from(timestamp(requested, self.time_base[0], self.time_base[1]))
             .map_err(|_| invalid("Native seek timestamp overflow"))?;
+        self.seek_pts(source, pts, deadline, max_io_bytes)
+    }
+
+    fn seek_pts(
+        &mut self,
+        source: &mut dyn ByteSource,
+        pts: i64,
+        deadline: Instant,
+        max_io_bytes: u64,
+    ) -> MediaResult<()> {
         let input = &mut self.input;
         let stream = self.stream as i32;
         self.bridge.run(source, deadline, max_io_bytes, || {
@@ -688,6 +804,13 @@ impl NativeVideoDecoder {
             .filter(|old| old.rgba.len() == length)
             .map_or_else(|| vec![0u8; length], |old| old.rgba);
         scaler.convert(frame, &mut bytes, colorspace as i32, full_range)?;
+        let aspect = frame.aspect_ratio();
+        // SAFETY: the admitted decoded format has a static libav descriptor;
+        // only its immutable alpha flag is read before the frame borrow ends.
+        let source_has_alpha = unsafe {
+            let descriptor = ffi::av_pix_fmt_desc_get(frame.format().into());
+            !descriptor.is_null() && (*descriptor).flags & ffi::AV_PIX_FMT_FLAG_ALPHA as u64 != 0
+        };
         let frame = Arc::new(DecodedVideoFrame {
             source_width,
             source_height,
@@ -701,6 +824,9 @@ impl NativeVideoDecoder {
             rotation_degrees: self.rotation,
             matrix,
             full_range,
+            pixel_aspect_numerator: aspect.numerator(),
+            pixel_aspect_denominator: aspect.denominator(),
+            source_has_alpha,
         });
         self.converted = Some(frame.clone());
         Ok(frame)
@@ -956,6 +1082,111 @@ mod tests {
             admitted_decode_threads(320 * 180, 320 * 180 * 3 / 2, 16, u64::MAX),
             1
         );
+    }
+
+    #[test]
+    #[ignore = "Requires retained OPENCUT_NATIVE_VIDEO_SOURCES JSON paths; no media generation"]
+    fn sequential_source_iteration_preserves_all_frames_pts_duration_pixels_and_cancellation() {
+        use sha2::{Digest, Sha256};
+        let paths: Vec<String> = serde_json::from_str(
+            &std::env::var("OPENCUT_NATIVE_VIDEO_SOURCES").expect("Retained source paths"),
+        )
+        .unwrap();
+        assert!(!paths.is_empty());
+        let limits = DecodeLimits {
+            max_pixels: 16_777_216,
+            max_resident_bytes: 512 * 1024 * 1024,
+            max_io_bytes_per_operation: 512 * 1024 * 1024,
+            max_packets_per_operation: 100_000,
+        };
+        for path in paths {
+            let mut source = Source {
+                bytes: std::fs::read(&path).unwrap(),
+                revoked: false,
+            };
+            let deadline = Instant::now() + std::time::Duration::from_secs(90);
+            let mut serial =
+                NativeVideoDecoder::open_with_threads(&mut source, None, limits, deadline, 1)
+                    .unwrap();
+            let mut bounded =
+                NativeVideoDecoder::open_with_threads(&mut source, None, limits, deadline, 2)
+                    .unwrap();
+            let mut count = 0u64;
+            let mut prior = None;
+            loop {
+                let expected = serial
+                    .next_frame_with_output(
+                        &mut source,
+                        VideoOutputSize::Fit {
+                            width: 960,
+                            height: 540,
+                        },
+                        deadline,
+                    )
+                    .unwrap();
+                let actual = bounded
+                    .next_frame_with_output(
+                        &mut source,
+                        VideoOutputSize::Fit {
+                            width: 960,
+                            height: 540,
+                        },
+                        deadline,
+                    )
+                    .unwrap();
+                match (expected, actual) {
+                    (None, None) => break,
+                    (Some(expected), Some(actual)) => {
+                        assert_eq!(
+                            (
+                                actual.pts,
+                                actual.duration,
+                                actual.source_width,
+                                actual.source_height,
+                                actual.width,
+                                actual.height,
+                                actual.rotation_degrees,
+                                actual.matrix,
+                                actual.full_range,
+                                actual.pixel_aspect_numerator,
+                                actual.pixel_aspect_denominator,
+                                actual.source_has_alpha
+                            ),
+                            (
+                                expected.pts,
+                                expected.duration,
+                                expected.source_width,
+                                expected.source_height,
+                                expected.width,
+                                expected.height,
+                                expected.rotation_degrees,
+                                expected.matrix,
+                                expected.full_range,
+                                expected.pixel_aspect_numerator,
+                                expected.pixel_aspect_denominator,
+                                expected.source_has_alpha
+                            )
+                        );
+                        assert_eq!(Sha256::digest(&actual.rgba), Sha256::digest(&expected.rgba));
+                        assert!(actual.duration > 0 && prior.is_none_or(|pts| actual.pts > pts));
+                        prior = Some(actual.pts);
+                        count += 1;
+                    }
+                    _ => panic!("Bounded source iteration changed frame count"),
+                }
+            }
+            assert!(count > 0);
+            if path.ends_with("moving-4k.mp4") {
+                assert_eq!(count, 360);
+            }
+            assert!(bounded.reached_eof());
+            let before = bounded.encoded_bytes_read();
+            source.revoked = true;
+            assert!(
+                matches!(bounded.next_frame_with_output(&mut source,VideoOutputSize::Source,deadline),Err(MediaError::Admission {code,..}) if code=="NOT_AUTHORIZED")
+            );
+            assert_eq!(bounded.encoded_bytes_read(), before);
+        }
     }
 
     struct Source {

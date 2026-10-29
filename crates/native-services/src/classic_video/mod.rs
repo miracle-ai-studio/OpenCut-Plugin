@@ -4,6 +4,7 @@ mod encoder;
 pub(crate) use encoder::resident_bytes;
 mod process;
 pub use encoder::{
-    ClassicVideoEncoder, ClassicVideoEncoderConfig, ClassicVideoEncoderObservation, resolve_tool,
+    ClassicVideoEncoder, ClassicVideoEncoderConfig, ClassicVideoEncoderObservation,
+    SourcePreviewEncoderObservation, resolve_tool,
 };
 pub use process::ClassicVideoProcess;

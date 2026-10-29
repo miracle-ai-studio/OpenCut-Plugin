@@ -521,10 +521,10 @@ pub(super) async fn artifact_reference(
 async fn serve_artifact(host: Host, job: String, requested_hash: Option<String>) -> Response {
     let database = host.database.clone();
     let caller = host.identity.caller.clone();
-    let data = match tokio::task::spawn_blocking(move || {
+    let record = match tokio::task::spawn_blocking(move || {
         let mut app = opencut_host_runtime::workspace::Workspace::open_managed(database.as_ref())?;
         app.set_caller(caller);
-        app.artifact_job(&job).map(|record| json!(record))
+        app.artifact_job(&job)
     })
     .await
     {
@@ -532,53 +532,42 @@ async fn serve_artifact(host: Host, job: String, requested_hash: Option<String>)
         Ok(Err(error)) => return into_http(opencut_automation::response(Err(error))),
         Err(_) => return error_response("INTERNAL_ERROR", "Cannot read task state"),
     };
-    if data["state"] != "succeeded" {
+    if record.state != opencut_api_contracts::JobState::Succeeded {
         return error_response(
             "CONSTRAINT_VIOLATION",
             "Artifact is only available after the task succeeds",
         );
     }
-    if requested_hash.as_deref().is_some_and(|hash| {
-        data.pointer("/result/artifact/content_hash")
-            .and_then(serde_json::Value::as_str)
-            != Some(hash)
-    }) {
-        return error_response(
-            "NOT_FOUND",
-            "Artifact identity does not match the published task result",
-        );
-    }
-    let Some(path) = data
-        .pointer("/result/artifact/path")
-        .and_then(|p| p.as_str())
-    else {
+    let view = opencut_editor_application::job_views::project(record.clone());
+    let reference = view.artifacts.iter().find(|reference| {
+        requested_hash.as_deref().map_or_else(
+            || {
+                matches!(
+                    reference.role,
+                    opencut_api_contracts::job_views::ArtifactRole::Primary
+                )
+            },
+            |hash| reference.content_hash == hash,
+        )
+    });
+    let Some(reference) = reference else {
         return error_response("NOT_FOUND", "Task has no downloadable artifact");
     };
-    let (Some(job_id), Some(attempt)) = (
-        data.get("job_id").and_then(|value| value.as_str()),
-        data.get("attempt")
-            .and_then(|value| value.as_u64())
-            .and_then(|value| u32::try_from(value).ok()),
-    ) else {
-        return error_response("ARTIFACT_VERIFICATION_FAILED", "Task attempt is invalid");
-    };
-    let job_id = job_id.to_owned();
+    let path =
+        match opencut_editor_application::job_views::private_artifact_path(&record, reference) {
+            Ok(path) => path,
+            Err(error) => return into_http(opencut_automation::response(Err(error))),
+        };
+    let job_id = record.job_id.clone();
+    let attempt = record.attempt;
     // Preserve the published name for the native adapter. Canonicalizing it
     // here would erase a final-component symlink before openat can reject it.
     let path = std::path::PathBuf::from(path);
-    let Some(expected_size) = data
-        .pointer("/result/artifact/size")
-        .and_then(|v| v.as_u64())
-    else {
+    let Ok(expected_size) = reference.size_bytes.parse::<u64>() else {
         return error_response("ARTIFACT_VERIFICATION_FAILED", "Artifact size is missing");
     };
-    let Some(expected_hash) = data
-        .pointer("/result/artifact/content_hash")
-        .and_then(|v| v.as_str())
-    else {
-        return error_response("ARTIFACT_VERIFICATION_FAILED", "Artifact hash is missing");
-    };
-    let expected_hash = expected_hash.to_owned();
+    let expected_hash = reference.content_hash.clone();
+    let mime = reference.mime_type.clone();
     let artifact_root = host.artifact_root.clone();
     let verified_path = host
         .artifact_root
@@ -666,11 +655,7 @@ async fn serve_artifact(host: Host, job: String, requested_hash: Option<String>)
     response
         .extensions_mut()
         .insert(crate::http_identity::RevalidateStream);
-    let mime = data
-        .pointer("/result/artifact/mime_type")
-        .and_then(|p| p.as_str())
-        .unwrap_or("application/octet-stream");
-    if let Ok(value) = HeaderValue::from_str(mime) {
+    if let Ok(value) = HeaderValue::from_str(&mime) {
         response.headers_mut().insert("content-type", value);
     }
     if let Ok(value) = HeaderValue::from_str(&expected_size.to_string()) {

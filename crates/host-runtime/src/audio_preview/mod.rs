@@ -59,6 +59,7 @@ fn database_key(path: &Path) -> Result<PathBuf, EditorError> {
 struct SessionState {
     machine: AudioPreviewMachine,
     cache_plan: Option<opencut_api_contracts::visual_preview::VisualPreviewCache>,
+    source_plan: Option<Arc<crate::source_preview_runtime::SourcePlan>>,
     authority: TrustedJobAuthority,
     pictures: Vec<CachedPicture>,
     text_coverage: Option<fonts::CachedTextCoverage>,
@@ -361,6 +362,7 @@ pub(crate) fn create(
         state: Mutex::new(SessionState {
             machine,
             cache_plan: None,
+            source_plan: None,
             authority: selected.authority,
             pictures: Vec::new(),
             text_coverage: None,

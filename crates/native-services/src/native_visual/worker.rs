@@ -247,6 +247,11 @@ fn run(channel: &Rc<RefCell<Channel>>) -> Result<(), EditorError> {
         let Channel { input, output, .. } = &mut *channel;
         return crate::source_art::worker::serve(packet, input, output);
     }
+    if packet.meta["purpose"] == "source_preview" {
+        let mut channel = channel.borrow_mut();
+        let Channel { input, output, .. } = &mut *channel;
+        return crate::source_preview::worker::serve(packet, input, output);
+    }
     let policy: LocalVisualExecutionPolicy = serde_json::from_value(
         packet
             .meta
@@ -332,7 +337,7 @@ fn run(channel: &Rc<RefCell<Channel>>) -> Result<(), EditorError> {
                 wire::send(
                     &mut channel.borrow_mut().output,
                     json!({"type":"frame_complete","frame":next,"receipt":result.receipt,
-                    "encoded_bytes_read":result.encoded_bytes_read,"accounted_gpu_bytes":result.accounting.accounted_gpu_bytes,"accounted_cpu_bytes":result.accounting.accounted_cpu_bytes,"hit_test":result.hit_test}),
+                    "encoded_bytes_read":result.encoded_bytes_read,"accounted_gpu_bytes":result.accounting.accounted_gpu_bytes,"accounted_cpu_bytes":result.accounting.accounted_cpu_bytes,"hit_test":result.hit_test,"source_preparation":result.source_preparation}),
                     &[],
                 )?;
                 next = next

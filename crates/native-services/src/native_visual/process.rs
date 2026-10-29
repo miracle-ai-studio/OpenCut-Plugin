@@ -14,6 +14,7 @@ use std::{
 };
 
 pub(crate) struct NativeProcessFrame<R> {
+    pub source_preparation: Vec<opencut_contracts::source_preview::SourcePreviewUse>,
     pub receipt: R,
     pub hits: Vec<NativeVisualHit>,
 }
@@ -287,6 +288,7 @@ impl NativeProcess {
         self.send(message, &[])?;
         let mut request = 0u64;
         let mut logical_requests = 0u64;
+        let mut source_preparation = Vec::new();
         loop {
             resources.checkpoint()?;
             let Some(packet) = self.receive()? else {
@@ -331,6 +333,7 @@ impl NativeProcess {
                                 crate::classic_visual::decode_callback_batch(args)?;
                             let mut index = 0u64;
                             session.callbacks(callbacks, resources, &mut |value| {
+                                capture_source_preparation(&value,&mut source_preparation)?;
                                 self.send(json!({"type":"reply","frame":self.next,"id":request,"index":index,"value":value}), &[])?;
                                 index += 1;
                                 Ok(())
@@ -347,7 +350,9 @@ impl NativeProcess {
                                 .map_err(|_| {
                                     wire::error("Native callback differs from typed session")
                                 })?;
-                            response["value"] = session.callback(callback, resources)?;
+                            let value = session.callback(callback, resources)?;
+                            capture_source_preparation(&value, &mut source_preparation)?;
+                            response["value"] = value;
                         }
                         "read" => {
                             let count = wire::integer(args, "count")?;
@@ -397,7 +402,24 @@ impl NativeProcess {
                     if (probe.is_none() && !hits.is_empty()) || hits.len() > 3900 {
                         return Err(wire::error("Unexpected native hit observations"));
                     }
+                    let observed: Vec<opencut_contracts::source_preview::SourcePreviewUse> =
+                        serde_json::from_value(
+                            packet
+                                .meta
+                                .get("source_preparation")
+                                .cloned()
+                                .unwrap_or_else(|| json!([])),
+                        )
+                        .map_err(|_| {
+                            wire::error("Invalid prepared source completion transcript")
+                        })?;
+                    if observed != source_preparation {
+                        return Err(wire::error(
+                            "Native source completion differs from application selections",
+                        ));
+                    }
                     return Ok(NativeProcessFrame {
+                        source_preparation,
                         receipt: serde_json::from_value(packet.meta["receipt"].clone()).map_err(
                             |_| wire::error("Native receipt differs from typed session"),
                         )?,
@@ -469,6 +491,21 @@ impl NativeProcess {
         checkpoint()?;
         Ok(quota)
     }
+}
+fn capture_source_preparation(
+    value: &Value,
+    accepted: &mut Vec<opencut_contracts::source_preview::SourcePreviewUse>,
+) -> Result<(), EditorError> {
+    if let Some(value) = value.get("sourcePreparation") {
+        if accepted.len() >= 60 {
+            return Err(wire::error("Too many prepared source selections"));
+        }
+        accepted.push(
+            serde_json::from_value(value.clone())
+                .map_err(|_| wire::error("Invalid application prepared source selection"))?,
+        );
+    }
+    Ok(())
 }
 fn reject_failure(packet: &wire::Packet) -> Result<(), EditorError> {
     if wire::text(&packet.meta, "type")? == "failed" {

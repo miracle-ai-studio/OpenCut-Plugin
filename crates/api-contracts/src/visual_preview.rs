@@ -128,6 +128,8 @@ pub struct VisualPreviewHitTest {
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct VisualPreviewPicture {
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub source_preparation: Vec<opencut_contracts::source_preview::SourcePreviewUse>,
     pub picture_id: String,
     pub width: u32,
     pub height: u32,

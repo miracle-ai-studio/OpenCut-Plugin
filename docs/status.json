@@ -4233,6 +4233,17 @@
         "qualification": "scoped_client_and_original_editor_gates_passed_real_time_4k_open",
         "delivery_ready": false
       }
-    ]
+    ],
+    "source_preview_preparation": {
+      "source_base_commit": "231cc49b47b2b0e51d8aeb9ca53a8fa745ff6350",
+      "state": "integrated_source_pending_consolidated_build",
+      "implementation": "Source-only durable media.preview_source job, CPU native sequential decode, fixed lossless FFV1 RGBA, exact original/proxy frame index, editor prewarming, live preview resource and publication fences, separate video/index references and original-only export.",
+      "preview": "Existing 540p canvas bound; no further reduction.",
+      "export": "Original source; 720p/1080p/1440p/2160p; new Web default 1080p unchanged.",
+      "preflight": "14 architecture unit checks and both architecture/contract boundary gates passed during integration. Final integrated candidate rerun pending.",
+      "build": "Not built yet; generated contracts and Web consumers pending same-binary generation.",
+      "behavior": "New scoped checks authored, not compiled or run. No source proxy generation, pixel/PCM, editor timing or delivery result claimed.",
+      "delivery_ready": false
+    }
   }
 }

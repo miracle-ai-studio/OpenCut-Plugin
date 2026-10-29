@@ -128,8 +128,7 @@ fn scene_picture_inner(
         selected.snapshot = snapshot;
         digest = Some(identity);
     }
-    let frame = if !input.resolution.is_source()
-    {
+    let frame = if !input.resolution.is_source() {
         opencut_editor_application::scene_frame_jobs::prepare_raster(
             &selected.snapshot,
             &e.request.sequence_id,
@@ -162,6 +161,42 @@ fn scene_picture_inner(
     }
     let length = u32::try_from(u64::from(width) * u64::from(height) * 4)
         .map_err(|_| error("VISUAL_BUDGET_EXCEEDED"))?;
+    let source_request = opencut_contracts::source_preview::SourcePreviewPrepare {
+        project_id: e.request.project_id.clone(),
+        revision: e.request.revision.clone(),
+        sequence_id: e.request.sequence_id.clone(),
+        asset_id: None,
+        selected_video_stream: None,
+    };
+    let source_plan = if input.resolution
+        == opencut_contracts::export_video::RasterResolution::Preview540
+        && draft.is_none()
+        && !opencut_editor_application::source_preview::source_targets(
+            &selected.snapshot,
+            &source_request,
+        )?
+        .is_empty()
+    {
+        let runtime = crate::source_preview_runtime::configured()?;
+        let prior = lock(&e.state)?.source_plan.clone();
+        if let Some(plan) = prior.filter(|plan| plan.runtime_fingerprint == runtime.fingerprint) {
+            plan
+        } else {
+            let plan = Arc::new(crate::source_preview_runtime::prepare_plan(
+                host,
+                source_request,
+                runtime,
+            )?);
+            authorize(host, &e, true)?;
+            lock(&e.state)?.source_plan = Some(plan.clone());
+            plan
+        }
+    } else {
+        Arc::new(crate::source_preview_runtime::SourcePlan {
+            runtime_fingerprint: String::new(),
+            jobs: Vec::new(),
+        })
+    };
     let mut checkpoint = || {
         e.checkpoint(&host.app)?;
         lock(&e.state)?.machine.verify_visual_frame(
@@ -200,10 +235,11 @@ fn scene_picture_inner(
                 &mut checkpoint,
             )?,
             resources: VideoResourceCache::default(),
+            source_resources: crate::source_preview_runtime::SourceCache::default(),
         });
     }
     let current = owner.as_mut().expect("admitted native picture owner");
-    let mut resources = VerifiedClassicTextResources::new_scene_frame_cached(
+    let resources = VerifiedClassicTextResources::new_scene_frame_cached(
         host.app.asset_store_root(),
         &frame,
         &FontImportPolicy::default(),
@@ -215,6 +251,18 @@ fn scene_picture_inner(
     let handles = resources.handles();
     let fonts = resources.font_handles();
     let mut session = prepared.session()?;
+    let artifact_root = host
+        .database
+        .parent()
+        .ok_or_else(|| error("STORAGE_ERROR"))?
+        .join("artifacts");
+    let mut resources = crate::source_preview_runtime::PreviewResources::new(
+        resources,
+        &host.app,
+        artifact_root,
+        &source_plan,
+        &mut current.source_resources,
+    );
     struct Pixels {
         bytes: Vec<u8>,
         length: usize,
@@ -286,6 +334,7 @@ fn scene_picture_inner(
     )?;
     let ticket = pixels.publish(input.session.clone())?;
     let descriptor = VisualPreviewPicture {
+        source_preparation: execution.source_preparation,
         picture_id: ticket.id.clone(),
         width,
         height,

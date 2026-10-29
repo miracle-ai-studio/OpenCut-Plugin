@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct JobView {
-    #[serde(default,skip_serializing_if="Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub purpose: Option<JobPurpose>,
     pub job_id: String,
     pub kind: String,
@@ -28,9 +28,11 @@ pub struct JobView {
     pub failure: Option<PublicJobFailure>,
     pub artifacts: Vec<ArtifactReference>,
 }
-#[derive(Debug,Clone,Serialize,Deserialize,JsonSchema)]
-#[serde(rename_all="snake_case")]
-pub enum JobPurpose { PlaybackOptimization }
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum JobPurpose {
+    PlaybackOptimization,
+}
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct JobResourceTarget {
     pub project_id: String,
@@ -80,6 +82,7 @@ pub struct ArtifactReference {
 #[serde(rename_all = "snake_case")]
 pub enum ArtifactRole {
     Primary,
+    FrameIndex,
 }
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "snake_case")]

@@ -596,7 +596,10 @@ macro_rules! job_kinds {
         }
     }
 }
+pub mod source_preview;
+
 job_kinds! {
+    SourcePreview: (source_preview::SourcePreviewIdentity, source_preview::SourcePreviewResult, "media.preview_source"),
     MediaProbe: (ProbeRequest, MediaMetadata, "media.probe"),
     PreviewFrame: (FrameJobInput, MediaFrameJobResult, "preview.frame"),
     PreviewProjectFrame: (ProjectFrameInput, ProjectFrameJobResult, "preview.project_frame"),

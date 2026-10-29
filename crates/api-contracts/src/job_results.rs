@@ -46,6 +46,7 @@ macro_rules! job_results {
     }
 }
 job_results! {
+    SourcePreview:(opencut_contracts::source_preview::SourcePreviewResult,"media.preview_source"),
     Probe:(crate::job_views::MediaInfo,"media.probe"),
     SourceFrame:(crate::job_views::SourceFrameView,"preview.frame"),
     ProjectFrame:(crate::job_views::ProjectFrameView,"preview.project_frame"),

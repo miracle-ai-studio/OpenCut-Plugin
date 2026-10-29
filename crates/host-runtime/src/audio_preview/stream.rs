@@ -272,6 +272,7 @@ mod tests {
             Mutex::new(SessionState {
                 machine,
                 cache_plan: None,
+                source_plan: None,
                 authority: TrustedJobAuthority::LocalOwner,
                 pictures: Vec::new(),
                 text_coverage: None,
@@ -620,6 +621,7 @@ mod picture_expiry_tests {
         let mut state = SessionState {
             machine,
             cache_plan: None,
+            source_plan: None,
             authority: TrustedJobAuthority::LocalOwner,
             pictures: vec![CachedPicture {
                 resolution: opencut_contracts::export_video::RasterResolution::Source,

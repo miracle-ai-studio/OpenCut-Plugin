@@ -20,6 +20,7 @@ pub(crate) enum Domain {
     Visual,
     Audio,
     SourceArt,
+    SourcePreview,
     Probe,
 }
 impl Domain {
@@ -30,6 +31,7 @@ impl Domain {
                     Self::Visual => "VISUAL_PROTOCOL_ERROR",
                     Self::Audio => "AUDIO_PROTOCOL_ERROR",
                     Self::SourceArt => "SOURCE_ART_PROTOCOL_ERROR",
+                    Self::SourcePreview => "SOURCE_PREVIEW_PROTOCOL_ERROR",
                     Self::Probe => "MEDIA_INVALID_TOOL_OUTPUT",
                 },
                 e.message,
@@ -40,6 +42,7 @@ impl Domain {
                     Self::Visual => "INVALID_VISUAL_PLAN",
                     Self::Audio => "AUDIO_HOST_FAILED",
                     Self::SourceArt => "SOURCE_ART_DECODE_FAILED",
+                    Self::SourcePreview => "SOURCE_PREVIEW_DECODE_FAILED",
                     Self::Probe => "MEDIA_PROCESS_FAILED",
                 },
                 e.message,
@@ -53,6 +56,7 @@ impl Domain {
             Self::Visual => "VISUAL_TIME_LIMIT",
             Self::Audio => "AUDIO_TIME_LIMIT",
             Self::SourceArt => "SOURCE_ART_TIME_LIMIT",
+            Self::SourcePreview => "SOURCE_PREVIEW_TIME_LIMIT",
             Self::Probe => "MEDIA_BACKPRESSURE",
         }
     }
@@ -61,6 +65,7 @@ impl Domain {
             Self::Visual => "VISUAL_BUDGET_EXCEEDED",
             Self::Audio => "AUDIO_BUDGET_EXCEEDED",
             Self::SourceArt => "SOURCE_ART_BUDGET_EXCEEDED",
+            Self::SourcePreview => "SOURCE_PREVIEW_BUDGET_EXCEEDED",
             Self::Probe => "MEDIA_OUTPUT_LIMIT_EXCEEDED",
         }
     }
@@ -70,6 +75,7 @@ impl Domain {
                 Self::Visual => "VISUAL_ENGINE_CHANGED",
                 Self::Audio => "AUDIO_ENGINE_CHANGED",
                 Self::SourceArt => "SOURCE_ART_ENGINE_CHANGED",
+                Self::SourcePreview => "SOURCE_PREVIEW_ENGINE_CHANGED",
                 Self::Probe => "ARTIFACT_VERIFICATION_FAILED",
             },
             "Configured native worker changed during execution",

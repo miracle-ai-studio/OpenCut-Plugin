@@ -18,6 +18,7 @@ use std::{
 };
 
 pub struct NativePreviewFrame {
+    pub source_preparation: Vec<opencut_contracts::source_preview::SourcePreviewUse>,
     pub receipt: ClassicSceneFrameReceipt,
     pub hits: Vec<NativeVisualHit>,
     pub runtime: ClassicVisualRuntimeReceipt,
@@ -108,6 +109,7 @@ impl NativeScenePreview {
                 .lock()
                 .map_err(|_| invalid("Native preview clock is unavailable"))? = Instant::now();
             Ok(NativePreviewFrame {
+                source_preparation: frame.source_preparation,
                 receipt: frame.receipt,
                 hits: frame.hits,
                 runtime: self.process.runtime().clone(),

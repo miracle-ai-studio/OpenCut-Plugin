@@ -27,6 +27,7 @@ pub struct NativeFrameEngine {
     failed: bool,
 }
 pub(crate) struct NativeRenderedFrame<R> {
+    pub source_preparation: Vec<opencut_contracts::source_preview::SourcePreviewUse>,
     pub receipt: R,
     pub accounting: Receipt,
     pub encoded_bytes_read: u64,
@@ -288,6 +289,7 @@ impl NativeFrameEngine {
         let receipt = serde_json::from_value(receipt)
             .map_err(|_| invalid("Native receipt differs from its typed execution session"))?;
         Ok(NativeRenderedFrame {
+            source_preparation: media.source_preparation,
             receipt,
             accounting,
             encoded_bytes_read: media.encoded_bytes_read,

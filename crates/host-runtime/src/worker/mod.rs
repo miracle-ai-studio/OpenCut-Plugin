@@ -10,6 +10,8 @@ mod scene_audio;
 mod scene_caption_video;
 mod scene_text_frame;
 mod scene_transcription;
+#[cfg(unix)]
+mod source_preview;
 pub(super) fn sequence_transcribe_capability()
 -> opencut_job_contracts::scene_transcription::SceneTranscriptionCapability {
     scene_transcription::capability()
@@ -129,6 +131,7 @@ impl JobStore for SqliteJobStore {
                         | "render.project_blend_video.v4"
                         | "analysis.sequence_transcribe.v4"
                         | "analysis.asset.v4"
+                        | "media.preview_source"
                 ) && !matches!(error.code.as_str(), "DATABASE_BUSY" | "JOB_LEASE_LOST") =>
             {
                 // Completion revalidates the original caller inside its SQL
@@ -324,6 +327,26 @@ fn execute_monitored(
                     &cancel,
                     publication_attempt,
                 )
+            } else if job.kind == "media.preview_source" {
+                #[cfg(unix)]
+                {
+                    source_preview::execute(
+                        database,
+                        root,
+                        worker,
+                        job,
+                        &cancel,
+                        publication_attempt,
+                        &mut |update| reporter.report(update),
+                    )
+                }
+                #[cfg(not(unix))]
+                {
+                    Err(EditorError::new(
+                        "CAPABILITY_UNAVAILABLE",
+                        "Source preparation process isolation requires Unix",
+                    ))
+                }
             } else if job.kind == "analysis.asset.v4" {
                 asset_analysis::execute(database, root, worker, job, &cancel, publication_attempt)
             } else if matches!(

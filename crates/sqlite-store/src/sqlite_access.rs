@@ -212,6 +212,9 @@ pub(super) fn verified_target(
     kind: &str,
     input: &Value,
 ) -> Result<Option<(String, String)>, EditorError> {
+    if kind == opencut_editor_application::source_preview::KIND {
+        return sqlite_source_preview::verified_target(connection, input);
+    }
     if matches!(
         kind,
         "render.project_audio.v4" | "render.project_audio_range.v4"
@@ -388,6 +391,16 @@ pub(super) fn require_submission(
     context: &ExecutionContext,
     request: &JobRequest,
 ) -> Result<(), EditorError> {
+    // Source derivation is keyed by immutable bytes rather than an edit
+    // revision. Acceptance separately validates the complete private snapshot.
+    let source_project = if request.kind == opencut_editor_application::source_preview::KIND {
+        let identity: opencut_contracts::source_preview::SourcePreviewIdentity =
+            serde_json::from_value(request.input.clone()).map_err(|_| access::denied())?;
+        require_execution_scope(connection, context, &identity.project_id, None)?;
+        Some(identity.project_id)
+    } else {
+        None
+    };
     if matches!(
         request.kind.as_str(),
         "render.project_audio.v4"
@@ -418,8 +431,13 @@ pub(super) fn require_submission(
         require_live_input(connection, &request.input)?;
         return Ok(());
     }
-    let (project, _) =
-        verified_target(connection, &request.kind, &request.input)?.ok_or_else(access::denied)?;
+    let project = if let Some(project) = source_project {
+        project
+    } else {
+        verified_target(connection, &request.kind, &request.input)?
+            .ok_or_else(access::denied)?
+            .0
+    };
     require(connection, context, &project, ProjectAction::RunJobs)?;
     // A workspace-scoped receipt is not a resource capability. Check its original
     // job before comparing request hashes or returning an idempotent result.

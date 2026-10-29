@@ -11,6 +11,7 @@ pub(super) struct VisualOwner {
     pub policy: LocalVisualExecutionPolicy,
     pub renderer: NativeScenePreview,
     pub resources: VideoResourceCache,
+    pub source_resources: crate::source_preview_runtime::SourceCache,
 }
 
 /// Allow one request to wait for an in-flight picture or retiring generation.

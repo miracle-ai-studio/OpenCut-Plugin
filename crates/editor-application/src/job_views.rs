@@ -12,6 +12,7 @@ use serde_json::Value;
 /// each known shape explicitly;unknown data never falls through by a suffix.
 pub fn public_kind(stored: &str) -> Option<&'static str> {
     match stored {
+        "media.preview_source" => Some("media.preview_source"),
         "media.probe" => Some("media.probe"),
         "preview.frame" => Some("preview.frame"),
         "preview.project_frame" => Some("preview.project_frame"),
@@ -106,6 +107,10 @@ fn public_failure(job: &str, code: &str) -> PublicJobFailure {
         "VIDEO_BUDGET_EXCEEDED" => (
             "VIDEO_BUDGET_EXCEEDED",
             "Video exceeds the admitted resource or execution limits",
+        ),
+        "SOURCE_PREVIEW_BUDGET_EXCEEDED" | "SOURCE_PREVIEW_TIME_LIMIT" => (
+            "SOURCE_PREVIEW_LIMIT_EXCEEDED",
+            "Source preview preparation exceeded its captured resource or execution limits",
         ),
         "INVALID_ARGUMENT" | "TIME_OVERFLOW" | "CONSTRAINT_VIOLATION" => (
             "INVALID_ARGUMENT",
@@ -296,6 +301,9 @@ fn artifact(
         "video/mp4" => "video/mp4",
         "video/webm" => "video/webm",
         "video/x-matroska" => "video/x-matroska",
+        "application/vnd.opencut.source-preview-index" => {
+            "application/vnd.opencut.source-preview-index"
+        }
         "audio/wav" => "audio/wav",
         "audio/mpeg" => "audio/mpeg",
         _ => "application/octet-stream",
@@ -309,6 +317,43 @@ fn artifact(
         mime_type: mime.into(),
         availability: ArtifactAvailability::Unchecked,
     })
+}
+
+/// Native callers have already selected this reference from the validated
+/// public projection. Multiple source artifacts keep distinct paths/hashes.
+pub fn private_artifact_path<'a>(
+    record: &'a JobRecord,
+    reference: &ArtifactReference,
+) -> Result<&'a str, EditorError> {
+    if reference.job_id != record.job_id
+        || reference.artifact_id != format!("artifact:{}:{}", record.job_id, reference.content_hash)
+    {
+        return Err(bad_result());
+    }
+    let field = match reference.role {
+        ArtifactRole::Primary => "artifact",
+        ArtifactRole::FrameIndex if record.kind == crate::source_preview::KIND => "frame_index",
+        _ => return Err(bad_result()),
+    };
+    let value = record
+        .result
+        .as_ref()
+        .and_then(|result| result.get(field))
+        .ok_or_else(bad_result)?;
+    if value.get("content_hash").and_then(Value::as_str) != Some(reference.content_hash.as_str())
+        || value
+            .get("size")
+            .and_then(Value::as_u64)
+            .map(|n| n.to_string())
+            .as_ref()
+            != Some(&reference.size_bytes)
+    {
+        return Err(bad_result());
+    }
+    value
+        .get("path")
+        .and_then(Value::as_str)
+        .ok_or_else(bad_result)
 }
 fn result(
     job_id: &str,
@@ -536,6 +581,7 @@ pub fn project(record: JobRecord) -> JobView {
     } else if matches!(
         record.kind.as_str(),
         "render.project"
+            | "media.preview_source"
             | "preview.project_frame"
             | "preview.composited_frame"
             | "preview.project_range"
@@ -649,9 +695,18 @@ pub fn project(record: JobRecord) -> JobView {
             })
         });
     let mut view = JobView {
-        purpose: (record.input.pointer("/options/resolution").and_then(Value::as_str)==Some("preview540")
-            && record.input.pointer("/options/runtime_fingerprint").and_then(Value::as_str).is_some())
-            .then_some(opencut_api_contracts::job_views::JobPurpose::PlaybackOptimization),
+        purpose: (record.kind == "media.preview_source"
+            || (record
+                .input
+                .pointer("/options/resolution")
+                .and_then(Value::as_str)
+                == Some("preview540")
+                && record
+                    .input
+                    .pointer("/options/runtime_fingerprint")
+                    .and_then(Value::as_str)
+                    .is_some()))
+        .then_some(opencut_api_contracts::job_views::JobPurpose::PlaybackOptimization),
         job_id: record.job_id.clone(),
         kind: record.kind,
         target,
@@ -664,6 +719,17 @@ pub fn project(record: JobRecord) -> JobView {
         failure: None,
         artifacts: vec![],
     };
+    if view.kind == "media.preview_source" {
+        if let Ok(prepared) = serde_json::from_value::<crate::source_preview::PreparedSourcePreview>(
+            record.input.clone(),
+        ) {
+            view.resource_target = Some(JobResourceTarget {
+                project_id: prepared.identity.project_id,
+                resource_kind: "asset".into(),
+                resource_id: prepared.identity.asset_id,
+            });
+        }
+    }
     if view.kind == "analysis.asset.v4" {
         if let (Some(project), Some(asset)) = (
             record
@@ -679,7 +745,29 @@ pub fn project(record: JobRecord) -> JobView {
             });
         }
     }
-    if record.state == JobState::Succeeded && view.kind == "analysis.asset.v4" {
+    if record.state == JobState::Succeeded && view.kind == "media.preview_source" {
+        let projected = (|| {
+            let prepared: crate::source_preview::PreparedSourcePreview =
+                decode(record.input.clone())?;
+            let stored: crate::source_preview::StoredSourcePreviewResult =
+                decode(record.result.unwrap_or(Value::Null))?;
+            crate::source_preview::validate_result(&prepared, &stored)?;
+            let primary = artifact(&view.job_id, stored.artifact)?;
+            let mut index = artifact(&view.job_id, stored.frame_index)?;
+            index.role = ArtifactRole::FrameIndex;
+            Ok::<_, EditorError>((
+                JobResultView::SourcePreview(stored.public),
+                vec![primary, index],
+            ))
+        })();
+        match projected {
+            Ok((result, artifacts)) => {
+                view.result = Some(result);
+                view.artifacts = artifacts;
+            }
+            Err(error) => view.result_unavailable = Some(public_failure(&view.job_id, &error.code)),
+        }
+    } else if record.state == JobState::Succeeded && view.kind == "analysis.asset.v4" {
         let projected = (|| {
             let input: crate::asset_analysis::PreparedAssetAnalysis = decode(record.input.clone())?;
             let result: crate::asset_analysis::AssetAnalysisResult =

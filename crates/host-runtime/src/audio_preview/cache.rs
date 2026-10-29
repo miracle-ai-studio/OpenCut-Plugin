@@ -67,6 +67,9 @@ pub(crate) fn preferred_jobs(
                 &view.presentation_time,
             )?);
         }
+        if let Some(plan) = &state.source_plan {
+            jobs.extend(plan.jobs.iter().map(|job| job.job_id.clone()));
+        }
     }
     jobs.sort();
     jobs.dedup();

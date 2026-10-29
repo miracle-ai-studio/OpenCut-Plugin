@@ -9,7 +9,7 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     ffi::OsString,
     fs::{self, File, Metadata},
-    io::{self, Read},
+    io::{self, Read, Seek, SeekFrom},
     path::{Path, PathBuf},
 };
 
@@ -488,6 +488,11 @@ impl Native for ArtifactPlanner<'_> {
 impl Read for ArtifactSource {
     fn read(&mut self, bytes: &mut [u8]) -> io::Result<usize> {
         self.file.read(bytes)
+    }
+}
+impl Seek for ArtifactSource {
+    fn seek(&mut self, position: SeekFrom) -> io::Result<u64> {
+        self.file.seek(position)
     }
 }
 

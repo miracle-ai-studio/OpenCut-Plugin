@@ -46,6 +46,7 @@ pub mod budget;
 
 mod preview_inputs;
 pub mod source_art;
+pub mod source_preview;
 
 mod classic_blend_frame;
 pub mod classic_caption_frame;

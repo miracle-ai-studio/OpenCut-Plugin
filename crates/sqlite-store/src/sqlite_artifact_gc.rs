@@ -185,15 +185,8 @@ impl Store for EditorApplication {
             .connection
             .unchecked_transaction()
             .map_err(storage_error)?;
-        let (job, _) = sqlite_artifact_retention::published(&tx, artifact_id)?;
-        let path = job
-            .result
-            .as_ref()
-            .and_then(|result| result.pointer("/artifact/path"))
-            .and_then(Value::as_str)
-            .ok_or_else(|| {
-                EditorError::new("INVALID_STORED_RESULT", "Published artifact path is absent")
-            })?;
+        let (job, reference) = sqlite_artifact_retention::published(&tx, artifact_id)?;
+        let path = opencut_editor_application::job_views::private_artifact_path(&job, &reference)?;
         let references = sqlite_artifact_references::scan(&tx, &job.job_id, artifact_id, path)?;
         let default_retained: bool = tx
             .query_row(
@@ -204,7 +197,7 @@ impl Store for EditorApplication {
             .map_err(storage_error)?;
         Ok(Snapshot {
             source: Source {
-                job_id: job.job_id,
+                job_id: job.job_id.clone(),
                 attempt: job.attempt,
                 path: path.into(),
             },
@@ -396,13 +389,8 @@ impl Store for EditorApplication {
                 "Recover the previous artifact removal before starting another",
             ));
         }
-        let (job, _) = sqlite_artifact_retention::published(&tx, &stored.view.artifact_id)?;
-        let path = job
-            .result
-            .as_ref()
-            .and_then(|result| result.pointer("/artifact/path"))
-            .and_then(Value::as_str)
-            .ok_or_else(|| EditorError::new("INVALID_STORED_RESULT", "Artifact path is absent"))?;
+        let (job, reference) = sqlite_artifact_retention::published(&tx, &stored.view.artifact_id)?;
+        let path = opencut_editor_application::job_views::private_artifact_path(&job, &reference)?;
         if (Source {
             job_id: job.job_id.clone(),
             attempt: job.attempt,

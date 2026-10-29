@@ -29,6 +29,7 @@ mod media_tool_runtime;
 mod native_worker_runtime;
 mod source_art;
 mod source_art_runtime;
+mod source_preview_runtime;
 mod subtitle_ass;
 mod subtitle_classic_ass;
 mod subtitle_text;
@@ -546,6 +547,9 @@ impl Automation {
             }
             "opencut_source_art_frame" => {
                 to_value(source_art::source_frame(self, parse(arguments)?)?)
+            }
+            "opencut_source_preview_prepare" => {
+                to_value(source_preview_runtime::prepare(self, parse(arguments)?)?)
             }
             "opencut_source_art_evidence_cancel" => {
                 to_value(source_evidence::cancel(self, parse(arguments)?)?)

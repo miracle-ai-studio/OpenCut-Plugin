@@ -88,15 +88,8 @@ impl Store for EditorApplication {
             .connection
             .unchecked_transaction()
             .map_err(storage_error)?;
-        let (job, _) = published(&tx, artifact_id)?;
-        let path = job
-            .result
-            .as_ref()
-            .and_then(|result| result.pointer("/artifact/path"))
-            .and_then(Value::as_str)
-            .ok_or_else(|| {
-                EditorError::new("INVALID_STORED_RESULT", "Published artifact path is absent")
-            })?;
+        let (job, reference) = published(&tx, artifact_id)?;
+        let path = opencut_editor_application::job_views::private_artifact_path(&job, &reference)?;
         let references = sqlite_artifact_references::scan(&tx, &job.job_id, artifact_id, path)?;
         let retained: bool = tx
             .query_row(

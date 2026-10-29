@@ -109,6 +109,11 @@ fn persist(
         return Ok(change.record);
     }
     let next = change.record;
+    if next.kind == opencut_editor_application::source_preview::KIND
+        && next.state == JobState::Succeeded
+    {
+        sqlite_source_preview::require_completion(tx, &next)?;
+    }
     if next.kind == "analysis.sequence_transcribe.v4" && next.state == JobState::Succeeded {
         sqlite_scene_transcription::require_completion(tx, &next)?;
     }

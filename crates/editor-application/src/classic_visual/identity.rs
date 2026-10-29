@@ -55,7 +55,10 @@ fn valid_native_proof(identity: &ClassicVisualEngineIdentity) -> bool {
         || !valid_hash(&identity.shader_sha256)
         || !valid_id(&identity.gpu_device)
         || identity.gpu_driver.len() > 4096
-        || identity.texture_format != "bgra8unorm"
+        || !matches!(
+            identity.texture_format.as_str(),
+            "bgra8unorm" | "rgba8unorm"
+        )
         || !valid_id(&identity.decoder_profile)
         || !valid_id(&identity.wgpu_version)
         || !valid_id(&identity.rasterizer)
@@ -204,6 +207,20 @@ mod tests {
             font_backend: "coretext".into(),
         });
         validate_native_identity(&identity).unwrap();
+        identity.texture_format = "rgba8unorm".into();
+        validate_native_identity(&identity).unwrap();
+        let rgba_proof = MediaFrameExecutionSummary {
+            host_sha256: "e".repeat(64),
+            runtime: VisualRuntimeIdentity::Native(identity.clone()),
+        };
+        validate_visual_summary(&rgba_proof).unwrap();
+        // A new live format neither rewrites nor invalidates captured BGRA.
+        assert_eq!(serde_json::to_vec(&stored).unwrap(), bytes);
+        for unsupported in ["rgba8unorm-srgb", "r32float", ""] {
+            identity.texture_format = unsupported.into();
+            assert!(validate_native_identity(&identity).is_err());
+        }
+        identity.texture_format = "rgba8unorm".into();
         identity.platform.as_mut().unwrap().system_build.clear();
         assert!(validate_native_identity(&identity).is_err());
         assert!(!valid_native_proof(&identity));

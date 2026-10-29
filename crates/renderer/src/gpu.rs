@@ -5,7 +5,7 @@ mod admission;
 mod execute;
 use admission::{Admission, Layout, Passes};
 
-const FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Bgra8Unorm;
+const FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8Unorm;
 const CHUNK: usize = 65536;
 const QUAD: [f32; 12] = [-1., -1., 1., -1., -1., 1., -1., 1., 1., -1., 1., 1.];
 
@@ -222,6 +222,7 @@ impl Renderer {
                 device: info.device,
                 vendor: info.vendor,
                 wgpu: "30.0.1",
+                texture_format: format!("{FORMAT:?}").to_ascii_lowercase(),
                 shaders_sha256: shaders::identity(),
             },
             limits,

@@ -621,13 +621,29 @@ impl Renderer {
                 .slice(..)
                 .get_mapped_range()
                 .map_err(gpu_error)?;
+            let row_bytes = targets.layout.width as usize * 4;
+            // The render target already has the output's RGBA channel order.
+            // Aligned rows can borrow the mapped bytes directly, including at
+            // 4K; keep the same bounded chunks and checkpoint before each one.
+            if row_bytes == targets.aligned as usize {
+                for (index, chunk) in mapped.chunks(CHUNK).enumerate() {
+                    execution.checkpoint()?;
+                    execution.rgba((index * CHUNK) as u64, chunk)?;
+                }
+                return Ok(());
+            }
+            // Strip GPU row padding with bounded bulk copies. Aggregation
+            // keeps the transport independent of row width without retaining
+            // a second complete frame.
             let mut chunk = [0u8; CHUNK];
             let (mut used, mut offset) = (0, 0u64);
             for row in mapped.chunks_exact(targets.aligned as usize) {
-                for pixel in row[..targets.layout.width as usize * 4].chunks_exact(4) {
-                    chunk[used..used + 4]
-                        .copy_from_slice(&[pixel[2], pixel[1], pixel[0], pixel[3]]);
-                    used += 4;
+                let mut remaining = &row[..row_bytes];
+                while !remaining.is_empty() {
+                    let count = remaining.len().min(chunk.len() - used);
+                    chunk[used..used + count].copy_from_slice(&remaining[..count]);
+                    used += count;
+                    remaining = &remaining[count..];
                     if used == chunk.len() {
                         execution.checkpoint()?;
                         execution.rgba(offset, &chunk)?;

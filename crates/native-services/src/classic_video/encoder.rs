@@ -495,7 +495,6 @@ impl<F: FnMut(bool) -> Result<(), EditorError>> ClassicVisualRgbaSink for Classi
         }
         let mut remaining = bytes;
         while !remaining.is_empty() {
-            self.check()?;
             match self
                 .input
                 .as_mut()
@@ -510,8 +509,12 @@ impl<F: FnMut(bool) -> Result<(), EditorError>> ClassicVisualRgbaSink for Classi
                             .as_ref()
                             .ok_or_else(|| err("Encoder input closed"))?,
                     )?;
+                    // The chunk was checked before entering this bounded
+                    // nonblocking write. Recheck after every wait; successful
+                    // partial writes need no duplicate database round trip.
+                    self.check()?;
                 }
-                Err(e) if e.kind() == std::io::ErrorKind::Interrupted => {}
+                Err(e) if e.kind() == std::io::ErrorKind::Interrupted => self.check()?,
                 Err(e) => return Err(io(e)),
             }
         }

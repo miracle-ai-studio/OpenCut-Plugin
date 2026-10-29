@@ -93,6 +93,7 @@ pub struct Identity {
     pub device: u32,
     pub vendor: u32,
     pub wgpu: &'static str,
+    pub texture_format: String,
     pub shaders_sha256: String,
 }
 

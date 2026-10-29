@@ -28,8 +28,73 @@ impl Execution for Output {
             return Err(Error::new("JOB_CANCELLED", "Synthetic cancelled output"));
         }
         assert_eq!(offset, self.bytes.len() as u64);
+        assert!(!bytes.is_empty() && bytes.len() <= 65536 && bytes.len().is_multiple_of(4));
         self.bytes.extend_from_slice(bytes);
         Ok(())
+    }
+}
+
+#[test]
+#[ignore = "Requires a physical native GPU; run in the integrated serial media suite"]
+fn rgba_readback_preserves_channels_rows_and_chunk_boundaries() {
+    let backend = if cfg!(target_os = "macos") {
+        Backend::Metal
+    } else if cfg!(target_os = "windows") {
+        Backend::DirectX
+    } else {
+        Backend::Vulkan
+    };
+    let mut renderer = Renderer::new(
+        backend,
+        Limits {
+            max_frame_pixels: 70000,
+            max_gpu_bytes: 16 * 1024 * 1024,
+            max_cpu_bytes: 16 * 1024 * 1024,
+            max_layers: 1,
+        },
+    )
+    .unwrap();
+    assert_eq!(renderer.identity().texture_format, "rgba8unorm");
+    // Both paths cross the 64 KiB output boundary. The second has GPU row
+    // padding; row/column markers reveal leaked padding, swizzles or shifts.
+    for (width, height) in [(64u32, 257u32), (257, 65)] {
+        let expected: Vec<_> = (0..height)
+            .flat_map(|y| {
+                (0..width).flat_map(move |x| {
+                    [(x % 256) as u8, (y % 256) as u8, ((x + y) % 251) as u8, 255]
+                })
+            })
+            .collect();
+        let mut source = layer(Raster {
+            width,
+            height,
+            rgba: &expected,
+        });
+        source.quad.center_x = width as f32 / 2.0;
+        source.quad.center_y = height as f32 / 2.0;
+        source.quad.width = width as f32;
+        source.quad.height = height as f32;
+        source.effect_size = [width, height];
+        let frame = Frame {
+            width,
+            height,
+            clear: [0.0; 4],
+            background: Background::Color([0.0; 4]),
+            layers: &[source],
+            steps: &[Step::Layer(0)],
+        };
+        let mut output = Output {
+            bytes: Vec::new(),
+            cancel: false,
+            deadline: Instant::now() + Duration::from_secs(30),
+            probe: None,
+            hits: Vec::new(),
+        };
+        renderer.render(&frame, &mut output).unwrap();
+        assert_eq!(output.bytes.len(), expected.len());
+        for (actual, expected) in output.bytes.chunks_exact(4).zip(expected.chunks_exact(4)) {
+            near(actual.try_into().unwrap(), expected.try_into().unwrap());
+        }
     }
 }
 fn quad() -> VisualQuad {

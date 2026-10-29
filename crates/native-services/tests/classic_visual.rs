@@ -181,7 +181,7 @@ fn render(root: &Path, snapshot: &EditorSnapshot) -> (Rgba, ClassicVisualExecuti
     assert_eq!(execution.receipt.identity.time, time(1, 7));
     assert_eq!(
         execution.runtime_identity.identity.texture_format,
-        "bgra8unorm"
+        "rgba8unorm"
     );
     opencut_editor_application::classic_visual::validate_native_identity(
         &execution.runtime_identity.identity,

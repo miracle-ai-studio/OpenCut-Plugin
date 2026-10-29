@@ -41,7 +41,7 @@ pub(crate) fn observe(
         gpu_driver: gpu.driver.clone(),
         gpu_vendor_id: gpu.vendor,
         gpu_device_id: gpu.device,
-        texture_format: "bgra8unorm".into(),
+        texture_format: gpu.texture_format.clone(),
         decoder_profile: NATIVE_DECODER_PROFILE.into(),
     })
 }

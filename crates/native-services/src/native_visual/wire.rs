@@ -1,7 +1,7 @@
 //! Visual error vocabulary over the single bounded native binary transport.
 use crate::native_process::{Domain, wire};
 use opencut_contracts::EditorError;
-pub use wire::{DATA_BYTES, Packet};
+pub use wire::{DATA_BYTES, META_BYTES, Packet};
 pub fn error(message: impl Into<String>) -> EditorError {
     Domain::Visual.protocol(wire::error(message))
 }

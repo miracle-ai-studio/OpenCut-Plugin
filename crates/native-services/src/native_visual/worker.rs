@@ -19,7 +19,7 @@ struct Channel {
     request: u64,
 }
 impl Channel {
-    fn request(&mut self, operation: &str, args: Value) -> Result<wire::Packet, EditorError> {
+    fn begin_request(&mut self, operation: &str, args: Value) -> Result<(), EditorError> {
         self.request = self
             .request
             .checked_add(1)
@@ -31,7 +31,10 @@ impl Channel {
             &mut self.output,
             json!({"type":"request","frame":self.frame,"id":self.request,"operation":operation,"args":args}),
             &[],
-        )?;
+        )
+    }
+    fn request(&mut self, operation: &str, args: Value) -> Result<wire::Packet, EditorError> {
+        self.begin_request(operation, args)?;
         let packet = wire::read(&mut self.input)?;
         if wire::text(&packet.meta, "type")? != "reply"
             || wire::integer(&packet.meta, "frame")? != self.frame
@@ -98,6 +101,31 @@ struct Session {
     plan: Value,
     policy: LocalVisualExecutionPolicy,
 }
+fn callback_value(mut packet: wire::Packet) -> Result<Value, EditorError> {
+    if !packet.data.is_empty() {
+        return Err(wire::error("Unexpected application callback bytes"));
+    }
+    packet
+        .meta
+        .as_object_mut()
+        .and_then(|meta| meta.remove("value"))
+        .ok_or_else(|| wire::error("Missing native callback value"))
+}
+fn batch_reply(
+    packet: wire::Packet,
+    frame: u64,
+    request: u64,
+    index: u64,
+) -> Result<Value, EditorError> {
+    if wire::text(&packet.meta, "type")? != "reply"
+        || wire::integer(&packet.meta, "frame")? != frame
+        || wire::integer(&packet.meta, "id")? != request
+        || wire::integer(&packet.meta, "index")? != index
+    {
+        return Err(wire::error("Native callback batch reply order changed"));
+    }
+    callback_value(packet)
+}
 impl VisualProcessSession<Resources> for Session {
     type Callback = Value;
     type Receipt = Value;
@@ -110,14 +138,63 @@ impl VisualProcessSession<Resources> for Session {
     }
     fn callback(&mut self, request: Value, _: &mut Resources) -> Result<Value, EditorError> {
         let packet = self.channel.borrow_mut().request("callback", request)?;
-        if !packet.data.is_empty() {
-            return Err(wire::error("Unexpected application callback bytes"));
+        callback_value(packet)
+    }
+    fn callbacks(
+        &mut self,
+        requests: Vec<Value>,
+        resources: &mut Resources,
+        accept: &mut dyn FnMut(Value) -> Result<(), EditorError>,
+    ) -> Result<(), EditorError> {
+        if requests.is_empty() || requests.len() > crate::classic_visual::MAX_CALLBACK_BATCH {
+            return Err(wire::error("Invalid native callback batch"));
         }
-        packet
-            .meta
-            .get("value")
-            .cloned()
-            .ok_or_else(|| wire::error("Missing native callback value"))
+        let sizes = requests
+            .iter()
+            .map(|r| {
+                serde_json::to_vec(r)
+                    .map(|v| v.len())
+                    .map_err(|_| wire::error("Invalid native callback"))
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        let mut channel = self.channel.borrow_mut();
+        let mut start = 0;
+        while start < requests.len() {
+            resources.checkpoint()?;
+            let overhead = serde_json::to_vec(&json!({"type":"request","frame":channel.frame,
+                "id":channel.request+1,"operation":"callbacks","args":[]}))
+            .map_err(|_| wire::error("Invalid native callback batch"))?
+            .len();
+            let mut end = start;
+            let mut length = overhead;
+            while end < requests.len()
+                && length + sizes[end] + usize::from(end > start) <= wire::META_BYTES
+            {
+                length += sizes[end] + usize::from(end > start);
+                end += 1;
+            }
+            if end <= start + 1 {
+                // A single callback retains its original packet envelope and
+                // byte limit, including requests close to the metadata bound.
+                let packet = channel.request("callback", requests[start].clone())?;
+                accept(callback_value(packet)?)?;
+                start += 1;
+                continue;
+            }
+            channel.begin_request("callbacks", json!(&requests[start..end]))?;
+            for index in 0..end - start {
+                resources.checkpoint()?;
+                let packet = wire::read(&mut channel.input)?;
+                accept(batch_reply(
+                    packet,
+                    channel.frame,
+                    channel.request,
+                    index as u64,
+                )?)?;
+            }
+            start = end;
+        }
+        Ok(())
     }
     fn rgba_chunk(
         &mut self,
@@ -346,4 +423,46 @@ pub fn serve() -> Result<(), EditorError> {
         );
     }
     result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn batch_replies_cannot_cross_frame_request_or_item_boundaries() {
+        let original = json!({"type":"reply","frame":7,"id":11,"index":2,"value":{"bound":true}});
+        let packet = |meta| wire::Packet {
+            meta,
+            data: Vec::new(),
+        };
+        assert_eq!(
+            batch_reply(packet(original.clone()), 7, 11, 2).unwrap(),
+            json!({"bound":true})
+        );
+        for (field, value) in [
+            ("type", json!("request")),
+            ("frame", json!(8)),
+            ("id", json!(12)),
+            ("index", json!(1)),
+        ] {
+            let mut meta = original.clone();
+            meta[field] = value;
+            assert!(batch_reply(packet(meta), 7, 11, 2).is_err());
+        }
+        let mut missing = original.clone();
+        missing.as_object_mut().unwrap().remove("value");
+        assert!(batch_reply(packet(missing), 7, 11, 2).is_err());
+        assert!(
+            batch_reply(
+                wire::Packet {
+                    meta: original,
+                    data: vec![0]
+                },
+                7,
+                11,
+                2
+            )
+            .is_err()
+        );
+    }
 }

@@ -1,8 +1,12 @@
-use super::{assemble, media::callback, plan::Plan, text, *};
+use super::{assemble, media::callbacks, plan::Plan, text, *};
 use crate::classic_visual::VisualProcessSession;
 use opencut_contracts::{
-    blend_frame::BoundBlendFrame, graphic_frame::BoundGraphicFrame, mask_frame::BoundMaskFrame,
-    scene_frame::BoundSceneFrame, text_frame::BoundTextFrame, visual_frame::BoundVisualLayer,
+    blend_frame::BoundBlendFrame,
+    graphic_frame::BoundGraphicFrame,
+    mask_frame::BoundMaskFrame,
+    scene_frame::BoundSceneFrame,
+    text_frame::BoundTextFrame,
+    visual_frame::{BoundVisualFrame, BoundVisualLayer},
 };
 use opencut_editor_application::{
     classic_text_frame::ClassicTextFontHandle, classic_visual::*,
@@ -102,14 +106,6 @@ impl NativeFrameEngine {
         let media = self
             .media
             .decode(session, resources, plan.media(), handles, deadline)?;
-        let mut bindings = Bindings {
-            layers: media.bound.layers.clone(),
-            clear: media.bound.clear,
-            background: media.bound.background,
-            blend: None,
-            masks: None,
-            scene: None,
-        };
         let limits = RasterLimits {
             max_pixels: self.policy.max_decoded_pixels,
             max_bytes: self.policy.max_rgba_bytes,
@@ -118,29 +114,16 @@ impl NativeFrameEngine {
             resources.checkpoint()
         })?;
         let mut rasters = text.images;
-        let mut text_bound = None;
+        let mut requests = vec![("bindFrame", json!({"decoded":media.decoded}))];
         if plan.text().is_some() {
-            let value = if plan.caption().is_some() {
-                callback(
-                    session,
-                    resources,
+            requests.push(if plan.caption().is_some() {
+                (
                     "bindCaptionFrameV3",
                     json!({"rasters":text.rasters,"captions":text.captions}),
-                )?
+                )
             } else {
-                callback(
-                    session,
-                    resources,
-                    "bindTextFrame",
-                    json!({"rasters":text.rasters}),
-                )?
-            };
-            let bound: BoundTextFrame = serde_json::from_value(value)
-                .map_err(|_| invalid("Invalid native text binding"))?;
-            bindings.layers = bound.layers.clone();
-            bindings.clear = bound.clear;
-            bindings.background = bound.background;
-            text_bound = Some(bound);
+                ("bindTextFrame", json!({"rasters":text.rasters}))
+            });
         }
         let mut graphics = Vec::new();
         if let Some(graphic) = plan.graphic() {
@@ -163,45 +146,86 @@ impl NativeFrameEngine {
                 rasters.insert(layer.element_id.clone(), Arc::new(image));
                 graphics.push(receipt);
             }
-            let bound: BoundGraphicFrame = serde_json::from_value(callback(
-                session,
-                resources,
-                "bindGraphicFrameV1",
-                json!({"graphics":graphics}),
-            )?)
-            .map_err(|_| invalid("Invalid native graphic binding"))?;
-            bindings.layers = bound.layers;
-            bindings.clear = bound.clear;
-            bindings.background = bound.background;
+            requests.push(("bindGraphicFrameV1", json!({"graphics":graphics})));
         }
         if plan.blend().is_some() {
-            bindings.blend = Some(
-                serde_json::from_value(callback(
-                    session,
-                    resources,
-                    "bindBlendFrameV1",
-                    json!({}),
-                )?)
-                .map_err(|_| invalid("Invalid native blend binding"))?,
-            );
+            requests.push(("bindBlendFrameV1", json!({})));
         }
         if plan.mask().is_some() {
-            bindings.masks = Some(
-                serde_json::from_value(callback(session, resources, "bindMaskFrameV1", json!({}))?)
-                    .map_err(|_| invalid("Invalid native mask binding"))?,
-            );
+            requests.push(("bindMaskFrameV1", json!({})));
         }
         if plan.scene().is_some() {
-            bindings.scene = Some(
-                serde_json::from_value(callback(
-                    session,
-                    resources,
-                    "bindSceneFrameV1",
-                    json!({}),
-                )?)
-                .map_err(|_| invalid("Invalid native scene binding"))?,
-            );
+            requests.push(("bindSceneFrameV1", json!({})));
         }
+        // Consume each bounded reply immediately. Keep typed bindings, never a
+        // vector of all intermediate JSON replies or their encoded packets.
+        let names: Vec<_> = requests.iter().map(|(name, _)| *name).collect();
+        let mut index = 0;
+        let mut media_bound = None;
+        let mut text_bound: Option<BoundTextFrame> = None;
+        let mut bindings = Bindings {
+            layers: Vec::new(),
+            clear: [0.0; 4],
+            background: [0.0; 4],
+            blend: None,
+            masks: None,
+            scene: None,
+        };
+        callbacks(session, resources, requests, &mut |value| {
+            let name = names
+                .get(index)
+                .ok_or_else(|| invalid("Unexpected native binding reply"))?;
+            index += 1;
+            match *name {
+                "bindFrame" => {
+                    let bound: BoundVisualFrame = serde_json::from_value(value)
+                        .map_err(|_| invalid("Invalid application-bound native frame"))?;
+                    bindings.layers = bound.layers.clone();
+                    bindings.clear = bound.clear;
+                    bindings.background = bound.background;
+                    media_bound = Some(bound);
+                }
+                "bindTextFrame" | "bindCaptionFrameV3" => {
+                    let bound: BoundTextFrame = serde_json::from_value(value)
+                        .map_err(|_| invalid("Invalid native text binding"))?;
+                    bindings.layers = bound.layers.clone();
+                    bindings.clear = bound.clear;
+                    bindings.background = bound.background;
+                    text_bound = Some(bound);
+                }
+                "bindGraphicFrameV1" => {
+                    let bound: BoundGraphicFrame = serde_json::from_value(value)
+                        .map_err(|_| invalid("Invalid native graphic binding"))?;
+                    bindings.layers = bound.layers;
+                    bindings.clear = bound.clear;
+                    bindings.background = bound.background;
+                }
+                "bindBlendFrameV1" => {
+                    bindings.blend = Some(
+                        serde_json::from_value::<BoundBlendFrame>(value)
+                            .map_err(|_| invalid("Invalid native blend binding"))?,
+                    )
+                }
+                "bindMaskFrameV1" => {
+                    bindings.masks = Some(
+                        serde_json::from_value::<BoundMaskFrame>(value)
+                            .map_err(|_| invalid("Invalid native mask binding"))?,
+                    )
+                }
+                "bindSceneFrameV1" => {
+                    bindings.scene = Some(
+                        serde_json::from_value::<BoundSceneFrame>(value)
+                            .map_err(|_| invalid("Invalid native scene binding"))?,
+                    )
+                }
+                _ => return Err(invalid("Unknown native binding")),
+            }
+            Ok(())
+        })?;
+        if index != names.len() {
+            return Err(invalid("Missing native binding reply"));
+        }
+        let media_bound = media_bound.ok_or_else(|| invalid("Missing native media binding"))?;
         let prepared = assemble::prepare(
             &plan,
             &bindings,
@@ -227,7 +251,7 @@ impl NativeFrameEngine {
             json!({"identity":identity,"engineIdentity":identity.profile,"bound":bound,"rgbaBytes":actual["rgbaBytes"],"peakAccountedBytes":actual["peakAccountedBytes"]})
         } else {
             let identity = &plan.media().identity;
-            json!({"identity":identity,"engineIdentity":identity.profile,"bound":media.bound,"rgbaBytes":actual["rgbaBytes"],"peakAccountedBytes":actual["peakAccountedBytes"]})
+            json!({"identity":identity,"engineIdentity":identity.profile,"bound":media_bound,"rgbaBytes":actual["rgbaBytes"],"peakAccountedBytes":actual["peakAccountedBytes"]})
         };
         if let Some(plan) = plan.caption() {
             receipt = json!({"identity":plan.identity,"engineIdentity":plan.identity.profile,"execution":receipt,"captions":text.captions});

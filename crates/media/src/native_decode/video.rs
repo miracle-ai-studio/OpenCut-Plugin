@@ -288,7 +288,9 @@ impl NativeVideoDecoder {
                 break;
             }
             self.previous = self.next.take();
-            self.converted = None;
+            // Keep at most the previous conversion until its replacement is
+            // needed. A uniquely owned surface can then be overwritten without
+            // allocating and clearing another full-resolution RGBA frame.
         }
         self.last_request = Some(requested);
         let Some(frame) = &self.previous else {
@@ -310,7 +312,10 @@ impl NativeVideoDecoder {
                 .filter(|n| *n > 0)
                 .ok_or_else(|| invalid("Decoded video has no observed frame duration"))?
         };
-        if let Some(frame) = &self.converted {
+        if let Some(frame) = &self.converted
+            && frame.pts == pts
+            && frame.duration == duration
+        {
             return Ok(Some(frame.clone()));
         }
         self.convert(pts, duration).map(Some)
@@ -464,13 +469,13 @@ impl NativeVideoDecoder {
                 self.reference_frames + 2
             }
         };
-        if surface <= 0 || (surface as u64) * surfaces + pixels * 4 > self.limits.max_resident_bytes
-        {
+        let output = (pixels * 4).max(self.converted.as_ref().map_or(0, |f| f.rgba.len() as u64));
+        if surface <= 0 || (surface as u64) * surfaces + output > self.limits.max_resident_bytes {
             return Err(MediaError::OutputLimit {
                 limit_bytes: self.limits.max_resident_bytes,
             });
         }
-        Ok((surface as u64) * surfaces + pixels * 4)
+        Ok((surface as u64) * surfaces + output)
     }
 
     fn admit_frame(&self, frame: &av::frame::Video) -> MediaResult<()> {
@@ -524,7 +529,13 @@ impl NativeVideoDecoder {
             VideoColorMatrix::Bt2020 => ffi::SWS_CS_BT2020,
             _ => ffi::SWS_CS_ITU601,
         };
-        let mut bytes = vec![0u8; width as usize * height as usize * 4];
+        let length = width as usize * height as usize * 4;
+        let mut bytes = self
+            .converted
+            .take()
+            .and_then(|old| Arc::try_unwrap(old).ok())
+            .filter(|old| old.rgba.len() == length)
+            .map_or_else(|| vec![0u8; length], |old| old.rgba);
         scaler.convert(frame, &mut bytes, colorspace as i32, full_range)?;
         let frame = Arc::new(DecodedVideoFrame {
             width,
@@ -587,4 +598,140 @@ fn rotation(stream: &av::Stream<'_>) -> MediaResult<u16> {
         ));
     }
     Ok(((degrees.round() as i32).rem_euclid(360)) as u16)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    struct Source {
+        bytes: Vec<u8>,
+        revoked: bool,
+    }
+    impl ByteSource for Source {
+        fn len(&self) -> u64 {
+            self.bytes.len() as u64
+        }
+        fn read_at(&mut self, offset: u64, output: &mut [u8]) -> MediaResult<usize> {
+            self.checkpoint()?;
+            let start = (offset as usize).min(self.bytes.len());
+            let count = output.len().min(self.bytes.len() - start);
+            output[..count].copy_from_slice(&self.bytes[start..start + count]);
+            Ok(count)
+        }
+        fn checkpoint(&mut self) -> MediaResult<()> {
+            if self.revoked {
+                Err(MediaError::Admission {
+                    code: "NOT_AUTHORIZED".into(),
+                    message: "Revoked synthetic video".into(),
+                })
+            } else {
+                Ok(())
+            }
+        }
+    }
+    #[test]
+    #[ignore = "Requires retained OPENCUT_NATIVE_VIDEO_SOURCE; no media generation"]
+    fn continuous_rgba_reuse_keeps_live_frames_immutable_and_rechecks_authority() {
+        let mut source = Source {
+            bytes: std::fs::read(
+                std::env::var_os("OPENCUT_NATIVE_VIDEO_SOURCE").expect("Retained moving video"),
+            )
+            .unwrap(),
+            revoked: false,
+        };
+        let limits = DecodeLimits {
+            max_pixels: 16_777_216,
+            max_resident_bytes: 512 * 1024 * 1024,
+            max_io_bytes_per_operation: 512 * 1024 * 1024,
+            max_packets_per_operation: 100_000,
+        };
+        let deadline = Instant::now() + std::time::Duration::from_secs(45);
+        let mut decoder = NativeVideoDecoder::open(&mut source, None, limits, deadline).unwrap();
+        let first = decoder
+            .sample(
+                &mut source,
+                MediaTime {
+                    ticks: 0,
+                    timebase: 30,
+                },
+                deadline,
+            )
+            .unwrap()
+            .unwrap();
+        let original = first.rgba.clone();
+        let cached = decoder
+            .sample(
+                &mut source,
+                MediaTime {
+                    ticks: 0,
+                    timebase: 30,
+                },
+                deadline,
+            )
+            .unwrap()
+            .unwrap();
+        assert!(Arc::ptr_eq(&first, &cached));
+        drop(cached);
+        let second = decoder
+            .sample(
+                &mut source,
+                MediaTime {
+                    ticks: 1,
+                    timebase: 30,
+                },
+                deadline,
+            )
+            .unwrap()
+            .unwrap();
+        assert_eq!(
+            first.rgba, original,
+            "A caller still owns the previous pixels"
+        );
+        assert_ne!(first.rgba.as_ptr(), second.rgba.as_ptr());
+        drop(first);
+        let reusable = second.rgba.as_ptr();
+        drop(second);
+        let third = decoder
+            .sample(
+                &mut source,
+                MediaTime {
+                    ticks: 2,
+                    timebase: 30,
+                },
+                deadline,
+            )
+            .unwrap()
+            .unwrap();
+        assert_eq!(
+            third.rgba.as_ptr(),
+            reusable,
+            "Only the uniquely owned conversion is recycled"
+        );
+        assert_ne!(
+            third.rgba, original,
+            "The full next frame must overwrite the recycled surface"
+        );
+        let mut fresh = NativeVideoDecoder::open(&mut source, None, limits, deadline).unwrap();
+        let reference = fresh
+            .sample(
+                &mut source,
+                MediaTime {
+                    ticks: 2,
+                    timebase: 30,
+                },
+                deadline,
+            )
+            .unwrap()
+            .unwrap();
+        assert_eq!(
+            third.rgba, reference.rgba,
+            "Recycling must retain the ordinary complete conversion pixels"
+        );
+        source.revoked = true;
+        assert!(
+            matches!(decoder.sample(&mut source,MediaTime {ticks:3,timebase:30},deadline),Err(MediaError::Admission {code,..}) if code=="NOT_AUTHORIZED")
+        );
+        assert!(decoder.retired && decoder.converted.is_none());
+        assert_eq!(third.rgba, reference.rgba);
+    }
 }

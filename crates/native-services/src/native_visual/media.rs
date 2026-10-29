@@ -1,7 +1,7 @@
 use super::*;
 use crate::classic_visual::VisualProcessSession;
 use opencut_contracts::visual_frame::{
-    BoundVisualFrame, DecodedVisualSource, VisualNoFrameReason, VisualVideoEofPolicy,
+    DecodedVisualSource, VisualNoFrameReason, VisualVideoEofPolicy,
 };
 use opencut_editor_application::classic_visual::*;
 use opencut_media::{
@@ -23,7 +23,7 @@ pub struct NativeMediaDecoders {
     entries: BTreeMap<String, CachedDecoder>,
 }
 pub struct MediaFrameSources {
-    pub bound: BoundVisualFrame,
+    pub decoded: Vec<DecodedVisualSource>,
     pub sources: BTreeMap<String, Arc<DecodedVideoFrame>>,
     pub encoded_bytes_read: u64,
 }
@@ -90,6 +90,21 @@ pub(crate) fn callback<R: ClassicVisualResources + ?Sized, S: VisualProcessSessi
         .map_err(|_| invalid("Native execution callback differs from its typed session"))?;
     session.callback(request, resources)
 }
+pub(crate) fn callbacks<R: ClassicVisualResources + ?Sized, S: VisualProcessSession<R>>(
+    session: &mut S,
+    resources: &mut R,
+    requests: Vec<(&str, Value)>,
+    accept: &mut dyn FnMut(Value) -> Result<(), EditorError>,
+) -> Result<(), EditorError> {
+    let requests = requests
+        .into_iter()
+        .map(|(name, args)| {
+            serde_json::from_value(json!({"op":name,"args":args}))
+                .map_err(|_| invalid("Native execution callback differs from its typed session"))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    session.callbacks(requests, resources, accept)
+}
 fn key(layer: &ClassicVisualLayerPlan) -> String {
     let stream = match layer.decode {
         VisualDecodeRequest::Video {
@@ -125,43 +140,58 @@ impl NativeMediaDecoders {
         self.entries.retain(|key, _| active.contains(key));
         let mut opened = BTreeMap::new();
         let result = (|| {
+            let mut requests = Vec::new();
             for resource in &plan.resources {
                 let handle = handles
                     .iter()
                     .find(|h| h.asset_id == resource.asset_id)
                     .ok_or_else(|| invalid("Native source handle is missing"))?;
-                let value = callback(
-                    session,
-                    resources,
+                requests.push((
                     "resolveVerifiedBytes",
                     json!({"resource":resource,"handle":handle.handle}),
-                )?;
-                let transfer = value
-                    .get("transferId")
-                    .and_then(Value::as_str)
-                    .ok_or_else(|| invalid("Missing verified native transfer"))?
-                    .to_owned();
-                let length = value
-                    .get("byteLength")
-                    .and_then(Value::as_str)
-                    .ok_or_else(|| invalid("Missing verified native length"))?;
-                if length != resource.size {
-                    return Err(invalid("Verified native source changed length"));
-                }
-                opened.insert(resource.asset_id.clone(), (transfer, number(length)?));
+                ));
+            }
+            for layer in &plan.layers {
+                requests.push(("admitDecode", json!({"elementId":layer.element_id})));
+            }
+            let mut responses = 0;
+            let mut admissions = Vec::with_capacity(plan.layers.len());
+            if !requests.is_empty() {
+                callbacks(session, resources, requests, &mut |value| {
+                    let index = responses;
+                    responses += 1;
+                    if index >= plan.resources.len() {
+                        admissions.push(
+                            serde_json::from_value::<VisualDecodeAdmission>(value)
+                                .map_err(|_| invalid("Invalid native decode admission"))?,
+                        );
+                        return Ok(());
+                    }
+                    let resource = &plan.resources[index];
+                    let transfer = value
+                        .get("transferId")
+                        .and_then(Value::as_str)
+                        .ok_or_else(|| invalid("Missing verified native transfer"))?
+                        .to_owned();
+                    let length = value
+                        .get("byteLength")
+                        .and_then(Value::as_str)
+                        .ok_or_else(|| invalid("Missing verified native length"))?;
+                    if length != resource.size {
+                        return Err(invalid("Verified native source changed length"));
+                    }
+                    opened.insert(resource.asset_id.clone(), (transfer, number(length)?));
+                    Ok(())
+                })?;
+            }
+            if responses != plan.resources.len() + plan.layers.len() {
+                return Err(invalid("Native media callback results changed length"));
             }
             let mut sources = BTreeMap::new();
             let mut decoded = Vec::new();
             let mut bytes_read = 0u64;
-            for layer in &plan.layers {
+            for (layer, admission) in plan.layers.iter().zip(admissions) {
                 resources.checkpoint()?;
-                let admission: VisualDecodeAdmission = serde_json::from_value(callback(
-                    session,
-                    resources,
-                    "admitDecode",
-                    json!({"elementId":layer.element_id}),
-                )?)
-                .map_err(|_| invalid("Invalid native decode admission"))?;
                 if let VisualDecodeRequest::Video {
                     requested_time,
                     no_frame_reason: Some(reason),
@@ -300,15 +330,8 @@ impl NativeMediaDecoders {
                     }
                 }
             }
-            let bound = serde_json::from_value(callback(
-                session,
-                resources,
-                "bindFrame",
-                json!({"decoded":decoded}),
-            )?)
-            .map_err(|_| invalid("Invalid application-bound native frame"))?;
             Ok(MediaFrameSources {
-                bound,
+                decoded,
                 sources,
                 encoded_bytes_read: bytes_read,
             })

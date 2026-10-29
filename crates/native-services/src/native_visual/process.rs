@@ -266,6 +266,7 @@ impl NativeProcess {
         resources.checkpoint()?;
         self.send(message, &[])?;
         let mut request = 0u64;
+        let mut logical_requests = 0u64;
         loop {
             resources.checkpoint()?;
             let Some(packet) = self.receive()? else {
@@ -285,9 +286,42 @@ impl NativeProcess {
                         return Err(wire::error("Native callback order changed"));
                     }
                     let args = &packet.meta["args"];
+                    let operation = wire::text(&packet.meta, "operation")?;
+                    let work = if operation == "callbacks" {
+                        let count = args.as_array().map_or(0, Vec::len);
+                        if count == 0 || count > crate::classic_visual::MAX_CALLBACK_BATCH {
+                            return Err(wire::error("Invalid native callback batch"));
+                        }
+                        count as u64
+                    } else {
+                        1
+                    };
+                    logical_requests = logical_requests
+                        .checked_add(work)
+                        .filter(|count| *count <= 200_000)
+                        .ok_or_else(|| wire::error("Excessive native frame requests"))?;
                     let mut response = json!({"type":"reply","frame":self.next,"id":request});
                     let mut bytes = Vec::new();
-                    match wire::text(&packet.meta, "operation")? {
+                    match operation {
+                        "callbacks" => {
+                            // Deserialize the whole envelope before any application
+                            // action. Each original callback keeps fresh fences and
+                            // one individually bounded reply; no aggregate replies.
+                            let callbacks: Vec<S::Callback> =
+                                crate::classic_visual::decode_callback_batch(args)?;
+                            let mut index = 0u64;
+                            session.callbacks(callbacks, resources, &mut |value| {
+                                self.send(json!({"type":"reply","frame":self.next,"id":request,"index":index,"value":value}), &[])?;
+                                index += 1;
+                                Ok(())
+                            })?;
+                            if index != work {
+                                return Err(wire::error(
+                                    "Native callback batch results changed length",
+                                ));
+                            }
+                            continue;
+                        }
                         "callback" => {
                             let callback: S::Callback = serde_json::from_value(args.clone())
                                 .map_err(|_| {

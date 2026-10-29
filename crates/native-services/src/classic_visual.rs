@@ -8,6 +8,6 @@ mod session_adapter;
 pub use png::ClassicVisualPngSink;
 pub use process::{ClassicVisualProcess, ClassicVisualProcessConfig};
 pub use resources::VerifiedClassicVisualResources;
-pub(crate) use session_adapter::VisualProcessSession;
+pub(crate) use session_adapter::{MAX_CALLBACK_BATCH, VisualProcessSession, decode_callback_batch};
 
 pub(crate) use process::validate_quota;

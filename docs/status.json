@@ -835,7 +835,7 @@
         "scope": "No external Python or media tools required for this local diagnostic; clean-machine signing/installation remains open"
       }
     },
-    "current_code_commit": "c799e9db1e92fe3ecf4d1e2261cf309bec1c37c3",
+    "current_code_commit": "557d91d7f8b8105766a2854c8bcc99bee31ad2dd",
     "native_rgba_transfer": {
       "checkpoint": "/Users/vincent/Movies/OpenCut-native-rendering/4k/rgba-transfer/checkpoint.json",
       "checkpoint_sha256": "9d196d42b7be7a8f2731112650d191b46e4ff31b32b8ca2c20a773a2de8ab0b6",
@@ -1354,6 +1354,259 @@
       },
       "cleanup": "Both formal services and the reused diagnostic service stopped normally,zero jobs/workers,owned4K+320 project snapshots unchanged. User services untouched.",
       "delivery_ready": false
+    },
+    "native_reader_repair": {
+      "source_commit": "557d91d7f8b8105766a2854c8bcc99bee31ad2dd",
+      "runtime": {
+        "opencut": {
+          "path": "/Users/vincent/Movies/OpenCut-native-rendering/candidates/e5cce11043f1d5aa8394da848196a0faf8a117614ff5c68045ca4867ca139832/opencut",
+          "sha256": "e5cce11043f1d5aa8394da848196a0faf8a117614ff5c68045ca4867ca139832"
+        },
+        "opencut-render-worker": {
+          "path": "/Users/vincent/Movies/OpenCut-native-rendering/candidates/5a48a7891b4686b544917c8942ef0389fac8056a4a5c933c3b70c6feed4c4185/opencut-render-worker",
+          "sha256": "5a48a7891b4686b544917c8942ef0389fac8056a4a5c933c3b70c6feed4c4185"
+        }
+      },
+      "build_passed": true,
+      "acceptance_passed": false,
+      "qualification": "scoped_regressions_passed_4k_preview_failed",
+      "implementation": [
+        "Exact private archive reader preserves original bare and project_v3.apply-wrapped stored journals; unknown fields/kinds rejected; no new writer,DTO,dependency or schema.",
+        "Restore checked picture send after guarded pixel copy; preserve2x64KiB queue,1second backpressure,10ms revalidation,check after capacity acquisition.",
+        "Retain bounded reader connections and prepared SQL with fresh auth/revision reads; no retained authority or cross-checkpoint transactions."
+      ],
+      "distribution_scope": "Raw fixed CLI plus unchanged worker/native libs/Web/tools;no new package or install qualification.",
+      "delivery_ready": false,
+      "checkpoint": "/Users/vincent/Movies/OpenCut-native-rendering/4k/reader-repair/checkpoint.json",
+      "checkpoint_sha256": "52f35d418e347b4a830d214df80742094a0d12813d0d9b0a872635995b9feaa0",
+      "evidence_files": 65,
+      "checks": [
+        {
+          "target": "opencut_editor_application",
+          "args": [
+            "/Users/vincent/Movies/OpenCut-native-rendering/candidates/7073ed6e9d014212df6f2a6854850ecac323b655396ddcd493e7d8b53018c56d/opencut_editor_application-30d8e0948314691d",
+            "project_archive::",
+            "--include-ignored",
+            "--test-threads=1",
+            "--nocapture"
+          ],
+          "binary_sha256": "7073ed6e9d014212df6f2a6854850ecac323b655396ddcd493e7d8b53018c56d",
+          "worker_sha256": "5a48a7891b4686b544917c8942ef0389fac8056a4a5c933c3b70c6feed4c4185",
+          "exit_code": 0,
+          "summary": [
+            "test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 476 filtered out; finished in 0.01s"
+          ],
+          "log_sha256": "02f67a63dd1c8e04d3cb5793251213b04acc54e15d9f112dff2449414c24332f"
+        },
+        {
+          "target": "opencut_sqlite_store",
+          "args": [
+            "/Users/vincent/Movies/OpenCut-native-rendering/candidates/d8d25c9fecea177f0572d858596fe8ecd05e8161d2f48d3076bdaa8a5a88913a/opencut_sqlite_store-6865c83c67f6f823",
+            "--test-threads=1",
+            "--nocapture"
+          ],
+          "binary_sha256": "d8d25c9fecea177f0572d858596fe8ecd05e8161d2f48d3076bdaa8a5a88913a",
+          "worker_sha256": "5a48a7891b4686b544917c8942ef0389fac8056a4a5c933c3b70c6feed4c4185",
+          "exit_code": 0,
+          "summary": [
+            "test result: ok. 253 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 24.74s"
+          ],
+          "log_sha256": "8a1bd46fc78b1b7d76ac1bad7bbbd3e484c588a22e7c9a8defcff40d8987e283"
+        },
+        {
+          "target": "opencut",
+          "args": [
+            "/Users/vincent/Movies/OpenCut-native-rendering/candidates/a26e75a23074f332eb92fd262d823c3cf5b8989a7eaacaf176b3948a7d042c33/opencut-a3415d51b5d46258",
+            "--include-ignored",
+            "--test-threads=1",
+            "--nocapture"
+          ],
+          "binary_sha256": "a26e75a23074f332eb92fd262d823c3cf5b8989a7eaacaf176b3948a7d042c33",
+          "worker_sha256": "5a48a7891b4686b544917c8942ef0389fac8056a4a5c933c3b70c6feed4c4185",
+          "exit_code": 0,
+          "summary": [
+            "test result: ok. 27 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 6.58s"
+          ],
+          "log_sha256": "adb591bb71e23b002ddd27e0f03a4c9953fdfa1bd996ce580424c2c4114a10b2"
+        }
+      ],
+      "contracts": {
+        "source_commit": "557d91d7f8b8105766a2854c8bcc99bee31ad2dd",
+        "binary": {
+          "path": "/Users/vincent/Movies/OpenCut-native-rendering/candidates/e5cce11043f1d5aa8394da848196a0faf8a117614ff5c68045ca4867ca139832/opencut",
+          "sha256": "e5cce11043f1d5aa8394da848196a0faf8a117614ff5c68045ca4867ca139832"
+        },
+        "checks": [
+          {
+            "args": [
+              "/usr/local/bin/python3.12",
+              "/Users/vincent/Desktop/OpenCut/scripts/check-canonical-contract.py",
+              "--binary",
+              "/Users/vincent/Movies/OpenCut-native-rendering/candidates/e5cce11043f1d5aa8394da848196a0faf8a117614ff5c68045ca4867ca139832/opencut"
+            ],
+            "exit_code": 0,
+            "log_sha256": "b495e9b8cd4dbf84d9f272e9e235fb1d143ede6bfd1facdd96a4bacd4e1631ce"
+          },
+          {
+            "args": [
+              "node",
+              "/Users/vincent/Desktop/OpenCut/packages/sdk-ts/scripts/generate.mjs",
+              "--check",
+              "--skip-build",
+              "--binary",
+              "/Users/vincent/Movies/OpenCut-native-rendering/candidates/e5cce11043f1d5aa8394da848196a0faf8a117614ff5c68045ca4867ca139832/opencut"
+            ],
+            "exit_code": 0,
+            "log_sha256": "ef19d0e7c3797dc1dc10b471d4c2ecc55251e51816ed37b36a28a300034fad92"
+          }
+        ],
+        "passed": true
+      },
+      "preview_320_source": {
+        "report": "/Users/vincent/Movies/OpenCut-native-rendering/4k/reader-repair/small-source/native-long-ui-e5cce11043f1-5a48a7891b46.json",
+        "report_sha256": "9dbcecfb384b16e08d937eb1f220ff6fc499f197d3d44af31fbcaa1e9afb82e1",
+        "passed": true,
+        "startup": {
+          "seconds": 3.930120369,
+          "original_gate_seconds": 5,
+          "diagnostic": false,
+          "original_gate_passed": true
+        },
+        "continuous_seconds": 98.316770487,
+        "presented_frames": 2820,
+        "device_consumed_frames": "4512000",
+        "device_underflow_events": "0",
+        "discarded_frames": 0,
+        "seek_pause_resume": "passed",
+        "api_responses": 9176,
+        "api_failure_rows": 0,
+        "median_probe_frame_ms": {
+          "nativeFrameMs": 16.5,
+          "pictureReadMs": 7.649999976158142,
+          "totalMs": 24.149999976158142
+        },
+        "worker_peak_rss_kib": 19236
+      },
+      "preview_4k_source": {
+        "report": "/Users/vincent/Movies/OpenCut-native-rendering/4k/reader-repair/native-long-ui-e5cce11043f1-5a48a7891b46.json",
+        "report_sha256": "b4a9a763e58a01b5298e241ccbc65f15bab13ce169bffe9d47550a39975bb081",
+        "passed": false,
+        "startup": {
+          "seconds": 6.149881862,
+          "original_gate_seconds": 5,
+          "diagnostic": true,
+          "original_gate_passed": false
+        },
+        "original_completion_wait_seconds": 150,
+        "final_time_seconds": 48.266666666666666,
+        "presented_frames": 1449,
+        "api_responses": 6784,
+        "api_failure_rows": 0,
+        "median_probe_frame_ms": {
+          "nativeFrameMs": 80.0,
+          "pictureReadMs": 21.5,
+          "totalMs": 101.5
+        },
+        "last_visual_response_before_last_preview_response_ms": 2.5457450000103563,
+        "seek_pause_resume": "not_reached",
+        "worker_peak_rss_kib": 191652
+      },
+      "reference_baseline": {
+        "host_sha256": "f7f6606c21218a7e2f5050fe022bc35238c573a990a8b990dfe272af1e9614f6",
+        "passed": true,
+        "report": "/Users/vincent/Movies/OpenCut-native-rendering/4k/stall-reference/native-long-ui-f7f6606c2121-5a48a7891b46.json",
+        "report_sha256": "53d631dddc0216af55bbb1588f3ae2a083c7a98ad4b8bdbde2c6790516dd99bc",
+        "startup_seconds": 3.9377658039999996,
+        "continuous_seconds": 98.37333679500001
+      },
+      "diagnostic": {
+        "run": "/Users/vincent/Movies/OpenCut-native-rendering/4k/reader-repair/remaining-costs/run.json",
+        "analysis": {
+          "scope": "One30-second diagnostic after formal timing; simultaneous5second host and native-visual-worker OS samples. Wait samples are not CPU utilization and are not summed across threads.",
+          "worker_main_thread_samples": 3627,
+          "worker_waiting_for_next_command_in_main_branch": 1135,
+          "worker_waiting_for_application_media_callback_in_sampled_branch": 611,
+          "worker_video_rgba_zero_initialization_in_main_branch": 123,
+          "worker_previous_decoded_frame_free_in_main_branch": 45,
+          "host_top_stack_accelerated_pixel_hash_samples_across_threads": 186,
+          "observations": [
+            "Full-resolution swscale,RGBA allocation/zeroing/free and copies remain visible.",
+            "Native worker waits both for next frame commands and synchronous application callbacks; CPU conversion alone is not established as the total-frame bottleneck.",
+            "Host still performs fresh SQLite transactions,read revalidation and packet/scene serialization; prepared SQL does not remove these required checks.",
+            "No evidence of per64KiB GPU-upload parent RPC; worker resource checkpoint remains local deadline."
+          ],
+          "next_direction": "Reduce serial host/native/presentation pipeline work as one integrated slice,with bounded reuse and fresh fences; keep pixels/PCM and original startup/completion gates. Do not rerun unchanged successful exports or short diagnostics as substitutes for formal playback.",
+          "retained_verifier_failure": "Initial post-diagnostic cleanup verifier looked for runtime.json inside diagnostic child instead of parent; failed before invoking any service command. Only path corrected; no browser,job or media rerun. A second read-only status returned the observed stopped state with exit1; the verifier incorrectly required exit0. Corrected to require error=null and state=stopped,with observed0/1 exit statuses. Exact original status envelope retained."
+        },
+        "scope": "30second diagnostic with5second OS samples;not formal acceptance timing"
+      },
+      "retained_build_failure": "/Users/vincent/Movies/OpenCut-native-rendering/4k/reader-repair/compile-failure-c515c59c/build.json",
+      "retained_fidelity": {
+        "worker_sha256": "5a48a7891b4686b544917c8942ef0389fac8056a4a5c933c3b70c6feed4c4185",
+        "export_job_id": "job_b1c6748abcaf4628b27358d0448d6d79",
+        "producer_host_sha256": "44c6f50f2910211facabb0916e773214d0cda3619006ff30c8d727b556e769a2",
+        "scope": "Unchanged worker/IR/shader/media/Web;no new export or independent pixels/PCM produced this slice. Original recorded fidelity remains tied to original producer."
+      },
+      "cleanup": {
+        "formal_small": {
+          "passed": true,
+          "service": {
+            "directory": "/private/var/folders/kz/h5_cbtss31x7v_c7008mkn4c0000gn/T/opencut-web-ximg54td/service",
+            "ready": false,
+            "state": "stopped",
+            "version": 1
+          },
+          "unchanged_fixture_snapshots": [
+            "/Users/vincent/Movies/OpenCut-native-rendering/4k/fixture.json",
+            "/Users/vincent/Movies/OpenCut-native-rendering/acceptance/native-long-media-fixture.json"
+          ],
+          "active_jobs": [],
+          "remaining_owned_workers": [],
+          "reference_pcm_prefix_hash_verified": true,
+          "user_services": "No commands targeted user workspace services"
+        },
+        "formal_4k": {
+          "passed": true,
+          "service": {
+            "directory": "/private/var/folders/kz/h5_cbtss31x7v_c7008mkn4c0000gn/T/opencut-web-ximg54td/service",
+            "ready": false,
+            "state": "stopped",
+            "version": 1
+          },
+          "unchanged_fixture_snapshots": [
+            "/Users/vincent/Movies/OpenCut-native-rendering/4k/fixture.json",
+            "/Users/vincent/Movies/OpenCut-native-rendering/acceptance/native-long-media-fixture.json"
+          ],
+          "active_jobs": [],
+          "remaining_owned_workers": [],
+          "reference_pcm_prefix_hash_verified": true,
+          "user_services": "No commands targeted user workspace services"
+        },
+        "post_diagnostic": {
+          "passed": true,
+          "service": {
+            "directory": "/private/var/folders/kz/h5_cbtss31x7v_c7008mkn4c0000gn/T/opencut-web-ximg54td/service",
+            "ready": false,
+            "state": "stopped",
+            "version": 1
+          },
+          "unchanged_fixture_snapshots": [
+            "/Users/vincent/Movies/OpenCut-native-rendering/4k/fixture.json",
+            "/Users/vincent/Movies/OpenCut-native-rendering/acceptance/native-long-media-fixture.json"
+          ],
+          "active_jobs": [],
+          "remaining_owned_workers": [],
+          "reference_pcm_prefix_hash_verified": true,
+          "user_services": "No commands targeted user workspace services"
+        }
+      },
+      "manual_acceptance": "Agent visual inspection of small-source screenshot only; no physical/manual output or clean-machine/cross-platform qualification.",
+      "remaining": [
+        "4K startup and throughput;150second completion gate failed",
+        "Long playback stall cause not mechanistically proven;this repaired small run passed and4K responses stayed active until deadline",
+        "Default-track parity and wider codec/color/orientation/text resume",
+        "Current runtime export/package and physical/clean-machine/cross-platform delivery acceptance"
+      ]
     }
   },
   "known_limits": [
@@ -2797,6 +3050,16 @@
       "delivery_ready": false
     },
     "current_working_candidate": {
+      "checkpoint": "/Users/vincent/Movies/OpenCut-native-rendering/4k/reader-repair/checkpoint.json",
+      "checkpoint_sha256": "52f35d418e347b4a830d214df80742094a0d12813d0d9b0a872635995b9feaa0",
+      "source_commit": "557d91d7f8b8105766a2854c8bcc99bee31ad2dd",
+      "host_sha256": "e5cce11043f1d5aa8394da848196a0faf8a117614ff5c68045ca4867ca139832",
+      "worker_sha256": "5a48a7891b4686b544917c8942ef0389fac8056a4a5c933c3b70c6feed4c4185",
+      "scope": "Archive6+SQLite253+CLI/HTTP27 and exactCLI contracts pass;previous3store failures repaired. Original94s320x180 full editor playback/seek/pause/resume passes.4K-source startup/completion fail,48.267seconds in original completion wait. Unchanged worker/Web/tools and retained independent exports keep original identities;no new package qualification.",
+      "qualification": "scoped_regressions_passed_4k_preview_failed",
+      "delivery_ready": false
+    },
+    "previous_working_candidate": {
       "checkpoint": "/Users/vincent/Movies/OpenCut-native-rendering/4k/reader-reuse/checkpoint.json",
       "checkpoint_sha256": "489c3623c966b990f41d93fa9da9b1f992787e987fd8428ed1f4500923f916ca",
       "source_commit": "c799e9db1e92fe3ecf4d1e2261cf309bec1c37c3",
@@ -2804,15 +3067,6 @@
       "worker_sha256": "5a48a7891b4686b544917c8942ef0389fac8056a4a5c933c3b70c6feed4c4185",
       "scope": "Reader/SQL/capacity scheduling slice built;106host+27CLI checks and contracts pass,full store has3failures;4K and320formal playback stalls.38evidence files retain failures and non-reproducing diagnostics. Worker/Web/tools/export proofs retain original identity; no distribution qualification.",
       "qualification": "unqualified_under_investigation",
-      "delivery_ready": false
-    },
-    "previous_working_candidate": {
-      "checkpoint": "/Users/vincent/Movies/OpenCut-native-rendering/4k/host-picture-throughput/checkpoint.json",
-      "checkpoint_sha256": "c3e9d861df7e0553a6005a7dc8112168c81acdc32cec943bad67c353caca74ca",
-      "source_commit": "79bdcb677acf18688d6b0d6c553ddce16bb4b379",
-      "host_sha256": "f7f6606c21218a7e2f5050fe022bc35238c573a990a8b990dfe272af1e9614f6",
-      "worker_sha256": "5a48a7891b4686b544917c8942ef0389fac8056a4a5c933c3b70c6feed4c4185",
-      "scope": "Host picture digest/lock and HTTP capacity slice:104 host+26 CLI checks and exact CLI contracts pass;94-second4K-source preview still fails original gates. Exact5a48worker/Web/tools retained; existing4K export is read with original44c6producer identity, no new export or package qualification.",
       "delivery_ready": false
     }
   }

@@ -532,7 +532,7 @@ async fn serve_artifact(host: Host, job: String, requested_hash: Option<String>)
         Ok(Err(error)) => return into_http(opencut_automation::response(Err(error))),
         Err(_) => return error_response("INTERNAL_ERROR", "Cannot read task state"),
     };
-    if record.state != opencut_api_contracts::JobState::Succeeded {
+    if record.state != opencut_sdk::api::JobState::Succeeded {
         return error_response(
             "CONSTRAINT_VIOLATION",
             "Artifact is only available after the task succeeds",
@@ -544,7 +544,7 @@ async fn serve_artifact(host: Host, job: String, requested_hash: Option<String>)
             || {
                 matches!(
                     reference.role,
-                    opencut_api_contracts::job_views::ArtifactRole::Primary
+                    opencut_sdk::api::job_views::ArtifactRole::Primary
                 )
             },
             |hash| reference.content_hash == hash,

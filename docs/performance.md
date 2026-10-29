@@ -91,4 +91,22 @@ node scripts/verify-render-performance.mjs /absolute/external/evidence 26479ea5
 
 成熟实践依据：Premiere 的代理开启状态与最终导出来源独立，默认导出完整分辨率原媒体；DaVinci Resolve 同样默认在交付时回到原片。[Adobe 官方导出说明](https://helpx.adobe.com/premiere/desktop/organize-media/ingest-proxy-workflow/export-proxies.html)、[Blackmagic 官方代理工作流](https://documents.blackmagicdesign.com/SupportNotes/DaVinci_Resolve_17_New_Features_Guide.pdf)。Apple 提供 [VideoToolbox 解码会话](https://developer.apple.com/documentation/videotoolbox/vtdecompressionsession-api-collection)及 [Core Video Metal 纹理缓存](https://developer.apple.com/documentation/corevideo/cvmetaltexturecache-q3j)；[FFmpeg 官方说明](https://www.ffmpeg.org/ffmpeg.html)明确指出硬件帧复制回系统内存可能损失性能，因此需测实际整条链路。
 
-统一验证时保持相同 540p 输出和原计时门槛，复用原工程及来源；区分连续播放、首次生成代理、热随机定位及导出吞吐。代理缺失/删除不能改变导出像素来源；输出四档需核验实际尺寸、原片细节、文字比例和独立像素/PCM。当前尚未实现素材代理、并行视频解码或 GPU YUV 输入，完整交付仍为 false。
+统一验证时保持相同 540p 输出和原计时门槛，复用原工程及来源；区分连续播放、首次生成代理、热随机定位及导出吞吐。代理缺失/删除不能改变导出像素来源；输出四档需核验实际尺寸、原片细节、文字比例和独立像素/PCM。本节探针时尚未实现素材代理、并行视频解码或 GPU YUV 输入；后续并行解码结果见下节，完整交付仍为 false。
+
+
+## 有界并行解码实测（2026-10-29）
+
+源码 `cbe924e9` 的 CLI `9a0347f7a311` / worker `f5af24a063ac` 已通过集成构建、同程序契约检查和 25 项受影响的媒体/原生检查。容器未声明像素格式时先以单线程取得已准入帧，再选择一至四线程，最多重开一次并定位回原请求；不执行无额度的隐式探测，不清空本次包和字节预算。实际 4K 夹具选择四线程，小素材保持单线程。源格式、分辨率、颜色和导出栅格规则不变。
+
+| 同一保留 4K 来源 | 前一候选 | 本候选 |
+|---|---:|---:|
+| 编辑器启动 | 5.334 s | 3.957 s |
+| 原生帧请求采样中位数 | 69.3 ms | 49.5 ms |
+| 读取/位图采样中位数 | 20.2 ms | 21.2 ms |
+| 总帧处理采样中位数 | 90.0 ms | 71.4 ms |
+| 150 秒完成观察中的播放位置 | 54.700 s | 68.767 s |
+| 六秒原尺寸 4K 含声导出 | 54.948 s | 52.029 s |
+
+这是相同 540p 预览输出、相同工程、原计时门槛下各一次观察，不是稳定多轮基准。启动通过，94 秒完整播放仍失败；首次/热定位和暂停续播后续阶段未运行。并行增加驻留，本候选预览 worker 采样峰值 292,736 KiB、导出 315,892 KiB，不宣称系统硬上限。导出完整 MP4 与保留独立验收产物逐字节相同，编码前 PCM 独立逐样本一致。
+
+当前数据支持保留有界并行，但它不能单独解决实时预览。下一步仍需减少每帧完整来源 RGBA 转换/上传，以及原生请求之后的读取/位图串行开销；素材级 540p 代理与有界流水线需要继续实现和验证。导出必须继续读取原片。原失败和本批结果均保留在仓库外，详见交付状态；不提升安装包或完整交付资格。

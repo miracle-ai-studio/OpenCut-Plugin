@@ -2,21 +2,32 @@
   "format": "opencut.delivery-status.v1",
   "delivery_ready": false,
   "in_progress": {
-    "candidate_cli_sha256": "ee7d2027ac37f27759147cc0b7b3ff7c9749ed0581bcbe65d4593273f5fc9ea0",
-    "candidate_worker_sha256": "2759865d927a21071034bcf99dcdcc8049c5ab31295be5f481369706bb0ac0c2",
+    "candidate_cli_sha256": "9a0347f7a31108426e07a5d6346b3d21cea00e6d0281b6145693d8ff7e72f12f",
+    "candidate_worker_sha256": "f5af24a063ac5820e178897a5851375513a3d880348a2a99d64f15329372c9ed",
     "candidate_web_source_digest": "42379fdba6afb36203d8a045ca7504d23086d7f583425f8133a3f05e59417d4f",
-    "execution_scope_optimization": "Repaired source 92876c8f built CLI and worker; integrated behavior: 301 passed, 2 existing font-fixture checks ignored. Initial SourceArtPolicy build failure retained.",
+    "execution_scope_optimization": "Fresh-scope SQLite optimization is unchanged from candidate ee7d2027ac37, whose 301 checks passed with 2 existing font-fixture ignores. Current source cbe924e9 integrates bounded video threading; 25 affected media/worker checks passed, same explicit CLI generated/canonical contracts passed. Prior full storage suite not rerun.",
     "preview_resolution": "Keep existing preview540 raster policy. Unbuilt preview360 candidate withdrawn; Web preview request restored to accepted source.",
-    "export_resolution": "Explicit 720p/1080p/1440p/2160p; new UI defaults to 1080p, historical omitted resolution stays source. Four actual sizes and original asset locks passed; 13 independent RGB probes passed MAE<=5. Six-second 1080p preencode PCM exactly matches independent reference; AAC SNR 57.512 dB. Scoped synthetic media only.",
-    "bottleneck_attribution": "Full-source RGBA and one slice decoder thread confirmed. Current 4K preview medians: native request 69.3 ms, read/bitmap 20.2 ms, total 90.0 ms; not decode-only. Source proxies and parallel video decoding remain unimplemented.",
+    "export_resolution": "720p/1080p/1440p/2160p and UI default1080p unchanged. Four presets independently validated on prior ee7d2027ac37/2759865d927a candidate. Current candidate validates original-size 4K6s with byte-identical MP4 and independent exact preencode PCM; not a rerun of all four presets.",
+    "bottleneck_attribution": "Bounded four-thread decode confirmed on retained4K source; metadata absent at open is resolved once after first admitted frame, then reseek with remaining I/O. Actual4K preview medians native49.5ms/read-bitmap21.2ms/total71.4ms; still full-source RGBA and no source proxy or GPU YUV input. Not decode-only timing.",
     "runtime_acceptance": {
-      "small_source": "94-second continuous playback, seek, pause/resume completed; startup 5.063 seconds fails original 5-second gate.",
-      "source_4k": "Startup 5.334 seconds fails; 150-second completion observation reached only 54.7 seconds.",
-      "source_4k_export": "Six seconds with audio: 54.94790516491048 seconds observed job duration. Whole MP4 matches retained independently validated output; preencode PCM independently exact.",
-      "cleanup": "Both retained project snapshots unchanged; owned service stopped, no active jobs or candidate workers.",
-      "qualification": "No new installation/package or whole-product acceptance."
+      "small_source": "Not rerun on current candidate. Prior ee7d2027ac37 completed94s but startup5.063s failed; no new whole small-source acceptance claim.",
+      "source_4k": "Current startup3.957325507s passes5s; 150s observation reaches68.76666666666667s/2064 sampled presented frames, fails94s completion. 8215 responses,0 API errors,0 page exceptions. Seek/pause/resume stages not reached.",
+      "source_4k_export": "Current 6s original4K with audio observed job duration52.02901407610625s versus54.94790516491048s prior; full MP4 exact retained independent output, preencode PCM independently exact.",
+      "native_worker_peak_rss_kib": {
+        "preview": 292736,
+        "export": 315892
+      },
+      "cleanup": "Both retained snapshots unchanged; owned service stopped, no active jobs or candidate workers.",
+      "qualification": "Raw local candidate only; no new installation/package or whole-product acceptance."
     },
-    "next_candidate": "Initial bounded-thread candidate built but failed regressions: test assumed stream duration then a frame before nonzero first PTS. Logs also proved absent container pixel format kept production serial. Repaired source resolves threads once after an admitted decoded frame and reseeks with remaining I/O budget; pending integrated rebuild/acceptance. Both failures retained; no source proxies or GPU YUV input."
+    "next_candidate": "Current threading slice scoped fidelity passed; 4K continuous playback still fails. Next work must reduce full-source processing and frame pipeline overhead without lowering preview below540p or sourcing export from proxies.",
+    "decoder_regression_failures": "Initial test required optional stream duration, then assumed previous frame existed before nonzero firstPTS; preserved both failures. It also exposed production metadata selection staying serial. Integrated repair uses first admitted frame; all25 affected checks now pass.",
+    "decoder_candidate_evidence": {
+      "source_commit": "cbe924e9fffdb16d42b4636b86fcc732417945e2",
+      "checkpoint_sha256": "f8651029ada501117f90ceb5d47f20b511f7f39de18107503d16c31692ce3d8a",
+      "evidence_count": 44,
+      "scope": "scoped_decoder_fidelity_and_startup_passed_continuous_4k_failed"
+    }
   },
   "scope": "Local CLI/HTTP/MCP/SDK service and Web editor; GPUI shell is not an integrated editor.",
   "public_contract": {

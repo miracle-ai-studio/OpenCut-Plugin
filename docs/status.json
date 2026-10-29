@@ -18,11 +18,11 @@
     "Unchanged native-authorized preview manifests retain encoded content and paused decoders for 30 seconds; live surface cold preparation keeps cancellation and backend fences.",
     "Shared visual decoders reposition across distant source cuts while preserving nearby sequential reuse and VFR frame coverage.",
     "Visible source artwork takes bounded priority over queued authorization renewals; byte conversion avoids per-byte temporary strings.",
-    "Private browser-to-Node video output uses bounded canonical Base64 batches and preserves the original native RGBA handler and frame fences."
+    "Native Rust worker binary RGBA/Float32 transport replaces browser-to-Node rendering; fixed identities, bounded resources, cancellation and publication fences remain shared."
   ],
   "validation": {
     "source_base_commit": "26479ea5eba4c1bbc454e08396b0cce53f4d31a1",
-    "source_state": "uncommitted performance candidate on committed local repairs; running user services and local plugin unchanged",
+    "source_state": "Committed native cutover and scoped macOS Intel bundled-runtime/quality acceptance; complete delivery remains false and user services unchanged.",
     "previous_cover_candidate": {
       "binary_sha256": "9595d79ef1dd400c39458e96a7cb3b8996802b105ee64b4aa5bf57db76ba9aae",
       "cli_release_build": "passed",
@@ -647,74 +647,208 @@
       ]
     },
     "native_media_tool_distribution": {
-      "status": "relocated corrected tool package doctor, native/host checks, retained independent WAV/MP4 exports and package/import tool discovery passed; quality projection defect repair pending",
+      "status": "bundled standalone media tools and native runtime passed scoped Mac Intel relocation, independent retained media exports/preview; quality admission defect fixed and current HTTP/CLI guards passed; full delivery incomplete",
       "delivery_ready": false,
-      "baseline_commit": "928ccabe",
-      "scope": "shared host tool assembly, standalone FFmpeg/ffprobe, original corresponding sources and licenses",
-      "checks": {
-        "runtime_distribution_python_tests_passed": 10,
-        "architecture_unit_tests_passed": 14,
-        "architecture_and_contract_boundaries": "passed",
-        "native_tests_passed": 49,
-        "host_tests_passed": 102,
-        "relocated_doctor_passed": 2540
+      "source_code_commit": "95fd31e1ab51278cc9ae2802909a68207adb6f11",
+      "packaging_source_commit": "415b3ec95c3786a00dcbe8103e35a161a7450b3f",
+      "runtime": {
+        "opencut": {
+          "path": "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/quality-admission/relocated install/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+          "sha256": "81c455e42f4c8d52c95bd2b7eca1f8119f52b1f1c055870415ebb2ed237b77fd"
+        },
+        "opencut-render-worker": {
+          "path": "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/quality-admission/relocated install/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+          "sha256": "da066ecc7bf27269719e7b4cf1a8aa856916de27ff8b110c2db36422426aac07"
+        }
       },
-      "remaining": [
-        "quality application fix build and regression/native behavior against existing published export",
-        "VP9/Opus and same candidate continuous preview",
-        "broader codec/color/orientation/default-track/4K and clean-machine/manual/platform coverage"
-      ],
-      "release_source_commit": "939b72b1",
-      "test_source_commit": "4de1b821",
-      "release_build": "passed",
-      "release_cli_sha256": "8b00afa1ae1e52218b7a5c2ab9d4de18201d2e43584de6397ac8952776aa7079",
-      "release_worker_sha256": "84a63088fb0a87ef4f17489f500235d258aa506a5c35aa635fb992646d3db276",
-      "initial_relocated_cli_sha256": "8a529f78e6ac5d7f9ba07824bb300e93b465431d6950c46f880aebcb53c2589f",
-      "initial_archive_sha256": "7f44d340329add76022030cd63aba07cc9821598f087cd7d87f09c1f252051de",
-      "initial_doctor_failure": {
-        "check": "media_encode_probe",
-        "cause": "FFmpeg --disable-avdevice removed lavfi input, which the existing media backend also requires",
-        "evidence": "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/export-tools/initial-no-lavfi-relocated-doctor.json",
-        "repair": "rebuild standalone tools with --enable-avdevice --disable-indevs --disable-outdevs --enable-indev=lavfi; no Rust release rebuild"
+      "archive": "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/quality-admission/packages/opencut-0.1.0-dev-79bb6858377b-x86_64-apple-darwin.tar.gz",
+      "archive_sha256": "8e7483b81d5de9976a03063e942fc412ec435261026af892b33f34d09d6f811e",
+      "archive_qualification": "Local development candidate; embedded status predates this acceptance. Clean machine, signing/platform and whole-product delivery remain unqualified.",
+      "renderer_component": {
+        "worker_source_commit": "939b72b10a1251adb23639601ffa0d2e76b68cf0",
+        "worker_rebuilt_for_quality_fix": false,
+        "unchanged_worker_native_libraries_and_auxiliary": true,
+        "reuse_scope": "Keep producer 8a529f78e6ac exports/preview as original-host evidence; exact unchanged worker/libraries/tools reused by current 81c455e42f4c quality-only host. No relabeled jobs or rerendered fixtures."
       },
-      "corrected_archive_sha256": "1d1f019edc5c71bd7fd72ef64fec4f876b693b10031df63a75734aaa23fef0f5",
       "media_tools": {
         "ffmpeg": "df7bf6ac82589b188a9246592bf7be3fd4d4718b237dcb92198f05cd4e280103",
         "ffprobe": "f6bd5f9e375ced5ace260c406e408be4b5f41a1c03b81580632575b75034ce7b"
       },
-      "relocated_worker_sha256": "da066ecc7bf27269719e7b4cf1a8aa856916de27ff8b110c2db36422426aac07",
-      "export_seconds": {
-        "wav": 14.664766592904925,
-        "mp4": 59.560199382016435
+      "checks": {
+        "runtime_distribution_python_tests": 10,
+        "architecture_unit_tests": 14,
+        "architecture_and_contract_boundaries": "passed without dependency exceptions",
+        "native_checks": 49,
+        "host_checks": 102,
+        "scope_native_host_checks": "Recorded producer source939b72b1 and test-only fixture repair4de1b821; no claim of full host reexecution on quality-only change",
+        "quality_and_export_application_regressions": 6,
+        "relocated_doctor_checks": 2540,
+        "generated_and_canonical_contracts": "Exact delivered CLI81c455e42f4c,184operations/12domains; SDK dist/Web reused with identity checks",
+        "av1_source_frame_mae": 1.5390625
       },
-      "independent_export": {
-        "whole_and_preencode_pcm_maximum_error": 0,
-        "sampled_source_frames": 7,
+      "media_producer_runtime": {
+        "opencut": {
+          "path": "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/export-tools/relocated install with lavfi/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+          "sha256": "8a529f78e6ac5d7f9ba07824bb300e93b465431d6950c46f880aebcb53c2589f"
+        },
+        "opencut-render-worker": {
+          "path": "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/export-tools/relocated install with lavfi/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+          "sha256": "da066ecc7bf27269719e7b4cf1a8aa856916de27ff8b110c2db36422426aac07"
+        }
+      },
+      "producer_archive_sha256": "1d1f019edc5c71bd7fd72ef64fec4f876b693b10031df63a75734aaa23fef0f5",
+      "independent_exports": {
+        "scope": "One retained 94-second 320x180/30fps scene, 24 repeated AAC source clips, whole-scene independent export PCM with the original peak gate, 7 source-derived frame probes and encoded AAC quality. No 4K, arbitrary codec or full-product delivery claim.",
+        "wav": {
+          "job_id": "job_40506d28aa20417293bf46a46843e8b5",
+          "seconds": 14.664766592904925,
+          "artifact_sha256": "c90f8de39756ce1a6f97ef969922f094db4510be38669e9b3c78fa7c4bee623e"
+        },
+        "mp4": {
+          "job_id": "job_73d0db74616442ef9d76c99023188001",
+          "seconds": 59.560199382016435,
+          "artifact_sha256": "e2dd5c4cafc3f98926f1ca04cb65efc26253c1127e83ce87014cb7b234897a88"
+        },
+        "webm": {
+          "job_id": "job_5b2e497f50674f1b9cf1705899ef06f7",
+          "seconds": 58.14351396798156,
+          "artifact_sha256": "d8c27d6918523f44e165ee9f1a12c67c88c4f9495a036eba8d392b6b1fbb0efc"
+        },
+        "wav_and_all_preencode_pcm_maximum_error": 0,
+        "mp4_pixel_mae": [
+          3.3577719907407406,
+          2.7891666666666666,
+          2.921244212962963,
+          3.2230324074074073,
+          2.6107118055555554,
+          3.429027777777778,
+          2.984826388888889
+        ],
+        "webm_pixel_mae": [
+          1.9778877314814816,
+          3.214664351851852,
+          3.6611516203703705,
+          2.91490162037037,
+          3.3841666666666668,
+          4.077094907407408,
+          3.3805439814814813
+        ],
         "pixel_mae_gate": 5,
-        "encoded_aac_snr_db": 57.76281596782658,
-        "fitting": "none"
+        "aac_snr_db": 57.76281596782658,
+        "opus_snr_db": 42.193968646909354,
+        "lossy_audio_snr_gate_db": 30,
+        "fitting": "none",
+        "export_worker_peak_rss_kib": 47020
       },
-      "quality_failure": {
-        "cause": "public normalized kind compared with exact private preparation kind",
-        "code": "INVALID_ARGUMENT",
-        "message": "Quality requires a successful configurable whole/range video export",
-        "source_repair": "check record.kind; reuse full stored-export fixture to verify native-port reach and authorization/artifact rejection",
-        "validation": "pending"
+      "continuous_preview": {
+        "report_sha256": "e51b8aed03a83ba5aaac0cb5ab6bc3b25d0abc3ef4fe41755a95aac959735b7f",
+        "passed": true,
+        "presented_frames": 2820,
+        "discarded_frames": 0,
+        "max_underflow_events": 0,
+        "device_copied_frames": "4512000",
+        "device_elapsed_frames": 4512384,
+        "repeated_same_device_quantum_pulls": 3,
+        "lag_p95_ms": 31.854166666666668,
+        "max_wall_frame_gap_ms": 41.09999990463257,
+        "automated_startup_seconds": 4.507321571,
+        "actual_click_to_sampled_presentation_upper_seconds": 3.711,
+        "sampling_ms": 250,
+        "preview_responses": 9167,
+        "source_art_responses": 343,
+        "scope": "Retained 94-second 320x180 source, original five-second startup gate and actual DOM/device observations; same-quantum device callbacks served idempotently, no physical screen or audibility or 4K claim"
+      },
+      "preview_worker_peak_rss_kib": 18772,
+      "quality_repair": {
+        "cause": "Public normalized task kind was compared with exact private stored preparation kind",
+        "implementation": "Select by record.kind; keep stored proof and public projection unchanged",
+        "current_http_seconds": 4.897101182024926,
+        "technical_findings": [],
+        "foreign_artifact_rejected": true,
+        "historical_proof_read_with_disabled_encoder": true,
+        "invalid_explicit_encoder_rejected_without_fallback": true,
+        "old_execution_proof_preserved": true,
+        "scope": "Current relocated quality host uses unchanged bundled tools, reads the original accepted older-host export without rerendering or rewriting its proof, exercises HTTP positive/foreign-artifact rejection and CLI unavailable-runtime/history-read behavior. No new-host export/preview or complete-delivery claim."
+      },
+      "auxiliary_sources_licenses": {
+        "components": [
+          "ffmpeg",
+          "ffprobe",
+          "node",
+          "python"
+        ],
+        "external_dependencies": [],
+        "media_tool_source_files_each": 38,
+        "media_tool_license_files_each": 26,
+        "GPL_encoder_tools": "Separate static GPL-2.0-or-later child executables; corresponding source, exact archive/formula/receipt provenance and build recipe retained",
+        "LGPL_decoder_worker": "Five immutable identified shared libraries, separate build and complete original provenance unchanged"
+      },
+      "lifecycle": {
+        "passed": true,
+        "after_current_av1_frame": true,
+        "active_jobs": [],
+        "remaining_owned_processes": [],
+        "owned_service_state": "stopped"
+      },
+      "manual_acceptance": {
+        "agent_viewed_editor_screenshot": "/Users/vincent/Movies/OpenCut-native-rendering/acceptance/native-long-play-8a529f78e6ac-da066ecc7bf2.png",
+        "scope": "Agent screenshot inspection only; physical display latency/audio and clean-machine/manual installation not accepted"
+      },
+      "evidence_sha256": {
+        "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/quality-admission/build.json": "32b4a70458f62712471867e50ec0d6972b936c4c1a8afbd8c48684bcb095e853",
+        "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/quality-admission/regressions.json": "d1983565a9719bccee6c574d52c524cc20bb56e203588eecd46451781f268a78",
+        "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/quality-admission/doctor.json": "fc327c9b317ed2fe1c454e7777c78b6600f6b18de9cfa86a4f64363a80b7a3ab",
+        "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/quality-admission/canonical-contract.json": "c16fe070d4eade3cb329c467542918b35425beda5d97618f140ec9dfbd5af29c",
+        "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/quality-admission/component-reuse.json": "4d461109b7e185a2e2034295bc19fde7ff457e78db19c6fbbbbb671b91fbf63d",
+        "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/quality-admission/quality-http.json": "5c2e93d772e20f4d55f52b5ace0a80ac0eda0e83134f611169f8f8ab4d6be2f1",
+        "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/quality-admission/av1-frame.json": "f6f4bc7d12198d06a7aa17e0fd220cb14382f82444d6b08755b5889eb860b09c",
+        "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/quality-admission/final-cleanup.json": "7c8f997dd6d4bf3d4368500de31d5c58862923245d9de7e7bae80e05e5521273",
+        "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/quality-admission/pinned-binaries.json": "b99723e4a981f21d6fa6841b9d0959659559b3b077035bd783aa2e201108e6c9",
+        "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/quality-admission/boundary-gates.json": "193e99bb3e56c11b1837b712df63f15665b39fb16eb5bccc6b61357fa1c649e6",
+        "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/export-tools/build.json": "0c50182c3bfcbbb5f3944b5e942c4e59fc7dbc42b9245e476140a36aea70a742",
+        "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/export-tools/runtime-input-with-lavfi.json": "ab441eb5e095ea9cbe63148255b0377e7b2abfe41d3b7f1ed612db2bb3677f10",
+        "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/export-tools/integrated-build.json": "fb5317e4b635e17296d114e9ed7157c64f8d42271cba40cf0151e09ffdca6e8f",
+        "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/export-tools/affected-rust-checks.json": "7c4a17462c3472d2139e2af30a451490c7322d4899da55a71f38aff1f0004136",
+        "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/export-tools/relocated-doctor-with-lavfi.json": "07bb94a90615a26c37a90c7e6fa4d3b62b9b11993235394b8fb7279148ebb45c",
+        "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/export-tools/relocated-canonical-contract-with-lavfi.json": "808b00638fa133748dbbc4755579011cb2b3227545abedda99d4ad70de363ba3",
+        "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/export-tools/assembly-acceptance.json": "e00947d1b410950eda68f45da517e79167a675ada5e6995e468d7687dd72fb76",
+        "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/export-tools/preview-metrics.json": "9cb3353ef6a812e019aad8dda99f6fd024eb582b93a87d377f3b8a2216372617",
+        "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/export-tools/long-webm-acceptance.json": "ac0d8e1c87978a5ebca54dbc681601a725612b4cee280fbbde36bd496c8301b1",
+        "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/export-tools/cleanup.json": "2f58e91bb311e00d15259ce67ae1d63c4049cd366ca2bb86bd0388c6374d0c69",
+        "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/export-tools/initial-no-lavfi-relocated-doctor.json": "dac6f547413233bab0ad18d5e579095da473c37f44f9d763cee1a9a14d137d0d",
+        "/Users/vincent/Movies/OpenCut-native-rendering/acceptance/native-long-ui-8a529f78e6ac-da066ecc7bf2.json": "e51b8aed03a83ba5aaac0cb5ab6bc3b25d0abc3ef4fe41755a95aac959735b7f",
+        "/Users/vincent/Movies/OpenCut-native-rendering/acceptance/native-long-ui-rss-8a529f78e6ac-da066ecc7bf2.json": "9daa7a4544cf5d91d8df8ffcc4b0eed070283a00c463231fe9934d60e7f123fa",
+        "/Users/vincent/Movies/OpenCut-native-rendering/acceptance/native-long-export-8a529f78e6ac-da066ecc7bf2-df7bf6ac8258-f6bd5f9e375c-relocated.json": "2c835431afc0668d892aec0ce4d28abdc9a9bd3b7a9336db19b502d412f37572"
+      },
+      "remaining": [
+        "4K continuous preview/export throughput and GPU/driver/process memory",
+        "broader codec/container/color/orientation/default-track source-to-IR-to-backend coverage",
+        "historical intermittent asset-free text resume stall cause",
+        "clean-machine, installation/signing, physical/manual and cross-platform delivery acceptance"
+      ],
+      "bundled_diagnostic_bootstrap": {
+        "passed": true,
+        "checks": 2540,
+        "driver": "bundled Python with -I -B from outside package CWD",
+        "report": "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/quality-admission/doctor-bundled-python.json",
+        "report_sha256": "fc327c9b317ed2fe1c454e7777c78b6600f6b18de9cfa86a4f64363a80b7a3ab",
+        "scope": "No external Python or media tools required for this local diagnostic; clean-machine signing/installation remains open"
       }
-    }
+    },
+    "current_code_commit": "415b3ec9"
   },
   "known_limits": [
-    "Uncached live playback has observed stalls, including a recorded 568.7 ms gap. Lossy AVC preview passed the 30 dB PSNR probe but failed strict SSIM 0.98 (observed 0.947518); broad independent pixel qualification remains open.",
-    "Full export pixels/throughput, arbitrary edit/seek/fault, large/long media, device/browser and physical output matrices are incomplete.",
-    "Full long-source playback has unresolved process-tree RSS overage; macOS resource control is monitored termination.",
-    "An initial post-master PCM residual is unresolved; preview/export sampling-profile equivalence is not fully qualified.",
+    "4K continuous preview/export throughput and process/GPU/driver memory are unqualified; the current complete 94-second independent reference and playback case is 320x180.",
+    "Broader codec/container/color/orientation/default-track source-to-IR-to-backend fidelity remains open, including the unchanged untagged red export probe that observed RGB254/23/0 against green<15.",
+    "The recorded asset-free four-second text resume stall near1.87seconds is not causally closed by later successful playback cases.",
+    "Native worker RSS and device-clock observations are scoped per candidate. Whole-product/browser and driver/GPU residency, physical display timing and audibility remain unqualified.",
+    "Preview and export retain distinct original mastering rules and separate independent PCM oracles. Current zero-error scoped native references do not cover every rate/layout/effect/device.",
     "Per-font/platform/budget/FPS and optional sound-provider failure/cancellation qualification are incomplete.",
-    "Package dependency/branch-merge/fault, signing/installation/upgrade and cross-platform delivery qualification are incomplete.",
-    "Some composed compatibility/acceptance verifiers retain obsolete interface assumptions and are not current acceptance proof.",
-    "Local plugin prerelease: macOS Intel package only, external Node/FFmpeg/Chromium required; unsigned and not verified in a clean machine or an actual ChatGPT client conversation. A synthetic untagged H264 export color probe observed RGB 254/23/0 and failed the unchanged green < 15 gate; package workflow success is separate from pixel qualification.",
-    "Performance candidate: independent synthetic source-frame and native-export pixel probes still fail equally before/after; unchanged bytes do not establish independent pixel correctness.",
-    "Cold picture preparation waits for subsequent windows; source artwork authorization still transfers complete JPEGs and cold requests include runtime identity scans and process startup.",
-    "4K raw-frame bridge remains expensive after scoped improvement; full export throughput and process-tree RSS need separate qualification. The Web workspace chunk is about 1.80 MB (gzip 508 KB)."
+    "Local macOS Intel relocation and bundled diagnostic bootstrap passed; clean-machine, signing/quarantine, upgrade, package fault and cross-platform delivery remain incomplete.",
+    "Some retained compatibility/acceptance verifiers use obsolete interface assumptions; only explicitly recorded current candidates and affected scopes count as acceptance.",
+    "The retained plugin prerelease still names external Node/FFmpeg/Chromium and lacks real-client/clean-machine qualification. The newer standalone native candidate is a separate recorded artifact.",
+    "Historical browser performance/SSIM/PCM failure reports are preserved as historical evidence. Native scoped passes do not reclassify those old jobs or prove broader fidelity.",
+    "Cold native picture preparation and authorized source artwork retain startup, validation and transfer costs; 4K binary RGBA transport and the retained Web bundle still need larger-media measurements."
   ],
   "manual_acceptance": [
     "Finder and cross-app file transport",
@@ -2124,6 +2258,15 @@
         "distribution of native worker/shared libraries with licenses and relocated-installation proof",
         "physical/manual and cross-platform acceptance"
       ]
+    },
+    "current_runtime_delivery": {
+      "checkpoint": "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/quality-admission/checkpoint.json",
+      "checkpoint_sha256": "01e944516cfca201ebb7683d91ee4ad50c1c31431715304da4d32663931d31b9",
+      "current_quality_host_sha256": "81c455e42f4c8d52c95bd2b7eca1f8119f52b1f1c055870415ebb2ed237b77fd",
+      "renderer_worker_sha256": "da066ecc7bf27269719e7b4cf1a8aa856916de27ff8b110c2db36422426aac07",
+      "media_producer_host_sha256": "8a529f78e6ac5d7f9ba07824bb300e93b465431d6950c46f880aebcb53c2589f",
+      "scope": "Bundled tool closure, recorded producer native media/preview and current quality-only host; see validation.native_media_tool_distribution for candidate-specific proof boundaries.",
+      "delivery_ready": false
     }
   }
 }

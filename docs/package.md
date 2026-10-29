@@ -2,13 +2,15 @@
 
 原生渲染运行包包含相邻的 `bin/opencut`、`bin/opencut-render-worker` 和 `bin/lib` 媒体库；对应源码、构建记录与许可证保存在 `THIRD_PARTY/native-media`。程序无需浏览器渲染运行时。资源目录解包所需的 Node、字体派生所需的 Python/fontTools，以及导出所需的 FFmpeg/ffprobe，是否随包提供以清单为准；未提供的依赖必须显式安装。环境诊断通过也不能代替项目渲染验收。
 
-解包后先运行环境诊断：
+进入解包目录，完整辅助运行时包可直接使用包内 Python 诊断：
 
 ```sh
-python3 doctor.py
+bin/libexec/runtimes/python/bin/python3.14 -I -B doctor.py
 bin/opencut --json system capabilities
 bin/opencut --json system domains
 ```
+
+清单未提供 Python 的包使用已安装的 Python 3.11+ 运行 `python3 -B doctor.py`。媒体工具的原始许可证与对应源码/构建记录位于 `bin/libexec/runtimes/ffmpeg` 和 `bin/libexec/runtimes/ffprobe`，清单记录每个文件身份。
 
 选择工作区和私有服务目录，启动本机服务：
 

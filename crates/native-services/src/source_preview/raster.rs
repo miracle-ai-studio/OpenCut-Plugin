@@ -27,6 +27,17 @@ pub(super) fn normalize(
         checkpoint()?;
         chunk.fill(0);
     }
+    if video.rotation_degrees == 0 {
+        copy_rows(
+            input,
+            video.raster_width,
+            output,
+            raster.width,
+            video,
+            checkpoint,
+        )?;
+        return checkpoint();
+    }
     for y in 0..video.raster_height {
         if y % 8 == 0 {
             checkpoint()?;
@@ -51,6 +62,18 @@ pub(crate) fn restore(
         return Err(super::protocol("Prepared source RGBA extent changed"));
     }
     let mut output = vec![0; video.raster_width as usize * video.raster_height as usize * 4];
+    if video.rotation_degrees == 0 {
+        copy_rows(
+            input,
+            raster.width,
+            &mut output,
+            video.raster_width,
+            video,
+            checkpoint,
+        )?;
+        checkpoint()?;
+        return Ok(output);
+    }
     for y in 0..video.raster_height {
         if y % 8 == 0 {
             checkpoint()?;
@@ -64,4 +87,24 @@ pub(crate) fn restore(
     }
     checkpoint()?;
     Ok(output)
+}
+
+fn copy_rows(
+    input: &[u8],
+    input_width: u32,
+    output: &mut [u8],
+    output_width: u32,
+    video: &SourcePreviewFrameVideo,
+    checkpoint: &mut dyn FnMut() -> Result<(), EditorError>,
+) -> Result<(), EditorError> {
+    let length = video.raster_width as usize * 4;
+    for y in 0..video.raster_height as usize {
+        if y % 8 == 0 {
+            checkpoint()?;
+        }
+        let source = y * input_width as usize * 4;
+        let target = y * output_width as usize * 4;
+        output[target..target + length].copy_from_slice(&input[source..source + length]);
+    }
+    Ok(())
 }

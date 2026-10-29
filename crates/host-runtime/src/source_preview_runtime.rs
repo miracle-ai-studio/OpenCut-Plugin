@@ -5,7 +5,6 @@ use sha2::{Digest, Sha256};
 use std::{
     path::{Path, PathBuf},
     sync::{Mutex, OnceLock},
-    time::{Duration, Instant},
 };
 mod resources;
 pub(crate) use resources::{PreviewResources, SourceCache};
@@ -71,7 +70,6 @@ pub(crate) struct Runtime {
 }
 struct Captured {
     observation: String,
-    at: Instant,
     runtime: Runtime,
 }
 fn observation(worker: &Path, ffmpeg: &Path, ffprobe: &Path) -> Result<String, EditorError> {
@@ -122,9 +120,13 @@ pub(crate) fn configured() -> Result<Runtime, EditorError> {
             "Source preparation runtime lock unavailable",
         )
     })?;
-    if !capture.as_ref().is_some_and(|entry| {
-        entry.observation == before && entry.at.elapsed() < Duration::from_secs(30)
-    }) {
+    // These paths, inodes, sizes, modification and change times are observed
+    // on every admission. Rehash only when an actual dependency changes;
+    // expiring an unchanged identity stalls the foreground preview on a timer.
+    if !capture
+        .as_ref()
+        .is_some_and(|entry| entry.observation == before)
+    {
         let identity = resolve_runtime(&worker, &ffmpeg, &ffprobe)?;
         let fingerprint = runtime_fingerprint(&identity)?;
         if observation(&worker, &ffmpeg, &ffprobe)? != before {
@@ -135,7 +137,6 @@ pub(crate) fn configured() -> Result<Runtime, EditorError> {
         }
         *capture = Some(Captured {
             observation: before,
-            at: Instant::now(),
             runtime: Runtime {
                 worker,
                 ffmpeg,
@@ -183,4 +184,41 @@ pub(crate) fn prepare(
         .map(|job| host.app.job_view(&job.job_id))
         .collect::<Result<Vec<_>, _>>()?;
     Ok(opencut_api_contracts::source_preview::SourcePreviewPreparation { jobs })
+}
+
+#[cfg(all(test, unix))]
+mod tests {
+    use super::*;
+    use std::fs::{self, File, FileTimes};
+
+    #[test]
+    fn dependency_observation_detects_same_size_rewrites_replacements_and_removal() {
+        let directory = tempfile::tempdir().unwrap();
+        let paths = ["worker", "ffmpeg", "ffprobe"].map(|name| directory.path().join(name));
+        for path in &paths {
+            fs::write(path, b"original").unwrap();
+        }
+        let observe = || observation(&paths[0], &paths[1], &paths[2]);
+        let mut previous = observe().unwrap();
+        assert_eq!(observe().unwrap(), previous);
+        for path in &paths {
+            let modified = fs::metadata(path).unwrap().modified().unwrap();
+            fs::write(path, b"modified").unwrap();
+            File::open(path)
+                .unwrap()
+                .set_times(FileTimes::new().set_modified(modified))
+                .unwrap();
+            let current = observe().unwrap();
+            assert_ne!(current, previous);
+            previous = current;
+            let replacement = directory.path().join("replacement");
+            fs::write(&replacement, b"modified").unwrap();
+            fs::rename(replacement, path).unwrap();
+            let current = observe().unwrap();
+            assert_ne!(current, previous);
+            previous = current;
+        }
+        fs::remove_file(&paths[2]).unwrap();
+        assert!(observe().is_err());
+    }
 }

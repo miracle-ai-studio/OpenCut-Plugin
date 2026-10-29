@@ -130,6 +130,7 @@ struct Entry {
     visual: Mutex<Option<visual_owner::VisualOwner>>,
     visual_waiter: AtomicBool,
     pixels: Arc<pixels::FramePixels>,
+    readers: Arc<pixels::ReaderApplications>,
     transform_draft_gate: Mutex<()>,
     resource_open_gate: Mutex<()>,
     database: PathBuf,
@@ -152,6 +153,7 @@ impl Entry {
             state.resources.clear();
             self.credit.notify_all();
             self.pixels.clear();
+            self.readers.clear();
         }
         Ok(state.machine.snapshot(now()))
     }
@@ -174,6 +176,7 @@ impl Entry {
                 state.resources.clear();
                 self.credit.notify_all();
                 self.pixels.clear();
+                self.readers.clear();
             }
             if self.shutdown.load(Ordering::Acquire)
                 || matches!(
@@ -214,6 +217,7 @@ impl Entry {
         state.resources.clear();
         self.shutdown.store(true, Ordering::Release);
         self.pixels.clear();
+        self.readers.clear();
         self.credit.notify_all();
         Ok(())
     }
@@ -346,6 +350,7 @@ pub(crate) fn create(
         visual: Mutex::new(None),
         visual_waiter: AtomicBool::new(false),
         pixels: Arc::new(pixels::FramePixels::default()),
+        readers: Arc::new(pixels::ReaderApplications::default()),
         transform_draft_gate: Mutex::new(()),
         resource_open_gate: Mutex::new(()),
         database,

@@ -109,6 +109,7 @@ pub(super) fn maintain(entry: &Arc<Entry>) -> Result<(), EditorError> {
                     if retire {
                         owner.take();
                         entry.pixels.clear();
+                        entry.readers.clear();
                     }
                     if terminal {
                         break;

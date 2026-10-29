@@ -63,11 +63,11 @@ impl opencut_editor_application::audio_preview::AudioPreviewRead for EditorAppli
             .map_err(storage_error)?;
         require_scope(&tx, &context(selected), project_id)?;
         let exists: bool = tx
-            .query_row(
+            .prepare_cached(
                 "SELECT EXISTS(SELECT 1 FROM revisions WHERE project_id=?1 AND revision=?2)",
-                params![project_id, revision],
-                |r| r.get(0),
             )
+            .map_err(storage_error)?
+            .query_row(params![project_id, revision], |r| r.get(0))
             .map_err(storage_error)?;
         if !exists {
             return Err(EditorError::new(
@@ -183,11 +183,11 @@ impl EditorApplication {
             .map_err(storage_error)?;
         require_scope(&tx, &self.connection.1, project_id)?;
         let present: bool = tx
-            .query_row(
+            .prepare_cached(
                 "SELECT EXISTS(SELECT 1 FROM revisions WHERE project_id=?1 AND revision=?2)",
-                params![project_id, revision],
-                |row| row.get(0),
             )
+            .map_err(storage_error)?
+            .query_row(params![project_id, revision], |row| row.get(0))
             .map_err(storage_error)?;
         if !present {
             return Err(EditorError::new(

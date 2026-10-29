@@ -52,7 +52,7 @@ const ACTIONS: [ProjectAction; 7] = [
     ProjectAction::ReadAudit,
 ];
 fn grants(connection: &Connection, principal: &str) -> Result<Vec<ProjectGrant>, EditorError> {
-    let mut statement=connection.prepare("SELECT project_id,action_mask FROM access_grants WHERE principal_id=?1 ORDER BY project_id").map_err(storage_error)?;
+    let mut statement=connection.prepare_cached("SELECT project_id,action_mask FROM access_grants WHERE principal_id=?1 ORDER BY project_id").map_err(storage_error)?;
     statement
         .query_map([principal], |r| {
             Ok((r.get::<_, String>(0)?, r.get::<_, u32>(1)?))
@@ -77,7 +77,7 @@ impl AuthorizationRead for Read<'_> {
         let Caller::Credential(caller) = caller else {
             return Ok(vec![]);
         };
-        let valid:bool=self.0.query_row("SELECT EXISTS(SELECT 1 FROM access_credentials c JOIN access_principals p USING(principal_id) WHERE c.credential_id=?1 AND c.principal_id=?2 AND c.revoked=0 AND p.enabled=1)",params![caller.credential_id(),caller.principal_id()],|r|r.get(0)).map_err(storage_error)?;
+        let valid:bool=self.0.prepare_cached("SELECT EXISTS(SELECT 1 FROM access_credentials c JOIN access_principals p USING(principal_id) WHERE c.credential_id=?1 AND c.principal_id=?2 AND c.revoked=0 AND p.enabled=1)").map_err(storage_error)?.query_row(params![caller.credential_id(),caller.principal_id()],|r|r.get(0)).map_err(storage_error)?;
         if !valid {
             return Err(access::denied());
         }

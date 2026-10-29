@@ -807,3 +807,40 @@ fn ephemeral_audio_preview_rechecks_original_credential_even_in_owner_host() {
         .revalidate_scene_audio_preview("audio-project", &fixture.fixed.revision)
         .unwrap();
 }
+
+#[test]
+fn warm_preview_statements_observe_other_connections_grant_and_credential_changes() {
+    use opencut_editor_application::audio_preview::AudioPreviewRead;
+    let mut fixture = Fixture::new();
+    let revision = fixture.fixed.revision.clone();
+    let (caller, credential_id) = fixture.credential();
+    let mut reader = EditorApplication::open_managed(fixture.path()).unwrap();
+    reader.set_caller(caller);
+    let selected = reader
+        .fixed_audio_preview_snapshot("audio-project", &revision)
+        .unwrap();
+    let check = || reader.revalidate_audio_preview("audio-project", &revision, &selected.authority);
+    for _ in 0..3 {
+        check().unwrap();
+    }
+    assert_eq!(
+        reader
+            .revalidate_audio_preview("audio-project", "missing-revision", &selected.authority)
+            .unwrap_err()
+            .code,
+        "NOT_FOUND"
+    );
+    check().unwrap();
+    fixture.set_policy("1", vec![ProjectAction::Read]);
+    assert_eq!(check().unwrap_err().code, "NOT_AUTHORIZED");
+    fixture.set_policy("2", vec![ProjectAction::Read, ProjectAction::RunJobs]);
+    check().unwrap();
+    fixture.app.revoke_credential(&credential_id).unwrap();
+    assert_eq!(check().unwrap_err().code, "NOT_AUTHORIZED");
+    // No read transaction survived a checkpoint: the writer committed each
+    // change and the same warmed reader observed it without reconnecting.
+    reader.set_caller(Caller::LocalOwner);
+    reader
+        .revalidate_scene_audio_preview("audio-project", &revision)
+        .unwrap();
+}

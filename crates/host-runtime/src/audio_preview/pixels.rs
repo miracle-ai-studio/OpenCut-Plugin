@@ -8,6 +8,68 @@ use std::{collections::VecDeque, sync::Weak, time::Duration};
 const CHUNK: usize = 65536;
 const READER_OVERHEAD: usize = CHUNK * 3;
 const TICKET_LIFETIME: Duration = Duration::from_secs(5);
+#[derive(Default)]
+struct IdleReaders {
+    generation: Arc<()>,
+    applications: Vec<opencut_sqlite_store::EditorApplication>,
+}
+#[derive(Default)]
+pub(super) struct ReaderApplications(Mutex<IdleReaders>);
+struct ReaderApplication {
+    pool: Arc<ReaderApplications>,
+    generation: Arc<()>,
+    application: Option<opencut_sqlite_store::EditorApplication>,
+}
+impl ReaderApplications {
+    fn take(
+        self: &Arc<Self>,
+        open: impl FnOnce() -> Result<opencut_sqlite_store::EditorApplication, EditorError>,
+    ) -> Result<ReaderApplication, EditorError> {
+        let (application, generation) = {
+            let mut idle = lock(&self.0)?;
+            (idle.applications.pop(), idle.generation.clone())
+        };
+        // Opening and every live query run outside the pool lock. Statements
+        // may be retained, but no transaction or authority decision is kept.
+        Ok(ReaderApplication {
+            pool: self.clone(),
+            generation,
+            application: Some(match application {
+                Some(application) => application,
+                None => open()?,
+            }),
+        })
+    }
+    pub fn clear(&self) {
+        let applications = {
+            let mut idle = self.0.lock().unwrap_or_else(|e| e.into_inner());
+            idle.generation = Arc::new(());
+            std::mem::take(&mut idle.applications)
+        };
+        drop(applications);
+    }
+}
+impl std::ops::Deref for ReaderApplication {
+    type Target = opencut_sqlite_store::EditorApplication;
+    fn deref(&self) -> &Self::Target {
+        self.application
+            .as_ref()
+            .expect("checked out picture reader")
+    }
+}
+impl Drop for ReaderApplication {
+    fn drop(&mut self) {
+        let Some(application) = self.application.take() else {
+            return;
+        };
+        if let Ok(mut idle) = self.pool.0.lock()
+            && Arc::ptr_eq(&idle.generation, &self.generation)
+            && idle.applications.len() < 2
+        {
+            idle.applications.push(application);
+        }
+    }
+}
 struct Pending {
     id: String,
     session: AudioPreviewStream,
@@ -158,7 +220,7 @@ impl Drop for PixelReservation {
 
 pub struct VisualPictureReader {
     entry: Arc<Entry>,
-    application: opencut_sqlite_store::EditorApplication,
+    application: ReaderApplication,
     session: AudioPreviewStream,
     principal: String,
     bytes: Arc<Vec<u8>>,
@@ -199,7 +261,9 @@ pub(crate) fn open(
     )?;
     let bytes = entry.pixels.claim(&input.session, &input.picture_id)?;
     let reader = VisualPictureReader {
-        application: opencut_sqlite_store::EditorApplication::open_managed(&entry.database)?,
+        application: entry
+            .readers
+            .take(|| opencut_sqlite_store::EditorApplication::open_managed(&entry.database))?,
         entry,
         session: input.session,
         principal: host.caller.principal_id().into(),
@@ -213,6 +277,87 @@ pub(crate) fn open(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn reader_connection_reuse_is_bounded_and_retired_loans_do_not_return() {
+        let pool = Arc::new(ReaderApplications::default());
+        let mut first = pool
+            .take(|| opencut_sqlite_store::EditorApplication::open(":memory:"))
+            .unwrap();
+        first
+            .application
+            .as_mut()
+            .unwrap()
+            .create_scene_project(&opencut_api_contracts::CreateProjectRequest {
+                project: opencut_contracts::CreateProject {
+                    id: "reader".into(),
+                    name: "Reader connection".into(),
+                    sequence_id: "scene".into(),
+                    width: 8,
+                    height: 8,
+                    fps: opencut_contracts::FrameRate {
+                        numerator: 30,
+                        denominator: 1,
+                    },
+                },
+                idempotency_key: "create".into(),
+            })
+            .unwrap();
+        drop(first);
+        let reused = pool
+            .take(|| panic!("An idle connection should not be reopened"))
+            .unwrap();
+        let query = opencut_contracts::scene_ops::InspectProject {
+            project_id: "reader".into(),
+            revision: None,
+        };
+        assert!(
+            reused.inspect_scene_project(&query).is_ok(),
+            "The actual in-memory connection is retained"
+        );
+        pool.clear();
+        drop(reused);
+        let fresh = pool
+            .take(|| opencut_sqlite_store::EditorApplication::open(":memory:"))
+            .unwrap();
+        assert!(
+            fresh.inspect_scene_project(&query).is_err(),
+            "A loan from before retirement cannot repopulate the pool"
+        );
+        let second = pool
+            .take(|| opencut_sqlite_store::EditorApplication::open(":memory:"))
+            .unwrap();
+        let third = pool
+            .take(|| opencut_sqlite_store::EditorApplication::open(":memory:"))
+            .unwrap();
+        drop((fresh, second, third));
+        assert_eq!(lock(&pool.0).unwrap().applications.len(), 2);
+        pool.clear();
+        assert!(lock(&pool.0).unwrap().applications.is_empty());
+    }
+
+    #[test]
+    fn failed_reader_open_does_not_hold_the_pool_or_consume_a_slot() {
+        let pool = Arc::new(ReaderApplications::default());
+        let error = pool
+            .take(|| {
+                assert!(
+                    pool.0.try_lock().is_ok(),
+                    "Slow opening cannot hold the idle lock"
+                );
+                Err(EditorError::new(
+                    "STORAGE_ERROR",
+                    "Synthetic failed reader open",
+                ))
+            })
+            .err()
+            .unwrap();
+        assert_eq!(error.code, "STORAGE_ERROR");
+        assert!(
+            pool.take(|| opencut_sqlite_store::EditorApplication::open(":memory:"))
+                .is_ok()
+        );
+    }
+
     fn session() -> AudioPreviewStream {
         AudioPreviewStream {
             session_id: "s".into(),

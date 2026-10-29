@@ -22749,7 +22749,11 @@
             "description": "Raster execution size. Source remains byte-compatible with existing receipts.",
             "enum": [
               "source",
-              "preview540"
+              "preview540",
+              "p720",
+              "p1080",
+              "p1440",
+              "p2160"
             ],
             "type": "string"
           },

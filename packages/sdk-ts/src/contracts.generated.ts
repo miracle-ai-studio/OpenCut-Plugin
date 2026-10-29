@@ -3271,7 +3271,7 @@ export namespace OpencutAnalysisAssetOutput {
 /**
  * Raster execution size. Source remains byte-compatible with existing receipts.
  */
-  export type RasterResolution = 'source' | 'preview540';
+  export type RasterResolution = 'source' | 'preview540' | 'p720' | 'p1080' | 'p1440' | 'p2160';
   export type ExportVisualProfile = 'text_v2' | 'caption_v3' | 'graphic_v1' | 'blend_v1' | 'mask_v1' | 'scene_v1';
   export type JobState = 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled';
 
@@ -12850,7 +12850,7 @@ export namespace OpencutVisualPreviewFrameInput {
 /**
  * Raster execution size. Source remains byte-compatible with existing receipts.
  */
-  export type RasterResolution = 'source' | 'preview540';
+  export type RasterResolution = 'source' | 'preview540' | 'p720' | 'p1080' | 'p1440' | 'p2160';
 
   export interface VisualPreviewFrame {
   /**
@@ -18252,7 +18252,7 @@ export namespace OpencutResourceReadOutput {
 /**
  * Raster execution size. Source remains byte-compatible with existing receipts.
  */
-  export type RasterResolution = 'source' | 'preview540';
+  export type RasterResolution = 'source' | 'preview540' | 'p720' | 'p1080' | 'p1440' | 'p2160';
   export type ExportVisualProfile = 'text_v2' | 'caption_v3' | 'graphic_v1' | 'blend_v1' | 'mask_v1' | 'scene_v1';
   export type JobState = 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled';
 
@@ -20631,7 +20631,7 @@ export namespace OpencutJobViewOutput {
 /**
  * Raster execution size. Source remains byte-compatible with existing receipts.
  */
-  export type RasterResolution = 'source' | 'preview540';
+  export type RasterResolution = 'source' | 'preview540' | 'p720' | 'p1080' | 'p1440' | 'p2160';
   export type ExportVisualProfile = 'text_v2' | 'caption_v3' | 'graphic_v1' | 'blend_v1' | 'mask_v1' | 'scene_v1';
   export type JobState = 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled';
 
@@ -22146,7 +22146,7 @@ export namespace OpencutJobQueryOutput {
 /**
  * Raster execution size. Source remains byte-compatible with existing receipts.
  */
-  export type RasterResolution = 'source' | 'preview540';
+  export type RasterResolution = 'source' | 'preview540' | 'p720' | 'p1080' | 'p1440' | 'p2160';
   export type ExportVisualProfile = 'text_v2' | 'caption_v3' | 'graphic_v1' | 'blend_v1' | 'mask_v1' | 'scene_v1';
   export type JobState = 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled';
 
@@ -23359,7 +23359,7 @@ export namespace OpencutJobSubmitInput {
 /**
  * Raster execution size. Source remains byte-compatible with existing receipts.
  */
-  export type RasterResolution = 'source' | 'preview540';
+  export type RasterResolution = 'source' | 'preview540' | 'p720' | 'p1080' | 'p1440' | 'p2160';
   export type AssetAnalysisOptions =
   | {
       kind: 'silence';
@@ -23928,7 +23928,7 @@ export namespace OpencutJobSubmitOutput {
 /**
  * Raster execution size. Source remains byte-compatible with existing receipts.
  */
-  export type RasterResolution = 'source' | 'preview540';
+  export type RasterResolution = 'source' | 'preview540' | 'p720' | 'p1080' | 'p1440' | 'p2160';
   export type ExportVisualProfile = 'text_v2' | 'caption_v3' | 'graphic_v1' | 'blend_v1' | 'mask_v1' | 'scene_v1';
   export type JobState = 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled';
 
@@ -25080,7 +25080,7 @@ export namespace OpencutRenderSubmitInput {
 /**
  * Raster execution size. Source remains byte-compatible with existing receipts.
  */
-  export type RasterResolution = 'source' | 'preview540';
+  export type RasterResolution = 'source' | 'preview540' | 'p720' | 'p1080' | 'p1440' | 'p2160';
 
   export interface FrameRenderInput {
   idempotency_key: string;
@@ -25553,7 +25553,7 @@ export namespace OpencutRenderSubmitOutput {
 /**
  * Raster execution size. Source remains byte-compatible with existing receipts.
  */
-  export type RasterResolution = 'source' | 'preview540';
+  export type RasterResolution = 'source' | 'preview540' | 'p720' | 'p1080' | 'p1440' | 'p2160';
   export type ExportVisualProfile = 'text_v2' | 'caption_v3' | 'graphic_v1' | 'blend_v1' | 'mask_v1' | 'scene_v1';
   export type JobState = 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled';
 
@@ -37962,7 +37962,7 @@ export namespace OpencutAnalysisSequenceTranscribeOutput {
 /**
  * Raster execution size. Source remains byte-compatible with existing receipts.
  */
-  export type RasterResolution = 'source' | 'preview540';
+  export type RasterResolution = 'source' | 'preview540' | 'p720' | 'p1080' | 'p1440' | 'p2160';
   export type ExportVisualProfile = 'text_v2' | 'caption_v3' | 'graphic_v1' | 'blend_v1' | 'mask_v1' | 'scene_v1';
   export type JobState = 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled';
 
@@ -46634,7 +46634,7 @@ export namespace OpencutAnalysisSpeakerTurnsOutput {
 /**
  * Raster execution size. Source remains byte-compatible with existing receipts.
  */
-  export type RasterResolution = 'source' | 'preview540';
+  export type RasterResolution = 'source' | 'preview540' | 'p720' | 'p1080' | 'p1440' | 'p2160';
   export type ExportVisualProfile = 'text_v2' | 'caption_v3' | 'graphic_v1' | 'blend_v1' | 'mask_v1' | 'scene_v1';
   export type JobState = 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled';
 
@@ -48156,7 +48156,7 @@ export namespace OpencutAnalysisTranscribeOutput {
 /**
  * Raster execution size. Source remains byte-compatible with existing receipts.
  */
-  export type RasterResolution = 'source' | 'preview540';
+  export type RasterResolution = 'source' | 'preview540' | 'p720' | 'p1080' | 'p1440' | 'p2160';
   export type ExportVisualProfile = 'text_v2' | 'caption_v3' | 'graphic_v1' | 'blend_v1' | 'mask_v1' | 'scene_v1';
   export type JobState = 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled';
 
@@ -49752,7 +49752,7 @@ export namespace OpencutAnalysisSilenceOutput {
 /**
  * Raster execution size. Source remains byte-compatible with existing receipts.
  */
-  export type RasterResolution = 'source' | 'preview540';
+  export type RasterResolution = 'source' | 'preview540' | 'p720' | 'p1080' | 'p1440' | 'p2160';
   export type ExportVisualProfile = 'text_v2' | 'caption_v3' | 'graphic_v1' | 'blend_v1' | 'mask_v1' | 'scene_v1';
   export type JobState = 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled';
 
@@ -51270,7 +51270,7 @@ export namespace OpencutAnalysisShotsOutput {
 /**
  * Raster execution size. Source remains byte-compatible with existing receipts.
  */
-  export type RasterResolution = 'source' | 'preview540';
+  export type RasterResolution = 'source' | 'preview540' | 'p720' | 'p1080' | 'p1440' | 'p2160';
   export type ExportVisualProfile = 'text_v2' | 'caption_v3' | 'graphic_v1' | 'blend_v1' | 'mask_v1' | 'scene_v1';
   export type JobState = 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled';
 
@@ -52788,7 +52788,7 @@ export namespace OpencutAnalysisWaveformOutput {
 /**
  * Raster execution size. Source remains byte-compatible with existing receipts.
  */
-  export type RasterResolution = 'source' | 'preview540';
+  export type RasterResolution = 'source' | 'preview540' | 'p720' | 'p1080' | 'p1440' | 'p2160';
   export type ExportVisualProfile = 'text_v2' | 'caption_v3' | 'graphic_v1' | 'blend_v1' | 'mask_v1' | 'scene_v1';
   export type JobState = 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled';
 
@@ -54302,7 +54302,7 @@ export namespace OpencutJobRequestCancelOutput {
 /**
  * Raster execution size. Source remains byte-compatible with existing receipts.
  */
-  export type RasterResolution = 'source' | 'preview540';
+  export type RasterResolution = 'source' | 'preview540' | 'p720' | 'p1080' | 'p1440' | 'p2160';
   export type ExportVisualProfile = 'text_v2' | 'caption_v3' | 'graphic_v1' | 'blend_v1' | 'mask_v1' | 'scene_v1';
   export type JobState = 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled';
 
@@ -59703,7 +59703,7 @@ export namespace OpencutVisualPreviewEditDraftFrameInput {
 /**
  * Raster execution size. Source remains byte-compatible with existing receipts.
  */
-  export type RasterResolution = 'source' | 'preview540';
+  export type RasterResolution = 'source' | 'preview540' | 'p720' | 'p1080' | 'p1440' | 'p2160';
   export type VisualEditDraftIntent =
   | {
       gesture: TransformGestureIntent;
@@ -61434,7 +61434,7 @@ export namespace OpencutRenderPreflightInput {
 /**
  * Raster execution size. Source remains byte-compatible with existing receipts.
  */
-  export type RasterResolution = 'source' | 'preview540';
+  export type RasterResolution = 'source' | 'preview540' | 'p720' | 'p1080' | 'p1440' | 'p2160';
 
   export interface RenderPreflightInput {
   options: ExportVideoOptions;
@@ -68110,7 +68110,7 @@ export namespace JobRenderVideoResult {
 /**
  * Raster execution size. Source remains byte-compatible with existing receipts.
  */
-  export type RasterResolution = 'source' | 'preview540';
+  export type RasterResolution = 'source' | 'preview540' | 'p720' | 'p1080' | 'p1440' | 'p2160';
   export type ExportVisualProfile = 'text_v2' | 'caption_v3' | 'graphic_v1' | 'blend_v1' | 'mask_v1' | 'scene_v1';
 
   export interface VideoExportResult {
@@ -68313,7 +68313,7 @@ export namespace JobRenderVideoRangeResult {
 /**
  * Raster execution size. Source remains byte-compatible with existing receipts.
  */
-  export type RasterResolution = 'source' | 'preview540';
+  export type RasterResolution = 'source' | 'preview540' | 'p720' | 'p1080' | 'p1440' | 'p2160';
   export type ExportVisualProfile = 'text_v2' | 'caption_v3' | 'graphic_v1' | 'blend_v1' | 'mask_v1' | 'scene_v1';
 
   export interface VideoRangeResult {

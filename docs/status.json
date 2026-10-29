@@ -4152,18 +4152,17 @@
       "delivery_ready": false
     },
     "current_working_candidate": {
-      "checkpoint": "/Users/vincent/Movies/OpenCut-native-rendering/4k/editor-head-integration/checkpoint.json",
-      "checkpoint_sha256": "87853a90c22c2383c26ed7f1dff26880b51439ace86de056f2e859da0f360db4",
-      "source_commit": "997ac6d5e3b17a64dcaebff0e14c5f178242c146",
-      "native_source_commit": "997ac6d5e3b17a64dcaebff0e14c5f178242c146",
+      "checkpoint": "/Users/vincent/Movies/OpenCut-native-rendering/4k/runtime-file-hash/checkpoint.json",
+      "checkpoint_sha256": "75322b84222478f3a7064a40f662ddf6acab29ab9ac7442c883d8a103b4b9430",
+      "source_commit": "c42f95f9902ef8516f98ca64a68bfd292a5aac54",
+      "host_sha256": "abb2c65e43f493efd23a21854eb048ba13a9723f8e75d941ab5aff5df1da7d4d",
+      "worker_sha256": "771cd78bc5f79ae698fcc1c4646966e633fbde661b1fc938de5755be9809c2be",
       "retained_web_source_commit": "989bf6637c1c08cffe664d25e3c44ed75476582a",
-      "host_sha256": "2d49649facd2e7f054fa5a58d9e22b2ea035c24ec999b4aa3e24dbe016010c71",
-      "worker_sha256": "88afb9b80c73c9e982726ab6247b7768b57ed6893f49d90c2be6badfe0e63694",
       "web_source_digest": "0e2988b86254411b991810d053a07bd8af7556e4785257e8a9511637db0b3bd7",
-      "rust_rebuilt": false,
+      "rust_rebuilt": true,
       "web_rebuilt": false,
-      "scope": "Same997Rust/989Web,7independentHTTPframes+7guards pass;4K94sflow126.398s passes original gates but non-realtime;small fullflow100.704s,6.182s startup fails5s;both2820frames/4512000deviceframes/seek/pause/resume. No package promotion. Export separate latest997checkpoint retained.",
-      "qualification": "small_startup_failed_realtime_and_old_stall_open",
+      "scope": "RuntimefileSHA2564focusedchecks+14architecture/boundaries pass,oneintegratedbuild/exactCLIcontracts pass. Actual6s4K export failed encoder2GiB RSS at172/180;no artifacts;remaining fidelity/source/UI notrun. No repeated export or budget increase.",
+      "qualification": "actual_4k_export_failed_encoder_rss",
       "delivery_ready": false
     },
     "previous_working_candidate": {
@@ -4246,6 +4245,21 @@
         "web_rebuilt": false,
         "scope": "GPU source texture residency and bounded completion waits.12native checks/14architecture pass;exactCLI contracts and Web producer retained.7independent preview probes exact;actual scene/draft/cancel/stop/ownership checks.Both94s editor flows2820frames/4512000deviceframes,seek/pause/resume;4K118.709s,small98.642s,complete prepare capture with0observedAPI/pageerrors;transport aborts retained.6soriginal4K53.697s,identicalMP4/currentPCMexact.No package promotion.",
         "qualification": "scoped_native_gpu_fidelity_and_original_editor_gates_passed_real_time_4k_open",
+        "delivery_ready": false
+      },
+      {
+        "checkpoint": "/Users/vincent/Movies/OpenCut-native-rendering/4k/editor-head-integration/checkpoint.json",
+        "checkpoint_sha256": "87853a90c22c2383c26ed7f1dff26880b51439ace86de056f2e859da0f360db4",
+        "source_commit": "997ac6d5e3b17a64dcaebff0e14c5f178242c146",
+        "native_source_commit": "997ac6d5e3b17a64dcaebff0e14c5f178242c146",
+        "retained_web_source_commit": "989bf6637c1c08cffe664d25e3c44ed75476582a",
+        "host_sha256": "2d49649facd2e7f054fa5a58d9e22b2ea035c24ec999b4aa3e24dbe016010c71",
+        "worker_sha256": "88afb9b80c73c9e982726ab6247b7768b57ed6893f49d90c2be6badfe0e63694",
+        "web_source_digest": "0e2988b86254411b991810d053a07bd8af7556e4785257e8a9511637db0b3bd7",
+        "rust_rebuilt": false,
+        "web_rebuilt": false,
+        "scope": "Same997Rust/989Web,7independentHTTPframes+7guards pass;4K94sflow126.398s passes original gates but non-realtime;small fullflow100.704s,6.182s startup fails5s;both2820frames/4512000deviceframes/seek/pause/resume. No package promotion. Export separate latest997checkpoint retained.",
+        "qualification": "small_startup_failed_realtime_and_old_stall_open",
         "delivery_ready": false
       }
     ],
@@ -4485,22 +4499,22 @@
       }
     },
     "current_runtime": {
-      "rust_source_commit": "997ac6d5e3b17a64dcaebff0e14c5f178242c146",
+      "rust_source_commit": "c42f95f9902ef8516f98ca64a68bfd292a5aac54",
       "binaries": {
         "opencut": {
-          "path": "/Users/vincent/Movies/OpenCut-native-rendering/candidates/2d49649facd2e7f054fa5a58d9e22b2ea035c24ec999b4aa3e24dbe016010c71/opencut",
-          "sha256": "2d49649facd2e7f054fa5a58d9e22b2ea035c24ec999b4aa3e24dbe016010c71"
+          "path": "/Users/vincent/Movies/OpenCut-native-rendering/candidates/abb2c65e43f493efd23a21854eb048ba13a9723f8e75d941ab5aff5df1da7d4d/opencut",
+          "sha256": "abb2c65e43f493efd23a21854eb048ba13a9723f8e75d941ab5aff5df1da7d4d"
         },
         "opencut-render-worker": {
-          "path": "/Users/vincent/Movies/OpenCut-native-rendering/candidates/88afb9b80c73c9e982726ab6247b7768b57ed6893f49d90c2be6badfe0e63694/opencut-render-worker",
-          "sha256": "88afb9b80c73c9e982726ab6247b7768b57ed6893f49d90c2be6badfe0e63694"
+          "path": "/Users/vincent/Movies/OpenCut-native-rendering/candidates/771cd78bc5f79ae698fcc1c4646966e633fbde661b1fc938de5755be9809c2be/opencut-render-worker",
+          "sha256": "771cd78bc5f79ae698fcc1c4646966e633fbde661b1fc938de5755be9809c2be"
         }
       },
       "web_source_commit": "989bf6637c1c08cffe664d25e3c44ed75476582a",
       "web_source_digest": "0e2988b86254411b991810d053a07bd8af7556e4785257e8a9511637db0b3bd7",
       "web_rebuilt": false,
       "delivery_ready": false,
-      "service_state_scope": "Last sealed editor-head-integration acceptance; owned service stopped. Component probe used only a temporary isolated helper HTTP server,now closed.",
+      "service_state_scope": "Latestc42CLI/worker build used only in failed export acceptance.No c42HTTP service started;prior owned service remains stopped.",
       "last_checkpoint_service_running": false
     },
     "editor_head_integration": {
@@ -4649,7 +4663,7 @@
       }
     },
     "runtime_file_hash": {
-      "state": "implemented_focused_tests_passed_integrated_build_pending",
+      "state": "built_contracts_passed_actual_export_failed_encoder_rss",
       "source_before_commit": "464e37ae",
       "evidence_root": "/Users/vincent/Movies/OpenCut-native-rendering/4k/preview-startup-causal",
       "diagnostic_runtime": {
@@ -4708,8 +4722,26 @@
       "dependency_boundary": "One manually reviewed directnative-services->existing ring edge;no new third-party package/domain/application edge;docs/architecture rationale and exit criterion.",
       "public_contract_changed": false,
       "web_changed": false,
-      "product_build": "pending",
-      "current_accepted_runtime_unchanged": true,
+      "product_build": {
+        "source_commit": "c42f95f9902ef8516f98ca64a68bfd292a5aac54",
+        "command": [
+          "cargo",
+          "build",
+          "--release",
+          "--locked",
+          "--offline",
+          "-p",
+          "opencut-cli",
+          "-p",
+          "opencut-render-worker",
+          "-j",
+          "2"
+        ],
+        "exit_code": 0,
+        "seconds": 451.6465099111665,
+        "web_rebuilt": false
+      },
+      "current_accepted_runtime_unchanged": false,
       "cleanup": {
         "owned_service_stopped": true,
         "owned_pids_remaining": [],
@@ -4728,6 +4760,114 @@
         "files": 43
       },
       "manual_acceptance": false,
+      "delivery_ready": false,
+      "source_commit": "c42f95f9902ef8516f98ca64a68bfd292a5aac54",
+      "actual_acceptance": {
+        "state": "built_contracts_passed_actual_export_failed_encoder_rss",
+        "source_commit": "c42f95f9902ef8516f98ca64a68bfd292a5aac54",
+        "runtime": {
+          "opencut": {
+            "path": "/Users/vincent/Movies/OpenCut-native-rendering/candidates/abb2c65e43f493efd23a21854eb048ba13a9723f8e75d941ab5aff5df1da7d4d/opencut",
+            "sha256": "abb2c65e43f493efd23a21854eb048ba13a9723f8e75d941ab5aff5df1da7d4d"
+          },
+          "opencut-render-worker": {
+            "path": "/Users/vincent/Movies/OpenCut-native-rendering/candidates/771cd78bc5f79ae698fcc1c4646966e633fbde661b1fc938de5755be9809c2be/opencut-render-worker",
+            "sha256": "771cd78bc5f79ae698fcc1c4646966e633fbde661b1fc938de5755be9809c2be"
+          }
+        },
+        "product_build_seconds": 451.6465099111665,
+        "contracts": "Same explicit CLI generated and canonical checks passed",
+        "job_id": "job_674ae721732f46c19bd465e737b6e332",
+        "private_failure": {
+          "code": "VIDEO_BUDGET_EXCEEDED",
+          "details": {},
+          "message": "Encoder RSS exceeded captured admission"
+        },
+        "public_failure": "VIDEO_BUDGET_EXCEEDED",
+        "progress": 0.9555555555555556,
+        "execution_seconds": 37.723468787036836,
+        "captured_encoder_rss_limit_bytes": 2147483648,
+        "observed_encoder_rss_peak_kib": 2080752,
+        "observed_native_worker_rss_peak_kib": 315616,
+        "rss_sampling_limit": "1s external samples lower-bound the peak;internal100mscheck exceeded2GiB between external samples. Do not claim2080752KiB itself exceeded2GiB.",
+        "prior_success_encoder_observed_rss_peak_kib": 2080844,
+        "causality": "Confirmed encoder memory admission failure. Existing success already near same2GiB cap;not established that SHA implementation caused RSS growth. No budget increase,no retry.",
+        "verification_gap": "Retained range-export helper catches failure and wrote passed=false but exited0. Batch marked that subprocess passed and stopped at next fidelity precondition;both initial reports retained. Future helper must propagate terminal failure.",
+        "remaining_scopes_not_run": [
+          "independent completed export pixels/PCM",
+          "authored alpha source",
+          "current-producer source jobs/7HTTPpixels/7guards",
+          "4K andsmall UI"
+        ],
+        "new_hypothesis_only": "Opaque yuv420p export discards alpha;packing RGB24 before FFmpeg could reduce raw frame/packet buffering. Compare exact encoding and RSS externally before any product edit. Source proxies remain RGBA.",
+        "cleanup": {
+          "snapshots": {
+            "native-4k-media-acceptance": {
+              "revision": "rev_6529d28c682afd7010dc7f4a916863cf20f1ffd7c31d4be22c7eabd4d1b02378",
+              "document_sha256": "1e16be88f86a91a853045f14fa4c93eefc9527e921ae6b0c5828224affa7e54b"
+            },
+            "native-long-media-acceptance": {
+              "revision": "rev_6f73274b38fc46253eb9a1fd77196556f1a2079b9682107cd681f1fe2120ad66",
+              "document_sha256": "e6efd0a3c714b40ba78ae41aac37808270851cee1bb47cd7841bdc7e8f85a5bb"
+            },
+            "native-source-proxy-diagnostic": {
+              "revision": "rev_9d1bbba383419af35fe9cf3cec71da28a48729e331f6fdd2e1fabbb5889eb478",
+              "document_sha256": "372e3a35a214ddd8655c4706d16034241ae0f598c56eff69f1099af6f6cda6f2"
+            },
+            "native-source-alpha-acceptance": {
+              "revision": "rev_f74f370bf1ff6b3806870dbdba5ca5295d6e2309d8e4053cfa9e7af5a8d8b236",
+              "document_sha256": "64cf1becae393f27e74069a51c206c1388fc52590f6ddec44b30210f592e2f5c"
+            }
+          },
+          "projects_unchanged": 4,
+          "prior_job_results_unchanged": 85,
+          "new_terminal_jobs": {
+            "job_674ae721732f46c19bd465e737b6e332": {
+              "state": "failed",
+              "attempt": 1,
+              "result_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+          },
+          "active_jobs": 0,
+          "owned_service_stopped": true,
+          "owned_pids_checked": [],
+          "owned_pids_remaining": [],
+          "web_sources_verified": 715,
+          "web_assets_verified": 284,
+          "web_rebuilt": false,
+          "user_services_and_packages_untouched": true,
+          "manual_acceptance": false,
+          "delivery_ready": false,
+          "failed_export_owned_pids_checked": [
+            94725,
+            94736,
+            94772,
+            94773
+          ],
+          "failed_export_owned_pids_remaining": []
+        },
+        "delivery_ready": false,
+        "manual_acceptance": false
+      },
+      "integrated_checkpoint": {
+        "path": "/Users/vincent/Movies/OpenCut-native-rendering/4k/runtime-file-hash/checkpoint.json",
+        "sha256": "75322b84222478f3a7064a40f662ddf6acab29ab9ac7442c883d8a103b4b9430",
+        "files": 42
+      }
+    },
+    "last_scoped_editor_candidate": {
+      "checkpoint": "/Users/vincent/Movies/OpenCut-native-rendering/4k/editor-head-integration/checkpoint.json",
+      "checkpoint_sha256": "87853a90c22c2383c26ed7f1dff26880b51439ace86de056f2e859da0f360db4",
+      "source_commit": "997ac6d5e3b17a64dcaebff0e14c5f178242c146",
+      "native_source_commit": "997ac6d5e3b17a64dcaebff0e14c5f178242c146",
+      "retained_web_source_commit": "989bf6637c1c08cffe664d25e3c44ed75476582a",
+      "host_sha256": "2d49649facd2e7f054fa5a58d9e22b2ea035c24ec999b4aa3e24dbe016010c71",
+      "worker_sha256": "88afb9b80c73c9e982726ab6247b7768b57ed6893f49d90c2be6badfe0e63694",
+      "web_source_digest": "0e2988b86254411b991810d053a07bd8af7556e4785257e8a9511637db0b3bd7",
+      "rust_rebuilt": false,
+      "web_rebuilt": false,
+      "scope": "Same997Rust/989Web,7independentHTTPframes+7guards pass;4K94sflow126.398s passes original gates but non-realtime;small fullflow100.704s,6.182s startup fails5s;both2820frames/4512000deviceframes/seek/pause/resume. No package promotion. Export separate latest997checkpoint retained.",
+      "qualification": "small_startup_failed_realtime_and_old_stall_open",
       "delivery_ready": false
     }
   }

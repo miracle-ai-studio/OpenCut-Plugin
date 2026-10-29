@@ -3,6 +3,7 @@ import {SurfaceWorkerHost,SurfaceWorkerRun} from './surface-worker-host';
 import type {AudioPreviewSession} from './types';
 import type {CachedPicture} from './picture-cache';
 import type {SurfaceCommand,SurfaceEvent} from './surface-worker-protocol';
+import type {SurfacePictureSource} from './surface-player';
 const flush=async()=>{for(let i=0;i<80;i++)await Promise.resolve();};
 const deferred=()=>{let resolve!:()=>void;const promise=new Promise<void>(yes=>{resolve=yes;});return {promise,resolve};};
 afterEach(()=>vi.unstubAllGlobals());
@@ -17,13 +18,13 @@ function fixture(){
   const pixels={width:2,height:2,close:vi.fn()};raw.push(pixels);
   return {frame:{prepare_ahead:true,next_time:{ticks:String(Number(time.ticks)+1),timebase:25},plan:{identity:{time}},time_seconds:Number(time.ticks)/25},pixels,runtime:{}};
  });
- const source={descriptor:()=>plan,preparationFrames:24,hasFrame:()=>true,frame};
+ const source:SurfacePictureSource={descriptor:()=>plan,preparationFrames:24,hasFrame:()=>true,frame};
  const exporter=vi.fn(async(_picture:CachedPicture)=>{const pixels={width:2,height:2,close:vi.fn()};bitmaps.push(pixels);return pixels;});
  const failed=vi.fn(),run=new SurfaceWorkerRun(host,source,{} as OffscreenCanvas,session,{token:'device',sampleRate:48000,graphLatencySeconds:0},{} as MessagePort,exporter,vi.fn(),failed);
  const event=(data:SurfaceEvent extends infer E?E extends {token:string}?Omit<E,'token'>:never:never)=>worker.onmessage?.({data:{...data,token:run.token} as SurfaceEvent});
  const report=run.snapshot();
  const finish=async()=>{const stopping=run.stop(true);event({kind:'stopped',report});await stopping;host.close();};
- return {host,worker,run,frame,exporter,raw,bitmaps,failed,event,report,finish};
+ return {host,worker,run,source,frame,exporter,raw,bitmaps,failed,event,report,finish};
 }
 it('stages six native frames, reserves both copies, and sends only fully validated transferable pixels',async()=>{
  const f=fixture(),gpu=deferred(),transfer=deferred();
@@ -56,4 +57,42 @@ it('never allocates beyond resident credit and never retries an authority denial
  f.frame.mockRejectedValue(Object.assign(Error('Revoked'),{code:'NOT_AUTHORIZED'}));f.event({kind:'frame',id:2,time:{ticks:'0',timebase:25},retainedBytes:16} as never);
  await expect(starting).rejects.toMatchObject({code:'NOT_AUTHORIZED'});expect(f.frame).toHaveBeenCalledTimes(1);expect(f.failed).toHaveBeenCalledTimes(1);
  f.event({kind:'stopped',report:f.report});await f.finish();
+});
+it('waits for each host claim, overlaps at most two incomplete reads, and retires late pixels',async()=>{
+ const f=fixture(),stages:{claim:ReturnType<typeof deferred>;pixels:ReturnType<typeof deferred>}[]=[];
+ const prepare=vi.fn(async(time:Parameters<SurfacePictureSource['frame']>[0],signal:AbortSignal,retained:number)=>{
+  const picture=await f.frame(time,signal,retained),claim=deferred(),pixels=deferred();stages.push({claim,pixels});
+  return {frame:picture.frame,claimed:claim.promise,complete:pixels.promise.then(()=>picture)};
+ });
+ f.source.prepareFrame=prepare;
+ const abort=new AbortController(),starting=f.run.start(abort.signal);
+ f.event({kind:'frame',id:1,time:{ticks:'0',timebase:25},retainedBytes:16} as never);await flush();
+ expect(prepare).toHaveBeenCalledTimes(1);expect(f.worker.messages.some(m=>m.kind==='picture')).toBe(false);
+ stages[0].claim.resolve();await flush();expect(prepare).toHaveBeenCalledTimes(2);
+ stages[1].claim.resolve();await flush();expect(prepare).toHaveBeenCalledTimes(2);
+ stages[0].pixels.resolve();await flush();expect(prepare).toHaveBeenCalledTimes(3);
+ stages[2].claim.resolve();await flush();expect(prepare).toHaveBeenCalledTimes(3);
+ expect(prepare.mock.calls.map(c=>c[2])).toEqual([16,48,80]);
+ expect(f.worker.messages.some(m=>m.kind==='picture')).toBe(false);
+ // Stop must finish even when two body reads never finish; late completions
+ // must release their bitmaps without reaching the presentation worker.
+ abort.abort();await expect(starting).rejects.toMatchObject({name:'AbortError'});f.event({kind:'stopped',report:f.report});
+ await f.finish();stages[1].pixels.resolve();stages[2].pixels.resolve();await flush();
+ expect(prepare).toHaveBeenCalledTimes(3);expect(f.raw.every(p=>p.close.mock.calls.length===1)).toBe(true);
+ expect(f.bitmaps.every(p=>p.close.mock.calls.length===1)).toBe(true);
+ expect(f.worker.messages.some(m=>m.kind==='picture')).toBe(false);expect(f.failed).not.toHaveBeenCalled();
+});
+it('stops the native intent stream when its reader claim is denied',async()=>{
+ const f=fixture();let deny!:(error:Error)=>void;const claim=new Promise<void>((_yes,no)=>{deny=no;});
+ let finishPixels!:()=>void;
+ const pixels=new Promise<void>(yes=>{finishPixels=yes;});
+ const prepare=vi.fn(async(time:Parameters<SurfacePictureSource['frame']>[0],signal:AbortSignal,retained:number)=>{
+  const picture=await f.frame(time,signal,retained);return {frame:picture.frame,claimed:claim,complete:pixels.then(()=>picture)};
+ });
+ f.source.prepareFrame=prepare;const starting=f.run.start(new AbortController().signal);
+ f.event({kind:'frame',id:1,time:{ticks:'0',timebase:25},retainedBytes:16} as never);await flush();
+ deny(Object.assign(Error('Revoked claim'),{code:'NOT_AUTHORIZED'}));
+ await expect(starting).rejects.toMatchObject({code:'NOT_AUTHORIZED'});
+ f.event({kind:'stopped',report:f.report});await f.finish();finishPixels();await flush();
+ expect(prepare).toHaveBeenCalledOnce();expect(f.failed).toHaveBeenCalledOnce();expect(f.raw[0].close).toHaveBeenCalledOnce();
 });

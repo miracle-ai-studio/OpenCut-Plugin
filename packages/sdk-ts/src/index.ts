@@ -260,7 +260,11 @@ export class OpenCutClient {
       JSON.stringify({ session_id, generation, overlay_epoch, owner_id, lease_id }));
   }
   /** Read and verify the one native picture described by the frame result. */
-  async readVisualPreviewPicture(session: ToolInput<"opencut_visual_preview_frame">["session"], picture: ToolOutput<"opencut_visual_preview_frame">["picture"], options: CallOptions = {}): Promise<Uint8ClampedArray<ArrayBuffer>> {
+  async readVisualPreviewPicture(session: ToolInput<"opencut_visual_preview_frame">["session"], picture: ToolOutput<"opencut_visual_preview_frame">["picture"], options: CallOptions & {
+    /** Valid scoped response headers establish the host's single-use claim.
+     * This permits the next native intent, not presentation of unverified bytes. */
+    onClaimed?: () => void;
+  } = {}): Promise<Uint8ClampedArray<ArrayBuffer>> {
     const length = picture.byte_length;
     if (!Number.isInteger(length) || length < 4 || length > 64 * 1024 * 1024 ||
         !Number.isInteger(picture.width) || picture.width < 1 || picture.width > 16384 ||
@@ -276,6 +280,8 @@ export class OpenCutClient {
     if (!reader) throw new TypeError("Native picture bytes unavailable");
     const bytes = new Uint8ClampedArray(length); let offset = 0;
     try {
+      options.signal?.throwIfAborted();
+      options.onClaimed?.();
       for (;;) {
         options.signal?.throwIfAborted();
         const chunk = await reader.read();

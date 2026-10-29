@@ -37,7 +37,7 @@ it("submits one native intent per frame and presents verified RGBA without sourc
   expect(f.call.mock.calls[0].slice(0, 2)).toEqual(["opencut_visual_preview_frame", {
     session, resolution: "source", time: null, prepare_ahead: false, retained_picture_bytes: 0, hit_query: null,
   }]);
-  expect(f.read).toHaveBeenCalledWith(session, f.frame.picture, { signal: expect.any(AbortSignal) });
+  expect(f.read).toHaveBeenCalledWith(session, f.frame.picture, { signal: expect.any(AbortSignal), onClaimed: expect.any(Function) });
   expect(create).toHaveBeenCalledWith(expect.objectContaining({ data: new Uint8ClampedArray(16), width: 2, height: 2 }), { colorSpaceConversion: "none", premultiplyAlpha: "none" });
   expect(result.pixels).toBe(bitmap);
   expect(result.runtime).toMatchObject({ renderer: "native", gpuBackend: "metal", rendererSha256: "b".repeat(64) });
@@ -115,4 +115,22 @@ it("uses only a display context for presentation", () => {
   painter.draw(bitmap as unknown as ImageBitmap); painter.clear();
   expect(getContext).toHaveBeenCalledExactlyOnceWith("2d", { desynchronized: true });
   expect(drawImage).toHaveBeenCalledWith(bitmap, 0, 0); expect(clearRect).toHaveBeenCalledWith(0, 0, 2, 2);
+});
+it("exposes only prepared facts after a native claim and completes pixels after validation", async () => {
+  const f = fixture(); let claim!: () => void, bytes!: (value: Uint8ClampedArray) => void;
+  f.read.mockImplementationOnce((_session, _picture, options) => { claim = options.onClaimed; return new Promise(resolve => { bytes = resolve; }); });
+  const pending = await f.renderer.prepare(f.api, session, new AbortController().signal);
+  let claimed = false, completed = false;
+  void pending.claimed.then(() => { claimed = true; });
+  void pending.complete.then(() => { completed = true; });
+  expect(pending.frame).toBe(f.frame); expect(claimed).toBe(false); expect(create).not.toHaveBeenCalled();
+  claim(); await Promise.resolve(); expect(claimed).toBe(true); expect(completed).toBe(false);
+  bytes(new Uint8ClampedArray(16)); expect((await pending.complete).pixels).toBe(bitmap);
+});
+it("rejects both preparation stages when a scoped read fails before its claim", async () => {
+  const f = fixture(); f.read.mockRejectedValueOnce(Error("Revoked reader"));
+  const pending = await f.renderer.prepare(f.api, session, new AbortController().signal);
+  await expect(pending.claimed).rejects.toThrow("Revoked reader");
+  await expect(pending.complete).rejects.toThrow("Revoked reader");
+  expect(create).not.toHaveBeenCalled();
 });

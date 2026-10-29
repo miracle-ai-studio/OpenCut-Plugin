@@ -57,3 +57,34 @@ test("abort retires an active picture reader and never retries its single-use ti
   await assert.rejects(f.client.readVisualPreviewPicture(session, picture, { signal: abort.signal }), /Retired owner/);
   assert.equal(f.calls.length, 1);
 });
+test("a valid scoped response releases the next intent before pixels are complete", async () => {
+  let controller, claimed;
+  const claim = new Promise(resolve => { claimed = resolve; });
+  const f = fixture(() => new Response(new ReadableStream({ start(c) { controller = c; } }), { headers }));
+  let completed = false;
+  const pending = f.client.readVisualPreviewPicture(session, picture, { onClaimed: claimed }).then(value => { completed = true; return value; });
+  await claim;
+  assert.equal(completed, false);
+  controller.enqueue(bytes); controller.close();
+  assert.deepEqual([...(await pending)], [...bytes]);
+  assert.equal(f.calls.length, 1);
+  assert.deepEqual(JSON.parse(f.calls[0].init.body), { session, picture_id: picture.picture_id });
+});
+test("invalid or aborted response never releases an unclaimed intent", async () => {
+  let claims = 0;
+  for (const changed of [{ ...headers, "content-length": "9" }, headers]) {
+    const abort = new AbortController();
+    const f = fixture(() => {
+      if (changed === headers) abort.abort(Error("Retired response"));
+      return new Response(bytes, { headers: changed });
+    });
+    await assert.rejects(f.client.readVisualPreviewPicture(session, picture, { signal: abort.signal, onClaimed: () => { claims++; } }));
+  }
+  assert.equal(claims, 0);
+});
+test("a failing claim observer closes its reader without retrying the ticket", async () => {
+  let cancelled = false;
+  const f = fixture(() => new Response(new ReadableStream({ cancel() { cancelled = true; } }), { headers }));
+  await assert.rejects(f.client.readVisualPreviewPicture(session, picture, { onClaimed: () => { throw Error("Retired pipeline"); } }), /Retired pipeline/);
+  assert.equal(cancelled, true); assert.equal(f.calls.length, 1);
+});

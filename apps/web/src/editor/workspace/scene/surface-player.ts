@@ -13,12 +13,18 @@ async function waitPicture(picture:CachedPicture,signal:AbortSignal){
   finally {signal.removeEventListener("abort",abort);}
 }
 export type SurfacePainter={draw(bitmap:ImageBitmap):void;clear():void};
+export type PreparedSurfacePicture={
+  frame:CachedPicture["frame"];
+  claimed:Promise<void>;
+  complete:Promise<CachedPicture>;
+};
 export interface SurfacePictureSource {
   readonly preparationFrames?:number;
   createPainter?(canvas:OffscreenCanvas):SurfacePainter|undefined;
   descriptor():Pick<PictureCachePlan,"project_id"|"revision"|"sequence_id"|"width"|"height"|"duration"|"frame_step_seconds">;
   hasFrame(time:AudioPreviewSession["presentation_time"]):boolean;
   frame(time:AudioPreviewSession["presentation_time"],signal:AbortSignal,retainedBytes?:number):Promise<CachedPicture>;
+  prepareFrame?(time:AudioPreviewSession["presentation_time"],signal:AbortSignal,retainedBytes:number):Promise<PreparedSurfacePicture>;
 }
 export type SurfaceReport={time:number;frameTime:Time;readyThrough:Time;generation:string;runtime:string;presentedFrames:number;discardedFrames:number;statistics:string};
 export type SurfaceScheduler={request(callback:FrameRequestCallback):number;cancel(id:number):void;now():number;timeOrigin:number};

@@ -1,4 +1,4 @@
-import type {SurfacePictureSource,SurfaceReport} from './surface-player';
+import type {PreparedSurfacePicture,SurfacePictureSource,SurfaceReport} from './surface-player';
 import type {CachedPicture} from './picture-cache';
 import type {AudioPreviewSession} from './types';
 import type {DeviceTimestamp,PresentationClockBinding} from './audio-preview/presentation-clock';
@@ -6,6 +6,12 @@ import {surfaceError,PRODUCER_AHEAD} from './surface-worker-protocol';
 import type {SurfaceCommand,SurfaceEvent} from './surface-worker-protocol';
 const isPressure=(error:unknown)=>error instanceof Error&&'code' in error&&['VISUAL_BUDGET_EXCEEDED','PREVIEW_FRAME_STALE'].includes(String(error.code));
 const compare=(a:{ticks:string;timebase:number},b:{ticks:string;timebase:number})=>BigInt(a.ticks)*BigInt(b.timebase)-BigInt(b.ticks)*BigInt(a.timebase);
+type StagedPicture={frame:CachedPicture['frame'];picture?:CachedPicture;ready:Promise<void>;released:boolean};
+async function waitFor<T>(pending:Promise<T>,signal:AbortSignal):Promise<T>{
+ signal.throwIfAborted();let abort!:()=>void;
+ try{return await Promise.race([pending,new Promise<never>((_yes,no)=>{abort=()=>no(signal.reason);signal.addEventListener('abort',abort,{once:true});if(signal.aborted)abort();})]);}
+ finally{signal.removeEventListener('abort',abort);}
+}
 /** One execution-only display worker, retained with its transferred canvas. */
 export class SurfaceWorkerHost {
  readonly worker=new Worker(new URL('./surface-worker.ts',import.meta.url),{type:'module',name:'opencut-device-surface'});
@@ -25,8 +31,8 @@ export class SurfaceWorkerHost {
 export class SurfaceWorkerRun {
  readonly token=crypto.randomUUID();
  private abort=new AbortController();
- private queue:CachedPicture[]=[];
- private exporting=new WeakSet<CachedPicture>();
+ private queue:StagedPicture[]=[];
+ private reading=new Set<Promise<void>>();
  private next:AudioPreviewSession['presentation_time'];
  private filling:Promise<void>|null=null;
  private retained=0;
@@ -54,7 +60,7 @@ export class SurfaceWorkerRun {
  timestamp(timestamp:DeviceTimestamp){if(!this.closed)this.host.post({token:this.token,kind:'timestamp',timestamp});}
  snapshot(){return this.report;}
  private decorate(report:SurfaceReport){return {...report,statistics:JSON.stringify({...JSON.parse(report.statistics),presentationThread:'dedicated-worker',producerPreparedFrames:this.queue.length,
-  producerNext:this.next,producerFilling:!!this.filling,producerServing:this.serving,producerRetainedBytes:this.retained})};}
+  producerNext:this.next,producerFilling:!!this.filling,producerServing:this.serving,producerReadingFrames:this.reading.size,producerRetainedBytes:this.retained})};}
  event(data:SurfaceEvent){
   if(data.kind==='stopped'){this.report=this.decorate(data.report);this.stopResolve?.(this.report);if(this.host.current===this)this.host.current=null;return;}
   if(this.closed)return;
@@ -65,6 +71,20 @@ export class SurfaceWorkerRun {
   }
   if(data.kind==='frame')void this.serve(data).catch(error=>this.fail(error instanceof Error?error:Error(String(error))));
  }
+ private release(stage:StagedPicture){if(stage.picture&&!stage.released){stage.released=true;stage.picture.pixels.close();}}
+ private stage(pending:PreparedSurfacePicture):StagedPicture{
+  const stage:StagedPicture={frame:pending.frame,ready:Promise.resolve(),released:false};
+  stage.ready=(async()=>{
+   const picture=await pending.complete;stage.picture=picture;
+   if(this.closed){this.release(stage);return;}
+   await picture.ready;if(this.closed)return;
+   const original=picture.pixels,bitmap=await this.exportBitmap(picture);
+   if(this.closed){if(bitmap!==original)bitmap.close();return;}
+   if(bitmap!==original)original.close();picture.pixels=bitmap;
+  })();
+  void stage.ready.catch(error=>this.fail(error instanceof Error?error:Error(String(error))));
+  return stage;
+ }
  private fill(){
   if(this.filling)return this.filling;
   const task=(async()=>{
@@ -73,22 +93,20 @@ export class SurfaceWorkerRun {
    // either asynchronous export or another native frame can allocate.
    const retained=()=>this.retained+this.queue.length*bytes*2;
    while(!this.closed&&this.queue.length<PRODUCER_AHEAD&&compare(this.next,plan.duration)<0n&&retained()+bytes*2<=64*1024*1024){
-    let picture:CachedPicture;
-    try{picture=await this.source.frame(this.next,this.abort.signal,retained());}
+    if(this.source.prepareFrame&&this.reading.size>=2){await waitFor(Promise.race(this.reading),this.abort.signal);continue;}
+    let pending:PreparedSurfacePicture;
+    try{
+     if(this.source.prepareFrame)pending=await this.source.prepareFrame(this.next,this.abort.signal,retained());
+     else{const picture=await this.source.frame(this.next,this.abort.signal,retained());pending={frame:picture.frame,claimed:Promise.resolve(),complete:Promise.resolve(picture)};}
+    }
     catch(error){if(isPressure(error)&&this.queue.length)return;throw error;}
-    if(this.closed){picture.pixels.close();return;}
-    this.next=picture.frame.next_time;this.queue.push(picture);
-    const gpuReady=picture.ready,original=picture.pixels;
-    picture.ready=(async()=>{
-      await gpuReady;if(this.closed)return;
-      this.exporting.add(picture);
-      try {
-        const bitmap=await this.exportBitmap(picture);
-        if(this.closed){bitmap.close();return;}
-        if(bitmap!==original)original.close();picture.pixels=bitmap;
-      }finally{this.exporting.delete(picture);}
-    })();
-    void picture.ready.catch(error=>this.fail(error instanceof Error?error:Error(String(error))));
+    void pending.claimed.catch(()=>{});
+    if(this.closed){void pending.complete.then(p=>p.pixels.close(),()=>{});return;}
+    const stage=this.stage(pending);this.next=stage.frame.next_time;this.queue.push(stage);
+    if(this.source.prepareFrame){this.reading.add(stage.ready);void stage.ready.finally(()=>this.reading.delete(stage.ready)).catch(()=>{});}
+    // A new native intent retires an unclaimed ticket. Response headers prove
+    // the host already owns this reader; byte/hash/bitmap work may continue.
+    await waitFor(pending.claimed,this.abort.signal);
    }
   })();this.filling=task;void task.finally(()=>{if(this.filling===task)this.filling=null;}).catch(()=>{});return task;
  }
@@ -98,14 +116,15 @@ export class SurfaceWorkerRun {
   this.serving=true;this.retained=request.retainedBytes;let exported:ImageBitmap|undefined;
   try{
    if(!this.queue.length)await this.fill();else this.refill();
-   const picture=this.queue[0];if(!picture)throw Object.assign(Error('Presentation has no admitted next frame'),{code:'VISUAL_BUDGET_EXCEEDED'});
-   const at=picture.frame.plan.identity.time;
-   if(compare(request.time,at)<0n||compare(request.time,picture.frame.next_time)>=0n)throw Error('Presentation requested a discontinuous frame');
-   await picture.ready;this.abort.signal.throwIfAborted();
+   const stage=this.queue[0];if(!stage)throw Object.assign(Error('Presentation has no admitted next frame'),{code:'VISUAL_BUDGET_EXCEEDED'});
+   const at=stage.frame.plan.identity.time;
+   if(compare(request.time,at)<0n||compare(request.time,stage.frame.next_time)>=0n)throw Error('Presentation requested a discontinuous frame');
+   await stage.ready;this.abort.signal.throwIfAborted();
+   const picture=stage.picture;if(!picture)throw Error('Presentation pixels did not complete');
    exported=picture.pixels;this.abort.signal.throwIfAborted();
    const result:CachedPicture={pixels:exported,frame:{prepare_ahead:true,next_time:picture.frame.next_time,plan:{identity:{time:at}},time_seconds:picture.frame.time_seconds},runtime:picture.runtime};
    this.host.post({token:this.token,kind:'picture',id:request.id,picture:result},[exported]);exported=undefined;
-   this.queue.shift();picture.pixels.close();this.refill();
+   this.queue.shift();this.release(stage);this.refill();
   }catch(error){
    exported?.close();
    if(!this.closed)this.host.post({token:this.token,kind:'pictureError',id:request.id,error:surfaceError(error)});
@@ -115,7 +134,7 @@ export class SurfaceWorkerRun {
  fail(error:Error){if(this.closed)return;this.startReject?.(error);this.failed(error);void this.stop(true).catch(()=>{});}
  stop(clear=false):Promise<SurfaceReport>{
   if(this.stopping)return this.stopping;
-  this.closed=true;this.abort.abort();for(const picture of this.queue)picture.pixels.close();this.queue=[];
+  this.closed=true;this.abort.abort();for(const stage of this.queue)this.release(stage);this.queue=[];
   this.stopping=new Promise<SurfaceReport>((resolve,reject)=>{
    const timer=setTimeout(()=>{this.host.retire();reject(Error('Device presentation did not retire'));},3000);
    this.stopResolve=report=>{clearTimeout(timer);resolve(report);};

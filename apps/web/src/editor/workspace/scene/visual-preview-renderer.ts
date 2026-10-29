@@ -16,12 +16,20 @@ export type NativePictureResult = {
   hitTest?: NonNullable<Frame["hit_test"]>;
   runtime: Record<string, string>;
 };
+export type NativePicturePreparation = {
+  frame: Frame;
+  claimed: Promise<void>;
+  complete: Promise<NativePictureResult>;
+};
 
 /** Present completed native frames. All source decoding, shaping, effects,
  * masks, layer alpha and binding observations are owned by Rust. */
 export class VisualPreviewRenderer {
   private abort = new AbortController();
-  async render(
+  async render(...args: Parameters<VisualPreviewRenderer["prepare"]>): Promise<NativePictureResult> {
+    return (await this.prepare(...args)).complete;
+  }
+  async prepare(
     api: VisualPreviewExecutionApi,
     session: Input["session"],
     signal: AbortSignal,
@@ -34,7 +42,7 @@ export class VisualPreviewRenderer {
       intentSignal?: AbortSignal;
     },
     preparation?: { time: Input["time"]; reservedBytes: number; end?: NonNullable<Input["time"]>; captureSurface?: boolean },
-  ): Promise<NativePictureResult> {
+  ): Promise<NativePicturePreparation> {
     const intent = AbortSignal.any([signal, this.abort.signal, ...(transformDraft?.intentSignal ? [transformDraft.intentSignal] : [])]);
     intent.throwIfAborted();
     const began = performance.now();
@@ -79,25 +87,34 @@ export class VisualPreviewRenderer {
           JSON.stringify(frame.hit_test.identity) !== JSON.stringify(identity))))
       throw Error("Native picture changed its prepared identity");
     const preparedAt = performance.now();
-    const bytes = await api.sdk.readVisualPreviewPicture(session, picture, { signal: intent });
-    intent.throwIfAborted();
-    const pixels = await createImageBitmap(new ImageData(bytes, picture.width, picture.height), { colorSpaceConversion: "none", premultiplyAlpha: "none" });
-    try {
+    let claim!: () => void, claimFailed!: (error: unknown) => void;
+    const claimed = new Promise<void>((yes, no) => { claim = yes; claimFailed = no; });
+    const completedFrame = frame;
+    const complete = (async (): Promise<NativePictureResult> => {
+      const bytes = await api.sdk.readVisualPreviewPicture(session, picture, { signal: intent, onClaimed: claim });
       intent.throwIfAborted();
-      if (pixels.width !== picture.width || pixels.height !== picture.height) throw Error("Native picture changed raster dimensions");
-      return {
-        frame, pixels,
-        ...(frame.hit_test ? { hitTest: frame.hit_test } : {}),
-        runtime: {
-          renderer: "native", rendererSha256: picture.renderer.renderer_sha256,
-          gpuBackend: picture.renderer.gpu_backend, gpuDevice: picture.renderer.gpu_device,
-          peakWorkerRssBytes: picture.peak_worker_rss_bytes,
-          maxRetainedBytes: String(picture.max_retained_bytes),
-          nativeFrameMs: String(preparedAt - began), pictureReadMs: String(performance.now() - preparedAt),
-          totalMs: String(performance.now() - began),
-        } as Record<string, string>,
-      };
-    } catch (error) { pixels.close(); throw error; }
+      const pixels = await createImageBitmap(new ImageData(bytes, picture.width, picture.height), { colorSpaceConversion: "none", premultiplyAlpha: "none" });
+      try {
+        intent.throwIfAborted();
+        if (pixels.width !== picture.width || pixels.height !== picture.height) throw Error("Native picture changed raster dimensions");
+        return {
+          frame: completedFrame, pixels,
+          ...(completedFrame.hit_test ? { hitTest: completedFrame.hit_test } : {}),
+          runtime: {
+            renderer: "native", rendererSha256: picture.renderer.renderer_sha256,
+            gpuBackend: picture.renderer.gpu_backend, gpuDevice: picture.renderer.gpu_device,
+            peakWorkerRssBytes: picture.peak_worker_rss_bytes,
+            maxRetainedBytes: String(picture.max_retained_bytes),
+            nativeFrameMs: String(preparedAt - began), pictureReadMs: String(performance.now() - preparedAt),
+            totalMs: String(performance.now() - began),
+          } as Record<string, string>,
+        };
+      } catch (error) { pixels.close(); throw error; }
+    })();
+    // Completion also proves the claim; early failures settle both stages.
+    void complete.then(claim, claimFailed);
+    void claimed.catch(() => {});
+    return { frame: completedFrame, claimed, complete };
   }
   surfacePresenter(canvas: OffscreenCanvas) {
     const context = canvas.getContext("2d", { desynchronized: true });

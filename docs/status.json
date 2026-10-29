@@ -110,12 +110,26 @@
       ]
     },
     "picture_preparation_transport": {
-      "state": "implementation_pending_integrated_build_and_acceptance",
+      "state": "integrated_rust_contract_and_client_checks_passed_web_media_pending",
       "base_commit": "998ce746",
       "scope": "One typed prepare/claim stream over existing scene/draft usecases;Web hard switch;64KiB authority fences,2-slot queue,1s backpressure and full length/hash verification retained.",
       "evidence_root": "/Users/vincent/Movies/OpenCut-native-rendering/4k/picture-preparation",
-      "builds_this_candidate": 0,
-      "qualification": "Previous accepted results below retain their original producers;no current transport acceptance claim."
+      "builds_this_candidate": 1,
+      "qualification": "One integrated Rust build;exact-CLI generation/canonical contract pass;Web build and actual combined transport/editor/media remain pending.Original SDK build failure preserved;validated field repair needs no Rust rebuild.",
+      "source_commit": "116bca80cc0926e0a959042189c9eddc3d1e715d",
+      "runtime": {
+        "opencut": {
+          "path": "/Users/vincent/Movies/OpenCut-native-rendering/candidates/82a597f91dccd97027ed1a0fab4b76e465fa8d3446cb041b04eeb33d56f53e82/opencut",
+          "sha256": "82a597f91dccd97027ed1a0fab4b76e465fa8d3446cb041b04eeb33d56f53e82"
+        },
+        "opencut-render-worker": {
+          "path": "/Users/vincent/Movies/OpenCut-native-rendering/candidates/0ba1ff0a566accb0a5d277b40d1b139bbeacbdf53aecbe77d323700715b44f51/opencut-render-worker",
+          "sha256": "0ba1ff0a566accb0a5d277b40d1b139bbeacbdf53aecbe77d323700715b44f51"
+        }
+      },
+      "http_checks": 6,
+      "sdk_checks": 60,
+      "web_client_checks": 95
     }
   },
   "scope": "Local CLI/HTTP/MCP/SDK service and Web editor; GPUI shell is not an integrated editor.",

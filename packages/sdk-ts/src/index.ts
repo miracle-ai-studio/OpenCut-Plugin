@@ -72,14 +72,15 @@ function object(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-function validateNativePicture(picture: ToolOutput<"opencut_visual_preview_frame">["picture"]) {
-  const length = picture.byte_length;
-  if (!Number.isInteger(length) || length < 4 || length > 64 * 1024 * 1024 ||
-      !Number.isInteger(picture.width) || picture.width < 1 || picture.width > 16384 ||
-      !Number.isInteger(picture.height) || picture.height < 1 || picture.height > 16384 ||
-      length !== picture.width * picture.height * 4 || !/^[0-9a-f]{64}$/.test(picture.content_hash))
+function validateNativePicture(picture: unknown) {
+  if (!object(picture)) throw new TypeError("Invalid native picture descriptor");
+  const { byte_length: length, width, height, content_hash: hash } = picture;
+  if (typeof length !== "number" || !Number.isInteger(length) || length < 4 || length > 64 * 1024 * 1024 ||
+      typeof width !== "number" || !Number.isInteger(width) || width < 1 || width > 16384 ||
+      typeof height !== "number" || !Number.isInteger(height) || height < 1 || height > 16384 ||
+      length !== width * height * 4 || typeof hash !== "string" || !/^[0-9a-f]{64}$/.test(hash))
     throw new TypeError("Invalid native picture descriptor");
-  return length;
+  return { byte_length: length, width, height, content_hash: hash };
 }
 async function verifyNativePicture(bytes: Uint8ClampedArray<ArrayBuffer>, hash: string, signal?: AbortSignal) {
   const actual = Array.from(new Uint8Array(await globalThis.crypto.subtle.digest("SHA-256", bytes.buffer)), b => b.toString(16).padStart(2, "0")).join("");
@@ -287,7 +288,7 @@ export class OpenCutClient {
      * This permits the next native intent, not presentation of unverified bytes. */
     onClaimed?: () => void;
   } = {}): Promise<Uint8ClampedArray<ArrayBuffer>> {
-    const length = validateNativePicture(picture);
+    const length = validateNativePicture(picture).byte_length;
     const input: VisualPreviewTransport.VisualPreviewPictureRead = { session, picture_id: picture.picture_id };
     const response = await this.#downloadBytes(`${this.baseUrl}/api/preview/picture/stream`, "native preview picture", options, JSON.stringify(input));
     if (response.headers.get("content-type") !== "application/vnd.opencut.rgba" || response.headers.get("content-length") !== String(length)) {
@@ -371,8 +372,8 @@ export class OpenCutClient {
         throw new TypeError("Native picture changed preparation kind");
       const frame = kind === "scene" ? value.frame : object(value.draft) ? value.draft.frame : null;
       if (!object(frame) || !object(frame.picture)) throw new TypeError("Invalid native picture preparation header");
-      const picture = frame.picture as ToolOutput<"opencut_visual_preview_frame">["picture"];
-      if (validateNativePicture(picture) !== pixelLength) throw new TypeError("Native picture changed its descriptor length");
+      const picture = validateNativePicture(frame.picture);
+      if (picture.byte_length !== pixelLength) throw new TypeError("Native picture changed its descriptor length");
       signal.throwIfAborted();
       const pixels = (async () => {
         try {

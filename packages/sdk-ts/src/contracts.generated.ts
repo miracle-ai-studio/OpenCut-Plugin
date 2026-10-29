@@ -68578,6 +68578,1754 @@ export namespace VisualPreviewPixels {
 
 }
 
+export namespace VisualPreviewPreparation {
+/**
+ * A presentation transport over the existing scene/draft use cases. This
+ * does not create a second rendering operation or grant resource authority.
+ */
+  export type VisualPreviewPicturePrepare =
+  | {
+      frame: VisualPreviewFrame;
+      kind: 'scene';
+    }
+  | {
+      draft: VisualEditDraftFrame;
+      kind: 'edit_draft';
+    };
+/**
+ * Raster execution size. Source remains byte-compatible with existing receipts.
+ */
+  export type RasterResolution = 'source' | 'preview540' | 'p720' | 'p1080' | 'p1440' | 'p2160';
+  export type VisualEditDraftIntent =
+  | {
+      gesture: TransformGestureIntent;
+      kind: 'gesture';
+    }
+  | {
+      kind: 'property';
+      property: VisualProperty;
+    };
+  export type TransformGestureIntent = 'translate' | 'rotate' | 'scale_x' | 'scale_y' | 'scale_xy';
+  export type VisualProperty = 'position_x_px' | 'position_y_px' | 'scale_x' | 'scale_y' | 'rotation_degrees' | 'opacity';
+  export type ProjectEditOperation =
+  | {
+      name: string;
+      type: 'rename';
+    }
+  | {
+      settings: SettingsProfile;
+      type: 'settings_set';
+    }
+  | {
+      cover?: ProjectCover | null;
+      type: 'cover_set';
+    }
+  | {
+      sequence_id: string;
+      type: 'default_sequence_set';
+    }
+  | {
+      id: string;
+      name: string;
+      source: AssetSelector;
+      type: 'asset_bind';
+    }
+  | {
+      asset_id: string;
+      type: 'asset_delete';
+    }
+  | {
+      id: string;
+      source: FontSelector;
+      type: 'font_bind';
+    }
+  | {
+      font_id: string;
+      type: 'font_delete';
+    }
+  | {
+      sequence: Scene;
+      type: 'sequence_put';
+    }
+  | {
+      sequence_id: string;
+      type: 'sequence_delete';
+    }
+  | {
+      sequence_id: string;
+      track: SceneTrack;
+      type: 'track_put';
+    }
+  | {
+      sequence_id: string;
+      track_id: string;
+      type: 'track_delete';
+    }
+  | {
+      locked: boolean;
+      sequence_id: string;
+      track_id: string;
+      type: 'track_lock_set';
+    }
+  | {
+      element: TimelineElement;
+      sequence_id: string;
+      track_id: string;
+      type: 'element_put';
+    }
+  | {
+      element_id: string;
+      sequence_id: string;
+      type: 'element_delete';
+    }
+  | {
+      caption: Caption;
+      sequence_id: string;
+      type: 'caption_put';
+    }
+  | {
+      caption_id: string;
+      sequence_id: string;
+      type: 'caption_delete';
+    }
+  | {
+      sequence_id: string;
+      transition: SceneTransition;
+      type: 'transition_put';
+    }
+  | {
+      sequence_id: string;
+      transition_id: string;
+      type: 'transition_delete';
+    }
+  | {
+      operation: BookmarkOperation;
+      type: 'bookmark';
+    };
+/**
+ * New and Classic-imported projects use ClassicGlobal. LegacyPerScene is an
+ * explicit preservation profile for heterogeneous old Rust projects, never a
+ * hidden override of Classic settings. Converting its scope is a separate edit.
+ */
+  export type SettingsProfile =
+  | {
+      profile: 'classic_global';
+      settings: ProjectSettings;
+    }
+  | {
+      formats: LegacySequenceFormat[];
+      profile: 'legacy_per_scene';
+    };
+  export type Background =
+  | {
+      color: Color;
+      kind: 'color';
+    }
+  | {
+      intensity: number;
+      kind: 'main_track_blur';
+    };
+  export type ColorEncoding = 'srgb' | 'linear_srgb';
+  export type CanvasSizeMode = 'preset' | 'custom';
+  export type ProjectCover =
+  | {
+      asset_id: string;
+      kind: 'image';
+    }
+  | {
+      asset_id: string;
+      kind: 'video_frame';
+      time: Time;
+    };
+  export type AssetSelector =
+  | {
+      asset_id: string;
+      kind: 'project_asset';
+      revision: string;
+    }
+  | {
+      kind: 'project_media';
+      media_id: string;
+      version: AssetVersion;
+    };
+  export type FontSelector = {
+  font_id: string;
+  kind: 'project_font';
+  revision: string;
+};
+  export type FontBinding =
+  | {
+      font_id: string;
+      kind: 'locked';
+    }
+  | {
+      family: string;
+      kind: 'unresolved_family';
+      policy: FontResolutionPolicy;
+    };
+  export type FontResolutionPolicy =
+  | {
+      mode: 'strict';
+    }
+  | {
+      families: string[];
+      mode: 'explicit_fallback';
+    };
+  export type FontSize =
+  | {
+      unit: 'classic_height90';
+      value: number;
+    }
+  | {
+      unit: 'canvas_pixels';
+      value: number;
+    };
+  export type CaptionLayoutProfile = 'legacy_caption_v2' | 'pinned_caption_v4';
+  export type SceneTextAlign = 'left' | 'center' | 'right';
+  export type AnimationChannel =
+  | {
+      binding: ScalarBinding;
+      extrapolation: Extrapolation;
+      id: string;
+      keys: ScalarKey[];
+      kind: 'scalar';
+      target: ChannelTarget;
+    }
+  | {
+      id: string;
+      keys: DiscreteKey[];
+      kind: 'discrete';
+      parameter: DiscreteParameter;
+      target: ChannelTarget;
+    };
+  export type ScalarBinding =
+  | {
+      kind: 'property';
+      parameter: ScalarParameter;
+    }
+  | {
+      component: ColorComponent;
+      kind: 'color_component';
+      parameter: ColorParameter;
+    };
+/**
+ * Each variant identifies both meaning and stored unit. Applicability and
+ * post-evaluation bounds belong to the versioned parameter registry.
+ */
+  export type ScalarParameter =
+  | 'position_x_px'
+  | 'position_y_px'
+  | 'scale_x'
+  | 'scale_y'
+  | 'rotation_degrees'
+  | 'opacity'
+  | 'gain_linear_legacy'
+  | 'gain_decibels'
+  | 'font_size_classic_height90'
+  | 'font_size_canvas_pixels'
+  | 'letter_spacing_px'
+  | 'line_height_multiplier'
+  | 'text_background_padding_x_at_size15'
+  | 'text_background_padding_y_at_size15'
+  | 'text_background_offset_x_px'
+  | 'text_background_offset_y_px'
+  | 'text_background_corner_radius_percent'
+  | 'graphic_stroke_width_px'
+  | 'graphic_corner_radius_percent'
+  | 'graphic_sides'
+  | 'graphic_points'
+  | 'graphic_depth_percent'
+  | 'classic_blur_intensity'
+  | 'legacy_blur_radius_px'
+  | 'legacy_exposure_ev'
+  | 'legacy_contrast'
+  | 'legacy_saturation'
+  | 'mask_center_x'
+  | 'mask_center_y'
+  | 'mask_width'
+  | 'mask_height'
+  | 'mask_rotation_degrees'
+  | 'mask_scale'
+  | 'mask_feather_classic_pixels'
+  | 'mask_feather_legacy_canvas_fraction'
+  | 'mask_stroke_width_px'
+  | 'mask_font_size_classic_height90'
+  | 'mask_font_size_canvas_pixels'
+  | 'mask_letter_spacing_px'
+  | 'mask_line_height_multiplier';
+  export type ColorComponent = 'red' | 'green' | 'blue' | 'alpha';
+  export type ColorParameter = 'text_color' | 'text_background_color' | 'graphic_fill' | 'graphic_stroke' | 'mask_stroke';
+  export type ExtrapolationMode = 'hold' | 'linear';
+  export type ScalarSegment =
+  | {
+      kind: 'step';
+    }
+  | {
+      kind: 'linear';
+    }
+  | {
+      kind: 'bezier';
+    }
+  | {
+      curve: HistoricalVisualCubicBezier;
+      kind: 'legacy_normalized_bezier';
+    };
+  export type TangentMode = 'auto' | 'aligned' | 'broken' | 'flat';
+  export type ChannelTarget =
+  | {
+      element_id: string;
+      kind: 'element';
+    }
+  | {
+      effect_id: string;
+      element_id: string;
+      kind: 'effect';
+    }
+  | {
+      element_id: string;
+      kind: 'mask';
+      mask_id: string;
+    }
+  | {
+      kind: 'track';
+      track_id: string;
+    };
+  export type DiscreteValue = {
+  kind: 'stroke_align';
+  value: StrokeAlign;
+};
+  export type StrokeAlign = 'inside' | 'center' | 'outside';
+  export type DiscreteParameter = 'graphic_stroke_align' | 'mask_stroke_align';
+  export type ElementContent =
+  | {
+      asset_id: string;
+      audio: AudioStyle;
+      kind: 'video';
+      retime: Retime;
+      source_audio_enabled: boolean;
+      video_stream?: number | null;
+    }
+  | {
+      asset_id: string;
+      audio: AudioStyle;
+      kind: 'audio';
+      retime: Retime;
+    }
+  | {
+      asset_id: string;
+      kind: 'image';
+    }
+  | {
+      kind: 'text';
+      text: Text;
+    }
+  | {
+      asset_id: string;
+      intrinsic_size: CanvasSize;
+      kind: 'sticker';
+    }
+  | {
+      graphic: Graphic;
+      kind: 'graphic';
+    }
+  | {
+      effect: SceneEffect;
+      kind: 'effect_layer';
+    };
+  export type Gain =
+  | {
+      unit: 'linear_legacy';
+      value: number;
+    }
+  | {
+      unit: 'decibels';
+      value: number;
+    };
+  export type RetimeMapping =
+  | {
+      kind: 'exact_rational';
+    }
+  | {
+      kind: 'classic_rounded_ticks';
+      timebase: number;
+    };
+  export type TextDecoration = 'none' | 'underline' | 'line_through';
+  export type FontStyle = 'normal' | 'italic';
+  export type FontWeight = 'normal' | 'bold';
+  export type GraphicGeometry =
+  | {
+      corner_radius_percent: number;
+      kind: 'rectangle';
+    }
+  | {
+      kind: 'ellipse';
+    }
+  | {
+      corner_radius_percent: number;
+      kind: 'polygon';
+      sides: number;
+    }
+  | {
+      depth_percent: number;
+      kind: 'star';
+      points: number;
+    }
+  | {
+      height_px: number;
+      kind: 'legacy_rectangle';
+      width_px: number;
+    }
+  | {
+      kind: 'legacy_ellipse';
+      radius_x_px: number;
+      radius_y_px: number;
+    };
+  export type EffectKind =
+  | {
+      intensity: number;
+      kind: 'classic_blur';
+    }
+  | {
+      kind: 'legacy_gaussian_blur';
+      radius_px: number;
+    }
+  | {
+      contrast: number;
+      exposure_ev: number;
+      kind: 'legacy_color_adjust';
+      saturation: number;
+    };
+  export type BlendMode =
+  | 'normal'
+  | 'darken'
+  | 'multiply'
+  | 'color-burn'
+  | 'lighten'
+  | 'screen'
+  | 'plus-lighter'
+  | 'color-dodge'
+  | 'overlay'
+  | 'soft-light'
+  | 'hard-light'
+  | 'difference'
+  | 'exclusion'
+  | 'hue'
+  | 'saturation'
+  | 'color'
+  | 'luminosity';
+  export type MaskFeather =
+  | {
+      unit: 'classic_pixels';
+      value: number;
+    }
+  | {
+      unit: 'legacy_canvas_fraction';
+      value: number;
+    };
+  export type LayerMaskShape =
+  | {
+      center_x: number;
+      center_y: number;
+      kind: 'split';
+      rotation_degrees: number;
+    }
+  | {
+      geometry: BoxMaskGeometry;
+      kind: 'cinematic_bars';
+    }
+  | {
+      geometry: BoxMaskGeometry;
+      kind: 'rectangle';
+    }
+  | {
+      geometry: BoxMaskGeometry;
+      kind: 'ellipse';
+    }
+  | {
+      geometry: BoxMaskGeometry;
+      kind: 'heart';
+    }
+  | {
+      geometry: BoxMaskGeometry;
+      kind: 'diamond';
+    }
+  | {
+      geometry: BoxMaskGeometry;
+      kind: 'star';
+    }
+  | {
+      kind: 'text';
+      mask: TextMask;
+    }
+  | {
+      kind: 'freeform';
+      path: FreeformMask;
+    }
+  | {
+      height: number;
+      kind: 'legacy_rectangle';
+      width: number;
+      x: number;
+      y: number;
+    }
+  | {
+      height: number;
+      kind: 'legacy_ellipse';
+      width: number;
+      x: number;
+      y: number;
+    };
+  export type VisualProfile = 'classic_canvas_v31' | 'legacy_composition_v3';
+  export type SceneTrackKind = 'video' | 'audio' | 'text' | 'graphic' | 'effect' | 'caption';
+  export type TransitionKind = 'legacy_crossfade_v3';
+  export type BookmarkOperation =
+  | {
+      /**
+       * Stable client-supplied identity, used only when inserting.
+       */
+      bookmark_id: string;
+      kind: 'toggle';
+      sequence_id: string;
+      time: Time;
+    }
+  | {
+      bookmark: SceneBookmark;
+      kind: 'put';
+    }
+  | {
+      bookmark_id: string;
+      kind: 'move';
+      sequence_id: string;
+      time: Time;
+    }
+  | {
+      bookmark_id: string;
+      kind: 'delete';
+      sequence_id: string;
+    };
+
+  export interface VisualPreviewFrame {
+  /**
+   * Native foreground alpha at one output pixel; no client hit claim.
+   */
+  hit_query?: VisualPreviewHitPoint | null;
+  /**
+   * Prepare a bounded future picture without claiming it was presented.
+   * The client must still present against actual audio consumption.
+   */
+  prepare_ahead?: boolean;
+  resolution?: RasterResolution;
+  /**
+   * Resident presentation and queued picture bytes, checked against the
+   * fixed presentation envelope reserved before native decode admission.
+   */
+  retained_picture_bytes?: number;
+  session: AudioPreviewStream;
+  time?: Time | null;
+}
+  export interface VisualPreviewHitPoint {
+  x: number;
+  y: number;
+}
+  export interface AudioPreviewStream {
+  generation: string;
+  lease_id: string;
+  overlay_epoch: string;
+  owner_id: string;
+  session_id: string;
+}
+  export interface Time {
+  ticks: string;
+  timebase: number;
+}
+  export interface VisualEditDraftFrame {
+  draft_id: string;
+  frame: VisualPreviewFrame;
+  intent: VisualEditDraftIntent;
+  transaction: ApplyProject;
+}
+  export interface ApplyProject {
+  /**
+   * Omit for main;an explicit value selects an existing named branch.
+   */
+  branch_name?: string | null;
+  expected_revision: string;
+  idempotency_key: string;
+  label: string;
+  operations: ProjectEditOperation[];
+  project_id: string;
+}
+  export interface ProjectSettings {
+  background: Background;
+  canvas_size: CanvasSize;
+  canvas_size_mode: CanvasSizeMode;
+  fps: FrameRate;
+  last_custom_canvas_size?: CanvasSize | null;
+  original_canvas_size?: CanvasSize | null;
+}
+  export interface Color {
+  /**
+   * Straight alpha, independent of RGB encoding.
+   */
+  alpha: number;
+  blue: number;
+  encoding: ColorEncoding;
+  green: number;
+  red: number;
+}
+  export interface CanvasSize {
+  height: number;
+  width: number;
+}
+  export interface FrameRate {
+  denominator: number;
+  numerator: number;
+}
+  export interface LegacySequenceFormat {
+  background: Background;
+  canvas_size: CanvasSize;
+  fps: FrameRate;
+  sequence_id: string;
+}
+  export interface AssetVersion {
+  content_hash: string;
+  id: string;
+  size: number;
+}
+  export interface Scene {
+  bookmarks: SceneBookmark[];
+  captions: Caption[];
+  id: string;
+  main_track_id: string;
+  name: string;
+  /**
+   * Visual/effect track order is bottom to top, independent of insertion ID.
+   */
+  tracks: SceneTrack[];
+  transitions: SceneTransition[];
+}
+  export interface SceneBookmark {
+  color?: string | null;
+  duration?: Time | null;
+  id: string;
+  note?: string | null;
+  sequence_id: string;
+  time: Time;
+}
+  export interface Caption {
+  id: string;
+  source_anchor?: CaptionSourceAnchor | null;
+  style: SceneCaptionStyle;
+  text: string;
+  timeline_range: TimeRange;
+  /**
+   * The sole owning caption track in this sequence, providing visibility,
+   * locking and layer order. Promoting legacy sequence-wide captions creates
+   * an explicit caption track at their original overlay position.
+   */
+  track_id: string;
+}
+  export interface CaptionSourceAnchor {
+  asset_id: string;
+  source_range: TimeRange;
+}
+  export interface TimeRange {
+  duration: Time;
+  start: Time;
+}
+  export interface SceneCaptionStyle {
+  background_color?: Color | null;
+  color: Color;
+  font: FontBinding;
+  font_size: FontSize;
+  layout: CaptionLayoutProfile;
+  line_height_px?: number | null;
+  max_width_px?: number | null;
+  text_align: SceneTextAlign;
+}
+  export interface SceneTrack {
+  /**
+   * Track-owned channels use sequence time, never an arbitrary element clock.
+   */
+  channels: AnimationChannel[];
+  /**
+   * Stable element order is also the layer order for overlapping legacy
+   * Graphic tracks. Classic tracks retain non-overlapping edit semantics.
+   */
+  elements: TimelineElement[];
+  enabled: boolean;
+  gain: Gain;
+  id: string;
+  kind: SceneTrackKind;
+  locked: boolean;
+  muted: boolean;
+  name: string;
+  opacity: number;
+}
+  export interface Extrapolation {
+  after: ExtrapolationMode;
+  before: ExtrapolationMode;
+}
+  export interface ScalarKey {
+  id: string;
+  left_handle?: CurveHandle | null;
+  right_handle?: CurveHandle | null;
+  /**
+   * Optional independent segment identity, preserving a V3 curve node ID.
+   * Classic segments are owned by the outgoing key and need no second ID.
+   */
+  segment_id?: string | null;
+  segment_to_next: ScalarSegment;
+  tangent_mode: TangentMode;
+  time: Time2;
+  value: number;
+}
+  export interface CurveHandle {
+  dt: Time1;
+  /**
+   * Signed value offset in the bound parameter's units.
+   */
+  dv: number;
+}
+/**
+ * Signed exact time offset, not a normalized ease fraction.
+ */
+  export interface Time1 {
+  ticks: string;
+  timebase: number;
+}
+  export interface HistoricalVisualCubicBezier {
+  x1: number;
+  x2: number;
+  y1: number;
+  y2: number;
+}
+/**
+ * Element-local time; track channels use sequence time.
+ */
+  export interface Time2 {
+  ticks: string;
+  timebase: number;
+}
+  export interface DiscreteKey {
+  id: string;
+  time: Time;
+  value: DiscreteValue;
+}
+  export interface TimelineElement {
+  channels: AnimationChannel[];
+  content: ElementContent;
+  enabled: boolean;
+  id: string;
+  name: string;
+  /**
+   * The only source/local span authority. Media content refers to this span;
+   * it does not carry a second independently writable source range.
+   */
+  source_span:
+    | {
+        profile: 'classic_trimmed';
+        source_duration?: Time | null;
+        trim_end: Time;
+        trim_start: Time;
+      }
+    | {
+        profile: 'legacy_source_range';
+        range: TimeRange;
+      };
+  timeline_range: TimeRange;
+  /**
+   * Audio-only elements have no visual style.
+   */
+  visual?: VisualStyle | null;
+}
+  export interface AudioStyle {
+  gain: Gain;
+  muted: boolean;
+  stream?: number | null;
+}
+  export interface Retime {
+  maintain_pitch: boolean;
+  mapping: RetimeMapping;
+  rate: RationalRate;
+}
+  export interface RationalRate {
+  denominator: number;
+  numerator: number;
+}
+  export interface Text {
+  align: SceneTextAlign;
+  background: TextBackground;
+  color: Color;
+  content: string;
+  decoration: TextDecoration;
+  font: FontBinding;
+  font_size: FontSize;
+  font_style: FontStyle;
+  font_weight: FontWeight;
+  letter_spacing_px: number;
+  line_height_multiplier: number;
+}
+  export interface TextBackground {
+  color: Color;
+  /**
+   * Classic 0..100 radius percentage, not a pixel radius.
+   */
+  corner_radius_percent: number;
+  enabled: boolean;
+  offset_x_px: number;
+  offset_y_px: number;
+  /**
+   * Classic padding pixels at font-size 15; actual padding multiplies by
+   * font size / 15. Offsets remain pixels and do not use that multiplier.
+   */
+  padding_x_at_size15: number;
+  padding_y_at_size15: number;
+}
+  export interface Graphic {
+  fill: Color;
+  geometry: GraphicGeometry;
+  source_size: CanvasSize;
+  stroke: Stroke;
+}
+  export interface Stroke {
+  align: StrokeAlign;
+  color: Color;
+  width_px: number;
+}
+  export interface SceneEffect {
+  effect: EffectKind;
+  enabled: boolean;
+  id: string;
+}
+  export interface VisualStyle {
+  blend_mode: BlendMode;
+  /**
+   * Ordered, identity-bearing stacks; disabled nodes remain editable.
+   */
+  effects: SceneEffect[];
+  masks: Mask[];
+  opacity: number;
+  profile: VisualProfile;
+  transform: Transform;
+}
+  export interface Mask {
+  enabled: boolean;
+  feather: MaskFeather;
+  id: string;
+  inverted: boolean;
+  shape: LayerMaskShape;
+  stroke: Stroke;
+}
+/**
+ * Center offsets and dimensions are fractions of the untransformed element,
+ * not normalized canvas coordinates. Classic scale is retained even where a
+ * particular shape renderer does not use it, so recovery never loses fields.
+ */
+  export interface BoxMaskGeometry {
+  center_x: number;
+  center_y: number;
+  height: number;
+  rotation_degrees: number;
+  scale: number;
+  width: number;
+}
+  export interface TextMask {
+  center_x: number;
+  center_y: number;
+  content: string;
+  decoration: TextDecoration;
+  font: FontBinding;
+  font_size: FontSize;
+  font_style: FontStyle;
+  font_weight: FontWeight;
+  letter_spacing_px: number;
+  line_height_multiplier: number;
+  rotation_degrees: number;
+  scale: number;
+}
+  export interface FreeformMask {
+  center_x: number;
+  center_y: number;
+  closed: boolean;
+  points: FreeformPoint[];
+  rotation_degrees: number;
+  scale: number;
+}
+/**
+ * Coordinates and absolute handle positions are normalized element-local
+ * coordinates around its center, matching Classic's stored path geometry.
+ */
+  export interface FreeformPoint {
+  id: string;
+  in_x: number;
+  in_y: number;
+  out_x: number;
+  out_y: number;
+  x: number;
+  y: number;
+}
+  export interface Transform {
+  /**
+   * Canvas pixels from center, positive right/down, for both media layouts.
+   */
+  position_x_px: number;
+  position_y_px: number;
+  rotation_degrees: number;
+  scale_x: number;
+  scale_y: number;
+}
+  export interface SceneTransition {
+  duration: Time;
+  id: string;
+  incoming_element_id: string;
+  outgoing_element_id: string;
+  transition: TransitionKind;
+}
+
+}
+
+export namespace VisualPreviewPrepared {
+  export type VisualPreviewPreparedPicture =
+  | {
+      frame: VisualPreviewFrameResult;
+      kind: 'scene';
+    }
+  | {
+      draft: VisualEditDraftFrameResult;
+      kind: 'edit_draft';
+    };
+  export type SceneBackground =
+  | {
+      color: Color;
+      kind: 'color';
+    }
+  | {
+      intensity: number;
+      kind: 'main_track_blur';
+      source_element_ids: string[];
+    };
+  export type ColorEncoding = 'srgb' | 'linear_srgb';
+  export type BlendMode =
+  | 'normal'
+  | 'darken'
+  | 'multiply'
+  | 'color-burn'
+  | 'lighten'
+  | 'screen'
+  | 'plus-lighter'
+  | 'color-dodge'
+  | 'overlay'
+  | 'soft-light'
+  | 'hard-light'
+  | 'difference'
+  | 'exclusion'
+  | 'hue'
+  | 'saturation'
+  | 'color'
+  | 'luminosity';
+  export type DecodedVisualSource =
+  | {
+      elementId: string;
+      height: number;
+      kind: 'readyImage';
+      width: number;
+    }
+  | {
+      actualTimestampSeconds: number;
+      elementId: string;
+      /**
+       * The decoder observed the terminal frame; its real interval is not
+       * extended or relabelled to cover the requested source time.
+       */
+      eofHeld?: boolean;
+      frameDurationSeconds: number;
+      height: number;
+      kind: 'readyVideo';
+      requestedTime: Time;
+      /**
+       * None is primary-track selection, not an invented FFmpeg stream index.
+       */
+      selectedVideoStream?: number | null;
+      width: number;
+    }
+  | {
+      elementId: string;
+      kind: 'noFrame';
+      reason: VisualNoFrameReason;
+      requestedTime: Time;
+    };
+  export type VisualNoFrameReason = 'outside_read_window' | 'eof' | 'timestamp_gap';
+  export type FontStyle = 'normal' | 'italic';
+  export type EffectKind =
+  | {
+      intensity: number;
+      kind: 'classic_blur';
+    }
+  | {
+      kind: 'legacy_gaussian_blur';
+      radius_px: number;
+    }
+  | {
+      contrast: number;
+      exposure_ev: number;
+      kind: 'legacy_color_adjust';
+      saturation: number;
+    };
+  export type MaskFeather =
+  | {
+      unit: 'classic_pixels';
+      value: number;
+    }
+  | {
+      unit: 'legacy_canvas_fraction';
+      value: number;
+    };
+  export type LayerMaskShape =
+  | {
+      center_x: number;
+      center_y: number;
+      kind: 'split';
+      rotation_degrees: number;
+    }
+  | {
+      geometry: BoxMaskGeometry;
+      kind: 'cinematic_bars';
+    }
+  | {
+      geometry: BoxMaskGeometry;
+      kind: 'rectangle';
+    }
+  | {
+      geometry: BoxMaskGeometry;
+      kind: 'ellipse';
+    }
+  | {
+      geometry: BoxMaskGeometry;
+      kind: 'heart';
+    }
+  | {
+      geometry: BoxMaskGeometry;
+      kind: 'diamond';
+    }
+  | {
+      geometry: BoxMaskGeometry;
+      kind: 'star';
+    }
+  | {
+      kind: 'text';
+      mask: TextMask;
+    }
+  | {
+      kind: 'freeform';
+      path: FreeformMask;
+    }
+  | {
+      height: number;
+      kind: 'legacy_rectangle';
+      width: number;
+      x: number;
+      y: number;
+    }
+  | {
+      height: number;
+      kind: 'legacy_ellipse';
+      width: number;
+      x: number;
+      y: number;
+    };
+  export type TextDecoration = 'none' | 'underline' | 'line_through';
+  export type FontBinding =
+  | {
+      font_id: string;
+      kind: 'locked';
+    }
+  | {
+      family: string;
+      kind: 'unresolved_family';
+      policy: FontResolutionPolicy;
+    };
+  export type FontResolutionPolicy =
+  | {
+      mode: 'strict';
+    }
+  | {
+      families: string[];
+      mode: 'explicit_fallback';
+    };
+  export type FontSize =
+  | {
+      unit: 'classic_height90';
+      value: number;
+    }
+  | {
+      unit: 'canvas_pixels';
+      value: number;
+    };
+  export type FontWeight = 'normal' | 'bold';
+  export type StrokeAlign = 'inside' | 'center' | 'outside';
+  export type SceneStep =
+  | {
+      element_id: string;
+      kind: 'layer';
+    }
+  | {
+      effects: SceneEffect[];
+      element_id: string;
+      kind: 'effect';
+    };
+  export type NativeGraphicsApi = 'metal' | 'vulkan' | 'direct_x';
+  export type VisualDecodeRequest =
+  | {
+      kind: 'image';
+    }
+  | {
+      eofPolicy: VisualVideoEofPolicy;
+      kind: 'video';
+      noFrameReason?: VisualNoFrameReason | null;
+      pointProfile: string;
+      requestedTime: Time;
+      /**
+       * Decoder API projection supplied by Rust; the browser never divides
+       * cross-process integer ticks or applies retime itself.
+       */
+      requestedTimeSeconds: number;
+      selectedVideoStream?: number | null;
+    };
+  export type VisualVideoEofPolicy =
+  | {
+      kind: 'noFrame';
+    }
+  | {
+      kind: 'holdLastFrame';
+      readWindowEndSeconds: number;
+      readWindowStartSeconds: number;
+    };
+  export type VisualResourceKind = 'video' | 'image';
+  export type GraphicGeometryPlan =
+  | {
+      cornerRadiusPercent: number;
+      kind: 'rectangle';
+    }
+  | {
+      kind: 'ellipse';
+    }
+  | {
+      cornerRadiusPercent: number;
+      kind: 'polygon';
+      sides: number;
+    }
+  | {
+      depthPercent: number;
+      kind: 'star';
+      points: number;
+    };
+  export type FontSynthesisProfile = 'classic_chromium_italic_v1';
+  export type SceneFontSynthesisOwner = 'text' | 'text_mask';
+
+  export interface VisualPreviewFrameResult {
+  admission: VisualPreviewAdmission;
+  bound?: BoundSceneFrame | null;
+  bound_blend?: BoundBlendFrame | null;
+  bound_execution?: BoundTextFrame | null;
+  bound_graphic?: BoundGraphicFrame1 | null;
+  bound_media?: BoundVisualFrame | null;
+  consumer_time_seconds: number;
+  decode_admissions: {
+    [k: string]: VisualDecodeAdmission;
+  };
+  hit_test?: VisualPreviewHitTest | null;
+  max_lag_ms: number;
+  next_time: Time1;
+  picture: VisualPreviewPicture;
+  plan: SceneFramePlan;
+  prepare_ahead: boolean;
+  time_seconds: number;
+}
+  export interface VisualPreviewAdmission {
+  maxDecodedPixels: string;
+  maxEncodedBytes: string;
+  maxFramePixels: string;
+  maxGpuBytes: string;
+  maxRgbaBytes: string;
+}
+  export interface BoundSceneFrame {
+  background: SceneBackground;
+  execution: BoundBlendFrame;
+  identity: TextFrameIdentity;
+  layers: BoundSceneLayer[];
+  steps: SceneStep[];
+}
+  export interface Color {
+  /**
+   * Straight alpha, independent of RGB encoding.
+   */
+  alpha: number;
+  blue: number;
+  encoding: ColorEncoding;
+  green: number;
+  red: number;
+}
+  export interface BoundBlendFrame {
+  blends: LayerBlend[];
+  execution: BoundGraphicFrame;
+  identity: TextFrameIdentity;
+}
+  export interface LayerBlend {
+  blendMode: BlendMode;
+  elementId: string;
+}
+/**
+ * Binding evidence for decoded and generated sources, not another render.
+ */
+  export interface BoundGraphicFrame {
+  /**
+   * @minItems 4
+   * @maxItems 4
+   */
+  background: [number, number, number, number];
+  captions: CaptionLayoutReceipt[];
+  /**
+   * @minItems 4
+   * @maxItems 4
+   */
+  clear: [number, number, number, number];
+  decoded: DecodedVisualSource[];
+  graphics: GraphicRasterReceipt[];
+  identity: TextFrameIdentity;
+  layers: BoundVisualLayer[];
+  rasters: TextRasterReceipt[];
+}
+  export interface CaptionLayoutReceipt {
+  elementId: string;
+  /**
+   * Every greedy candidate in order, including rejected overflow candidates.
+   * Widths are measured with the same fixed font as the actual raster.
+   */
+  measurements: CaptionWrapMeasurement[];
+  originalTextHash: string;
+  wrappedText: string;
+}
+  export interface CaptionWrapMeasurement {
+  content: string;
+  width: number;
+}
+  export interface Time {
+  ticks: string;
+  timebase: number;
+}
+  export interface GraphicRasterReceipt {
+  elementId: string;
+  height: number;
+  originX: number;
+  originY: number;
+  width: number;
+}
+  export interface TextFrameIdentity {
+  height: number;
+  profile: string;
+  projectId: string;
+  revision: string;
+  sequenceId: string;
+  time: Time;
+  width: number;
+}
+  export interface BoundVisualLayer {
+  assetId: string;
+  elementId: string;
+  /**
+   * NoFrame or a zero-sized authored transform draws no quad.
+   */
+  quad?: VisualQuad | null;
+}
+  export interface VisualQuad {
+  /**
+   * GPU uniform values match the Classic descriptor's f64→f32 conversion.
+   */
+  centerX: number;
+  centerY: number;
+  flipX: boolean;
+  flipY: boolean;
+  height: number;
+  /**
+   * Raw layer multiplier; UNORM render targets perform the later clamp.
+   */
+  opacity: number;
+  /**
+   * Classic casts degrees to f32 before its radians conversion.
+   */
+  rotationRadians: number;
+  width: number;
+}
+  export interface TextRasterReceipt {
+  elementId: string;
+  height: number;
+  layout: TextLayout;
+  width: number;
+}
+  export interface TextLayout {
+  align: string;
+  background?: TextBackgroundRect | null;
+  baseline: string;
+  block: TextBlockMetrics;
+  faceIndex: number;
+  fontContentHash: string;
+  fontId: string;
+  fontSizePx: number;
+  fontStyle: FontStyle;
+  fontWeight: number;
+  letterSpacingPx: number;
+  lineHeightPx: number;
+  lines: TextLineMetrics[];
+  transform: TextRasterTransform;
+  validatedTextHash: string;
+}
+  export interface TextBackgroundRect {
+  height: number;
+  left: number;
+  radius: number;
+  top: number;
+  width: number;
+}
+  export interface TextBlockMetrics {
+  height: number;
+  maxWidth: number;
+  visualCenterOffset: number;
+}
+  export interface TextLineMetrics {
+  ascent: number;
+  baselineY: number;
+  content: string;
+  decoration?: TextRect | null;
+  descent: number;
+  width: number;
+}
+  export interface TextRect {
+  height: number;
+  left: number;
+  top: number;
+  width: number;
+}
+  export interface TextRasterTransform {
+  centerX: number;
+  centerY: number;
+  rotationRadians: number;
+  scaleX: number;
+  scaleY: number;
+}
+  export interface BoundSceneLayer {
+  /**
+   * Double-precision local mask bounds; text rasters use a full-frame quad.
+   */
+  quad?: MaskQuad | null;
+  stack: SceneLayerStack;
+}
+/**
+ * Canvas geometry retains Classic double precision before local pixel rounding.
+ * The existing source/GPU quad stays f32 under its original frozen contract.
+ */
+  export interface MaskQuad {
+  centerX: number;
+  centerY: number;
+  flipX: boolean;
+  flipY: boolean;
+  height: number;
+  opacity: number;
+  rotationRadians: number;
+  width: number;
+}
+  export interface SceneLayerStack {
+  effects: SceneEffect[];
+  elementId: string;
+  masks: Mask[];
+}
+  export interface SceneEffect {
+  effect: EffectKind;
+  enabled: boolean;
+  id: string;
+}
+  export interface Mask {
+  enabled: boolean;
+  feather: MaskFeather;
+  id: string;
+  inverted: boolean;
+  shape: LayerMaskShape;
+  stroke: Stroke;
+}
+/**
+ * Center offsets and dimensions are fractions of the untransformed element,
+ * not normalized canvas coordinates. Classic scale is retained even where a
+ * particular shape renderer does not use it, so recovery never loses fields.
+ */
+  export interface BoxMaskGeometry {
+  center_x: number;
+  center_y: number;
+  height: number;
+  rotation_degrees: number;
+  scale: number;
+  width: number;
+}
+  export interface TextMask {
+  center_x: number;
+  center_y: number;
+  content: string;
+  decoration: TextDecoration;
+  font: FontBinding;
+  font_size: FontSize;
+  font_style: FontStyle;
+  font_weight: FontWeight;
+  letter_spacing_px: number;
+  line_height_multiplier: number;
+  rotation_degrees: number;
+  scale: number;
+}
+  export interface FreeformMask {
+  center_x: number;
+  center_y: number;
+  closed: boolean;
+  points: FreeformPoint[];
+  rotation_degrees: number;
+  scale: number;
+}
+/**
+ * Coordinates and absolute handle positions are normalized element-local
+ * coordinates around its center, matching Classic's stored path geometry.
+ */
+  export interface FreeformPoint {
+  id: string;
+  in_x: number;
+  in_y: number;
+  out_x: number;
+  out_y: number;
+  x: number;
+  y: number;
+}
+  export interface Stroke {
+  align: StrokeAlign;
+  color: Color;
+  width_px: number;
+}
+  export interface BoundTextFrame {
+  /**
+   * @minItems 4
+   * @maxItems 4
+   */
+  background: [number, number, number, number];
+  /**
+   * @minItems 4
+   * @maxItems 4
+   */
+  clear: [number, number, number, number];
+  decoded: DecodedVisualSource[];
+  identity: TextFrameIdentity;
+  layers: BoundVisualLayer[];
+  rasters: TextRasterReceipt[];
+}
+  export interface BoundGraphicFrame1 {
+  /**
+   * @minItems 4
+   * @maxItems 4
+   */
+  background: [number, number, number, number];
+  captions: CaptionLayoutReceipt[];
+  /**
+   * @minItems 4
+   * @maxItems 4
+   */
+  clear: [number, number, number, number];
+  decoded: DecodedVisualSource[];
+  graphics: GraphicRasterReceipt[];
+  identity: TextFrameIdentity;
+  layers: BoundVisualLayer[];
+  rasters: TextRasterReceipt[];
+}
+  export interface BoundVisualFrame {
+  /**
+   * @minItems 4
+   * @maxItems 4
+   */
+  background: [number, number, number, number];
+  /**
+   * Original compositor clear, followed by one normal background color layer.
+   *
+   * @minItems 4
+   * @maxItems 4
+   */
+  clear: [number, number, number, number];
+  decoded: DecodedVisualSource[];
+  identity: VisualFrameIdentity;
+  layers: BoundVisualLayer[];
+}
+  export interface VisualFrameIdentity {
+  height: number;
+  profile: string;
+  projectId: string;
+  revision: string;
+  sequenceId: string;
+  time: Time;
+  width: number;
+}
+  export interface VisualDecodeAdmission {
+  maxDecodedBytes: string;
+  maxHeight: number;
+  maxPixels: string;
+  maxWidth: number;
+}
+  export interface VisualPreviewHitTest {
+  hits: VisualPreviewHit[];
+  identity: TextFrameIdentity;
+  point: VisualPreviewHitPoint;
+}
+  export interface VisualPreviewHit {
+  alpha: number;
+  elementId: string;
+}
+  export interface VisualPreviewHitPoint {
+  x: number;
+  y: number;
+}
+/**
+ * Next sampling time, computed by the application for sequential preparation.
+ */
+  export interface Time1 {
+  ticks: string;
+  timebase: number;
+}
+  export interface VisualPreviewPicture {
+  byte_length: number;
+  content_hash: string;
+  height: number;
+  max_retained_bytes: number;
+  peak_worker_rss_bytes: string;
+  picture_id: string;
+  renderer: NativeVisualIdentity;
+  width: number;
+}
+  export interface NativeVisualIdentity {
+  decoder_libraries: NativeLibraryIdentity[];
+  decoder_profile: string;
+  gpu_backend: NativeGraphicsApi;
+  gpu_device: string;
+  gpu_device_id: number;
+  gpu_driver: string;
+  gpu_vendor_id: number;
+  /**
+   * Absent only in immutable proofs captured before platform observation.
+   * New execution requires the observed OS/font/driver platform identity.
+   */
+  platform?: NativePlatformIdentity | null;
+  rasterizer: string;
+  renderer_sha256: string;
+  shader_sha256: string;
+  texture_format: string;
+  wgpu_version: string;
+}
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+  export interface NativePlatformIdentity {
+  architecture: string;
+  font_backend: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
+}
+  export interface SceneFramePlan {
+  background: SceneBackground;
+  execution: BlendFramePlan;
+  fontSynthesis: SceneFontSynthesis[];
+  identity: TextFrameIdentity;
+  maskFonts: SceneTextMaskFont[];
+  stacks: SceneLayerStack[];
+  steps: SceneStep[];
+}
+  export interface BlendFramePlan {
+  blends: LayerBlend[];
+  execution: GraphicFramePlan;
+  identity: TextFrameIdentity;
+}
+  export interface GraphicFramePlan {
+  execution: CaptionFramePlan;
+  graphics: GraphicLayerPlan[];
+  identity: TextFrameIdentity;
+  /**
+   * Complete original bottom-to-top order across all partitions.
+   */
+  order: string[];
+}
+  export interface CaptionFramePlan {
+  captions: CaptionRasterPlan[];
+  execution: TextFramePlan;
+  identity: TextFrameIdentity;
+}
+  export interface CaptionRasterPlan {
+  bottomMarginPx: number;
+  elementId: string;
+  maxWidthPx: number;
+  wrapProfile: string;
+}
+  export interface TextFramePlan {
+  identity: TextFrameIdentity;
+  media: ClassicVisualPlan;
+  order: string[];
+  texts: TextLayerPlan[];
+}
+  export interface ClassicVisualPlan {
+  identity: VisualFrameIdentity;
+  layers: ClassicVisualLayerPlan[];
+  resources: VisualResource[];
+}
+  export interface ClassicVisualLayerPlan {
+  decode: VisualDecodeRequest;
+  elementId: string;
+  resource: VisualResource;
+}
+  export interface VisualResource {
+  assetId: string;
+  contentHash: string;
+  kind: VisualResourceKind;
+  size: string;
+}
+  export interface TextLayerPlan {
+  elementId: string;
+  font: ValidatedTextFont;
+  opacity: number;
+  text: TextRasterInput;
+}
+  export interface ValidatedTextFont {
+  contentHash: string;
+  faceIndex: number;
+  fontId: string;
+  glyphCoverageValidated: boolean;
+  size: string;
+  style: FontStyle;
+  validatedTextHash: string;
+  weight: number;
+}
+  export interface TextRasterInput {
+  align: string;
+  background: TextRasterBackground;
+  /**
+   * @minItems 4
+   * @maxItems 4
+   */
+  color: [number, number, number, number];
+  content: string;
+  decoration: string;
+  fontSizePx: number;
+  letterSpacingPx: number;
+  lineHeightPx: number;
+  transform: TextRasterTransform;
+}
+  export interface TextRasterBackground {
+  /**
+   * @minItems 4
+   * @maxItems 4
+   */
+  color: [number, number, number, number];
+  cornerRadiusPercent: number;
+  enabled: boolean;
+  offsetXPx: number;
+  offsetYPx: number;
+  paddingXPx: number;
+  paddingYPx: number;
+}
+  export interface GraphicLayerPlan {
+  elementId: string;
+  graphic: GraphicRasterPlan;
+  /**
+   * Uses the logical source's fit scale before adding transparent stroke
+   * padding. None represents an authored zero-sized transform.
+   */
+  quad?: VisualQuad | null;
+}
+  export interface GraphicRasterPlan {
+  /**
+   * @minItems 4
+   * @maxItems 4
+   */
+  fill: [number, number, number, number];
+  geometry: GraphicGeometryPlan;
+  sourceHeight: number;
+  sourceWidth: number;
+  stroke: GraphicStrokePlan;
+}
+  export interface GraphicStrokePlan {
+  align: StrokeAlign;
+  /**
+   * @minItems 4
+   * @maxItems 4
+   */
+  color: [number, number, number, number];
+  widthPx: number;
+}
+/**
+ * Explicit requested typography is separate from the unchanged native face.
+ */
+  export interface SceneFontSynthesis {
+  binding: FontSynthesisBinding;
+  elementId: string;
+  fontId: string;
+  ownerId: string;
+  ownerKind: SceneFontSynthesisOwner;
+}
+  export interface FontSynthesisBinding {
+  actual: FontCatalogEntry;
+  binding_id: string;
+  profile: FontSynthesisProfile;
+  requested: FontSynthesisRequest;
+  schema_version: number;
+}
+/**
+ * Exact unmodified source bytes and their real normal-style metadata.
+ */
+  export interface FontCatalogEntry {
+  content_hash: string;
+  family: string;
+  id: string;
+  license_id: string;
+  license_notice: string;
+  size_bytes: string;
+  source_commit: string;
+  source_url: string;
+  style: FontStyle;
+  weight: number;
+}
+/**
+ * Authored intent; TextV4/TextMaskV4 must also retain this requested style.
+ */
+  export interface FontSynthesisRequest {
+  style: FontStyle;
+  weight: number;
+}
+/**
+ * Native cmap proof belongs to this fixed mask owner and exact UTF-8 content.
+ * Private font handles remain outside the plan, as in normal text frames.
+ */
+  export interface SceneTextMaskFont {
+  font: ValidatedTextFont;
+  maskId: string;
+}
+  export interface VisualEditDraftFrameResult {
+  draft_id: string;
+  frame: VisualPreviewFrameResult;
+  transaction_digest: string;
+}
+
+}
+
+export const picturePreparationTransport = {
+  "chunk_bytes": 65536,
+  "content_type": "application/vnd.opencut.picture",
+  "magic": "OCVP",
+  "max_header_bytes": 2097152,
+  "path": "/api/preview/picture/prepare",
+  "prefix_bytes": 12
+} as const;
+
 export interface ToolMap {
   opencut_font_catalog: { input: OpencutFontCatalogInput.EmptyInput; output: NonNullable<OpencutFontCatalogOutput.Response["data"]> };
   opencut_font_source: { input: OpencutFontSourceInput.FontSourceRequest; output: NonNullable<OpencutFontSourceOutput.Response["data"]> };

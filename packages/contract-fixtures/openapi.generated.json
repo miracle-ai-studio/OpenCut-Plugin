@@ -11530,6 +11530,45 @@
         }
       }
     },
+    "/api/preview/picture/prepare": {
+      "post": {
+        "operationId": "opencut_visual_preview_picture_prepare",
+        "description": "Execute the same scene or edit-draft frame use case and claim its pixels before responding. OCVP contains12 little-endian prefix bytes (magic,JSON-header length,RGBA length),a generated prepared-picture JSON header bounded to2MiB,and exact straight RGBA8 bytes. Metadata and pixels retain64KiB live authorization/generation checkpoints,one-second backpressure and the original residency budget. Receiving metadata is not presentation;verify the full pixel length/hash before use.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VisualPreviewPicturePrepare"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Already-claimed native picture with generated metadata and bounded RGBA payload.",
+            "content": {
+              "application/vnd.opencut.picture": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured OpenCut error envelope; inspect error.code before retrying.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenCutErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/preview/visual-font/stream": {
       "post": {
         "operationId": "opencut_visual_preview_font_stream",
@@ -69407,6 +69446,631 @@
         ],
         "title": "VisualPreviewPictureRead",
         "type": "object"
+      },
+      "VisualPreviewPicturePrepare": {
+        "$defs": {
+          "AnimationChannel": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/AnimationChannel"
+          },
+          "ApplyProject": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/ApplyProject"
+          },
+          "AssetSelector": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/AssetSelector"
+          },
+          "AssetVersion": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/AssetVersion"
+          },
+          "AudioPreviewStream": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewResourceOpenInput/$defs/AudioPreviewStream"
+          },
+          "AudioStyle": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/AudioStyle"
+          },
+          "Background": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/Background"
+          },
+          "BlendMode": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/BlendMode"
+          },
+          "BookmarkOperation": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/BookmarkOperation"
+          },
+          "BoxMaskGeometry": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/BoxMaskGeometry"
+          },
+          "CanvasSize": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/CanvasSize"
+          },
+          "CanvasSizeMode": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/CanvasSizeMode"
+          },
+          "Caption": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/Caption"
+          },
+          "CaptionLayoutProfile": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/CaptionLayoutProfile"
+          },
+          "CaptionSourceAnchor": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/CaptionSourceAnchor"
+          },
+          "ChannelTarget": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/ChannelTarget"
+          },
+          "Color": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/Color"
+          },
+          "ColorComponent": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/ColorComponent"
+          },
+          "ColorEncoding": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/ColorEncoding"
+          },
+          "ColorParameter": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/ColorParameter"
+          },
+          "CurveHandle": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/CurveHandle"
+          },
+          "DiscreteKey": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/DiscreteKey"
+          },
+          "DiscreteParameter": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/DiscreteParameter"
+          },
+          "DiscreteValue": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/DiscreteValue"
+          },
+          "EffectKind": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/EffectKind"
+          },
+          "ElementContent": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/ElementContent"
+          },
+          "ElementSourceSpan": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/ElementSourceSpan"
+          },
+          "Extrapolation": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/Extrapolation"
+          },
+          "ExtrapolationMode": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/ExtrapolationMode"
+          },
+          "FontBinding": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/FontBinding"
+          },
+          "FontResolutionPolicy": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/FontResolutionPolicy"
+          },
+          "FontSelector": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/FontSelector"
+          },
+          "FontSize": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/FontSize"
+          },
+          "FontStyle": {
+            "$ref": "#/components/schemas/OpencutFontCatalogOutput/$defs/FontStyle"
+          },
+          "FontWeight": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/FontWeight"
+          },
+          "FrameRate": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/FrameRate"
+          },
+          "FreeformMask": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/FreeformMask"
+          },
+          "FreeformPoint": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/FreeformPoint"
+          },
+          "Gain": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/Gain"
+          },
+          "Graphic": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/Graphic"
+          },
+          "GraphicGeometry": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/GraphicGeometry"
+          },
+          "HistoricalVisualCubicBezier": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/HistoricalVisualCubicBezier"
+          },
+          "LayerMaskShape": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/LayerMaskShape"
+          },
+          "LegacySequenceFormat": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/LegacySequenceFormat"
+          },
+          "Mask": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/Mask"
+          },
+          "MaskFeather": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/MaskFeather"
+          },
+          "ProjectCover": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/ProjectCover"
+          },
+          "ProjectEditOperation": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/ProjectEditOperation"
+          },
+          "ProjectSettings": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/ProjectSettings"
+          },
+          "RasterResolution": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/RasterResolution"
+          },
+          "RationalRate": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/FrameRate"
+          },
+          "Retime": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/Retime"
+          },
+          "RetimeMapping": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/RetimeMapping"
+          },
+          "ScalarBinding": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/ScalarBinding"
+          },
+          "ScalarKey": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/ScalarKey"
+          },
+          "ScalarParameter": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/ScalarParameter"
+          },
+          "ScalarSegment": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/ScalarSegment"
+          },
+          "Scene": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/Scene"
+          },
+          "SceneBookmark": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/SceneBookmark"
+          },
+          "SceneCaptionStyle": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/SceneCaptionStyle"
+          },
+          "SceneEffect": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/SceneEffect"
+          },
+          "SceneTextAlign": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/SceneTextAlign"
+          },
+          "SceneTrack": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/SceneTrack"
+          },
+          "SceneTrackKind": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/SceneTrackKind"
+          },
+          "SceneTransition": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/SceneTransition"
+          },
+          "SettingsProfile": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/SettingsProfile"
+          },
+          "Stroke": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/Stroke"
+          },
+          "StrokeAlign": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/StrokeAlign"
+          },
+          "TangentMode": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/TangentMode"
+          },
+          "Text": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/Text"
+          },
+          "TextBackground": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/TextBackground"
+          },
+          "TextDecoration": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/TextDecoration"
+          },
+          "TextMask": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/TextMask"
+          },
+          "Time": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/Time"
+          },
+          "TimeRange": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/TimeRange"
+          },
+          "TimelineElement": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/TimelineElement"
+          },
+          "Transform": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/Transform"
+          },
+          "TransformGestureIntent": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewEditDraftFrameInput/$defs/TransformGestureIntent"
+          },
+          "TransitionKind": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/TransitionKind"
+          },
+          "VisualEditDraftFrame": {
+            "additionalProperties": false,
+            "properties": {
+              "draft_id": {
+                "type": "string"
+              },
+              "frame": {
+                "$ref": "#/components/schemas/VisualPreviewPicturePrepare/$defs/VisualPreviewFrame"
+              },
+              "intent": {
+                "$ref": "#/components/schemas/VisualPreviewPicturePrepare/$defs/VisualEditDraftIntent"
+              },
+              "transaction": {
+                "$ref": "#/components/schemas/VisualPreviewPicturePrepare/$defs/ApplyProject"
+              }
+            },
+            "required": [
+              "draft_id",
+              "intent",
+              "transaction",
+              "frame"
+            ],
+            "type": "object"
+          },
+          "VisualEditDraftIntent": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewEditDraftFrameInput/$defs/VisualEditDraftIntent"
+          },
+          "VisualPreviewFrame": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewEditDraftFrameInput/$defs/VisualPreviewFrame"
+          },
+          "VisualPreviewHitPoint": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameInput/$defs/VisualPreviewHitPoint"
+          },
+          "VisualProfile": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/VisualProfile"
+          },
+          "VisualProperty": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewEditDraftFrameInput/$defs/VisualProperty"
+          },
+          "VisualStyle": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/VisualStyle"
+          }
+        },
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "description": "A presentation transport over the existing scene/draft use cases. This\ndoes not create a second rendering operation or grant resource authority.",
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "frame": {
+                "$ref": "#/components/schemas/VisualPreviewPicturePrepare/$defs/VisualPreviewFrame"
+              },
+              "kind": {
+                "const": "scene",
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "frame"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "draft": {
+                "$ref": "#/components/schemas/VisualPreviewPicturePrepare/$defs/VisualEditDraftFrame"
+              },
+              "kind": {
+                "const": "edit_draft",
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "draft"
+            ],
+            "type": "object"
+          }
+        ],
+        "title": "VisualPreviewPicturePrepare"
+      },
+      "VisualPreviewPreparedPicture": {
+        "$defs": {
+          "BlendFramePlan": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/BlendFramePlan"
+          },
+          "BlendMode": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/BlendMode"
+          },
+          "BoundBlendFrame": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/BoundBlendFrame"
+          },
+          "BoundGraphicFrame": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/BoundGraphicFrame"
+          },
+          "BoundSceneFrame": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/BoundSceneFrame"
+          },
+          "BoundSceneLayer": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/BoundSceneLayer"
+          },
+          "BoundTextFrame": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/BoundTextFrame"
+          },
+          "BoundVisualFrame": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/BoundVisualFrame"
+          },
+          "BoundVisualLayer": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/BoundVisualLayer"
+          },
+          "BoxMaskGeometry": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/BoxMaskGeometry"
+          },
+          "CaptionFramePlan": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/CaptionFramePlan"
+          },
+          "CaptionLayoutReceipt": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/CaptionLayoutReceipt"
+          },
+          "CaptionRasterPlan": {
+            "$ref": "#/components/schemas/OpencutSubtitleClassicAssPlanOutput/$defs/CaptionRasterPlan"
+          },
+          "CaptionWrapMeasurement": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/CaptionWrapMeasurement"
+          },
+          "ClassicVisualLayerPlan": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/ClassicVisualLayerPlan"
+          },
+          "ClassicVisualPlan": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/ClassicVisualPlan"
+          },
+          "Color": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/Color"
+          },
+          "ColorEncoding": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/ColorEncoding"
+          },
+          "DecodedVisualSource": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/DecodedVisualSource"
+          },
+          "EffectKind": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/EffectKind"
+          },
+          "FontBinding": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/FontBinding"
+          },
+          "FontCatalogEntry": {
+            "$ref": "#/components/schemas/OpencutFontSourceOutput/$defs/FontCatalogEntry"
+          },
+          "FontResolutionPolicy": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/FontResolutionPolicy"
+          },
+          "FontSize": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/FontSize"
+          },
+          "FontStyle": {
+            "$ref": "#/components/schemas/OpencutFontCatalogOutput/$defs/FontStyle"
+          },
+          "FontSynthesisBinding": {
+            "$ref": "#/components/schemas/OpencutFontSourceOutput/$defs/FontSynthesisBinding"
+          },
+          "FontSynthesisProfile": {
+            "$ref": "#/components/schemas/OpencutFontSourceOutput/$defs/FontSynthesisProfile"
+          },
+          "FontSynthesisRequest": {
+            "$ref": "#/components/schemas/OpencutFontSourceOutput/$defs/FontSynthesisRequest"
+          },
+          "FontWeight": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/FontWeight"
+          },
+          "FreeformMask": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/FreeformMask"
+          },
+          "FreeformPoint": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/FreeformPoint"
+          },
+          "GraphicFramePlan": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/GraphicFramePlan"
+          },
+          "GraphicGeometryPlan": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/GraphicGeometryPlan"
+          },
+          "GraphicLayerPlan": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/GraphicLayerPlan"
+          },
+          "GraphicRasterPlan": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/GraphicRasterPlan"
+          },
+          "GraphicRasterReceipt": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/GraphicRasterReceipt"
+          },
+          "GraphicStrokePlan": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/GraphicStrokePlan"
+          },
+          "LayerBlend": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/LayerBlend"
+          },
+          "LayerMaskShape": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/LayerMaskShape"
+          },
+          "Mask": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/Mask"
+          },
+          "MaskFeather": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/MaskFeather"
+          },
+          "MaskQuad": {
+            "$ref": "#/components/schemas/OpencutSceneGeometryOutput/$defs/MaskQuad"
+          },
+          "NativeGraphicsApi": {
+            "$ref": "#/components/schemas/OpencutQualityInspectOutput/$defs/NativeGraphicsApi"
+          },
+          "NativeLibraryIdentity": {
+            "$ref": "#/components/schemas/OpencutQualityInspectOutput/$defs/NativeLibraryIdentity"
+          },
+          "NativePlatformIdentity": {
+            "$ref": "#/components/schemas/OpencutQualityInspectOutput/$defs/NativePlatformIdentity"
+          },
+          "NativeVisualIdentity": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/NativeVisualIdentity"
+          },
+          "SceneBackground": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SceneBackground"
+          },
+          "SceneEffect": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/SceneEffect"
+          },
+          "SceneFontSynthesis": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/SceneFontSynthesis"
+          },
+          "SceneFontSynthesisOwner": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/SceneFontSynthesisOwner"
+          },
+          "SceneFramePlan": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/SceneFramePlan"
+          },
+          "SceneLayerStack": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/SceneLayerStack"
+          },
+          "SceneStep": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SceneStep"
+          },
+          "SceneTextMaskFont": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/SceneTextMaskFont"
+          },
+          "Stroke": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/Stroke"
+          },
+          "StrokeAlign": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/StrokeAlign"
+          },
+          "TextBackgroundRect": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextBackgroundRect"
+          },
+          "TextBlockMetrics": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextBlockMetrics"
+          },
+          "TextDecoration": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/TextDecoration"
+          },
+          "TextFrameIdentity": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/TextFrameIdentity"
+          },
+          "TextFramePlan": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/TextFramePlan"
+          },
+          "TextLayerPlan": {
+            "$ref": "#/components/schemas/OpencutSubtitleClassicAssPlanOutput/$defs/TextLayerPlan"
+          },
+          "TextLayout": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextLayout"
+          },
+          "TextLineMetrics": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextLineMetrics"
+          },
+          "TextMask": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/TextMask"
+          },
+          "TextRasterBackground": {
+            "$ref": "#/components/schemas/OpencutSubtitleClassicAssPlanOutput/$defs/TextRasterBackground"
+          },
+          "TextRasterInput": {
+            "$ref": "#/components/schemas/OpencutSubtitleClassicAssPlanOutput/$defs/TextRasterInput"
+          },
+          "TextRasterReceipt": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextRasterReceipt"
+          },
+          "TextRasterTransform": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextRasterTransform"
+          },
+          "TextRect": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextRect"
+          },
+          "Time": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/Time"
+          },
+          "ValidatedTextFont": {
+            "$ref": "#/components/schemas/OpencutSubtitleClassicAssPlanOutput/$defs/ValidatedTextFont"
+          },
+          "VisualDecodeAdmission": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/VisualDecodeAdmission"
+          },
+          "VisualDecodeRequest": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/VisualDecodeRequest"
+          },
+          "VisualEditDraftFrameResult": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewEditDraftFrameOutput/$defs/VisualEditDraftFrameResult"
+          },
+          "VisualFrameIdentity": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/TextFrameIdentity"
+          },
+          "VisualNoFrameReason": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/MediaFrameNoSourceReason"
+          },
+          "VisualPreviewAdmission": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/VisualPreviewAdmission"
+          },
+          "VisualPreviewFrameResult": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/VisualPreviewFrameResult"
+          },
+          "VisualPreviewHit": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/VisualPreviewHit"
+          },
+          "VisualPreviewHitPoint": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameInput/$defs/VisualPreviewHitPoint"
+          },
+          "VisualPreviewHitTest": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/VisualPreviewHitTest"
+          },
+          "VisualPreviewPicture": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/VisualPreviewPicture"
+          },
+          "VisualQuad": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/VisualQuad"
+          },
+          "VisualResource": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewResourceOpenInput/$defs/VisualResource"
+          },
+          "VisualResourceKind": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewResourceOpenInput/$defs/VisualResourceKind"
+          },
+          "VisualVideoEofPolicy": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/VisualVideoEofPolicy"
+          }
+        },
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "frame": {
+                "$ref": "#/components/schemas/VisualPreviewPreparedPicture/$defs/VisualPreviewFrameResult"
+              },
+              "kind": {
+                "const": "scene",
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "frame"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "draft": {
+                "$ref": "#/components/schemas/VisualPreviewPreparedPicture/$defs/VisualEditDraftFrameResult"
+              },
+              "kind": {
+                "const": "edit_draft",
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "draft"
+            ],
+            "type": "object"
+          }
+        ],
+        "title": "VisualPreviewPreparedPicture"
       },
       "OpenCutEventStreamRecord": {
         "$defs": {

@@ -47,7 +47,7 @@ export class VisualPreviewRenderer {
     intent.throwIfAborted();
     const began = performance.now();
     const request: Input = {
-      session, resolution: preparation ? "preview540" : "source",
+      session, resolution: preparation || (!hitQuery && !transformDraft) ? "preview540" : "source",
       time: transformDraft?.time ?? preparation?.time ?? null,
       prepare_ahead: !!preparation,
       retained_picture_bytes: preparation?.reservedBytes ?? 0,

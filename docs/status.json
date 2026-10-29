@@ -4236,18 +4236,18 @@
     ],
     "source_preview_preparation": {
       "source_base_commit": "231cc49b47b2b0e51d8aeb9ca53a8fa745ff6350",
-      "state": "integrated_proxy_pixels_passed_playback_failed_tuning_pending_build",
+      "state": "native_source_scoped_checks_passed_editor_playback_unqualified",
       "implementation": "Source-only durable media.preview_source job, CPU native sequential decode, fixed lossless FFV1 RGBA, exact original/proxy frame index, editor prewarming, live preview resource and publication fences, separate video/index references and original-only export.",
       "preview": "Existing 540p canvas bound; no further reduction.",
       "export": "Original source; 720p/1080p/1440p/2160p; new Web default 1080p unchanged.",
-      "preflight": "Source3adb98e2:14architecture checks and both boundary gates passed; final tuned candidate gates pending.",
-      "build": "Source3adb98e2 CLI c26fd848d3730e135233085302b377c60b39a8f77dacb057dd1ed9c63a161a98 and retained worker f6d56247e02f8e115f08625a8d2387a467d8bd3cc540d9c8a7df2ad32c70462c built; Web build passed; next tuned integrated build pending.",
-      "behavior": "Actual12s4K source produced360FFV1 frames in26.157s; seven actualHTTP540p frames exact independent original pixels and seven rejection guards pass.94s playback fails:startup5.868s and150s only85.167s; no performance promotion.",
+      "preflight": "14architecture checks and both boundary gates pass for exact sealed Rust candidate.",
+      "build": "Source a4a5bedb CLI eb49383046312e9c2a6ee50ab175114f377441817f7f3298fcc15f9fe74416bb and worker88afb9b80c73c9e982726ab6247b7768b57ed6893f49d90c2be6badfe0e63694 built in382.462s.18scoped native checks pass. Ordinary paused-picture Web change pending its own build; no Rust rebuild.",
+      "behavior": "Seven actualHTTP4K-source540p frames exact independent original references; seven rejection guards pass.8authored transparentRGBAframes including hiddenRGB pass actual source producer; small source not upscaled. Formal playback failed at14.967s despite4.870s startup; diagnostic complete129.768s but6.329s startup fails. No qualification promotion.",
       "delivery_ready": false,
-      "access": "Internal native proxy bytes retain original preview Read/RunJobs scope; public artifact downloads retain ReadArtifacts. Regression authored and typechecked; execution pending.",
-      "contracts": "Generated and canonical checks pass against exact c26fd848d373 CLI; tuned source has no public contract changes.",
-      "tuning": "Remove periodic full runtime hashing while checking file identity on every admission; FFV1 Golomb/context0 and bulk unrotated row copies.360frame external codec-only probe decode2.011s to0.540s; product validation pending.",
-      "evidence_root": "/Users/vincent/Movies/OpenCut-native-rendering/4k/native-source-preview",
+      "access": "Internal native proxy bytes retain original preview Read/RunJobs; public artifact downloads retain ReadArtifacts. Four SQLite source lifecycle/authority/publication regressions executed and passed.",
+      "contracts": "Generated and canonical checks pass against exact eb4938304631 CLI. Client-only picture resolution does not change shared contract.",
+      "tuning": "Dependency-stat-driven runtime identity, FFV1 Golomb/context0 and row copies built and source/pixel validated. Periodic hashing removed; integrated playback remains unqualified.",
+      "evidence_root": "/Users/vincent/Movies/OpenCut-native-rendering/4k/source-preview-throughput",
       "original_export": {
         "job_id": "job_2f0959bebfc848c8b1ab3a2e4f08861a",
         "seconds": 43.5763405340258,
@@ -4261,7 +4261,18 @@
         "sha256": "ae9cbb77576c6b9d32ce8b53e900d297da1e0491603854bd0a15421af55a2cb9",
         "evidence_count": 85,
         "qualification": "source_preparation_independent_pixels_and_original_export_passed_continuous_playback_failed"
-      }
+      },
+      "native_scoped_checks": {
+        "host": 1,
+        "application": 2,
+        "sqlite": 4,
+        "source_raster_index": 2,
+        "retained_native_decoders": 9,
+        "total": 18
+      },
+      "web_scoped_checks": 43,
+      "sdk_scoped_checks": 60,
+      "paused_editor_picture": "Ordinary static editor frames now request preview540. Precise hit and transform intent retain existing coordinates; Web build/behavior pending; original-source export unchanged."
     }
   }
 }

@@ -35,12 +35,12 @@ function fixture() {
   const api = { scene: { resource }, sdk: { prepareVisualPreviewPicture: call } } as unknown as VisualPreviewExecutionApi;
   return { frame, call, read, cancel, prepared, resource, api, renderer: new VisualPreviewRenderer() };
 }
-it("submits one native intent per frame and presents verified RGBA without source decoding", async () => {
+it("uses the540p editor bound for ordinary paused frames and presents verified native RGBA", async () => {
   const f = fixture(), signal = new AbortController().signal;
   const result = await f.renderer.render(f.api, session, signal);
   expect(f.call).toHaveBeenCalledOnce();
   expect(f.call.mock.calls[0][0]).toEqual({ kind: "scene", frame: {
-    session, resolution: "source", time: null, prepare_ahead: false, retained_picture_bytes: 0, hit_query: null,
+    session, resolution: "preview540", time: null, prepare_ahead: false, retained_picture_bytes: 0, hit_query: null,
   } });
   expect(f.call.mock.calls[0][1]).toEqual({ signal: expect.any(AbortSignal) });
   expect(create).toHaveBeenCalledWith(expect.objectContaining({ data: new Uint8ClampedArray(16), width: 2, height: 2 }), { colorSpaceConversion: "none", premultiplyAlpha: "none" });
@@ -80,6 +80,7 @@ it.each(["draft", "digest", "hit-point", "hit-identity"])("rejects changed %s be
     if (kind === "hit-point") f.frame.hit_test.point.x = 0;
     else f.frame.hit_test.identity.revision = "other";
     await expect(f.renderer.render(f.api, session, new AbortController().signal, { x: 1, y: 0 })).rejects.toThrow();
+    expect(f.call.mock.calls[0][0].frame.resolution).toBe("source");
   } else {
     f.call.mockResolvedValue(f.prepared({ kind: "edit_draft", draft: { draft_id: kind === "draft" ? "other" : "draft", transaction_digest: kind === "digest" ? "" : "digest", frame: f.frame } }));
     await expect(f.renderer.render(f.api, session, new AbortController().signal, undefined, { draftId: "draft", intent: "transform" as never, transaction: {} as never, time: { ticks: "0", timebase: 1 } })).rejects.toThrow();

@@ -4275,7 +4275,7 @@
       "paused_editor_picture": "Ordinary static editor frames request preview540; actual ended picture960x540. Web e7839eb8:4K startup4.810s/94s content124.109s,seek/pause/resume pass; small startup6.229s fails5s despite100.721s completion. Overall unqualified. Precise hit and transform keep existing coordinates; original-source export unchanged."
     },
     "causal_performance_diagnosis": {
-      "state": "confirmed_head_wait_fixed_pending_single_web_build_and_controlled_editor_check",
+      "state": "confirmed_head_wait_fixed_built_and_controlled_editor_check_passed_realtime_export_stall_open",
       "evidence_root": "/Users/vincent/Movies/OpenCut-native-rendering/4k/causal-diagnosis",
       "candidate_rust_sha256": {
         "cli": "eb49383046312e9c2a6ee50ab175114f377441817f7f3298fcc15f9fe74416bb",
@@ -4288,14 +4288,60 @@
         "cookie": "Cookie/Bearer ABBA38.8-42.2ms,no supported material difference.",
         "alternate_sha256": "Noble37-38ms vs WebCrypto6.8ms offline; rejected.",
         "output_buffer": "Same exact worker/proxy/360frames/64KiB/7independent pixel references:pipe7.44ms vs socket8.89ms median emission.19.5percent worse; rejected, no product change. Source ACK protocol is not visual transport timing.",
-        "head_wait": "Deterministic actual producer:fully verified and claimed head withheld by later preparation. Red test recorded then fixed; old real Web1000ms future-request hold first presented1280ms after hold began.84related client checks pass. New Web/build/behavior pending.",
-        "intermittent_stall": "Unresolved; prior queued incomplete head at14.967s lacks live blocking stack. Later completions do not close failure.",
+        "head_wait": "Confirmed by deterministic regression and real editor controlled1000ms future-request delay. Baseline first presented1280ms after hold began; fixed45ms, before release. DOM interval50ms. No ordinary-startup/realtime/full-delivery claim. Claim,full pixels/hash/order,at-most2reads,6queue,64MiB double reserve,transferred bitmap charge and cancellation retained.",
+        "intermittent_stall": "Unresolved; queued incomplete head differs from the fixed completed-head wait. No live blocking stack or platform-limitation conclusion. Later playback successes do not close original failure.",
         "export": "Current original6s4K53.218s; profile212105checkpoints13.399s,overlapping render. Authorization/cancel/lease/publication fences retained; no accepted speedup."
       },
       "delivery_ready": false,
       "rust_rebuilt": false,
       "public_contract_changed": false,
-      "manual_acceptance": false
+      "manual_acceptance": false,
+      "source_web_commit": "989bf6637c1c08cffe664d25e3c44ed75476582a",
+      "related_client_checks": 84,
+      "architecture_tests": 14,
+      "web_build_seconds": 17.817467340966687,
+      "controlled_editor_reports": [
+        "/Users/vincent/Movies/OpenCut-native-rendering/4k/causal-diagnosis/producer-head-baseline-dom.json",
+        "/Users/vincent/Movies/OpenCut-native-rendering/4k/causal-diagnosis/producer-head-fixed-dom.json"
+      ],
+      "build_and_behavior_evidence_root": "/Users/vincent/Movies/OpenCut-native-rendering/4k/producer-head",
+      "original_export": {
+        "job_id": "job_ab19d82254b541dc82399aa8e97560c7",
+        "seconds": 53.218153,
+        "whole_mp4_sha256": "da10feb14158c09d4c0464abb1b6605d78b328ba4ab7b3702184f3c450ace172",
+        "independent_preencode_pcm_max_error": 0,
+        "retained_original_producer_evidence_root": "/Users/vincent/Movies/OpenCut-native-rendering/4k/source-preview-throughput",
+        "client_change_rerun": false,
+        "stable_speedup_proven": false
+      },
+      "cleanup": {
+        "synthetic_projects_unchanged": 4,
+        "web_assets_verified": 284,
+        "owned_service_stopped": true,
+        "active_jobs": 0,
+        "owned_children_remaining": 0,
+        "user_services_and_packages_unchanged": true
+      },
+      "checkpoints": [
+        {
+          "path": "/Users/vincent/Movies/OpenCut-native-rendering/4k/producer-head/checkpoint.json",
+          "sha256": "918b9899c377e47d5cc72a1a6de485865a9a4e994ae8e6f5a3ee279dae3b8fd5",
+          "files": 301,
+          "scope": "Web989bf663 single build and repaired completed-head waiting;84client checks and controlled actual editor injection."
+        },
+        {
+          "path": "/Users/vincent/Movies/OpenCut-native-rendering/4k/causal-diagnosis/checkpoint.json",
+          "sha256": "d111435db9174b5d989f3072724e0221ad5192d13f818b6cbd59159bf9ad8338",
+          "files": 35,
+          "scope": "Bounded single-variable comparisons, rejected substitutions, red/green and real editor baseline/fixed evidence. Not full delivery."
+        },
+        {
+          "path": "/Users/vincent/Movies/OpenCut-native-rendering/4k/editor-preview-bound/checkpoint.json",
+          "sha256": "8d1ae80f4395c6e0b19f4521b1dfbfe54f82fd281694d43dc0665d11000de640",
+          "files": 312,
+          "scope": "Prior Webe7839eb8 ordinary540p paused picture,4K full gates passed but non-realtime;small startup6.229s failed;retain exact producer."
+        }
+      ]
     }
   }
 }

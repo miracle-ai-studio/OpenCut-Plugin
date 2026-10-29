@@ -52,7 +52,7 @@ impl<'de> Deserialize<'de> for ArchivedVisualApply {
                 wrapped: true,
             })
         } else {
-            serde_json::from_value(value)
+            serde_json::from_value::<ApplyHistoricalVisualProject>(value)
                 .map(Self::from)
                 .map_err(serde::de::Error::custom)
         }

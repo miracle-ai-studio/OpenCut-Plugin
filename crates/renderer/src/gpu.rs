@@ -33,6 +33,7 @@ struct Targets {
 }
 struct UploadBuffer {
     buffer: wgpu::Buffer,
+    texture: wgpu::Texture,
     aligned: u32,
 }
 struct Pipelines {

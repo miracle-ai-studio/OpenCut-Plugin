@@ -210,9 +210,9 @@ impl Renderer {
                 .iter()
                 .map(|[w, h]| u64::from(*w) * u64::from(*h) * 8)
                 .sum::<u64>();
-        // Retained upload buffers remain live through submission completion.
-        // Count their actual padded rows, also on warm executions. The layout
-        // contains only this frame's unique sources, including its background.
+        // Retained source textures and staging stay within this layout. Count
+        // the original source texture bytes and actual padded staging rows,
+        // also on warm executions; no idle storage is exempt from admission.
         let staging = layout
             .uploads
             .iter()

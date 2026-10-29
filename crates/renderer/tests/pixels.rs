@@ -108,6 +108,88 @@ fn rgba_readback_preserves_channels_rows_and_chunk_boundaries() {
 
 #[test]
 #[ignore = "Requires a physical native GPU; run in the integrated serial media suite"]
+fn successive_sources_with_equal_extents_remain_independent_across_layout_changes() {
+    let backend = if cfg!(target_os = "macos") {
+        Backend::Metal
+    } else if cfg!(target_os = "windows") {
+        Backend::DirectX
+    } else {
+        Backend::Vulkan
+    };
+    let mut renderer = Renderer::new(
+        backend,
+        Limits {
+            max_frame_pixels: 1024,
+            max_gpu_bytes: 1024 * 1024,
+            max_cpu_bytes: 1024 * 1024,
+            max_layers: 2,
+        },
+    )
+    .unwrap();
+    // Equal-size sources need independent slots. Change every source and the
+    // layout, then return to the old extent; no old texture may leak pixels.
+    for (phase, (width, height)) in [(65, 2), (65, 2), (1, 1), (1, 1), (65, 2)]
+        .into_iter()
+        .enumerate()
+    {
+        let left = [13 + phase as u8 * 35, 11, 3, 255];
+        let right = [4, phase as u8 * 47, 197, 255];
+        let a = left.repeat((width * height) as usize);
+        let b = right.repeat((width * height) as usize);
+        let mut layers = [
+            layer(Raster {
+                width,
+                height,
+                rgba: &a,
+            }),
+            layer(Raster {
+                width,
+                height,
+                rgba: &b,
+            }),
+        ];
+        for (index, input) in layers.iter_mut().enumerate() {
+            input.quad.center_x = width as f32 / 2.0 + index as f32 * (width + 1) as f32;
+            input.quad.center_y = height as f32 / 2.0;
+            input.quad.width = width as f32;
+            input.quad.height = height as f32;
+            input.effect_size = [width, height];
+        }
+        let frame = Frame {
+            width: width * 2 + 1,
+            height,
+            clear: [0.0; 4],
+            background: Background::Color([0.2, 0.4, 0.6, 1.0]),
+            layers: &layers,
+            steps: &[Step::Layer(0), Step::Layer(1)],
+        };
+        let mut output = Output {
+            bytes: Vec::new(),
+            cancel: false,
+            deadline: Instant::now() + Duration::from_secs(30),
+            probe: None,
+            hits: Vec::new(),
+        };
+        let receipt = renderer.render(&frame, &mut output).unwrap();
+        assert!(receipt.accounted_gpu_bytes <= 1024 * 1024);
+        assert_eq!(output.bytes.len(), (frame.width * height * 4) as usize);
+        for row in output.bytes.chunks_exact(frame.width as usize * 4) {
+            for (x, actual) in row.chunks_exact(4).enumerate() {
+                let expected = if x < width as usize {
+                    left
+                } else if x == width as usize {
+                    [51, 102, 153, 255]
+                } else {
+                    right
+                };
+                near(actual.try_into().unwrap(), expected);
+            }
+        }
+    }
+}
+
+#[test]
+#[ignore = "Requires a physical native GPU; run in the integrated serial media suite"]
 fn padded_upload_admission_and_mapping_cancellation_remain_bounded() {
     let backend = if cfg!(target_os = "macos") {
         Backend::Metal
@@ -188,6 +270,34 @@ fn padded_upload_admission_and_mapping_cancellation_remain_bounded() {
     assert_eq!(
         renderer.render(&frame, &mut stop).unwrap_err().code,
         "VISUAL_GPU_FAILED"
+    );
+    let mut renderer = Renderer::new(
+        backend,
+        Limits {
+            max_frame_pixels: 1024,
+            max_gpu_bytes: 1024 * 1024,
+            max_cpu_bytes: 512 * 1024,
+            max_layers: 1,
+        },
+    )
+    .unwrap();
+    let mut expired = Output {
+        bytes: Vec::new(),
+        cancel: false,
+        deadline: Instant::now(),
+        probe: None,
+        hits: Vec::new(),
+    };
+    assert_eq!(
+        renderer.render(&frame, &mut expired).unwrap_err().code,
+        "VISUAL_TIME_LIMIT"
+    );
+    assert!(expired.bytes.is_empty());
+    expired.deadline = Instant::now() + Duration::from_secs(30);
+    assert_eq!(
+        renderer.render(&frame, &mut expired).unwrap_err().code,
+        "VISUAL_GPU_FAILED",
+        "An expired mapping retires its native scratch"
     );
 }
 fn quad() -> VisualQuad {

@@ -355,6 +355,14 @@
       ],
       "qualification": "Scoped build/transport/independent preview/PCM and original editor gates passed.No confirmed whole-playback or export speedup.4K newroute response telemetry incomplete;small source fullcapture retained.Transport abort attribution,broader media/default-track/proxy mapping,distribution and manual acceptance open.",
       "delivery_ready": false
+    },
+    "gpu_picture_residency": {
+      "state": "implementation_pending_integrated_build_and_acceptance",
+      "source_base_commit": "c4b364618cdd9e922f47969aa98531ed840d2336",
+      "change": "Reuse admitted source textures with existing staging slots;native GPU map waits wake on completion and preserve1ms/current-deadline checkpoints.No shader,DTO,dependency,budget or operation changes.",
+      "diagnostic_checkpoint": "/Users/vincent/Movies/OpenCut-native-rendering/4k/frame-preparation-profile/checkpoint.json",
+      "diagnostic_checkpoint_sha256": "f0c31db9f583dc6ca933b0e79a561c6acc5d1106aa613405ceb2422d5ea3c3c9",
+      "qualification": "CPU sampling only;235moving and283same-decoded-frame diagnostic requests.No formal timing/newbuild;initial PID discovery and non-overlap samples retained."
     }
   },
   "scope": "Local CLI/HTTP/MCP/SDK service and Web editor; GPUI shell is not an integrated editor.",

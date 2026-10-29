@@ -101,6 +101,7 @@ impl Renderer {
                     let buffers = (0..count)
                         .map(|_| UploadBuffer {
                             aligned,
+                            texture: texture(&self.device, size[0], size[1], FORMAT),
                             buffer: self.device.create_buffer(&wgpu::BufferDescriptor {
                                 label: Some("bounded reusable source upload"),
                                 size: u64::from(aligned) * u64::from(size[1]),
@@ -256,9 +257,9 @@ impl Renderer {
             }
             Ok(())
         });
-        // All source uploads are retained through queue completion and never
-        // survive this execution. Only admitted scratch, including upload
-        // buffers, survives; every live source byte is overwritten next use.
+        // Per-frame bindings end after queue completion. Admitted source slots
+        // retain both staging and texture; every effective byte is overwritten
+        // before either is read by the next frame. Layout changes retire them.
         drop(uploads);
         result
     }
@@ -326,12 +327,6 @@ impl Renderer {
         })();
         staging.buffer.unmap();
         copied?;
-        let result = texture(
-            &self.device,
-            source.width,
-            source.height,
-            wgpu::TextureFormat::Rgba8Unorm,
-        );
         encoder.copy_buffer_to_texture(
             wgpu::TexelCopyBufferInfo {
                 buffer: &staging.buffer,
@@ -341,10 +336,10 @@ impl Renderer {
                     rows_per_image: Some(source.height),
                 },
             },
-            copy_texture(&result),
+            copy_texture(&staging.texture),
             extent(source.width, source.height),
         );
-        Ok(result)
+        Ok(staging.texture.clone())
     }
 
     fn layer(
@@ -662,13 +657,27 @@ impl Renderer {
                     "Native GPU mapping exceeded deadline",
                 ));
             }
-            self.device.poll(wgpu::PollType::Poll).map_err(gpu_error)?;
+            // Native completion wakes the wait as soon as the submission is
+            // done. Keep the original one-millisecond checkpoint bound; a
+            // bounded poll timeout is pending work, not a failed GPU owner.
+            let timeout = Duration::from_millis(1).min(
+                execution
+                    .deadline()
+                    .saturating_duration_since(Instant::now()),
+            );
+            match self.device.poll(wgpu::PollType::Wait {
+                submission_index: None,
+                timeout: Some(timeout),
+            }) {
+                Ok(_) | Err(wgpu::PollError::Timeout) => {}
+                Err(error) => return Err(gpu_error(error)),
+            }
             match receive.try_recv() {
                 Ok(value) => return value.map_err(gpu_error),
                 Err(mpsc::TryRecvError::Disconnected) => {
                     return Err(gpu_error("GPU readback channel closed"));
                 }
-                Err(mpsc::TryRecvError::Empty) => std::thread::sleep(Duration::from_millis(1)),
+                Err(mpsc::TryRecvError::Empty) => std::thread::yield_now(),
             }
         }
     }

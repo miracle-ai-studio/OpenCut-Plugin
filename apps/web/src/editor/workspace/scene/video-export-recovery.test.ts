@@ -11,6 +11,24 @@ function setup() {
   const storage = { getItem: (key: string) => data.get(key) ?? null, setItem: (key: string, value: string) => { data.set(key, value); }, removeItem: (key: string) => { data.delete(key); } };
   return { data, storage, recovery: new ExportVideoRecovery(storage) };
 }
+it("preserves omitted historical resolution and every explicit resolution through recovery", () => {
+  const f = setup();
+  for (const resolution of [undefined, "source", "preview540", "p720", "p1080", "p1440", "p2160"] as const) {
+    const value = make();
+    if (resolution !== undefined) value.request.options.resolution = resolution;
+    f.recovery.write(identity(), value);
+    const restored = f.recovery.read(identity(), "project")!;
+    expect(restored.request).toEqual(value.request);
+    expect(Object.hasOwn(restored.request.options, "resolution")).toBe(resolution !== undefined);
+  }
+  const key = "opencut.export-video-recovery", valid = f.data.get(key)!;
+  for (const resolution of [null, "preview360", "p4320", 1080]) {
+    const corrupt = JSON.parse(valid);
+    corrupt.entries[0].attempt.request.options.resolution = resolution;
+    f.data.set(key, JSON.stringify(corrupt));
+    expect(() => f.recovery.read(identity(), "project")).toThrow("invalid");
+  }
+});
 it("uses one literal envelope, isolates service/project scope and never persists diagnostic text", () => {
   const f = setup(), attempt = make();
   const historical = JSON.stringify({version:2,entries:[{connection:identity("service-a"),project:"project",attempt:{request:attempt.request,sceneName:attempt.sceneName,phase:attempt.phase,jobId:attempt.jobId}}]});

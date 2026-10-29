@@ -20,6 +20,7 @@ const keys = (v: Record<string, unknown>, expected: string[]) => Object.keys(v).
 const invalid = () => Error("Saved export recovery is invalid or exceeds its local limit.");
 const format = (v: unknown): v is ExportVideoOptions["format"] => v === "mp4" || v === "webm";
 const quality = (v: unknown): v is ExportVideoOptions["quality"] => v === "low" || v === "medium" || v === "high" || v === "very_high";
+const resolution = (v: unknown): v is NonNullable<ExportVideoOptions["resolution"]> => v === "source" || v === "preview540" || v === "p720" || v === "p1080" || v === "p1440" || v === "p2160";
 const phase = (v: unknown): v is ExportVideoAttempt["phase"] => v === "submitting" || v === "unconfirmed" || v === "retryable" || v === "accepted";
 
 function attempt(value: unknown): SavedAttempt {
@@ -27,13 +28,15 @@ function attempt(value: unknown): SavedAttempt {
   const r = value.request, options = r.options;
   if (!keys(r, ["project_id", "revision", "sequence_id", "idempotency_key", "options"]) ||
       !validId(r.project_id) || !validId(r.revision) || !validId(r.sequence_id) || !validId(r.idempotency_key) || !record(options) ||
-      !keys(options, ["format", "quality", "include_audio"]) || !format(options.format) ||
+      !keys(options, ["format", "quality", "include_audio", ...("resolution" in options ? ["resolution"] : [])]) ||
+      ("resolution" in options && !resolution(options.resolution)) || !format(options.format) ||
       !quality(options.quality) || typeof options.include_audio !== "boolean" ||
       bytes(JSON.stringify(r)) > maxRequest || typeof value.sceneName !== "string" || value.sceneName.length > 2048 ||
       !phase(value.phase) ||
       (value.jobId !== null && !validId(value.jobId)) || (value.phase === "accepted" && value.jobId === null)) throw invalid();
   return { request: { project_id: r.project_id, revision: r.revision, sequence_id: r.sequence_id, idempotency_key: r.idempotency_key,
-    options: { format: options.format, quality: options.quality, include_audio: options.include_audio } },
+    options: { format: options.format, quality: options.quality, include_audio: options.include_audio,
+      ...(resolution(options.resolution) ? { resolution: options.resolution } : {}) } },
     sceneName: value.sceneName, phase: value.phase, jobId: value.jobId };
 }
 

@@ -128,12 +128,13 @@ fn scene_picture_inner(
         selected.snapshot = snapshot;
         digest = Some(identity);
     }
-    let frame = if input.resolution == opencut_contracts::export_video::RasterResolution::Preview540
+    let frame = if !input.resolution.is_source()
     {
-        opencut_editor_application::scene_frame_jobs::prepare_preview(
+        opencut_editor_application::scene_frame_jobs::prepare_raster(
             &selected.snapshot,
             &e.request.sequence_id,
             time,
+            input.resolution,
         )?
     } else {
         opencut_editor_application::scene_frame_jobs::prepare(

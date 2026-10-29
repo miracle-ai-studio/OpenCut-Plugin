@@ -45,10 +45,13 @@ pub fn prepare(
 }
 /// Playback rasterization after authoritative timeline/animation sampling.
 pub fn prepare_preview(snapshot: &EditorSnapshot, sequence_id: &str, time: &Time) -> Result<PreparedSceneFrame, EditorError> {
+    prepare_raster(snapshot,sequence_id,time,opencut_contracts::export_video::RasterResolution::Preview540)
+}
+pub fn prepare_raster(snapshot: &EditorSnapshot, sequence_id: &str, time: &Time, resolution: opencut_contracts::export_video::RasterResolution) -> Result<PreparedSceneFrame, EditorError> {
     for font in &snapshot.project.fonts { crate::font_synthesis::binding_for_resource(font)?; }
     let graph = compile_frame_scene(snapshot, sequence_id, time, CompositionScope::Visual)
         .map_err(|e| EditorError::new(e.code, e.message))?;
-    prepare_scene_frame(&project_preview_raster(graph)).map_err(|e| EditorError::new(e.code, e.message))
+    prepare_scene_frame(&project_raster(graph,resolution)).map_err(|e| EditorError::new(e.code, e.message))
 }
 
 #[cfg(test)]
@@ -78,6 +81,16 @@ mod preview_tests {
         assert_eq!(half.text.font_size_px,full.text.font_size_px/2.);
         assert_eq!(projected.time,graph.time);assert_eq!(projected.resources,graph.resources);
         assert_eq!(projected.fonts,graph.fonts);assert_eq!(projected.layers[1].local_time,graph.layers[1].local_time);
+        let doubled=project_raster(graph.clone(),opencut_contracts::export_video::RasterResolution::P2160);
+        let large=prepare_text_raster(&doubled,"title").unwrap();
+        assert_eq!((large.identity.width,large.identity.height),(3840,2160));
+        assert_eq!(large.text.font_size_px,full.text.font_size_px*2.);
+        assert_eq!(large.text.letter_spacing_px,12.);
+        assert_eq!(large.text.background.padding_x_px,24.);
+        assert_eq!(large.text.background.offset_y_px,20.);
+        assert_eq!(large.text.transform.center_x,2080.);
+        assert_eq!(large.text.transform.center_y,1000.);
+        assert_eq!(doubled.time,graph.time);assert_eq!(doubled.resources,graph.resources);
         // Absolute fonts already reduce their padding multiplier; never halve it twice.
         let SampledContent::Text{text}=&mut graph.layers[1].content else {panic!()};
         text.font_size=FontSize::CanvasPixels{value:120.};

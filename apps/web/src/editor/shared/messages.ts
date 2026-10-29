@@ -602,6 +602,8 @@ export const zh: Record<string, string> = {
   "Audio range export": "区间音频导出",
   "Review the placement before saving. The clip remains editable on the timeline.": "保存前确认放置位置。片段加入时间线后仍可继续编辑。",
   "Quality": "画质",
+  "Original size": "原始尺寸",
+  "Exports at the selected resolution, preserving the scene aspect ratio and frame rate. Scene notes are excluded.": "按所选分辨率导出，保持场景宽高比与帧率，不包含画布备注。",
   "Low": "低",
   "Medium": "中",
   "High": "高",

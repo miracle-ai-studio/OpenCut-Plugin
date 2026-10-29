@@ -47,9 +47,10 @@ it("captures all options and restores an uncertain original request after revisi
     }
     return prior(name, input, callOptions);
   });
-  const chosen = structuredClone(options);
+  const selected = { ...options, resolution: "p1440" as const };
+  const chosen: ExportVideoOptions = structuredClone(selected);
   await expect(f.exporter.start(chosen)).rejects.toThrow("Connection lost");
-  chosen.format = "mp4"; chosen.include_audio = true;
+  chosen.format = "mp4"; chosen.include_audio = true; chosen.resolution = "p2160";
   expect(f.exporter.getSnapshot().attempt?.phase).toBe("unconfirmed");
   expect(() => f.exporter.dismiss()).toThrow("Confirm the original");
   await expect(f.exporter.start(options)).rejects.toThrow("Resolve or reset");
@@ -59,7 +60,7 @@ it("captures all options and restores an uncertain original request after revisi
   await reopened.retry();
   expect(f.requests).toEqual([original]);
   expect(reopened.getSnapshot().attempt?.phase).toBe("accepted");
-  expect(reopened.getSnapshot().attempt?.request.options).toEqual(options);
+  expect(reopened.getSnapshot().attempt?.request.options).toEqual(selected);
 });
 
 it("can export without audio when only the visual runtime is available", async () => {

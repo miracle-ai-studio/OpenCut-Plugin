@@ -20,7 +20,7 @@ pub use audio::*;
 mod capabilities;
 mod compiler;
 mod preview_raster;
-pub use preview_raster::{preview_canvas, project_preview_raster};
+pub use preview_raster::{preview_canvas, project_preview_raster, raster_canvas, project_raster};
 mod coverage;
 mod source;
 #[cfg(test)]

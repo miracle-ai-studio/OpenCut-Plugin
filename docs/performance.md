@@ -63,3 +63,32 @@ node scripts/verify-render-performance.mjs /absolute/external/evidence 26479ea5
 | 5 | 本候选 Web 构建的工作台主块约 1.80 MB，gzip 约 508 KB，并触发构建体积提示。 | 测首开下载、解析及工作器初始化，再按实际工具使用拆分非首屏功能。保持共享运行时模块身份和授权资源加载，不把模块拆分本身当作速度提升。 |
 
 本轮没有升级运行中的用户服务或发布插件。实施、构建、局部性能测量、原生输出及人工验收应分别阅读；完整交付仍为 `false`。
+
+
+## 原生素材解码调研（2026-10-29）
+
+本节是后续原生候选的调研，不替代上文各候选的原验收。连续编辑器预览保持既有 540p；导出独立选择 720p、1080p、1440p、2160p，新 Web 默认 1080p。不能将预览代理放大后作为原始素材导出。
+
+当前 `media/native_decode/video.rs` 显式使用一个 slice 解码线程，`scaler.rs` 将完整来源转换为同尺寸 RGBA，再经 renderer 上传、合成到目标画布。960×540 只约束最终预览，并未把来源解码和中间 RGBA 限制到这个尺寸。已有 91 ms 预览采样包括原生请求与读取/位图，不是纯解码计时。
+
+复用同一 12 秒、360 帧、3840×2160 H.264 合成来源，在当前 Intel i7-9750H 主机串行执行独立 FFmpeg 诊断，没有重建媒体、项目或产品。固定工具 SHA-256 为 `df7bf6ac82589b188a9246592bf7be3fd4d4718b237dcb92198f05cd4e280103`，来源为 `c7c50380389e3ab0bf467797d372fcb1b0a2d37561315902c37cecc3d1845892`。以下为 FFmpeg 内部 benchmark rtime，输出仅丢弃帧，不含工程语义、授权、GPU 合成、浏览器或编码，单次顺序观察不是稳定基准：
+
+| 路线 | 完成 360 帧用时 | 范围 |
+|---|---:|---|
+| 软件解码，1 个 slice 线程 | 7.438 s | 解复用、解码及空输出 |
+| 软件解码，4 个 frame 线程 | 2.456 s | 约 3 倍吞吐，但帧并行增加缓冲和延迟，尚未接入产品 |
+| VideoToolbox，保留 `videotoolbox_vld` 表面 | 8.138 s | 日志确认硬件表面贯穿空输出；本样例没有超过四线程软件路径 |
+| 单线程解码，加四线程完整 4K RGBA 转换 | 8.108 s | 含流水线重叠，不能减去解码时间当作独立转换成本 |
+| 单线程解码，加四线程 960×540 RGBA 转换 | 7.611 s | 不是代理素材；仍解码完整来源，且改变采样位置尚未做画质验收 |
+
+初次 VideoToolbox 探针把输出格式写成 `videotoolbox`，日志提示未知格式，并实际下载为 NV12，测得 12.978 s。原记录保留；仅修正该探针为本工具支持的 `videotoolbox_vld` 后得到上表数值，不把初次结果当作硬件表面路径。不根据 `-hwaccels` 名单推断任意素材可用；正式接入还应核验解码器实际选择、设备、像素格式、位深及颜色。FFmpeg 日志中的 macOS maxrss 单位未经独立校正，不用于本次内存结论。诊断命令、完整日志及来源身份保存在仓库外 `resolution-and-scope/decode-probe.json`。
+
+建议在现有 FFmpeg + Rust + wgpu 结构内推进，不自研编解码算法，不另建第二套工程语义：
+
+1. **有界软件并行。** 优先验证 2–4 个 frame 解码线程，并计入额外参考面、延迟帧和驻留预算。保留顺序解码、关键帧定位、VFR/EOF 选择、取消及撤权。不能简单启用无上限自动线程。当前数据支持验证这一方向，不证明编辑器能直接获得三倍加速。
+2. **素材级 540p 代理。** 给原素材建立一次性、可取消的派生代理；按源内容哈希、精确轨道、PTS/时间映射、方向/像素宽高比、颜色及生成参数绑定。优先比较易定位的帧内代理（如 ProRes Proxy）与短 GOP H.264 的体积/生成时间/随机定位代价。现有 `preview_cache` 是合成后的时间线片段，随画面编辑而变化；可复用其调度、准入和发布机制，但不能把它误认为源素材代理。导出从固定原始 asset lock 读取，禁止选代理；原片不可用则明确失败。低分辨率代理减少预览解码负担，不降低最终导出的真实细节。
+3. **YUV/硬件表面直入原生 GPU。** 长期减少完整 4K RGBA CPU 转换与上传。软件解码可保留 YUV 平面；macOS 可经 VideoToolbox、CVPixelBuffer、CVMetalTextureCache 共享 Metal 纹理。当前 wgpu 适配器需要显式处理后端互操作、纹理寿命和同步；仅开启硬解再下载到 CPU 转 RGBA，不构成零拷贝。色度位置、范围、矩阵、传递函数、旋转及独立像素门槛必须继续验证。无需恢复浏览器 WebGPU 合成；原生 GPU 仍负责特效、字幕及图层合成。
+
+成熟实践依据：Premiere 的代理开启状态与最终导出来源独立，默认导出完整分辨率原媒体；DaVinci Resolve 同样默认在交付时回到原片。[Adobe 官方导出说明](https://helpx.adobe.com/premiere/desktop/organize-media/ingest-proxy-workflow/export-proxies.html)、[Blackmagic 官方代理工作流](https://documents.blackmagicdesign.com/SupportNotes/DaVinci_Resolve_17_New_Features_Guide.pdf)。Apple 提供 [VideoToolbox 解码会话](https://developer.apple.com/documentation/videotoolbox/vtdecompressionsession-api-collection)及 [Core Video Metal 纹理缓存](https://developer.apple.com/documentation/corevideo/cvmetaltexturecache-q3j)；[FFmpeg 官方说明](https://www.ffmpeg.org/ffmpeg.html)明确指出硬件帧复制回系统内存可能损失性能，因此需测实际整条链路。
+
+统一验证时保持相同 540p 输出和原计时门槛，复用原工程及来源；区分连续播放、首次生成代理、热随机定位及导出吞吐。代理缺失/删除不能改变导出像素来源；输出四档需核验实际尺寸、原片细节、文字比例和独立像素/PCM。当前尚未实现素材代理、并行视频解码或 GPU YUV 输入，完整交付仍为 false。

@@ -1,6 +1,12 @@
 {
   "format": "opencut.delivery-status.v1",
   "delivery_ready": false,
+  "in_progress": {
+    "execution_scope_optimization": "Source committed at 6115dd66; integrated build and new behavioral regressions pending.",
+    "preview_resolution": "Keep existing preview540 raster policy. Unbuilt preview360 candidate withdrawn; Web preview request restored to accepted source.",
+    "export_resolution": "Source integrated for explicit 720p,1080p,1440p,2160p; new UI default1080p. Historical omitted resolution remains source. Initial Web32passed/3failed; isolated parameterized recovery storage then4resolution cases passed. Generated contracts, build and runtime acceptance pending.",
+    "bottleneck_attribution": "Confirmed full-source-size RGBA conversion and one configured slice decoder thread. Recorded4K preview91ms includes native request70.2ms plus read/bitmap20.6ms; it is not a decode-only measurement. Independent stage attribution remains open."
+  },
   "scope": "Local CLI/HTTP/MCP/SDK service and Web editor; GPUI shell is not an integrated editor.",
   "public_contract": {
     "operations": 184,
@@ -1631,7 +1637,7 @@
       ],
       "distribution_scope": "Raw fixed CLI/worker with unchanged retained native libraries,Web and bundled tools. No new package/install qualification.",
       "manual_acceptance": "Agent inspected4Kfailure screenshot;no physical/human manual output,clean-machine or cross-platform acceptance.",
-      "next_direction": "Current native callback batching/allocation reuse reduces observed4Kpreview frame101.5to91.0ms but fails original gates. Export still has212179checkpoints/14.202s plus12.522sstartup and9.650sfinish. Address repeated fresh validation and serial pipeline costs without weakening authorization,cancellation or publication. Native decoder threading is not explicitly configured;verify actual codec behavior/budgets before selecting bounded parallelism.",
+      "next_direction": "Current native callback batching/allocation reuse reduces observed4Kpreview frame101.5to91.0ms but fails original gates. Export still has212179checkpoints/14.202s plus12.522sstartup and9.650sfinish. Address repeated fresh validation and serial pipeline costs without weakening authorization,cancellation or publication. Correction to retained external checkpoint: NativeVideoDecoder::open explicitly configures count1 Slice threading. Preserve540p preview and verify decode/conversion/upload costs before selecting bounded parallelism; external checkpoint bytes remain unchanged.",
       "remaining": [
         "4K original5sstartup and94scompletion within150second wait",
         "Cause of historical intermittent stalls;these current samples are not a mechanistic closure",

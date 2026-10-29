@@ -2,6 +2,8 @@
 
 业务操作由 Rust 注册声明定义，CLI、HTTP、MCP、领域动作和生成 SDK 消费同一声明。不通过手写 DTO、兼容别名或另一套客户端领域模型扩展接口。
 
+视频导出沿用 `render.video`，`options.resolution` 可显式选择 `p720`、`p1080`、`p1440`、`p2160`。新 Web 导出默认提交 `p1080`；2K 标签对应 2560×1440，4K 对应 3840×2160。横屏按相应 16:9 框、竖屏按反向框等比容纳，方形按相应短边尺寸；保留宽高比，不裁切，编码尺寸取偶数，小画布可放大。帧率不变，场景工程尺寸不被改写。历史省略分辨率及显式 `source` 继续输出原尺寸，旧请求重试不得插入新默认值。内部播放缓存继续显式使用 `preview540`，不采用导出默认值。新增枚举的当前构建/生成/验收状态见 `status.md`。
+
 ```sh
 target/release/opencut --json system capabilities
 target/release/opencut --json system domains

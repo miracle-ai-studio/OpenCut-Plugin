@@ -379,12 +379,12 @@ fn submit_inner(
     store.accept_export_video(request, prepared)
 }
 fn project_raster_identity(plan: &mut video::PreparedVideoSelection, options: &ExportVideoOptions) {
-    if options.resolution == RasterResolution::Preview540 {
+    if !options.resolution.is_source() {
         let size =
-            opencut_composition::scene::preview_canvas(opencut_contracts::scene::CanvasSize {
+            opencut_composition::scene::raster_canvas(opencut_contracts::scene::CanvasSize {
                 width: plan.identity.width,
                 height: plan.identity.height,
-            });
+            },options.resolution);
         plan.identity.width = size.width;
         plan.identity.height = size.height;
     }
@@ -546,6 +546,31 @@ pub(crate) mod tests {
             options: ExportVideoOptions::default(),
             visual_profile: ExportVisualProfile::SceneV1,
             execution: crate::media_video_jobs::tests::input(),
+        }
+    }
+    #[test]
+    fn selected_resolution_binds_output_identity_without_rewriting_project_or_clock() {
+        let mut fixed=input();
+        fixed.options.include_audio=false;
+        let snapshot=fixed.execution.snapshot.clone();
+        let original=prepare(&fixed).unwrap();
+        let original_hash=render_input_sha256(&fixed).unwrap();
+        for (resolution,width,height) in [(RasterResolution::P720,960,720),(RasterResolution::P1080,1440,1080),(RasterResolution::P1440,1920,1440),(RasterResolution::P2160,2880,2160)] {
+            fixed.options.resolution=resolution;
+            let plan=prepare(&fixed).unwrap();
+            let at=video::grid_time(&plan.identity.fps,30).unwrap();
+            let frame=crate::scene_frame_jobs::prepare_raster(&snapshot,&fixed.execution.sequence_id,&at,resolution).unwrap();
+            assert_eq!((plan.identity.width,plan.identity.height),(width,height));
+            assert_eq!(frame.source_graph().format.canvas_size,CanvasSize{width,height});
+            assert_eq!(frame.source_graph().time,at);
+            assert_eq!(plan.identity.fps,original.identity.fps);
+            assert_eq!(plan.identity.frame_count,original.identity.frame_count);
+            assert_eq!(plan.identity.video_duration,original.identity.video_duration);
+            assert_eq!(plan.asset_ids,original.asset_ids);
+            assert_eq!(plan.font_ids,original.font_ids);
+            assert_eq!(fixed.execution.snapshot,snapshot);
+            assert_ne!(render_input_sha256(&fixed).unwrap(),original_hash);
+            assert_eq!(public_identity(&fixed,&plan).options.resolution,resolution);
         }
     }
     #[test]

@@ -50,9 +50,18 @@ pub enum RasterResolution {
     #[default]
     Source,
     Preview540,
+    P720,
+    P1080,
+    P1440,
+    P2160,
 }
 impl RasterResolution {
-    pub fn is_source(&self) -> bool { *self == Self::Source }
+    pub fn is_source(&self) -> bool {
+        *self == Self::Source
+    }
+    pub fn is_preview(&self) -> bool {
+        matches!(self, Self::Preview540)
+    }
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -154,6 +163,25 @@ pub fn classic_export_rates(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn resolution_is_explicit_and_old_option_bytes_remain_exact() {
+        let old = serde_json::json!({"format":"mp4","quality":"high","include_audio":true});
+        let options: ExportVideoOptions = serde_json::from_value(old.clone()).unwrap();
+        assert_eq!(options.resolution, RasterResolution::Source);
+        assert_eq!(serde_json::to_value(&options).unwrap(), old);
+        for (name, resolution) in [
+            ("p720", RasterResolution::P720),
+            ("p1080", RasterResolution::P1080),
+            ("p1440", RasterResolution::P1440),
+            ("p2160", RasterResolution::P2160),
+        ] {
+            let mut value = old.clone();
+            value["resolution"] = name.into();
+            let parsed: ExportVideoOptions = serde_json::from_value(value.clone()).unwrap();
+            assert_eq!(parsed.resolution, resolution);
+            assert_eq!(serde_json::to_value(parsed).unwrap(), value);
+        }
+    }
     #[test]
     fn classic_four_quality_targets_and_audio_switch_are_explicit() {
         for (quality, h264, vp9, aac, opus) in [

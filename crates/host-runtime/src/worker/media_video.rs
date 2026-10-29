@@ -428,7 +428,7 @@ fn execute_kernel(
         frame_count: count,
         max_output_bytes: if export_input
             .as_ref()
-            .is_some_and(|v| v.options.resolution == export::RasterResolution::Preview540)
+            .is_some_and(|v| v.options.resolution.is_preview())
         {
             policy.max_output_bytes.min(8 * 1024 * 1024)
         } else {
@@ -534,13 +534,14 @@ fn execute_kernel(
         let at = video::grid_time(&prepared.identity.fps, first_frame + index)?;
         let selected = if export_input
             .as_ref()
-            .is_some_and(|v| v.options.resolution == export::RasterResolution::Preview540)
+            .is_some_and(|v| !v.options.resolution.is_source())
         {
             video::PreparedVideoFrame::Scene(
-                opencut_editor_application::scene_frame_jobs::prepare_preview(
+                opencut_editor_application::scene_frame_jobs::prepare_raster(
                     &input.snapshot,
                     &input.sequence_id,
                     &at,
+                    export_input.as_ref().expect("selected export raster").options.resolution,
                 )?,
             )
         } else {

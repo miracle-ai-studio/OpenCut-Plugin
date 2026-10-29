@@ -4,6 +4,7 @@ use std::{collections::BTreeMap, sync::mpsc, time::Duration};
 #[derive(Default)]
 struct Uploads {
     sources: BTreeMap<(usize, u32, u32), wgpu::Texture>,
+    next_staging: BTreeMap<[u32; 2], usize>,
     masks: Vec<wgpu::Texture>,
 }
 
@@ -92,6 +93,25 @@ impl Renderer {
                 usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
                 mapped_at_creation: false,
             }),
+            uploads: layout
+                .uploads
+                .iter()
+                .map(|(&size, &count)| {
+                    let aligned = (size[0] * 4).div_ceil(256) * 256;
+                    let buffers = (0..count)
+                        .map(|_| UploadBuffer {
+                            aligned,
+                            buffer: self.device.create_buffer(&wgpu::BufferDescriptor {
+                                label: Some("bounded reusable source upload"),
+                                size: u64::from(aligned) * u64::from(size[1]),
+                                usage: wgpu::BufferUsages::MAP_WRITE | wgpu::BufferUsages::COPY_SRC,
+                                mapped_at_creation: false,
+                            }),
+                        })
+                        .collect();
+                    (size, buffers)
+                })
+                .collect(),
         }
     }
 
@@ -237,38 +257,94 @@ impl Renderer {
             Ok(())
         });
         // All source uploads are retained through queue completion and never
-        // survive this execution. Only bounded scratch survives between frames.
+        // survive this execution. Only admitted scratch, including upload
+        // buffers, survives; every live source byte is overwritten next use.
         drop(uploads);
         result
     }
 
-    fn upload_shared(&self, source: Raster<'_>, uploads: &mut Uploads) -> wgpu::Texture {
+    fn upload_shared(
+        &self,
+        encoder: &mut wgpu::CommandEncoder,
+        targets: &Targets,
+        source: Raster<'_>,
+        uploads: &mut Uploads,
+        execution: &mut dyn Execution,
+    ) -> Result<wgpu::Texture> {
         let key = (source.rgba.as_ptr() as usize, source.width, source.height);
-        uploads
-            .sources
-            .entry(key)
-            .or_insert_with(|| self.upload(source))
-            .clone()
+        if let Some(texture) = uploads.sources.get(&key) {
+            return Ok(texture.clone());
+        }
+        let size = [source.width, source.height];
+        let next = uploads.next_staging.entry(size).or_default();
+        let staging = targets
+            .uploads
+            .get(&size)
+            .and_then(|buffers| buffers.get(*next))
+            .ok_or_else(|| invalid("Source upload differs from its admitted layout"))?;
+        *next += 1;
+        let texture = self.upload(encoder, staging, source, execution)?;
+        uploads.sources.insert(key, texture.clone());
+        Ok(texture)
     }
 
-    fn upload(&self, source: Raster<'_>) -> wgpu::Texture {
+    fn upload(
+        &self,
+        encoder: &mut wgpu::CommandEncoder,
+        staging: &UploadBuffer,
+        source: Raster<'_>,
+        execution: &mut dyn Execution,
+    ) -> Result<wgpu::Texture> {
+        self.map_buffer(&staging.buffer, wgpu::MapMode::Write, execution)?;
+        let copied: Result<()> = (|| {
+            let mut mapped = staging
+                .buffer
+                .slice(..)
+                .get_mapped_range_mut()
+                .map_err(gpu_error)?;
+            let row_bytes = source.width as usize * 4;
+            if row_bytes == staging.aligned as usize {
+                for (index, chunk) in source.rgba.chunks(CHUNK).enumerate() {
+                    execution.checkpoint()?;
+                    let start = index * CHUNK;
+                    mapped
+                        .slice(start..start + chunk.len())
+                        .copy_from_slice(chunk);
+                }
+            } else {
+                for (row, bytes) in source.rgba.chunks_exact(row_bytes).enumerate() {
+                    for (index, chunk) in bytes.chunks(CHUNK).enumerate() {
+                        execution.checkpoint()?;
+                        let start = row * staging.aligned as usize + index * CHUNK;
+                        mapped
+                            .slice(start..start + chunk.len())
+                            .copy_from_slice(chunk);
+                    }
+                }
+            }
+            Ok(())
+        })();
+        staging.buffer.unmap();
+        copied?;
         let result = texture(
             &self.device,
             source.width,
             source.height,
             wgpu::TextureFormat::Rgba8Unorm,
         );
-        self.queue.write_texture(
-            copy_texture(&result),
-            source.rgba,
-            wgpu::TexelCopyBufferLayout {
-                offset: 0,
-                bytes_per_row: Some(source.width * 4),
-                rows_per_image: Some(source.height),
+        encoder.copy_buffer_to_texture(
+            wgpu::TexelCopyBufferInfo {
+                buffer: &staging.buffer,
+                layout: wgpu::TexelCopyBufferLayout {
+                    offset: 0,
+                    bytes_per_row: Some(staging.aligned),
+                    rows_per_image: Some(source.height),
+                },
             },
+            copy_texture(&result),
             extent(source.width, source.height),
         );
-        result
+        Ok(result)
     }
 
     fn layer(
@@ -288,7 +364,7 @@ impl Renderer {
         let mut masks = Vec::with_capacity(layer.masks.len());
         for mask in layer.masks {
             execution.checkpoint()?;
-            let raw = self.upload_shared(mask.source, uploads);
+            let raw = self.upload_shared(encoder, targets, mask.source, uploads, execution)?;
             let resolved = if mask.feather > 0.0 {
                 let result = texture(
                     &self.device,
@@ -303,7 +379,7 @@ impl Renderer {
             };
             masks.push((resolved, mask.inverted));
         }
-        let uploaded = self.upload_shared(layer.source, uploads);
+        let uploaded = self.upload_shared(encoder, targets, layer.source, uploads, execution)?;
         let graded = self.color(encoder, targets, &uploaded, &passes.color, execution)?;
         let pipeline = &self.pipelines.layer;
         let input = self.texture_group(pipeline, 0, graded);
@@ -568,19 +644,22 @@ impl Renderer {
         Ok(())
     }
 
-    fn map_read(&self, buffer: &wgpu::Buffer, execution: &mut dyn Execution) -> Result<()> {
+    fn map_buffer(
+        &self,
+        buffer: &wgpu::Buffer,
+        mode: wgpu::MapMode,
+        execution: &mut dyn Execution,
+    ) -> Result<()> {
         let (send, receive) = mpsc::sync_channel(1);
-        buffer
-            .slice(..)
-            .map_async(wgpu::MapMode::Read, move |value| {
-                let _ = send.send(value);
-            });
+        buffer.slice(..).map_async(mode, move |value| {
+            let _ = send.send(value);
+        });
         loop {
             execution.checkpoint()?;
             if Instant::now() >= execution.deadline() {
                 return Err(Error::new(
                     "VISUAL_TIME_LIMIT",
-                    "Native GPU readback exceeded deadline",
+                    "Native GPU mapping exceeded deadline",
                 ));
             }
             self.device.poll(wgpu::PollType::Poll).map_err(gpu_error)?;
@@ -601,7 +680,7 @@ impl Renderer {
         execution: &mut dyn Execution,
     ) -> Result<()> {
         let result = (|| {
-            self.map_read(buffer, execution)?;
+            self.map_buffer(buffer, wgpu::MapMode::Read, execution)?;
             let mapped = buffer.slice(..).get_mapped_range().map_err(gpu_error)?;
             for index in 0..layers {
                 execution.checkpoint()?;
@@ -615,7 +694,7 @@ impl Renderer {
 
     fn readback(&self, targets: &Targets, execution: &mut dyn Execution) -> Result<()> {
         let result = (|| {
-            self.map_read(&targets.readback, execution)?;
+            self.map_buffer(&targets.readback, wgpu::MapMode::Read, execution)?;
             let mapped = targets
                 .readback
                 .slice(..)

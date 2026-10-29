@@ -29,6 +29,11 @@ struct Targets {
     colors: std::collections::BTreeMap<[u32; 2], [wgpu::Texture; 2]>,
     readback: wgpu::Buffer,
     aligned: u32,
+    uploads: std::collections::BTreeMap<[u32; 2], Vec<UploadBuffer>>,
+}
+struct UploadBuffer {
+    buffer: wgpu::Buffer,
+    aligned: u32,
 }
 struct Pipelines {
     layer: wgpu::RenderPipeline,

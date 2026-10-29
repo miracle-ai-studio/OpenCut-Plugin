@@ -9,6 +9,7 @@ pub(super) struct Layout {
     pub masks: usize,
     pub effects: bool,
     pub colors: BTreeSet<[u32; 2]>,
+    pub uploads: BTreeMap<[u32; 2], usize>,
 }
 pub(super) struct Passes {
     pub color: Vec<[i32; 8]>,
@@ -60,6 +61,7 @@ impl Renderer {
             masks: 0,
             effects: false,
             colors: BTreeSet::new(),
+            uploads: BTreeMap::new(),
         };
         let mut uploaded = 0u64;
         let mut sources = BTreeSet::new();
@@ -79,6 +81,10 @@ impl Renderer {
                 return Err(invalid("Prepared source extent differs from its pixels"));
             }
             if sources.insert((source.rgba.as_ptr() as usize, source.width, source.height)) {
+                *layout
+                    .uploads
+                    .entry([source.width, source.height])
+                    .or_default() += 1;
                 uploaded = uploaded
                     .checked_add(bytes)
                     .ok_or_else(|| budget("Source byte overflow"))?;
@@ -114,6 +120,10 @@ impl Renderer {
                     mask.source.width,
                     mask.source.height,
                 )) {
+                    *layout
+                        .uploads
+                        .entry([mask.source.width, mask.source.height])
+                        .or_default() += 1;
                     uploaded = uploaded
                         .checked_add(pixels * 4)
                         .ok_or_else(|| budget("Mask byte overflow"))?;
@@ -160,6 +170,7 @@ impl Renderer {
         drop(admit_layer);
         if matches!(&frame.background, Background::Color(_)) {
             uploaded += 4;
+            *layout.uploads.entry([1, 1]).or_default() += 1;
             uniforms += 2;
         }
         let mut seen = vec![false; frame.layers.len()];
@@ -199,17 +210,25 @@ impl Renderer {
                 .iter()
                 .map(|[w, h]| u64::from(*w) * u64::from(*h) * 8)
                 .sum::<u64>();
-        // Queue uploads remain live until submission completion. Count both
-        // textures and their staging allocations, also on warm executions.
+        // Retained upload buffers remain live through submission completion.
+        // Count their actual padded rows, also on warm executions. The layout
+        // contains only this frame's unique sources, including its background.
+        let staging = layout
+            .uploads
+            .iter()
+            .map(|([width, height], count)| {
+                (u64::from(*width) * 4).div_ceil(256) * 256 * u64::from(*height) * *count as u64
+            })
+            .sum::<u64>();
         // Uniforms use conservative 256-byte placement alignment.
         let uniform_bytes = uniforms * 256;
         let gpu = targets
             .checked_add(readback)
-            .and_then(|n| n.checked_add(uploaded * 2))
+            .and_then(|n| n.checked_add(uploaded + staging))
             .and_then(|n| n.checked_add(mask_outputs + uniform_bytes + 48))
             .ok_or_else(|| budget("Native GPU accounting overflow"))?;
         let cpu = uploaded
-            .checked_mul(2)
+            .checked_add(staging)
             .and_then(|n| n.checked_add(readback + uniform_bytes + CHUNK as u64))
             .ok_or_else(|| budget("Native CPU accounting overflow"))?;
         if gpu > self.limits.max_gpu_bytes || cpu > self.limits.max_cpu_bytes {

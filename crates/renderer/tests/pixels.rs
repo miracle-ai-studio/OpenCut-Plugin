@@ -58,44 +58,137 @@ fn rgba_readback_preserves_channels_rows_and_chunk_boundaries() {
     // Both paths cross the 64 KiB output boundary. The second has GPU row
     // padding; row/column markers reveal leaked padding, swizzles or shifts.
     for (width, height) in [(64u32, 257u32), (257, 65)] {
-        let expected: Vec<_> = (0..height)
-            .flat_map(|y| {
-                (0..width).flat_map(move |x| {
-                    [(x % 256) as u8, (y % 256) as u8, ((x + y) % 251) as u8, 255]
+        // Change all source bytes while retaining extent and upload slots.
+        for phase in 0..3 {
+            let expected: Vec<_> = (0..height)
+                .flat_map(|y| {
+                    (0..width).flat_map(move |x| {
+                        [
+                            ((x + phase * 13) % 256) as u8,
+                            ((y + phase * 29) % 256) as u8,
+                            ((x + y + phase * 43) % 251) as u8,
+                            255,
+                        ]
+                    })
                 })
-            })
-            .collect();
-        let mut source = layer(Raster {
-            width,
-            height,
-            rgba: &expected,
-        });
-        source.quad.center_x = width as f32 / 2.0;
-        source.quad.center_y = height as f32 / 2.0;
-        source.quad.width = width as f32;
-        source.quad.height = height as f32;
-        source.effect_size = [width, height];
-        let frame = Frame {
-            width,
-            height,
-            clear: [0.0; 4],
-            background: Background::Color([0.0; 4]),
-            layers: &[source],
-            steps: &[Step::Layer(0)],
-        };
-        let mut output = Output {
-            bytes: Vec::new(),
-            cancel: false,
-            deadline: Instant::now() + Duration::from_secs(30),
-            probe: None,
-            hits: Vec::new(),
-        };
-        renderer.render(&frame, &mut output).unwrap();
-        assert_eq!(output.bytes.len(), expected.len());
-        for (actual, expected) in output.bytes.chunks_exact(4).zip(expected.chunks_exact(4)) {
-            near(actual.try_into().unwrap(), expected.try_into().unwrap());
+                .collect();
+            let mut source = layer(Raster {
+                width,
+                height,
+                rgba: &expected,
+            });
+            source.quad.center_x = width as f32 / 2.0;
+            source.quad.center_y = height as f32 / 2.0;
+            source.quad.width = width as f32;
+            source.quad.height = height as f32;
+            source.effect_size = [width, height];
+            let frame = Frame {
+                width,
+                height,
+                clear: [0.0; 4],
+                background: Background::Color([0.0; 4]),
+                layers: &[source],
+                steps: &[Step::Layer(0)],
+            };
+            let mut output = Output {
+                bytes: Vec::new(),
+                cancel: false,
+                deadline: Instant::now() + Duration::from_secs(30),
+                probe: None,
+                hits: Vec::new(),
+            };
+            renderer.render(&frame, &mut output).unwrap();
+            assert_eq!(output.bytes.len(), expected.len());
+            for (actual, expected) in output.bytes.chunks_exact(4).zip(expected.chunks_exact(4)) {
+                near(actual.try_into().unwrap(), expected.try_into().unwrap());
+            }
         }
     }
+}
+
+#[test]
+#[ignore = "Requires a physical native GPU; run in the integrated serial media suite"]
+fn padded_upload_admission_and_mapping_cancellation_remain_bounded() {
+    let backend = if cfg!(target_os = "macos") {
+        Backend::Metal
+    } else if cfg!(target_os = "windows") {
+        Backend::DirectX
+    } else {
+        Backend::Vulkan
+    };
+    let mut renderer = Renderer::new(
+        backend,
+        Limits {
+            max_frame_pixels: 1024,
+            max_gpu_bytes: 1024 * 1024,
+            max_cpu_bytes: 512 * 1024,
+            max_layers: 1,
+        },
+    )
+    .unwrap();
+    let rgba = vec![255; 1024 * 4];
+    let mut input = layer(Raster {
+        width: 1,
+        height: 1024,
+        rgba: &rgba,
+    });
+    input.quad.center_x = 0.5;
+    input.quad.center_y = 512.0;
+    input.quad.width = 1.0;
+    input.quad.height = 1024.0;
+    input.effect_size = [1, 1024];
+    let mut frame = Frame {
+        width: 1,
+        height: 1024,
+        clear: [0.0; 4],
+        background: Background::Color([0.0; 4]),
+        layers: &[input],
+        steps: &[Step::Layer(0)],
+    };
+    struct Stop {
+        checks: usize,
+        deadline: Instant,
+    }
+    impl Execution for Stop {
+        fn checkpoint(&mut self) -> Result<()> {
+            self.checks += 1;
+            if self.checks >= 3 {
+                Err(Error::new("JOB_CANCELLED", "Stopped during upload mapping"))
+            } else {
+                Ok(())
+            }
+        }
+        fn deadline(&self) -> Instant {
+            self.deadline
+        }
+        fn rgba(&mut self, _: u64, _: &[u8]) -> Result<()> {
+            panic!("No partial frame may be emitted")
+        }
+    }
+    let mut stop = Stop {
+        checks: 0,
+        deadline: Instant::now() + Duration::from_secs(30),
+    };
+    // Narrow rows need256-byte GPU pitches: the two padded buffers alone
+    // exceed512KiB even though the source raster has only4096bytes.
+    assert_eq!(
+        renderer.render(&frame, &mut stop).unwrap_err().code,
+        "VISUAL_BUDGET_EXCEEDED"
+    );
+    frame.width = 8;
+    frame.height = 8;
+    frame.layers = &[];
+    frame.steps = &[];
+    stop.checks = 0;
+    assert_eq!(
+        renderer.render(&frame, &mut stop).unwrap_err().code,
+        "JOB_CANCELLED"
+    );
+    stop.checks = 0;
+    assert_eq!(
+        renderer.render(&frame, &mut stop).unwrap_err().code,
+        "VISUAL_GPU_FAILED"
+    );
 }
 fn quad() -> VisualQuad {
     VisualQuad {

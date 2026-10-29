@@ -21,7 +21,7 @@
       "cleanup": "All3retained fixture snapshots unchanged;owned service stopped,0activejobs/ownedworkers after export.",
       "qualification": "Current working candidate only,no install/package promotion.Process RSS samples exclude GPU/driver allocation;agent screenshots are not physical/human acceptance."
     },
-    "next_candidate": "Complete a coherent preview-source optimization slice around selected/default track,exact original PTS/duration mapping and preview-only derived identity with original-source export isolation;retain current authority and memory fences.Host preparation/transport and export startup/finalization still require measured improvement.Keep540p;reuse existing fixtures and passed candidate-specific proofs.No Rust rebuild for verifier/docs-only changes.",
+    "next_candidate": "Integrate actual preview-only source preparation through shared application/job/storage ports:fixed original asset+selected track+native decoder/raster/encoder identity,an exact original-to-proxy frame-ordinal map,geometry/color/rotation and live authority.Original PTS/duration must remain separate from encoded proxy time;do not rely on copyts.No new backend/version chooser or silent fallback.Export always reads original and keeps four resolutions/default1080.Collect full-source/native-proxy and original editor/export acceptance in one integrated build;reuse17media checks and retained fixtures for their exact source/dependency identities.",
     "decoder_regression_failures": "Initial test required optional stream duration, then assumed previous frame existed before nonzero firstPTS; preserved both failures. It also exposed production metadata selection staying serial. Integrated repair uses first admitted frame; all25 affected checks now pass.",
     "decoder_candidate_evidence": {
       "source_commit": "cbe924e9fffdb16d42b4636b86fcc732417945e2",
@@ -634,14 +634,14 @@
       "delivery_ready": false
     },
     "native_primary_selection": {
-      "state": "implementation_pending_native_media_validation",
+      "state": "media_layer_validated_pending_proxy_and_production_integration",
       "source_base_commit": "e00691a6",
       "change": "One shared native AVIO stream selector.Explicit indices remain physical;implicit ISO BMFF/Matroska prioritizes default disposition stably,matching retained demuxer.Other containers preserve stored order.No public DTO,module,dependency,allocation or admission change.",
       "fixture": "/Users/vincent/Movies/OpenCut-native-rendering/4k/source-primary-selection/fixture.json",
       "fixture_sha256": "37bab73b80d97047eeaca70f2982697c5c3d6f827a15bb6a9286046f6ef6357c",
       "cases": 6,
       "oracle": "Pinned retained Mediabunny primary-track metadata,independent authored red/blue frames and distinct audio rate/channel/tone.",
-      "build_scope": "Plan one native media test compilation;no production CLI/worker or Web build yet.Existing sealed candidate/proofs remain their original identities.",
+      "build_scope": "One media-only test compilation15.605s;0production CLI/worker builds and0Web builds.Changed source is not promoted to the previous runtime candidate.",
       "preview_cache_preflight": {
         "runtime": {
           "opencut": {
@@ -662,7 +662,103 @@
         "scope": "New retained-source native render range,not a source proxy or browser real-time qualification.",
         "result": "Succeeded;cold2s segment generation slower than its duration,not switched into live playback."
       },
-      "delivery_ready": false
+      "delivery_ready": false,
+      "native_media_source_commit": "666a81167df35fa66ca1ce9d4aba90de262d9a6a",
+      "checkpoint": "/Users/vincent/Movies/OpenCut-native-rendering/4k/source-primary-selection/checkpoint.json",
+      "checkpoint_sha256": "3679eb065ee3b649e68713ad81700f3f22f4fcc37c1f56c3667a3061aecb5d57",
+      "build": {
+        "native_media_test_compilations": 1,
+        "seconds": 15.60471487045288,
+        "production_cli_worker_builds": 0,
+        "web_builds": 0,
+        "test_binaries": {
+          "opencut_media": {
+            "path": "/Users/vincent/Movies/OpenCut-native-rendering/candidates/fb6b7df8fe9d68f1ca2c9422730bc2a64b321be2ac3210dfccfb3d2438b50b80/opencut_media-f4cbf3411192279f",
+            "sha256": "fb6b7df8fe9d68f1ca2c9422730bc2a64b321be2ac3210dfccfb3d2438b50b80"
+          },
+          "native_primary": {
+            "path": "/Users/vincent/Movies/OpenCut-native-rendering/candidates/a98e48f1d8100f24467a8ef1d4fd1577aee71eb868aace1d0736ce46a47a5292/native_primary-afc168f7b224aaa1",
+            "sha256": "a98e48f1d8100f24467a8ef1d4fd1577aee71eb868aace1d0736ce46a47a5292"
+          },
+          "native_audio": {
+            "path": "/Users/vincent/Movies/OpenCut-native-rendering/candidates/da700760c1f8718ac499c758796133797f1f8f120d773bb59370c0ec4b222336/native_audio-6dff5d66499de5c1",
+            "sha256": "da700760c1f8718ac499c758796133797f1f8f120d773bb59370c0ec4b222336"
+          }
+        }
+      },
+      "scoped_behavior": {
+        "primary_tests": 3,
+        "retained_container_cases": 6,
+        "native_audio_tests": 6,
+        "native_decode_tests": 8,
+        "related_total": 17,
+        "architecture_tests": 14,
+        "aac_independent_pcm": "Exact pinned retained browser samples without time/gain fitting.",
+        "source_semantics": "MP4 and Matroska second-default/no-default/tied-default,explicit indices,authored full-frame red/blue colors,audio rate/channels/tone,current access denial on warm cache,wrong media and nonexistent indices.",
+        "preview_original_boundary": "Existing actual4K/B-frame/VFR/fragmented and multi-track decoder tests retain source times,PTS/duration,original size,preview scaling,frame immutability,seek/drain and live authority."
+      },
+      "preview_window_preflight": {
+        "checkpoint": "/Users/vincent/Movies/OpenCut-native-rendering/4k/native-window-preflight/checkpoint.json",
+        "checkpoint_sha256": "a01a218073249777a4d25da0d315e1bb6ad868135d0b0cd5ed9aadfea104e804",
+        "source_commit": "8ae9dea1559770097ec19d4e5f653109e2072021",
+        "runtime": {
+          "opencut": {
+            "path": "/Users/vincent/Movies/OpenCut-native-rendering/candidates/82a597f91dccd97027ed1a0fab4b76e465fa8d3446cb041b04eeb33d56f53e82/opencut",
+            "sha256": "82a597f91dccd97027ed1a0fab4b76e465fa8d3446cb041b04eeb33d56f53e82"
+          },
+          "opencut-render-worker": {
+            "path": "/Users/vincent/Movies/OpenCut-native-rendering/candidates/b3527e2edb26658e4bc54cabe72a6fecae8f397d0830a848357710ea9bd19be1/opencut-render-worker",
+            "sha256": "b3527e2edb26658e4bc54cabe72a6fecae8f397d0830a848357710ea9bd19be1"
+          }
+        },
+        "job_id": "job_69b4a90f42b24ae18f34ea2ba356bbee",
+        "seconds": 13.475373313995078,
+        "artifact_sha256": "079e88336bc0e12ec48b1168a4ed9a204130d8dce315aea5f6e512e72ea1cb63",
+        "qualification": "Successful2s540p original-source native output;13.475s cold generation cannot support realtime.Neither a source proxy nor browser playback acceptance."
+      },
+      "lossless_proxy_feasibility": {
+        "report": "/Users/vincent/Movies/OpenCut-native-rendering/4k/source-primary-selection/lossless-proxy-probe/result.json",
+        "report_sha256": "99cacf74caac3504c36ff0f1ec6e68e1490885bb180af253e443d3326dee3136",
+        "original_reference_sha256": "76a5109cb65e284dd66b784032a501e77a2207f5a3e00234adc62b8d4f2d1104",
+        "registered_native_decoders": {
+          "ffv1": true,
+          "h264": true
+        },
+        "cases": [
+          {
+            "name": "ffv1",
+            "encoded_bytes": 600987,
+            "exact_rgba": true,
+            "frame_count": 7,
+            "encode_seconds": 0.19520809408277273,
+            "decode_seconds": 0.26282015698961914
+          },
+          {
+            "name": "h264-rgb",
+            "encoded_bytes": 696398,
+            "exact_rgba": true,
+            "frame_count": 7,
+            "encode_seconds": 0.0866832840256393,
+            "decode_seconds": 0.08848526515066624
+          }
+        ],
+        "qualification": "External pinned FFmpeg codec-only probe on7opaque retained reference frames.Not yet actual native decode,alpha qualification,full-source generation timing,exact source map or integrated proxy selection."
+      },
+      "cleanup": {
+        "passed": true,
+        "active_jobs": [],
+        "remaining_owned_workers": [],
+        "unchanged_fixture_snapshots": [
+          "/Users/vincent/Movies/OpenCut-native-rendering/4k/source-proxy-study/fixture.json",
+          "/Users/vincent/Movies/OpenCut-native-rendering/4k/fixture.json",
+          "/Users/vincent/Movies/OpenCut-native-rendering/acceptance/native-long-media-fixture.json"
+        ],
+        "owned_service": "stopped",
+        "user_services": "No user workspace service or installed runtime targeted"
+      },
+      "manual_acceptance": "No new browser or human/device acceptance;previous runtime/Web proofs keep original producer identities.",
+      "preserved_collection_observation_failure": "Collector initially required exit0 for stopped server status;CLI returns exit1 unless ready.Corrected observation retained all completed tests/media without rebuild or rerender.",
+      "qualification": "17native media checks and14architecture tests passed.One media-only compilation.No current production CLI/worker/Web build or integrated source proxy qualification;previous current working candidate retains its original identities."
     }
   },
   "scope": "Local CLI/HTTP/MCP/SDK service and Web editor; GPUI shell is not an integrated editor.",

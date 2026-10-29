@@ -3,6 +3,7 @@
 mod audio;
 pub mod identity;
 pub(crate) mod input;
+mod scaler;
 mod video;
 use crate::{MediaError, MediaResult};
 pub use audio::{AudioDecodeLimits, DecodedAudioFrame, NativeAudioDecoder, NativeAudioTrack};

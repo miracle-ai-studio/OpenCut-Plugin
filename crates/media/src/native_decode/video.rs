@@ -1,4 +1,4 @@
-use super::{input::Bridge, *};
+use super::{input::Bridge, scaler::FrameScaler, *};
 use crate::MediaTime;
 use ffmpeg_next::{self as av, ffi};
 use std::{cmp::Ordering, sync::Arc};
@@ -58,7 +58,7 @@ pub struct NativeVideoDecoder {
     input: av::format::context::Input,
     bridge: Bridge,
     decoder: av::decoder::Video,
-    scaler: Option<av::software::scaling::Context>,
+    scaler: Option<FrameScaler>,
     limits: DecodeLimits,
     stream: usize,
     time_base: [u32; 2],
@@ -430,7 +430,7 @@ impl NativeVideoDecoder {
         }
     }
 
-    fn admit_frame(&self, frame: &av::frame::Video) -> MediaResult<()> {
+    fn frame_residency(&self, frame: &av::frame::Video) -> MediaResult<u64> {
         let pixels = u64::from(frame.width()) * u64::from(frame.height());
         if pixels == 0
             || pixels > self.limits.max_pixels
@@ -470,7 +470,11 @@ impl NativeVideoDecoder {
                 limit_bytes: self.limits.max_resident_bytes,
             });
         }
-        Ok(())
+        Ok((surface as u64) * surfaces + pixels * 4)
+    }
+
+    fn admit_frame(&self, frame: &av::frame::Video) -> MediaResult<()> {
+        self.frame_residency(frame).map(|_| ())
     }
 
     fn convert(&mut self, pts: i64, duration: i64) -> MediaResult<Arc<DecodedVideoFrame>> {
@@ -480,6 +484,11 @@ impl NativeVideoDecoder {
             .ok_or_else(|| invalid("No decoded frame to convert"))?;
         let width = frame.width();
         let height = frame.height();
+        let threads = super::scaler::conversion_threads(
+            u64::from(width) * u64::from(height),
+            self.frame_residency(frame)?,
+            self.limits.max_resident_bytes,
+        );
         let definition = av::software::scaling::context::Definition {
             format: frame.format(),
             width,
@@ -488,21 +497,10 @@ impl NativeVideoDecoder {
         if self
             .scaler
             .as_ref()
-            .is_none_or(|scaler| *scaler.input() != definition)
+            .is_none_or(|scaler| scaler.input != definition || scaler.threads != threads)
         {
-            self.scaler = Some(
-                av::software::scaling::Context::get(
-                    frame.format(),
-                    width,
-                    height,
-                    av::format::Pixel::RGBA,
-                    width,
-                    height,
-                    av::software::scaling::Flags::BILINEAR
-                        | av::software::scaling::Flags::ACCURATE_RND,
-                )
-                .map_err(failed)?,
-            );
+            self.scaler = None;
+            self.scaler = Some(FrameScaler::new(definition, threads)?);
         }
         let scaler = self.scaler.as_mut().expect("prepared scaler");
         let matrix = match frame.color_space() {
@@ -526,47 +524,8 @@ impl NativeVideoDecoder {
             VideoColorMatrix::Bt2020 => ffi::SWS_CS_BT2020,
             _ => ffi::SWS_CS_ITU601,
         };
-        unsafe {
-            let coefficients = ffi::sws_getCoefficients(colorspace as i32);
-            let result = ffi::sws_setColorspaceDetails(
-                scaler.as_mut_ptr(),
-                coefficients,
-                i32::from(full_range),
-                coefficients,
-                1,
-                0,
-                1 << 16,
-                1 << 16,
-            );
-            if result < 0 {
-                return Err(failed(av::Error::from(result)));
-            }
-        }
         let mut bytes = vec![0u8; width as usize * height as usize * 4];
-        let destination = [
-            bytes.as_mut_ptr(),
-            std::ptr::null_mut(),
-            std::ptr::null_mut(),
-            std::ptr::null_mut(),
-        ];
-        let strides = [(width * 4) as i32, 0, 0, 0];
-        // SAFETY: the admitted destination owns width*height*4 bytes. It stays
-        // pinned for this synchronous conversion; libswscale retains no pointer
-        // to the caller's output. Avoid an extra AVFrame and full RGBA copy.
-        let rows = unsafe {
-            ffi::sws_scale(
-                scaler.as_mut_ptr(),
-                (*frame.as_ptr()).data.as_ptr().cast(),
-                (*frame.as_ptr()).linesize.as_ptr(),
-                0,
-                height as i32,
-                destination.as_ptr(),
-                strides.as_ptr(),
-            )
-        };
-        if rows != height as i32 {
-            return Err(invalid("Native conversion returned incomplete rows"));
-        }
+        scaler.convert(frame, &mut bytes, colorspace as i32, full_range)?;
         let frame = Arc::new(DecodedVideoFrame {
             width,
             height,

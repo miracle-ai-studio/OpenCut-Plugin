@@ -12,7 +12,7 @@ use opencut_contracts::{
     subtitles::{GenerateCaptions, SubtitleImport},
 };
 mod historical;
-pub use historical::{ArchivedHistoricalCausal, ArchivedVisualPromotion};
+pub use historical::{ArchivedHistoricalCausal, ArchivedVisualApply, ArchivedVisualPromotion};
 mod branches;
 pub use branches::{ArchivedBranchApply, ArchivedBranchMerge};
 
@@ -32,7 +32,7 @@ pub enum ArchivedJournal {
     HistoricalVisualPromote(ArchivedVisualPromotion),
     LegacyApply(TransactionRequest),
     LegacyRestore(opencut_api_contracts::RestoreRevisionRequest),
-    HistoricalVisualApply(ApplyHistoricalVisualProject),
+    HistoricalVisualApply(ArchivedVisualApply),
     Promote(PromoteProject),
     Apply(ApplySceneProject),
     ApplyPublic(ApplyProject),
@@ -143,6 +143,11 @@ impl ArchivedJournal {
                     .map(Self::HistoricalVisualPromote)
                     .map_err(|_| invalid("Malformed original visual promotion"));
             }
+            Some("project_v3.apply") => {
+                return serde_json::from_value(value)
+                    .map(Self::HistoricalVisualApply)
+                    .map_err(|_| invalid("Malformed original visual edit"));
+            }
             _ => {}
         }
         parse!(CausalJournal, Causal);
@@ -151,7 +156,7 @@ impl ArchivedJournal {
         parse!(RestoreProject, Restore);
         parse!(opencut_api_contracts::RestoreRevisionRequest, LegacyRestore);
         parse!(PromoteProject, Promote);
-        parse!(ApplyHistoricalVisualProject, HistoricalVisualApply);
+        parse!(ArchivedVisualApply, HistoricalVisualApply);
         parse!(TransactionRequest, LegacyApply);
         parse!(ImportFont, FontImport);
         parse!(GenerateCaptions, CaptionGenerate);

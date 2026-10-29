@@ -9,24 +9,16 @@ use axum::{
 use opencut_host_runtime::visual_preview_contracts::VisualPreviewPictureRead;
 use std::time::Duration;
 
-type PictureChunk = Result<Bytes, std::io::Error>;
-
-async fn reserve_picture_chunk(
-    send: &tokio::sync::mpsc::Sender<PictureChunk>,
+async fn send_picture_chunk(
+    send: &tokio::sync::mpsc::Sender<Result<Bytes, std::io::Error>>,
+    bytes: Bytes,
     mut checkpoint: impl FnMut() -> bool,
-) -> Option<tokio::sync::mpsc::Permit<'_, PictureChunk>> {
-    // A slot is not an authority grant. The caller must perform its guarded
-    // read after reservation, then revalidate transport identity before send.
-    match send.try_reserve() {
-        Ok(permit) => return Some(permit),
-        Err(tokio::sync::mpsc::error::TrySendError::Closed(_)) => return None,
-        Err(tokio::sync::mpsc::error::TrySendError::Full(_)) => {}
-    }
+) -> bool {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(1);
     loop {
         let now = tokio::time::Instant::now();
         if now >= deadline || send.is_closed() || !checkpoint() {
-            return None;
+            return false;
         }
         // Capacity wakes this future immediately. A blocked reader still
         // triggers authority/generation checks at the original 10ms bound.
@@ -34,11 +26,12 @@ async fn reserve_picture_chunk(
         match tokio::time::timeout_at(until, send.reserve()).await {
             Ok(Ok(permit)) => {
                 if !checkpoint() {
-                    return None;
+                    return false;
                 }
-                return Some(permit);
+                permit.send(Ok(bytes));
+                return true;
             }
-            Ok(Err(_)) => return None,
+            Ok(Err(_)) => return false,
             Err(_) => {}
         }
     }
@@ -85,18 +78,11 @@ pub(super) async fn stream(
             if send.is_closed() || host.identity.validate(&mut authority).is_err() {
                 return;
             }
-            let Some(permit) = runtime.block_on(reserve_picture_chunk(&send, || {
-                reader.checkpoint().is_ok() && host.identity.validate(&mut authority).is_ok()
-            })) else {
-                return;
-            };
-            // The reader checks live project/session authority both before
-            // and after copying this bounded chunk, after any capacity wait.
             let chunk = match reader.read() {
                 Ok(Some(bytes)) => bytes,
                 Ok(None) => return,
                 Err(_) => {
-                    permit.send(Err(std::io::Error::other(
+                    let _ = send.try_send(Err(std::io::Error::other(
                         "Native picture authority or generation ended",
                     )));
                     return;
@@ -105,7 +91,11 @@ pub(super) async fn stream(
             if host.identity.validate(&mut authority).is_err() {
                 return;
             }
-            permit.send(Ok(Bytes::from(chunk)));
+            if !runtime.block_on(send_picture_chunk(&send, Bytes::from(chunk), || {
+                reader.checkpoint().is_ok() && host.identity.validate(&mut authority).is_ok()
+            })) {
+                return;
+            }
         }
     });
     let body = Body::from_stream(futures_util::stream::unfold(
@@ -137,11 +127,20 @@ mod tests {
     use std::cell::Cell;
 
     #[tokio::test]
+    async fn available_capacity_requires_fresh_authority_before_publishing() {
+        let (send, mut receive) = tokio::sync::mpsc::channel(1);
+        assert!(!send_picture_chunk(&send, Bytes::from_static(b"revoked"), || false).await);
+        assert!(receive.try_recv().is_err());
+        assert!(send_picture_chunk(&send, Bytes::from_static(b"current"), || true).await);
+        assert_eq!(receive.recv().await.unwrap().unwrap(), "current");
+    }
+
+    #[tokio::test]
     async fn released_capacity_delivers_without_waiting_for_a_poll_tick() {
         let (send, mut receive) = tokio::sync::mpsc::channel(1);
         send.send(Ok(Bytes::from_static(b"first"))).await.unwrap();
         let checks = Cell::new(0);
-        let delivery = reserve_picture_chunk(&send, || {
+        let delivery = send_picture_chunk(&send, Bytes::from_static(b"second"), || {
             checks.set(checks.get() + 1);
             true
         });
@@ -149,10 +148,10 @@ mod tests {
         assert!(futures_util::poll!(delivery.as_mut()).is_pending());
         assert_eq!(receive.recv().await.unwrap().unwrap(), "first");
         // No timer advance or sleep: the released slot itself is sufficient.
-        let std::task::Poll::Ready(Some(permit)) = futures_util::poll!(delivery.as_mut()) else {
-            panic!("Released capacity must be immediately usable");
-        };
-        permit.send(Ok(Bytes::from_static(b"second")));
+        assert_eq!(
+            futures_util::poll!(delivery.as_mut()),
+            std::task::Poll::Ready(true)
+        );
         assert_eq!(receive.recv().await.unwrap().unwrap(), "second");
         assert!(checks.get() >= 2);
     }
@@ -162,15 +161,15 @@ mod tests {
         let (send, mut receive) = tokio::sync::mpsc::channel(1);
         send.send(Ok(Bytes::from_static(b"first"))).await.unwrap();
         let current = Cell::new(true);
-        let delivery = reserve_picture_chunk(&send, || current.get());
+        let delivery = send_picture_chunk(&send, Bytes::from_static(b"revoked"), || current.get());
         tokio::pin!(delivery);
         assert!(futures_util::poll!(delivery.as_mut()).is_pending());
         current.set(false);
         receive.recv().await.unwrap().unwrap();
-        assert!(matches!(
+        assert_eq!(
             futures_util::poll!(delivery.as_mut()),
-            std::task::Poll::Ready(None)
-        ));
+            std::task::Poll::Ready(false)
+        );
         assert!(receive.try_recv().is_err());
     }
 
@@ -178,14 +177,14 @@ mod tests {
     async fn a_closed_reader_wakes_and_releases_the_pending_chunk() {
         let (send, receive) = tokio::sync::mpsc::channel(1);
         send.send(Ok(Bytes::from_static(b"first"))).await.unwrap();
-        let delivery = reserve_picture_chunk(&send, || true);
+        let delivery = send_picture_chunk(&send, Bytes::from_static(b"unused"), || true);
         tokio::pin!(delivery);
         assert!(futures_util::poll!(delivery.as_mut()).is_pending());
         drop(receive);
-        assert!(matches!(
+        assert_eq!(
             futures_util::poll!(delivery.as_mut()),
-            std::task::Poll::Ready(None)
-        ));
+            std::task::Poll::Ready(false)
+        );
     }
 
     #[tokio::test]
@@ -194,30 +193,14 @@ mod tests {
         send.send(Ok(Bytes::from_static(b"first"))).await.unwrap();
         let checks = Cell::new(0);
         assert!(
-            reserve_picture_chunk(&send, || {
+            !send_picture_chunk(&send, Bytes::from_static(b"unused"), || {
                 checks.set(checks.get() + 1);
                 true
             })
             .await
-            .is_none()
         );
         assert!(checks.get() > 1);
         assert_eq!(receive.recv().await.unwrap().unwrap(), "first");
         assert!(receive.try_recv().is_err());
-    }
-
-    #[tokio::test]
-    async fn available_capacity_is_claimed_before_reading_any_picture_bytes() {
-        let (send, mut receive) = tokio::sync::mpsc::channel(1);
-        let permit = reserve_picture_chunk(&send, || panic!("No backpressure to validate"))
-            .await
-            .unwrap();
-        assert!(
-            receive.try_recv().is_err(),
-            "Claiming capacity does not read or publish pixels"
-        );
-        // A failed guarded read drops the permit and leaves the stream empty.
-        drop(permit);
-        assert!(send.try_reserve().is_ok());
     }
 }

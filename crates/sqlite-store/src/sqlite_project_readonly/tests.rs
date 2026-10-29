@@ -214,5 +214,5 @@ fn readonly_escaped_payload_references_are_protected_without_rewriting_revisions
             |r| r.get(0),
         )
         .unwrap();
-    assert_eq!(schema, "32");
+    assert_eq!(schema, DATABASE_SCHEMA_VERSION.to_string());
 }

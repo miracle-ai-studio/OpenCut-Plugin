@@ -547,6 +547,50 @@ fn known_font_caption_and_catalog_journals_roundtrip_all_original_fields() {
 }
 
 #[test]
+fn original_visual_edit_keeps_bare_and_wrapped_shapes_without_accepting_unknown_fields() {
+    let request = serde_json::json!({
+        "project_id":"source","expected_revision":"r0","idempotency_key":"original",
+        "label":"Original edit label","operations":[{"type":"base.apply","operation":{
+            "type":"sequence.update_settings","sequence_id":"scene","name":"Edited",
+            "width":null,"height":null,"fps":null}}]
+    });
+    let wrapped = serde_json::json!({"kind":"project_v3.apply","request":request});
+    for original in [&request, &wrapped] {
+        let journal = ArchivedJournal::from_storage(&original.to_string()).unwrap();
+        assert!(matches!(
+            &journal,
+            ArchivedJournal::HistoricalVisualApply(_)
+        ));
+        assert_eq!(
+            serde_json::from_str::<serde_json::Value>(&journal.storage_json().unwrap()).unwrap(),
+            *original
+        );
+        let restored: ArchivedJournal =
+            serde_json::from_value(serde_json::to_value(&journal).unwrap()).unwrap();
+        assert_eq!(
+            restored.storage_json().unwrap(),
+            journal.storage_json().unwrap()
+        );
+    }
+    let mut extra = wrapped.clone();
+    extra["unrecognized"] = true.into();
+    let mut nested = wrapped.clone();
+    nested["request"]["unrecognized"] = true.into();
+    let mut kind = wrapped.clone();
+    kind["kind"] = "project_v3.unrecognized".into();
+    for invalid in [
+        extra,
+        nested,
+        kind,
+        serde_json::json!({"kind":"project_v3.apply","request":null}),
+    ] {
+        assert!(ArchivedJournal::from_storage(&invalid.to_string()).is_err());
+        let envelope = serde_json::json!({"type":"historical_visual_apply","request":invalid});
+        assert!(serde_json::from_value::<ArchivedJournal>(envelope).is_err());
+    }
+}
+
+#[test]
 fn brand_journal_restores_typed_scope_without_rewriting_catalog_or_upload_identity() {
     use opencut_contracts::{
         AssetVersion, brand_resources::ImportBrandResource, catalog_resources::CatalogUploadedMedia,

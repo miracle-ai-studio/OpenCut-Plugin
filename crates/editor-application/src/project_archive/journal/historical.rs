@@ -4,6 +4,73 @@ use opencut_contracts::project_history::Direction;
 use serde_json::Value;
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+enum OriginalApplyKind {
+    #[serde(rename = "project_v3.apply")]
+    Apply,
+}
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct OriginalVisualApply {
+    kind: OriginalApplyKind,
+    request: ApplyHistoricalVisualProject,
+}
+/// Preserve the original bare request or the exact original writer envelope.
+/// The marker describes stored data, never a second edit or execution API.
+#[derive(Clone, Debug)]
+pub struct ArchivedVisualApply {
+    request: ApplyHistoricalVisualProject,
+    wrapped: bool,
+}
+impl From<ApplyHistoricalVisualProject> for ArchivedVisualApply {
+    fn from(request: ApplyHistoricalVisualProject) -> Self {
+        Self {
+            request,
+            wrapped: false,
+        }
+    }
+}
+impl Serialize for ArchivedVisualApply {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        if self.wrapped {
+            serde_json::json!({"kind":"project_v3.apply","request":&self.request})
+                .serialize(serializer)
+        } else {
+            self.request.serialize(serializer)
+        }
+    }
+}
+impl<'de> Deserialize<'de> for ArchivedVisualApply {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let value = Value::deserialize(deserializer)?;
+        if value.get("kind").is_some() {
+            let OriginalVisualApply {
+                kind: OriginalApplyKind::Apply,
+                request,
+            } = serde_json::from_value(value).map_err(serde::de::Error::custom)?;
+            Ok(Self {
+                request,
+                wrapped: true,
+            })
+        } else {
+            serde_json::from_value(value)
+                .map(Self::from)
+                .map_err(serde::de::Error::custom)
+        }
+    }
+}
+impl std::ops::Deref for ArchivedVisualApply {
+    type Target = ApplyHistoricalVisualProject;
+    fn deref(&self) -> &Self::Target {
+        &self.request
+    }
+}
+impl std::ops::DerefMut for ArchivedVisualApply {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.request
+    }
+}
+
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 enum OriginalDirection {
     #[serde(rename = "selective_undo")]
     Undo,

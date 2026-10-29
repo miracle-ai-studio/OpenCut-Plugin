@@ -2,31 +2,46 @@
   "format": "opencut.delivery-status.v1",
   "delivery_ready": false,
   "in_progress": {
-    "candidate_cli_sha256": "9a0347f7a31108426e07a5d6346b3d21cea00e6d0281b6145693d8ff7e72f12f",
-    "candidate_worker_sha256": "f5af24a063ac5820e178897a5851375513a3d880348a2a99d64f15329372c9ed",
+    "candidate_cli_sha256": "72677ebc274880b2e39bf6ce14cbecdacf4b6fe07a849a006410719ff0ec91c6",
+    "candidate_worker_sha256": "5e45a33abd5978f30b304a718abab08ebb32664a30152d2fb768c046cf285952",
     "candidate_web_source_digest": "42379fdba6afb36203d8a045ca7504d23086d7f583425f8133a3f05e59417d4f",
-    "execution_scope_optimization": "Fresh-scope SQLite optimization is unchanged from candidate ee7d2027ac37, whose 301 checks passed with 2 existing font-fixture ignores. Current source cbe924e9 integrates bounded video threading; 25 affected media/worker checks passed, same explicit CLI generated/canonical contracts passed. Prior full storage suite not rerun.",
-    "preview_resolution": "Keep existing preview540 raster policy. Unbuilt preview360 candidate withdrawn; Web preview request restored to accepted source.",
+    "execution_scope_optimization": "Fresh-scope SQLite optimization remains unchanged from ee7d2027ac37, whose301 checks passed with2existing font-fixture ignores. Current source eeb4261b integrates early native preview conversion;28affected media/worker checks and exact-CLI generated/canonical contracts pass. Prior full storage suite not rerun.",
+    "preview_resolution": "Keep preview540 output. Native preview video conversion now fits the prepared canvas before RGBA allocation; source dimensions remain original for binding. No further preview reduction.",
     "export_resolution": "720p/1080p/1440p/2160p and UI default1080p unchanged. Four presets independently validated on prior ee7d2027ac37/2759865d927a candidate. Current candidate validates original-size 4K6s with byte-identical MP4 and independent exact preencode PCM; not a rerun of all four presets.",
-    "bottleneck_attribution": "Bounded four-thread decode confirmed on retained4K source; metadata absent at open is resolved once after first admitted frame, then reseek with remaining I/O. Actual4K preview medians native49.5ms/read-bitmap21.2ms/total71.4ms; still full-source RGBA and no source proxy or GPU YUV input. Not decode-only timing.",
+    "bottleneck_attribution": "Current original4K preview medians native30.8ms/read-bitmap22.0ms/total53.2ms versus49.5/21.2/71.4ms. Preview no longer allocates full-source RGBA for this4K-to540p video; codec reference surfaces remain original. Serial frame preparation/read remains open; source proxy and GPU YUV input not integrated. Not decode-only timing.",
     "runtime_acceptance": {
       "small_source": "Not rerun on current candidate. Prior ee7d2027ac37 completed94s but startup5.063s failed; no new whole small-source acceptance claim.",
-      "source_4k": "Current startup3.957325507s passes5s; 150s observation reaches68.76666666666667s/2064 sampled presented frames, fails94s completion. 8215 responses,0 API errors,0 page exceptions. Seek/pause/resume stages not reached.",
-      "source_4k_export": "Current 6s original4K with audio observed job duration52.02901407610625s versus54.94790516491048s prior; full MP4 exact retained independent output, preencode PCM independently exact.",
+      "source_4k": "Startup4.479266946s passes5s;150scompletion wait reaches91.56666666666666s/2748sampled frames, fails94scompletion.9813preview responses,0APIerrors,0pageexceptions;seek/pause/resume not reached.",
+      "source_4k_export": "Six-second original4K with audio job_275c9ee143cf4f91ad806a02965159c3 observed51.832076598890126s;wholeMP4 unchanged,288000stereo48k preencodePCM frames exact to independent reference. No export speedup claim.",
       "native_worker_peak_rss_kib": {
-        "preview": 292736,
-        "export": 315892
+        "preview": 228008,
+        "export": 315732
       },
-      "cleanup": "Both retained snapshots unchanged; owned service stopped, no active jobs or candidate workers.",
-      "qualification": "Raw local candidate only; no new installation/package or whole-product acceptance."
+      "cleanup": "Original4K, originalsmall and proxy-diagnostic snapshots unchanged;owned service stopped,no activejobs or candidateworkers.",
+      "qualification": "Raw local candidate;no new install/package or complete delivery acceptance. Preview process-tree RSS2483824KiB;not GPU or system hard memory."
     },
-    "next_candidate": "Current threading slice scoped fidelity passed; 4K continuous playback still fails. Next work must reduce full-source processing and frame pipeline overhead without lowering preview below540p or sourcing export from proxies.",
+    "next_candidate": "Early preview conversion fidelity passed;94s4Kcompletion still fails. Next integrate bounded overlap after a picture reader is claimed, preserving64MiB presentation admission, live authority and cancellation. Original-source export remains explicit; reduce export overhead separately.",
     "decoder_regression_failures": "Initial test required optional stream duration, then assumed previous frame existed before nonzero firstPTS; preserved both failures. It also exposed production metadata selection staying serial. Integrated repair uses first admitted frame; all25 affected checks now pass.",
     "decoder_candidate_evidence": {
       "source_commit": "cbe924e9fffdb16d42b4636b86fcc732417945e2",
       "checkpoint_sha256": "f8651029ada501117f90ceb5d47f20b511f7f39de18107503d16c31692ce3d8a",
       "evidence_count": 44,
       "scope": "scoped_decoder_fidelity_and_startup_passed_continuous_4k_failed"
+    },
+    "preview_source_raster_candidate_evidence": {
+      "source_commit": "eeb4261b331603773947f6c40bf8a6bfa2c2c7d5",
+      "checkpoint": "/Users/vincent/Movies/OpenCut-native-rendering/4k/preview-source-raster/checkpoint.json",
+      "checkpoint_sha256": "e95da59d50586b732a9df1a2441ffc7010bef8a59fbc55beeafc129cbd979106",
+      "evidence_count": 58,
+      "scope": "scoped_conversion_fidelity_passed_continuous_4k_failed",
+      "independent_preview_probes": "Seven actual HTTP960x540RGB outputs exactly match independent original-source conversion;original3840x2160source dimensions,PTS and duration retained.",
+      "verifier_failure": "Initial HTTP verifier used seek.time instead of declared seek.sequence_time after four passed probes. Retained initial log/report/reference and reused four exact outputs; only remaining three probes executed, no product rebuild."
+    },
+    "source_proxy_research": {
+      "checkpoint": "/Users/vincent/Movies/OpenCut-native-rendering/4k/source-proxy-study/checkpoint.json",
+      "checkpoint_sha256": "6bd912303420c370be1618e3cb0fe99ed3e579858150f0bde18eba212b09aa26",
+      "scope": "External prototype only,no integrated asset proxy selection.",
+      "result": "H264proxy generation3.147s/6392096bytes,decode0.267s versus ProRes5.925s/15107975bytes,decode0.542s on one12s4Ksource. Native4K-canvas diagnostic completes94s plusseek/pause/resume in150.763s but startup5.287s fails5s;sampled frame50.3ms. VFRduration and fragmentedPTS differ;must retain exact mapping. Hardware H264decode7.889s versus CPU4thread2.423s on thishost/source;not editor qualification."
     }
   },
   "scope": "Local CLI/HTTP/MCP/SDK service and Web editor; GPUI shell is not an integrated editor.",
@@ -3390,25 +3405,46 @@
       "delivery_ready": false
     },
     "current_working_candidate": {
-      "checkpoint": "/Users/vincent/Movies/OpenCut-native-rendering/4k/callback-batching/checkpoint.json",
-      "checkpoint_sha256": "618d2069124756f754a7d5a945f7a6494cfa6967d7b5de64a35df015854bdcc1",
-      "source_commit": "54850c6d73815ab3b032f86c7860a4730254cfe0",
-      "test_only_revision": "7adc7de5a04dbff6a638ac16c017368b50d74fe5",
-      "host_sha256": "b01a764f6dbcbcc622b3b23c305bf323ecb5ddee6ef698a00e0263bb42d3074a",
-      "worker_sha256": "9a347b1f51742f126143cbcbeca787af5ea7d2543067fe4abd21e4d4ce7e9974",
-      "scope": "Bounded typed callback batches and unique RGBA reuse.55scoped successful checks across retained initial/test-only repaired binaries;exactCLI contracts.94s320x180 editor playback/seek/pause/resume passes.4Kstartup5.645s and53.9sprogress fail original gates;sampled frame91.0ms vs101.5ms.6s4K export57.360s;MP4 unchanged,preencodePCM exactindependent,originalpixel/AAC proof identities retained. No package/whole-product qualification.",
-      "qualification": "scoped_fidelity_and_small_playback_passed_4k_throughput_failed",
+      "checkpoint": "/Users/vincent/Movies/OpenCut-native-rendering/4k/preview-source-raster/checkpoint.json",
+      "checkpoint_sha256": "e95da59d50586b732a9df1a2441ffc7010bef8a59fbc55beeafc129cbd979106",
+      "source_commit": "eeb4261b331603773947f6c40bf8a6bfa2c2c7d5",
+      "host_sha256": "72677ebc274880b2e39bf6ce14cbecdacf4b6fe07a849a006410719ff0ec91c6",
+      "worker_sha256": "5e45a33abd5978f30b304a718abab08ebb32664a30152d2fb768c046cf285952",
+      "scope": "Early preview conversion28scoped checks and exactCLI contracts pass. Seven independent preview probes exactRGB/originalgeometry/PTS;startup4.479s passes,94scompletion fails at91.567s in150swait. Original4K6sexport51.832s,wholeMP4 unchanged and preencodePCM exact. ExistingWeb hashes retained;no package promotion.",
+      "qualification": "scoped_conversion_fidelity_passed_continuous_4k_failed",
       "delivery_ready": false
     },
     "previous_working_candidate": {
-      "checkpoint": "/Users/vincent/Movies/OpenCut-native-rendering/4k/reader-repair/checkpoint.json",
-      "checkpoint_sha256": "52f35d418e347b4a830d214df80742094a0d12813d0d9b0a872635995b9feaa0",
-      "source_commit": "557d91d7f8b8105766a2854c8bcc99bee31ad2dd",
-      "host_sha256": "e5cce11043f1d5aa8394da848196a0faf8a117614ff5c68045ca4867ca139832",
-      "worker_sha256": "5a48a7891b4686b544917c8942ef0389fac8056a4a5c933c3b70c6feed4c4185",
-      "scope": "Archive6+SQLite253+CLI/HTTP27 and exactCLI contracts pass;previous3store failures repaired. Original94s320x180 full editor playback/seek/pause/resume passes.4K-source startup/completion fail,48.267seconds in original completion wait. Unchanged worker/Web/tools and retained independent exports keep original identities;no new package qualification.",
-      "qualification": "scoped_regressions_passed_4k_preview_failed",
+      "checkpoint": "/Users/vincent/Movies/OpenCut-native-rendering/4k/frame-decoding-admitted/checkpoint.json",
+      "checkpoint_sha256": "f8651029ada501117f90ceb5d47f20b511f7f39de18107503d16c31692ce3d8a",
+      "source_commit": "cbe924e9fffdb16d42b4636b86fcc732417945e2",
+      "host_sha256": "9a0347f7a31108426e07a5d6346b3d21cea00e6d0281b6145693d8ff7e72f12f",
+      "worker_sha256": "f5af24a063ac5820e178897a5851375513a3d880348a2a99d64f15329372c9ed",
+      "scope": "Bounded threading25scopedchecks;4Kstartup passes,94scompletion fails at68.767s;original4K6sexport and independent fidelity pass.",
       "delivery_ready": false
-    }
+    },
+    "working_candidate_history": [
+      {
+        "checkpoint": "/Users/vincent/Movies/OpenCut-native-rendering/4k/reader-repair/checkpoint.json",
+        "checkpoint_sha256": "52f35d418e347b4a830d214df80742094a0d12813d0d9b0a872635995b9feaa0",
+        "source_commit": "557d91d7f8b8105766a2854c8bcc99bee31ad2dd",
+        "host_sha256": "e5cce11043f1d5aa8394da848196a0faf8a117614ff5c68045ca4867ca139832",
+        "worker_sha256": "5a48a7891b4686b544917c8942ef0389fac8056a4a5c933c3b70c6feed4c4185",
+        "scope": "Archive6+SQLite253+CLI/HTTP27 and exactCLI contracts pass;previous3store failures repaired. Original94s320x180 full editor playback/seek/pause/resume passes.4K-source startup/completion fail,48.267seconds in original completion wait. Unchanged worker/Web/tools and retained independent exports keep original identities;no new package qualification.",
+        "qualification": "scoped_regressions_passed_4k_preview_failed",
+        "delivery_ready": false
+      },
+      {
+        "checkpoint": "/Users/vincent/Movies/OpenCut-native-rendering/4k/callback-batching/checkpoint.json",
+        "checkpoint_sha256": "618d2069124756f754a7d5a945f7a6494cfa6967d7b5de64a35df015854bdcc1",
+        "source_commit": "54850c6d73815ab3b032f86c7860a4730254cfe0",
+        "test_only_revision": "7adc7de5a04dbff6a638ac16c017368b50d74fe5",
+        "host_sha256": "b01a764f6dbcbcc622b3b23c305bf323ecb5ddee6ef698a00e0263bb42d3074a",
+        "worker_sha256": "9a347b1f51742f126143cbcbeca787af5ea7d2543067fe4abd21e4d4ce7e9974",
+        "scope": "Bounded typed callback batches and unique RGBA reuse.55scoped successful checks across retained initial/test-only repaired binaries;exactCLI contracts.94s320x180 editor playback/seek/pause/resume passes.4Kstartup5.645s and53.9sprogress fail original gates;sampled frame91.0ms vs101.5ms.6s4K export57.360s;MP4 unchanged,preencodePCM exactindependent,originalpixel/AAC proof identities retained. No package/whole-product qualification.",
+        "qualification": "scoped_fidelity_and_small_playback_passed_4k_throughput_failed",
+        "delivery_ready": false
+      }
+    ]
   }
 }

@@ -740,7 +740,7 @@ mod tests {
             max_packets_per_operation: 100_000,
         };
         let mut production_parallel = false;
-        for path in paths {
+        for (index, path) in paths.into_iter().enumerate() {
             let mut source = Source {
                 bytes: std::fs::read(path).unwrap(),
                 revoked: false,
@@ -748,6 +748,10 @@ mod tests {
             let deadline = Instant::now() + std::time::Duration::from_secs(120);
             let mut parallel =
                 NativeVideoDecoder::open(&mut source, None, limits, deadline).unwrap();
+            eprintln!(
+                "retained source {index}: policy threads {}",
+                parallel.decode_threads
+            );
             production_parallel |= parallel.decode_threads == 4;
             let mut serial = NativeVideoDecoder::open(&mut source, None, limits, deadline).unwrap();
             // Exercise the same decoding state machine under both modes,
@@ -772,9 +776,6 @@ mod tests {
                 av::codec::threading::Type::Frame
             );
             assert_eq!(parallel.decoder.threading().count, 4);
-            let end = parallel.end_pts.expect("Retained fixture duration");
-            let top = i64::from(parallel.time_base[0]);
-            let bottom = parallel.time_base[1];
             // Sequential samples, fractional positions, distant forward seek,
             // EOF drain, backwards seek and then playback after that flush.
             for ticks in [0, 1, 2, 3, 7, 11, 35, 80, 119, 0, 5, 6, 7] {
@@ -784,10 +785,12 @@ mod tests {
                 };
                 compare_samples(&mut serial, &mut parallel, &mut source, at, deadline);
             }
-            for ticks in [end - 1, end, end + 1] {
+            // Retained fixtures are at most twelve seconds long. Fragmented
+            // inputs need not expose a stream end; decoding must drain anyway.
+            for ticks in [11999, 12000, 12001] {
                 let at = MediaTime {
-                    ticks: ticks * top,
-                    timebase: bottom,
+                    ticks,
+                    timebase: 1000,
                 };
                 compare_samples(&mut serial, &mut parallel, &mut source, at, deadline);
             }

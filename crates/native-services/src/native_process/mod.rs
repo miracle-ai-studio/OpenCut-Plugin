@@ -8,6 +8,7 @@ pub(crate) use platform::system_identity;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 use std::{
+    fmt::Write as _,
     io::{BufReader, Read},
     path::{Path, PathBuf},
     process::{ChildStdin, Command, Stdio},
@@ -88,7 +89,7 @@ pub(crate) fn invalid(message: impl Into<String>) -> EditorError {
 pub(crate) fn file_hash(path: &Path) -> Result<String, EditorError> {
     let mut input =
         std::fs::File::open(path).map_err(|_| invalid("Cannot open native runtime identity"))?;
-    let mut hash = Sha256::new();
+    let mut hash = ring::digest::Context::new(&ring::digest::SHA256);
     let mut bytes = [0; 65536];
     loop {
         let n = input
@@ -99,8 +100,16 @@ pub(crate) fn file_hash(path: &Path) -> Result<String, EditorError> {
         }
         hash.update(&bytes[..n]);
     }
-    Ok(format!("{:x}", hash.finalize()))
+    let digest = hash.finish();
+    let mut hex = String::with_capacity(64);
+    for byte in digest.as_ref() {
+        write!(&mut hex, "{byte:02x}").expect("Writing a digest to String cannot fail");
+    }
+    Ok(hex)
 }
+
+#[cfg(test)]
+mod file_hash_tests;
 pub(crate) fn library_identities()
 -> Result<Vec<opencut_contracts::renderer_identity::NativeLibraryIdentity>, EditorError> {
     opencut_media::native_decode::identity::libraries()

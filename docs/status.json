@@ -4647,6 +4647,88 @@
         "sha256": "6b8cf75f1154d4d016320e44a63f5d3c86f21b7d651360ea874da86dbc8c444d",
         "files": 41
       }
+    },
+    "runtime_file_hash": {
+      "state": "implemented_focused_tests_passed_integrated_build_pending",
+      "source_before_commit": "464e37ae",
+      "evidence_root": "/Users/vincent/Movies/OpenCut-native-rendering/4k/preview-startup-causal",
+      "diagnostic_runtime": {
+        "opencut": {
+          "path": "/Users/vincent/Movies/OpenCut-native-rendering/candidates/2d49649facd2e7f054fa5a58d9e22b2ea035c24ec999b4aa3e24dbe016010c71/opencut",
+          "sha256": "2d49649facd2e7f054fa5a58d9e22b2ea035c24ec999b4aa3e24dbe016010c71"
+        },
+        "opencut-render-worker": {
+          "path": "/Users/vincent/Movies/OpenCut-native-rendering/candidates/88afb9b80c73c9e982726ab6247b7768b57ed6893f49d90c2be6badfe0e63694/opencut-render-worker",
+          "sha256": "88afb9b80c73c9e982726ab6247b7768b57ed6893f49d90c2be6badfe0e63694"
+        }
+      },
+      "component_results": {
+        "passed": true,
+        "results": [
+          {
+            "path": "/Users/vincent/Movies/OpenCut-native-rendering/candidates/88afb9b80c73c9e982726ab6247b7768b57ed6893f49d90c2be6badfe0e63694/opencut-render-worker",
+            "bytes": 27357172,
+            "sha2_ms": 128.33807575,
+            "ring_ms": 76.15616574999999,
+            "fraction_reduction": 0.40659726036137034,
+            "independent_sha256": "88afb9b80c73c9e982726ab6247b7768b57ed6893f49d90c2be6badfe0e63694",
+            "gate_passed": true
+          },
+          {
+            "path": "/Users/vincent/Movies/OpenCut-native-rendering/native-runtime/media-install/lib/libavcodec.62.28.103.dylib",
+            "bytes": 17402976,
+            "sha2_ms": 79.43106875000001,
+            "ring_ms": 46.745819499999996,
+            "fraction_reduction": 0.4114919988408189,
+            "independent_sha256": "03f9396cf4f0d7dac1ec006b8fbfa4ba8c9c14530bc1c280c30cc9dad15beb1f",
+            "gate_passed": true
+          }
+        ]
+      },
+      "scope": "One sampled bounded startup and isolated real-fileABBA;not startup qualification. No full timeline retry.",
+      "diagnosis": {
+        "scope": "One bounded retained-fixture startup with active samples,then one isolated file-hashABBA. Not whole editor or qualification.",
+        "hypothesis_gpu_main_cause": "Not supported as dominant. Device creation observed, but file hashing appears in host and several native worker identities; no measured complete GPU phase duration.",
+        "hypothesis_storage_main_cause": "Sync waits observed in budget/control storage,but chain also includes identity work; cannot attribute all recovery request time to storage. Preserve durability.",
+        "confirmed_avoidable_component": "Same64KiB full-file read and SHA256 value,ring existing pinned implementation vs sha2:27.36MBworker128.338to76.156ms,17.40MBdecoder79.431to46.746ms;ABBA6measured percase plus2warmups,independent hashlib exact. Both40to41percent lower,pass20percent gate.",
+        "disposition": "Fix common native runtime file hash only. No cache,check-frequency reduction,protocol/default/resolution/authority/lifecycle change. Product unit/build/acceptance tracked separately.",
+        "retained_qualification": "Original small6.182s failed5s gate remains failed;this sampled4.953s click-to-visible does not requalify. Old incomplete-head stall not reproduced or closed.",
+        "new_dependency_boundary": "One directnative-services->existing pinnedring0.17.14edge for native identity SHA256. No new package/domain/application coupling;review rationale in docs/architecture.md;manual one-edge baseline change.",
+        "next": "One integrated CLI/worker build after focused tests;exactbinary contract checks;one serial affected acceptance batch with independent sourceRGBA/PCM,editor and lifecycle. No Web build."
+      },
+      "implementation": "Common native_process file_hash uses sameSHA256 via existing pinnedring0.17.14;full64KiB file reads,allcall sites/freshness/error policies retained. No file/grant cache.",
+      "focused_tests": {
+        "passed": 4,
+        "failed": 0,
+        "seconds": 346.23656247602776,
+        "scope": "Known standard vectors,independent padding/64KiB boundaries,same-size overwrite fresh read,original open/read errors"
+      },
+      "architecture_tests": 14,
+      "architecture_and_contract_boundaries": "passed",
+      "dependency_boundary": "One manually reviewed directnative-services->existing ring edge;no new third-party package/domain/application edge;docs/architecture rationale and exit criterion.",
+      "public_contract_changed": false,
+      "web_changed": false,
+      "product_build": "pending",
+      "current_accepted_runtime_unchanged": true,
+      "cleanup": {
+        "owned_service_stopped": true,
+        "owned_pids_remaining": [],
+        "owned_pids_checked": [
+          93489
+        ],
+        "snapshots_unchanged": 4,
+        "existing_jobs_unchanged": 85,
+        "new_jobs": 0,
+        "no_product_build": true,
+        "user_services_untouched": true
+      },
+      "checkpoint": {
+        "path": "/Users/vincent/Movies/OpenCut-native-rendering/4k/preview-startup-causal/checkpoint.json",
+        "sha256": "a53f1298c3019d57bf8a339763f7c42e6bcddc28bb65596cce52f81c03f946ea",
+        "files": 43
+      },
+      "manual_acceptance": false,
+      "delivery_ready": false
     }
   }
 }

@@ -292,6 +292,7 @@
           "opencut-storage-budget",
           "opencut-time",
           "png",
+          "ring",
           "rustix",
           "serde",
           "serde_json",

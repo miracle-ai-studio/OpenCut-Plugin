@@ -4876,6 +4876,7 @@ dependencies = [
  "opencut-storage-budget",
  "opencut-time",
  "png 0.18.1",
+ "ring",
  "rustix 1.1.4",
  "serde",
  "serde_json",

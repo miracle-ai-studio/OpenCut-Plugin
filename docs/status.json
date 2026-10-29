@@ -4344,7 +4344,7 @@
       ]
     },
     "output_attempt_path_fence": {
-      "state": "rust_component_and_namespace_regressions_passed_pending_integrated_build_and_export",
+      "state": "fixed_built_and_scoped_export_source_namespace_acceptance_passed",
       "source_base_commit": "fee17706",
       "evidence_root": "/Users/vincent/Movies/OpenCut-native-rendering/4k/export-fence-causal",
       "hypothesis": "Repeated full realpath traversal in each212105execution checkpoints is avoidable filesystem work. No authorization or checkpoint-frequency change.",
@@ -4369,12 +4369,124 @@
       "failures_retained": [
         "first-rust-failure.json",
         "first-rust-patch.diff",
-        "first-attempt-names.rs"
+        "first-attempt-names.rs",
+        "acceptance.json",
+        "attempt-replacement.json",
+        "active-attempt-replacement-run.log"
       ],
       "boundary": "Existing storage adapter and host output helper; existing rustix dependency. No new module/publicDTO/operation/grant cache/policy or baseline expansion. macOS positive current-name/live-inode shortcut, original lookup/error semantics otherwise. Other platforms unchanged.",
       "public_contract_changed": false,
       "web_changed": false,
-      "delivery_ready": false
+      "delivery_ready": false,
+      "source_commit": "997ac6d5e3b17a64dcaebff0e14c5f178242c146",
+      "runtime": {
+        "opencut": {
+          "path": "/Users/vincent/Movies/OpenCut-native-rendering/candidates/2d49649facd2e7f054fa5a58d9e22b2ea035c24ec999b4aa3e24dbe016010c71/opencut",
+          "sha256": "2d49649facd2e7f054fa5a58d9e22b2ea035c24ec999b4aa3e24dbe016010c71"
+        },
+        "opencut-render-worker": {
+          "path": "/Users/vincent/Movies/OpenCut-native-rendering/candidates/88afb9b80c73c9e982726ab6247b7768b57ed6893f49d90c2be6badfe0e63694/opencut-render-worker",
+          "sha256": "88afb9b80c73c9e982726ab6247b7768b57ed6893f49d90c2be6badfe0e63694"
+        }
+      },
+      "build_seconds": 606.3650378182065,
+      "worker_byte_identical_to_previous": true,
+      "exact_cli_generated_and_canonical_contracts": "passed",
+      "architecture_tests": 14,
+      "architecture_and_contract_boundary_gates": "passed",
+      "web_reuse": {
+        "source_commit": "989bf6637c1c08cffe664d25e3c44ed75476582a",
+        "source_files_verified": 715,
+        "assets_verified": 284,
+        "rebuilt": false
+      },
+      "actual_export": {
+        "scope": "One current original6s4K export and retained prior candidate. No concurrent own compiler or browser during current export. Not repeated paired benchmark or proof of stable whole-export speedup. Same worker88, same media/revision/options; CLI host filesystem fence changed.",
+        "old_job_id": "job_ab19d82254b541dc82399aa8e97560c7",
+        "new_job_id": "job_fe70340c7d5a4d8985e7e9a58c2e96b2",
+        "old_wall_seconds": 53.21815311093815,
+        "new_wall_seconds": 48.43689298420213,
+        "observed_wall_fraction_change": 0.08984265419299764,
+        "old_profile": {
+          "checkpoint_calls": 212105,
+          "checkpoints_ms": 13399.364264000002,
+          "finish_ms": 9982.045636,
+          "startup_ms": 12986.096286,
+          "total_ms": 50947.097220999996
+        },
+        "new_profile": {
+          "checkpoint_calls": 212113,
+          "checkpoints_ms": 7902.176227,
+          "finish_ms": 9710.567239,
+          "startup_ms": 12448.354248,
+          "total_ms": 45941.676974
+        },
+        "old_median_frame_checkpoints_ms": 64.646934,
+        "new_median_frame_checkpoints_ms": 37.0582725,
+        "check_frequency": "Same checkpoint sites and live policies; counts212105vs212113 include variable bounded waits. No throttling or cached grants.",
+        "overlap": "Checkpoint times overlap render times;do not sum.",
+        "whole_mp4_identical": true,
+        "worker_byte_identical": true
+      },
+      "independent_fidelity": {
+        "current_complete_mp4_identical": true,
+        "new_preencode_stereo_pcm_frames": 288000,
+        "maximum_absolute_error": 0,
+        "fitting": "none",
+        "reference_producer_retained": true
+      },
+      "source_alpha": {
+        "job_id": "job_c7f9cc816ce543fc83ff4bb9a161ce6b",
+        "frames": 8,
+        "rgba_exact": true,
+        "hidden_rgb_exact": true,
+        "two_artifacts_published": true,
+        "small_source_not_upscaled": true
+      },
+      "namespace_injection": {
+        "job_id": "job_52ed4fd2f92f4af298bad50c06715a9c",
+        "passed": true,
+        "private_code": "JOB_LEASE_LOST",
+        "public_code": "JOB_FAILED",
+        "published_artifacts": 0,
+        "owned_children_remaining": 0,
+        "inherited_lock_released": true,
+        "attempt_restored": true,
+        "same_original_job_reused_for_verifier_repair": true
+      },
+      "cleanup": {
+        "synthetic_projects_unchanged": 4,
+        "existing_job_results_unchanged": 80,
+        "new_terminal_jobs": 3,
+        "active_jobs": 0,
+        "candidate_workers_remaining": 0,
+        "user_services_and_packages_unchanged": true
+      },
+      "checkpoint": {
+        "path": "/Users/vincent/Movies/OpenCut-native-rendering/4k/export-fence-causal/checkpoint.json",
+        "sha256": "9c7c3737c329a7350e24d489d3fa3bd33ba8a248b6858a90908bc934c8ccc986",
+        "files": 62,
+        "qualification": "Scoped original4K/PCM,authored transparent source and namespace lifecycle passed;preview realtime/stall/startup/remaining export/manual/full delivery open."
+      }
+    },
+    "current_runtime": {
+      "rust_source_commit": "997ac6d5e3b17a64dcaebff0e14c5f178242c146",
+      "binaries": {
+        "opencut": {
+          "path": "/Users/vincent/Movies/OpenCut-native-rendering/candidates/2d49649facd2e7f054fa5a58d9e22b2ea035c24ec999b4aa3e24dbe016010c71/opencut",
+          "sha256": "2d49649facd2e7f054fa5a58d9e22b2ea035c24ec999b4aa3e24dbe016010c71"
+        },
+        "opencut-render-worker": {
+          "path": "/Users/vincent/Movies/OpenCut-native-rendering/candidates/88afb9b80c73c9e982726ab6247b7768b57ed6893f49d90c2be6badfe0e63694/opencut-render-worker",
+          "sha256": "88afb9b80c73c9e982726ab6247b7768b57ed6893f49d90c2be6badfe0e63694"
+        }
+      },
+      "web_source_commit": "989bf6637c1c08cffe664d25e3c44ed75476582a",
+      "web_source_digest": "0e2988b86254411b991810d053a07bd8af7556e4785257e8a9511637db0b3bd7",
+      "web_rebuilt": false,
+      "delivery_ready": false,
+      "service_state_scope": "Last sealed export-fence acceptance; later owned experiments require their own service identity record.",
+      "last_checkpoint_service_running": false
     }
   }
 }

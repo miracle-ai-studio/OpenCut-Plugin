@@ -45,11 +45,14 @@ impl Source {
         }
     }
     fn display_size(&self) -> (u32, u32) {
-        let raster = self.raster();
+        let (width, height) = match self {
+            Self::Media(frame) => (frame.source_width, frame.source_height),
+            Self::Raster(image) => (image.width, image.height),
+        };
         if self.rotation() % 180 == 0 {
-            (raster.width, raster.height)
+            (width, height)
         } else {
-            (raster.height, raster.width)
+            (height, width)
         }
     }
 }

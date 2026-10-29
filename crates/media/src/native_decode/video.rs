@@ -25,6 +25,10 @@ pub struct NativeVideoTrack {
 }
 #[derive(Debug)]
 pub struct DecodedVideoFrame {
+    /// Actual decoded extent before an explicitly requested presentation scale.
+    /// Geometry and source observations must use these dimensions.
+    pub source_width: u32,
+    pub source_height: u32,
     pub width: u32,
     pub height: u32,
     pub rgba: Vec<u8>,
@@ -35,6 +39,57 @@ pub struct DecodedVideoFrame {
     pub rotation_degrees: u16,
     pub matrix: VideoColorMatrix,
     pub full_range: bool,
+}
+
+/// Presentation output only. Codec surfaces, time and source observations keep
+/// their original extent. Export callers use Source.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum VideoOutputSize {
+    #[default]
+    Source,
+    Fit {
+        width: u32,
+        height: u32,
+    },
+}
+impl VideoOutputSize {
+    fn validate(self) -> MediaResult<()> {
+        if matches!(self, Self::Fit { width, height }
+            if width == 0 || height == 0 || width > 16384 || height > 16384)
+        {
+            return Err(crate::MediaError::InvalidRequest(
+                "Invalid native presentation extent".into(),
+            ));
+        }
+        Ok(())
+    }
+
+    fn extent(self, width: u32, height: u32, rotation: u16) -> [u32; 2] {
+        let Self::Fit {
+            width: mut max_width,
+            height: mut max_height,
+        } = self
+        else {
+            return [width, height];
+        };
+        if rotation % 180 != 0 {
+            std::mem::swap(&mut max_width, &mut max_height);
+        }
+        if width <= max_width && height <= max_height {
+            return [width, height];
+        }
+        if u64::from(max_width) * u64::from(height) <= u64::from(max_height) * u64::from(width) {
+            [
+                max_width,
+                ((u64::from(height) * u64::from(max_width)) / u64::from(width)).max(1) as u32,
+            ]
+        } else {
+            [
+                ((u64::from(width) * u64::from(max_height)) / u64::from(height)).max(1) as u32,
+                max_height,
+            ]
+        }
+    }
 }
 impl DecodedVideoFrame {
     pub fn timestamp_seconds(&self) -> f64 {
@@ -77,6 +132,7 @@ pub struct NativeVideoDecoder {
     reference_frames: u64,
     decode_threads: usize,
     threading_resolved: bool,
+    output_size: VideoOutputSize,
 }
 struct Operation {
     packets: usize,
@@ -167,6 +223,7 @@ impl NativeVideoDecoder {
             reference_frames,
             decode_threads,
             threading_resolved: decode_threads > 1,
+            output_size: VideoOutputSize::Source,
         })
     }
 
@@ -243,7 +300,18 @@ impl NativeVideoDecoder {
         requested: MediaTime,
         deadline: Instant,
     ) -> MediaResult<Option<Arc<DecodedVideoFrame>>> {
+        self.sample_with_output(source, requested, VideoOutputSize::Source, deadline)
+    }
+
+    pub fn sample_with_output(
+        &mut self,
+        source: &mut dyn ByteSource,
+        requested: MediaTime,
+        output_size: VideoOutputSize,
+        deadline: Instant,
+    ) -> MediaResult<Option<Arc<DecodedVideoFrame>>> {
         checkpoint(source, deadline)?;
+        output_size.validate()?;
         if requested.timebase == 0
             || requested.ticks < 0
             || self.retired
@@ -252,6 +320,7 @@ impl NativeVideoDecoder {
             return Err(invalid("Invalid native sample or retired decoder"));
         }
         self.image_mode = Some(false);
+        self.output_size = output_size;
         let result = self
             .sample_inner(source, requested, deadline)
             .and_then(|frame| {
@@ -334,6 +403,10 @@ impl NativeVideoDecoder {
         if let Some(frame) = &self.converted
             && frame.pts == pts
             && frame.duration == duration
+            && [frame.width, frame.height]
+                == self
+                    .output_size
+                    .extent(frame.source_width, frame.source_height, self.rotation)
         {
             return Ok(Some(frame.clone()));
         }
@@ -537,7 +610,11 @@ impl NativeVideoDecoder {
                 self.reference_frames + 2
             }
         };
-        let output = (pixels * 4).max(self.converted.as_ref().map_or(0, |f| f.rgba.len() as u64));
+        let [width, height] = self
+            .output_size
+            .extent(frame.width(), frame.height(), self.rotation);
+        let output = (u64::from(width) * u64::from(height) * 4)
+            .max(self.converted.as_ref().map_or(0, |f| f.rgba.len() as u64));
         if surface <= 0 {
             return Err(MediaError::OutputLimit {
                 limit_bytes: self.limits.max_resident_bytes,
@@ -563,25 +640,28 @@ impl NativeVideoDecoder {
             .previous
             .as_ref()
             .ok_or_else(|| invalid("No decoded frame to convert"))?;
-        let width = frame.width();
-        let height = frame.height();
+        let source_width = frame.width();
+        let source_height = frame.height();
+        let [width, height] = self
+            .output_size
+            .extent(source_width, source_height, self.rotation);
         let threads = super::scaler::conversion_threads(
-            u64::from(width) * u64::from(height),
+            u64::from(source_width) * u64::from(source_height),
             self.frame_residency(frame)?,
             self.limits.max_resident_bytes,
         );
         let definition = av::software::scaling::context::Definition {
             format: frame.format(),
-            width,
-            height,
+            width: source_width,
+            height: source_height,
         };
-        if self
-            .scaler
-            .as_ref()
-            .is_none_or(|scaler| scaler.input != definition || scaler.threads != threads)
-        {
+        if self.scaler.as_ref().is_none_or(|scaler| {
+            scaler.input != definition
+                || scaler.threads != threads
+                || scaler.output != [width, height]
+        }) {
             self.scaler = None;
-            self.scaler = Some(FrameScaler::new(definition, threads)?);
+            self.scaler = Some(FrameScaler::new(definition, [width, height], threads)?);
         }
         let scaler = self.scaler.as_mut().expect("prepared scaler");
         let matrix = match frame.color_space() {
@@ -614,6 +694,8 @@ impl NativeVideoDecoder {
             .map_or_else(|| vec![0u8; length], |old| old.rgba);
         scaler.convert(frame, &mut bytes, colorspace as i32, full_range)?;
         let frame = Arc::new(DecodedVideoFrame {
+            source_width,
+            source_height,
             width,
             height,
             rgba: bytes,
@@ -730,6 +812,131 @@ fn rotation(stream: &av::Stream<'_>) -> MediaResult<u16> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn presentation_extent_fits_without_upscaling_and_keeps_rotation() {
+        let fit = VideoOutputSize::Fit {
+            width: 960,
+            height: 540,
+        };
+        assert_eq!(fit.extent(3840, 2160, 0), [960, 540]);
+        assert_eq!(fit.extent(2160, 3840, 90), [540, 960]);
+        assert_eq!(fit.extent(2160, 3840, 0), [303, 540]);
+        assert_eq!(fit.extent(640, 360, 0), [640, 360]);
+        assert_eq!(fit.extent(1, 16384, 0), [1, 540]);
+        assert_eq!(VideoOutputSize::Source.extent(3840, 2160, 0), [3840, 2160]);
+        for size in [
+            VideoOutputSize::Fit {
+                width: 0,
+                height: 540,
+            },
+            VideoOutputSize::Fit {
+                width: 960,
+                height: 0,
+            },
+            VideoOutputSize::Fit {
+                width: 16385,
+                height: 540,
+            },
+        ] {
+            assert!(size.validate().is_err());
+        }
+    }
+
+    #[test]
+    #[ignore = "Requires retained OPENCUT_NATIVE_VIDEO_SOURCES JSON paths; no media generation"]
+    fn presentation_scaling_keeps_source_timing_authority_and_original_output() {
+        use sha2::{Digest, Sha256};
+        let paths: Vec<String> = serde_json::from_str(
+            &std::env::var("OPENCUT_NATIVE_VIDEO_SOURCES").expect("Retained source paths"),
+        )
+        .unwrap();
+        let limits = DecodeLimits {
+            max_pixels: 16_777_216,
+            max_resident_bytes: 512 * 1024 * 1024,
+            max_io_bytes_per_operation: 512 * 1024 * 1024,
+            max_packets_per_operation: 100_000,
+        };
+        let mut downscaled = false;
+        for path in paths {
+            let mut source = Source {
+                bytes: std::fs::read(path).unwrap(),
+                revoked: false,
+            };
+            let deadline = Instant::now() + std::time::Duration::from_secs(120);
+            let mut sampled =
+                NativeVideoDecoder::open(&mut source, None, limits, deadline).unwrap();
+            let mut original =
+                NativeVideoDecoder::open(&mut source, None, limits, deadline).unwrap();
+            for ticks in [0, 1, 2, 35, 80, 119, 360, 0, 5] {
+                let at = MediaTime {
+                    ticks,
+                    timebase: 30,
+                };
+                let expected = original.sample(&mut source, at, deadline).unwrap();
+                let preview = sampled
+                    .sample_with_output(
+                        &mut source,
+                        at,
+                        VideoOutputSize::Fit {
+                            width: 960,
+                            height: 540,
+                        },
+                        deadline,
+                    )
+                    .unwrap();
+                assert_eq!(preview.is_some(), expected.is_some());
+                if let (Some(expected), Some(preview)) = (expected, preview) {
+                    assert_eq!(
+                        (preview.source_width, preview.source_height),
+                        (expected.width, expected.height)
+                    );
+                    assert_eq!(
+                        (
+                            preview.pts,
+                            preview.duration,
+                            preview.time_base_numerator,
+                            preview.time_base_denominator,
+                            preview.rotation_degrees,
+                            preview.matrix,
+                            preview.full_range
+                        ),
+                        (
+                            expected.pts,
+                            expected.duration,
+                            expected.time_base_numerator,
+                            expected.time_base_denominator,
+                            expected.rotation_degrees,
+                            expected.matrix,
+                            expected.full_range
+                        )
+                    );
+                    assert_eq!(
+                        preview.rgba.len(),
+                        preview.width as usize * preview.height as usize * 4
+                    );
+                    downscaled |= preview.width < expected.width;
+                    let saved = Sha256::digest(&preview.rgba);
+                    // Same PTS must replace a scaled conversion with original
+                    // pixels, while a caller's retained preview stays immutable.
+                    let full = sampled.sample(&mut source, at, deadline).unwrap().unwrap();
+                    assert_eq!((full.width, full.height), (expected.width, expected.height));
+                    assert_eq!(Sha256::digest(&full.rgba), Sha256::digest(&expected.rgba));
+                    assert_eq!(Sha256::digest(&preview.rgba), saved);
+                }
+            }
+            let before = sampled.encoded_bytes_read();
+            source.revoked = true;
+            assert!(matches!(sampled.sample_with_output(&mut source,
+                MediaTime { ticks: 5, timebase: 30 },
+                VideoOutputSize::Fit { width: 960, height: 540 }, deadline),
+                Err(MediaError::Admission { code, .. }) if code == "NOT_AUTHORIZED"));
+            assert_eq!(sampled.encoded_bytes_read(), before);
+        }
+        assert!(
+            downscaled,
+            "At least one retained source must exercise scaling"
+        );
+    }
     #[test]
     fn frame_workers_fit_the_existing_resident_admission() {
         let pixels = 3840 * 2160;

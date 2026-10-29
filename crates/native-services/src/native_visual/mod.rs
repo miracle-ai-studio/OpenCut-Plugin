@@ -50,6 +50,15 @@ pub fn platform_backend() -> Result<opencut_renderer::Backend, EditorError> {
 fn invalid(message: impl Into<String>) -> EditorError {
     EditorError::new("INVALID_VISUAL_PLAN", message)
 }
+
+/// Private execution purpose, supplied by the owning native adapter. It never
+/// enters a saved plan, export option or public renderer contract.
+#[derive(Clone, Copy, Debug, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub(crate) enum SourceRaster {
+    Original,
+    Preview,
+}
 fn number(value: &str) -> Result<u64, EditorError> {
     let number = value
         .parse::<u64>()

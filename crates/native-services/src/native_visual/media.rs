@@ -6,7 +6,9 @@ use opencut_contracts::visual_frame::{
 use opencut_editor_application::classic_visual::*;
 use opencut_media::{
     MediaError, MediaTime,
-    native_decode::{ByteSource, DecodeLimits, DecodedVideoFrame, NativeVideoDecoder},
+    native_decode::{
+        ByteSource, DecodeLimits, DecodedVideoFrame, NativeVideoDecoder, VideoOutputSize,
+    },
 };
 use serde_json::{Value, json};
 use std::{
@@ -133,6 +135,7 @@ impl NativeMediaDecoders {
         resources: &mut R,
         plan: &ClassicVisualPlan,
         handles: &[ClassicVisualResourceHandle],
+        source_raster: SourceRaster,
         deadline: Instant,
     ) -> Result<MediaFrameSources, EditorError> {
         resources.checkpoint()?;
@@ -252,7 +255,7 @@ impl NativeMediaDecoders {
                         .first_image(&mut source, deadline)
                         .map_err(media_error)?,
                     VisualDecodeRequest::Video { requested_time, .. } => decoder
-                        .sample(
+                        .sample_with_output(
                             &mut source,
                             MediaTime {
                                 ticks: requested_time
@@ -260,6 +263,13 @@ impl NativeMediaDecoders {
                                     .parse()
                                     .map_err(|_| invalid("Invalid fixed source time"))?,
                                 timebase: requested_time.timebase,
+                            },
+                            match source_raster {
+                                SourceRaster::Original => VideoOutputSize::Source,
+                                SourceRaster::Preview => VideoOutputSize::Fit {
+                                    width: plan.identity.width,
+                                    height: plan.identity.height,
+                                },
                             },
                             deadline,
                         )
@@ -357,8 +367,8 @@ impl NativeMediaDecoders {
 }
 fn display_size(frame: &DecodedVideoFrame) -> (u32, u32) {
     if frame.rotation_degrees % 180 == 0 {
-        (frame.width, frame.height)
+        (frame.source_width, frame.source_height)
     } else {
-        (frame.height, frame.width)
+        (frame.source_height, frame.source_width)
     }
 }

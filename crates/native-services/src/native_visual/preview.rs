@@ -84,6 +84,7 @@ impl NativeScenePreview {
                 fonts,
                 sink,
                 probe,
+                SourceRaster::Preview,
             )?;
             session.validate_receipt(&frame.receipt)?;
             let bound = &frame.receipt.execution.execution.execution.execution.bound;

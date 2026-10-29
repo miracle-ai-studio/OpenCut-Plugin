@@ -326,6 +326,8 @@ fn run(channel: &Rc<RefCell<Channel>>) -> Result<(), EditorError> {
                             packet.meta.get("hit_probe").cloned().unwrap_or(Value::Null),
                         )
                         .map_err(|_| wire::error("Invalid native hit probe"))?,
+                        serde_json::from_value(packet.meta["source_raster"].clone())
+                            .map_err(|_| wire::error("Invalid native source raster purpose"))?,
                     )?;
                 wire::send(
                     &mut channel.borrow_mut().output,

@@ -177,8 +177,17 @@ impl NativeProcess {
         fonts: &[ClassicTextFontHandle],
         sink: &mut dyn ClassicVisualRgbaSink,
     ) -> Result<S::Receipt, EditorError> {
-        self.render_with_probe(session, resources, begin, handles, fonts, sink, None)
-            .map(|frame| frame.receipt)
+        self.render_with_probe(
+            session,
+            resources,
+            begin,
+            handles,
+            fonts,
+            sink,
+            None,
+            SourceRaster::Original,
+        )
+        .map(|frame| frame.receipt)
     }
     pub(super) fn render_with_probe<
         R: ClassicVisualResources + ?Sized,
@@ -192,6 +201,7 @@ impl NativeProcess {
         fonts: &[ClassicTextFontHandle],
         sink: &mut dyn ClassicVisualRgbaSink,
         probe: Option<[u32; 2]>,
+        source_raster: SourceRaster,
     ) -> Result<NativeProcessFrame<S::Receipt>, EditorError> {
         if self.failed || self.runtime.is_none() || session.policy() != &self.config.policy {
             return Err(invalid("Native frame owner or admission changed"));
@@ -199,7 +209,16 @@ impl NativeProcess {
         self.worker
             .monitor
             .frame(Some(Instant::now() + self.config.deadline));
-        let result = self.render_inner(session, resources, begin, handles, fonts, sink, probe);
+        let result = self.render_inner(
+            session,
+            resources,
+            begin,
+            handles,
+            fonts,
+            sink,
+            probe,
+            source_raster,
+        );
         self.failed = result.is_err();
         if self.failed {
             self.worker.monitor.stop();
@@ -218,9 +237,10 @@ impl NativeProcess {
         fonts: &[ClassicTextFontHandle],
         sink: &mut dyn ClassicVisualRgbaSink,
         probe: Option<[u32; 2]>,
+        source_raster: SourceRaster,
     ) -> Result<NativeProcessFrame<S::Receipt>, EditorError> {
         self.exchange(session, resources,
-            json!({"type":"frame","frame":self.next,"begin":begin,"plan":session.plan()?,"handles":handles,"fonts":fonts,"hit_probe":probe}),
+            json!({"type":"frame","frame":self.next,"begin":begin,"plan":session.plan()?,"handles":handles,"fonts":fonts,"hit_probe":probe,"source_raster":source_raster}),
             Some(sink), "frame_complete", probe)
     }
     pub(super) fn measure(

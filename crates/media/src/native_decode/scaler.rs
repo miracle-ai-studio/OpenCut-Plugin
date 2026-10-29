@@ -17,15 +17,21 @@ pub(super) fn conversion_threads(pixels: u64, resident: u64, limit: u64) -> u32 
 pub(super) struct FrameScaler {
     context: NonNull<ffi::SwsContext>,
     pub input: av::software::scaling::context::Definition,
+    pub output: [u32; 2],
     pub threads: u32,
 }
 
 impl FrameScaler {
     pub fn new(
         input: av::software::scaling::context::Definition,
+        output: [u32; 2],
         threads: u32,
     ) -> MediaResult<Self> {
-        if !(1..=4).contains(&threads) {
+        if !(1..=4).contains(&threads)
+            || output.contains(&0)
+            || output[0] > input.width
+            || output[1] > input.height
+        {
             return Err(invalid("Invalid native conversion parallelism"));
         }
         let context = NonNull::new(unsafe { ffi::sws_alloc_context() })
@@ -33,6 +39,7 @@ impl FrameScaler {
         let scaler = Self {
             context,
             input,
+            output,
             threads,
         };
         // This is the initialized compatibility API, retaining the exact
@@ -43,8 +50,8 @@ impl FrameScaler {
             (*c).src_w = input.width as i32;
             (*c).src_h = input.height as i32;
             (*c).src_format = ffi::AVPixelFormat::from(input.format) as i32;
-            (*c).dst_w = input.width as i32;
-            (*c).dst_h = input.height as i32;
+            (*c).dst_w = output[0] as i32;
+            (*c).dst_h = output[1] as i32;
             (*c).dst_format = ffi::AVPixelFormat::AV_PIX_FMT_RGBA as i32;
             (*c).flags = (av::software::scaling::Flags::BILINEAR
                 | av::software::scaling::Flags::ACCURATE_RND)
@@ -68,7 +75,7 @@ impl FrameScaler {
         if frame.format() != self.input.format
             || frame.width() != self.input.width
             || frame.height() != self.input.height
-            || output.len() as u64 != u64::from(frame.width()) * u64::from(frame.height()) * 4
+            || output.len() as u64 != u64::from(self.output[0]) * u64::from(self.output[1]) * 4
         {
             return Err(invalid("Native conversion changed its admitted extent"));
         }
@@ -91,8 +98,8 @@ impl FrameScaler {
         }
         let mut destination = av::frame::Video::empty();
         destination.set_format(av::format::Pixel::RGBA);
-        destination.set_width(frame.width());
-        destination.set_height(frame.height());
+        destination.set_width(self.output[0]);
+        destination.set_height(self.output[1]);
         // SAFETY: output is exclusively borrowed for this synchronous call.
         // The refcounted wrapper never owns/deallocates the Rust allocation.
         // The pinned initialized sws_scale_frame joins its workers and calls
@@ -113,7 +120,7 @@ impl FrameScaler {
             let dst = destination.as_mut_ptr();
             (*dst).buf[0] = buffer;
             (*dst).data[0] = output.as_mut_ptr();
-            (*dst).linesize[0] = (frame.width() * 4) as i32;
+            (*dst).linesize[0] = (self.output[0] * 4) as i32;
             let result = ffi::sws_scale_frame(c, dst, frame.as_ptr());
             if result < 0 {
                 ffi::sws_frame_end(c);
@@ -160,6 +167,10 @@ mod tests {
     }
 
     fn legacy(frame: &av::frame::Video, matrix: i32, full: bool) -> Vec<u8> {
+        legacy_at(frame, [frame.width(), frame.height()], matrix, full)
+    }
+
+    fn legacy_at(frame: &av::frame::Video, size: [u32; 2], matrix: i32, full: bool) -> Vec<u8> {
         let flags =
             av::software::scaling::Flags::BILINEAR | av::software::scaling::Flags::ACCURATE_RND;
         let mut scaler = av::software::scaling::Context::get(
@@ -167,12 +178,12 @@ mod tests {
             frame.width(),
             frame.height(),
             av::format::Pixel::RGBA,
-            frame.width(),
-            frame.height(),
+            size[0],
+            size[1],
             flags,
         )
         .unwrap();
-        let mut output = vec![0; frame.width() as usize * frame.height() as usize * 4];
+        let mut output = vec![0; size[0] as usize * size[1] as usize * 4];
         unsafe {
             let c = scaler.as_mut_ptr();
             let coefficients = ffi::sws_getCoefficients(matrix);
@@ -194,7 +205,7 @@ mod tests {
                 std::ptr::null_mut(),
                 std::ptr::null_mut(),
             ];
-            let pitch = [(frame.width() * 4) as i32, 0, 0, 0];
+            let pitch = [(size[0] * 4) as i32, 0, 0, 0];
             assert_eq!(
                 ffi::sws_scale(
                     c,
@@ -205,7 +216,7 @@ mod tests {
                     dst.as_ptr(),
                     pitch.as_ptr()
                 ),
-                frame.height() as i32
+                size[1] as i32
             );
         }
         output
@@ -246,7 +257,8 @@ mod tests {
                     for full in [false, true] {
                         let expected = legacy(&frame, matrix as i32, full);
                         for threads in [1, 4] {
-                            let mut scaler = FrameScaler::new(definition, threads).unwrap();
+                            let mut scaler =
+                                FrameScaler::new(definition, [width, height], threads).unwrap();
                             let size = expected.len();
                             // Repeated calls must not retain the prior borrowed buffer;
                             // guard bytes also cover odd extents and packed formats.
@@ -277,6 +289,56 @@ mod tests {
                                     .convert(&frame, &mut vec![0; size - 1], matrix as i32, full)
                                     .is_err()
                             );
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn scaled_conversion_matches_explicit_reference_and_borrowed_output_bounds() {
+        for format in [
+            av::format::Pixel::YUV420P,
+            av::format::Pixel::YUV420P10LE,
+            av::format::Pixel::NV12,
+            av::format::Pixel::RGBA,
+        ] {
+            let mut frame = av::frame::Video::new(format, 64, 48);
+            for plane in 0..frame.planes() {
+                for (i, value) in frame.data_mut(plane).iter_mut().enumerate() {
+                    *value = ((i * 19 + plane * 73) % 251) as u8;
+                }
+            }
+            let input = av::software::scaling::context::Definition {
+                format,
+                width: 64,
+                height: 48,
+            };
+            for output in [[32, 24], [13, 7], [1, 1]] {
+                for matrix in [ffi::SWS_CS_ITU601, ffi::SWS_CS_ITU709, ffi::SWS_CS_BT2020] {
+                    for full in [false, true] {
+                        let expected = legacy_at(&frame, output, matrix as i32, full);
+                        for threads in [1, 4] {
+                            let mut scaler = FrameScaler::new(input, output, threads).unwrap();
+                            let mut guarded = vec![0xa5; expected.len() + 128];
+                            for _ in 0..3 {
+                                scaler
+                                    .convert(
+                                        &frame,
+                                        &mut guarded[64..64 + expected.len()],
+                                        matrix as i32,
+                                        full,
+                                    )
+                                    .unwrap();
+                                assert_eq!(&guarded[64..64 + expected.len()], expected);
+                                assert!(
+                                    guarded[..64]
+                                        .iter()
+                                        .chain(&guarded[64 + expected.len()..])
+                                        .all(|v| *v == 0xa5)
+                                );
+                            }
                         }
                     }
                 }

@@ -75,13 +75,22 @@ impl NativeFrameEngine {
         sink: &mut dyn ClassicVisualRgbaSink,
         deadline: Instant,
         probe: Option<[u32; 2]>,
+        source_raster: SourceRaster,
     ) -> Result<NativeRenderedFrame<S::Receipt>, EditorError> {
         resources.checkpoint()?;
         if self.failed || session.policy() != &self.policy {
             return Err(invalid("Native frame owner or admission changed"));
         }
         let result = self.render_inner(
-            session, resources, begin, handles, fonts, sink, deadline, probe,
+            session,
+            resources,
+            begin,
+            handles,
+            fonts,
+            sink,
+            deadline,
+            probe,
+            source_raster,
         );
         if result.is_err() {
             self.failed = true;
@@ -100,12 +109,18 @@ impl NativeFrameEngine {
         sink: &mut dyn ClassicVisualRgbaSink,
         deadline: Instant,
         probe: Option<[u32; 2]>,
+        source_raster: SourceRaster,
     ) -> Result<NativeRenderedFrame<S::Receipt>, EditorError> {
         let plan = Plan::parse(begin, session.plan()?)?;
         text::authorize_fonts(session, resources, &plan, fonts, &mut self.text)?;
-        let media = self
-            .media
-            .decode(session, resources, plan.media(), handles, deadline)?;
+        let media = self.media.decode(
+            session,
+            resources,
+            plan.media(),
+            handles,
+            source_raster,
+            deadline,
+        )?;
         let limits = RasterLimits {
             max_pixels: self.policy.max_decoded_pixels,
             max_bytes: self.policy.max_rgba_bytes,

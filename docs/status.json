@@ -5,10 +5,17 @@
     "candidate_cli_sha256": "ee7d2027ac37f27759147cc0b7b3ff7c9749ed0581bcbe65d4593273f5fc9ea0",
     "candidate_worker_sha256": "2759865d927a21071034bcf99dcdcc8049c5ab31295be5f481369706bb0ac0c2",
     "candidate_web_source_digest": "42379fdba6afb36203d8a045ca7504d23086d7f583425f8133a3f05e59417d4f",
-    "execution_scope_optimization": "Initial b13d55fe build failed on omitted SourceArtPolicy. Repaired source92876c8f built CLI and worker successfully; behavioral test binaries still compiling. Initial failure retained.",
+    "execution_scope_optimization": "Repaired source 92876c8f built CLI and worker; integrated behavior: 301 passed, 2 existing font-fixture checks ignored. Initial SourceArtPolicy build failure retained.",
     "preview_resolution": "Keep existing preview540 raster policy. Unbuilt preview360 candidate withdrawn; Web preview request restored to accepted source.",
-    "export_resolution": "Source integrated for explicit 720p,1080p,1440p,2160p; new UI default1080p. Historical omitted resolution remains source. Initial Web32passed/3failed; isolated parameterized recovery storage then4resolution cases passed. CLI/worker and Web production builds passed; same CLI generated/canonical contracts passed184operations12domains. Rust behavior and runtime acceptance pending.",
-    "bottleneck_attribution": "Confirmed full-source-size RGBA conversion and one configured slice decoder thread. Recorded4K preview91ms includes native request70.2ms plus read/bitmap20.6ms; it is not a decode-only measurement. Independent stage attribution remains open."
+    "export_resolution": "Explicit 720p/1080p/1440p/2160p; new UI defaults to 1080p, historical omitted resolution stays source. Four actual sizes and original asset locks passed; 13 independent RGB probes passed MAE<=5. Six-second 1080p preencode PCM exactly matches independent reference; AAC SNR 57.512 dB. Scoped synthetic media only.",
+    "bottleneck_attribution": "Full-source RGBA and one slice decoder thread confirmed. Current 4K preview medians: native request 69.3 ms, read/bitmap 20.2 ms, total 90.0 ms; not decode-only. Source proxies and parallel video decoding remain unimplemented.",
+    "runtime_acceptance": {
+      "small_source": "94-second continuous playback, seek, pause/resume completed; startup 5.063 seconds fails original 5-second gate.",
+      "source_4k": "Startup 5.334 seconds fails; 150-second completion observation reached only 54.7 seconds.",
+      "source_4k_export": "Six seconds with audio: 54.94790516491048 seconds observed job duration. Whole MP4 matches retained independently validated output; preencode PCM independently exact.",
+      "cleanup": "Both retained project snapshots unchanged; owned service stopped, no active jobs or candidate workers.",
+      "qualification": "No new installation/package or whole-product acceptance."
+    }
   },
   "scope": "Local CLI/HTTP/MCP/SDK service and Web editor; GPUI shell is not an integrated editor.",
   "public_contract": {

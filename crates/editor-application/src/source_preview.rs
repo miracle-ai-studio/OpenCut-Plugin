@@ -209,7 +209,7 @@ pub fn request_identity(
 ) -> Result<JobRequest, EditorError> {
     validate_identity(identity)?;
     crate::media_frame_jobs::validate_authority(authority)?;
-    let bytes = serde_json::to_vec((identity, authority))
+    let bytes = serde_json::to_vec(&(identity, authority))
         .map_err(|_| invalid("Cannot identify source preparation"))?;
     Ok(JobRequest {
         kind: KIND.into(),

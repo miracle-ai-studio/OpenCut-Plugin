@@ -835,7 +835,7 @@
         "scope": "No external Python or media tools required for this local diagnostic; clean-machine signing/installation remains open"
       }
     },
-    "current_code_commit": "b3c55ea4168c0f7170eec401089707f435d0bb8e",
+    "current_code_commit": "79bdcb677acf18688d6b0d6c553ddce16bb4b379",
     "native_rgba_transfer": {
       "checkpoint": "/Users/vincent/Movies/OpenCut-native-rendering/4k/rgba-transfer/checkpoint.json",
       "checkpoint_sha256": "9d196d42b7be7a8f2731112650d191b46e4ff31b32b8ca2c20a773a2de8ab0b6",
@@ -1071,6 +1071,114 @@
         "summary": "Initialized frame API4threads,borrowed output,unchanged fullRGBA vs legacy sws_scale; dynamic chroma and fast inaccurate conversion rejected. Product regression covers8formats,3matrices,2ranges,odd extents,1/4threads,repeated borrowed buffers and canaries."
       },
       "next_direction": "Remove costly cross-process authority roundtrips from purely internal GPU upload copies while preserving deadlines, parent process monitoring, pre-submit fences, every output chunk check and publication authorization. Host hash/transfer still open.",
+      "delivery_ready": false,
+      "next_direction_correction": "Worker internal upload checkpoints already use local deadlines, not parent RPC. Source inspected in host-picture-throughput/source-inspection.json; renderer/worker unchanged for this hypothesis."
+    },
+    "native_host_picture_throughput": {
+      "checkpoint": "/Users/vincent/Movies/OpenCut-native-rendering/4k/host-picture-throughput/checkpoint.json",
+      "checkpoint_sha256": "c3e9d861df7e0553a6005a7dc8112168c81acdc32cec943bad67c353caca74ca",
+      "source_commit": "79bdcb677acf18688d6b0d6c553ddce16bb4b379",
+      "runtime": {
+        "opencut": {
+          "path": "/Users/vincent/Movies/OpenCut-native-rendering/candidates/f7f6606c21218a7e2f5050fe022bc35238c573a990a8b990dfe272af1e9614f6/opencut",
+          "sha256": "f7f6606c21218a7e2f5050fe022bc35238c573a990a8b990dfe272af1e9614f6"
+        },
+        "opencut-render-worker": {
+          "path": "/Users/vincent/Movies/OpenCut-native-rendering/candidates/5a48a7891b4686b544917c8942ef0389fac8056a4a5c933c3b70c6feed4c4185/opencut-render-worker",
+          "sha256": "5a48a7891b4686b544917c8942ef0389fac8056a4a5c933c3b70c6feed4c4185"
+        }
+      },
+      "build_passed": true,
+      "scoped_checks": {
+        "host": 104,
+        "cli_http": 26,
+        "generated_and_canonical_contracts": "passed against same explicit f7f660 CLI",
+        "architecture_tests": 14,
+        "boundary_gates": "passed;25modules zero exceptions; manual host-to-ring edge with rationale/removal condition"
+      },
+      "implementation": "Prepare accelerated exact SHA256 while original reservation remains charged, before final auth/state validation; publish under same final lock. HTTP capacity notification retains two64KiB slots,one-second timeout,10ms authority polling bound and check after slot reserve.",
+      "distribution_scope": "New raw host and exact retained5a48worker,tools,native libraries and Web; no new distribution/install acceptance. Renderer tests/export proof keep their original producer identity.",
+      "retained_export": {
+        "passed": true,
+        "scope": "Existing immutable export successfully read through current CLI; not rerendered or relabeled as a new host export acceptance. Export code and exact worker unchanged.",
+        "reader_host_sha256": "f7f6606c21218a7e2f5050fe022bc35238c573a990a8b990dfe272af1e9614f6",
+        "original_producer_runtime": {
+          "opencut": {
+            "path": "/Users/vincent/Movies/OpenCut-native-rendering/candidates/44c6f50f2910211facabb0916e773214d0cda3619006ff30c8d727b556e769a2/opencut",
+            "sha256": "44c6f50f2910211facabb0916e773214d0cda3619006ff30c8d727b556e769a2"
+          },
+          "opencut-render-worker": {
+            "path": "/Users/vincent/Movies/OpenCut-native-rendering/candidates/5a48a7891b4686b544917c8942ef0389fac8056a4a5c933c3b70c6feed4c4185/opencut-render-worker",
+            "sha256": "5a48a7891b4686b544917c8942ef0389fac8056a4a5c933c3b70c6feed4c4185"
+          }
+        },
+        "original_job_id": "job_b1c6748abcaf4628b27358d0448d6d79",
+        "artifact_sha256": "da10feb14158c09d4c0464abb1b6605d78b328ba4ab7b3702184f3c450ace172",
+        "original_fidelity_report": "/Users/vincent/Movies/OpenCut-native-rendering/4k/parallel-conversion/independent-fidelity.json",
+        "original_fidelity_report_sha256": "bf80646f2f55b2e65f8160058ad30dc760d66bda160be36a1bd77094429aa517",
+        "reference_pixel_aac_report": {
+          "reuse_reason": "Exact complete MP4 bytes unchanged, including all video/audio payloads; no re-decode or re-render",
+          "reference_report": "/Users/vincent/Movies/OpenCut-native-rendering/4k/rgba-transfer/range6-d222d185287b-6e3f6428f041-independent.json",
+          "reference_report_sha256": "d6d5941087d4a54122bd1af4ab9d19b7a787c5f564dfb5c6fa70ebbc1931a3ab",
+          "original_producer_job_id": "job_f8e45629cb4b43128a088ad5f0647319",
+          "mae_gate": 5,
+          "aac_snr_gate_db": 30
+        },
+        "original_preencode_pcm_maximum_error": 0
+      },
+      "preview": {
+        "passed": false,
+        "startup_seconds": 5.387272444000001,
+        "startup_gate_seconds": 5,
+        "completion_gate_seconds": 150,
+        "timeline_seconds_observed": 47.166666666666664,
+        "presented_frames": 1416,
+        "max_wall_frame_gap_ms": 920.3000001907349,
+        "response_count": 6715,
+        "error_response_count": 0,
+        "probe_median_ms": {
+          "nativeFrameMs": 79.60000002384186,
+          "pictureReadMs": 25.699999809265137,
+          "totalMs": 105.59999990463257
+        },
+        "native_worker_peak_rss_kib": 190884
+      },
+      "previous_preview": {
+        "passed": false,
+        "startup_seconds": 6.200391168999999,
+        "startup_gate_seconds": 5,
+        "completion_gate_seconds": 150,
+        "timeline_seconds_observed": 44.56666666666667,
+        "presented_frames": 1338,
+        "max_wall_frame_gap_ms": 746.4000000953674,
+        "response_count": 6542,
+        "error_response_count": 0,
+        "probe_median_ms": {
+          "nativeFrameMs": 85.5,
+          "pictureReadMs": 25.200000047683716,
+          "totalMs": 110.99999988079071
+        },
+        "native_worker_peak_rss_kib": 191928
+      },
+      "comparison_scope": "Same fixed project/source/Web/native worker and auxiliary tools; single uninstrumented formal UI observations. Probe medians sample250ms,can repeat frames,not per-request benchmarks. Output preview540,not full4K display or physical audibility. Picture read median did not materially improve; original gates still fail.",
+      "diagnostic": {
+        "directory": "/Users/vincent/Movies/OpenCut-native-rendering/4k/host-picture-throughput/remaining-costs",
+        "analysis": {
+          "scope": "One30-second instrumented diagnostic, simultaneous5second OS stack samples. Not acceptance timing. Thread wait samples are not CPU utilization and are not summed into CPU percentages.",
+          "worker_main_thread_samples": 3585,
+          "worker_main_waiting_next_command_samples": 1828,
+          "worker_gpu_mapping_sleep_samples_in_main_branch": 225,
+          "host_active_top_hash_samples_all_threads": 174,
+          "observations": [
+            "Remaining native swscale work,source copy and GPU mapping wait are visible; worker also waits for next frame commands.",
+            "Fresh SQLite revalidation and SQL prepare/transaction/connection activity is visible; digest is now the accelerated ring implementation.",
+            "This sample does not prove a single dominant source of total frame latency.",
+            "Next candidate should reuse prepared SQL and managed connections where safe, preserving fresh auth reads and fences. Default-track behavior also remains open."
+          ]
+        },
+        "previous_hypothesis_correction": "/Users/vincent/Movies/OpenCut-native-rendering/4k/host-picture-throughput/source-inspection.json"
+      },
+      "cleanup": "Formal acceptance cleanup passed; subsequent bounded diagnostic stopped normally,original project unchanged and no active jobs.",
       "delivery_ready": false
     }
   },
@@ -2515,21 +2623,21 @@
       "delivery_ready": false
     },
     "current_working_candidate": {
+      "checkpoint": "/Users/vincent/Movies/OpenCut-native-rendering/4k/host-picture-throughput/checkpoint.json",
+      "checkpoint_sha256": "c3e9d861df7e0553a6005a7dc8112168c81acdc32cec943bad67c353caca74ca",
+      "source_commit": "79bdcb677acf18688d6b0d6c553ddce16bb4b379",
+      "host_sha256": "f7f6606c21218a7e2f5050fe022bc35238c573a990a8b990dfe272af1e9614f6",
+      "worker_sha256": "5a48a7891b4686b544917c8942ef0389fac8056a4a5c933c3b70c6feed4c4185",
+      "scope": "Host picture digest/lock and HTTP capacity slice:104 host+26 CLI checks and exact CLI contracts pass;94-second4K-source preview still fails original gates. Exact5a48worker/Web/tools retained; existing4K export is read with original44c6producer identity, no new export or package qualification.",
+      "delivery_ready": false
+    },
+    "previous_working_candidate": {
       "checkpoint": "/Users/vincent/Movies/OpenCut-native-rendering/4k/parallel-conversion/checkpoint.json",
       "checkpoint_sha256": "fad2e7d458696db93aee313b221c2d8e4f60c927051eddf9f6102584a9c4a523",
       "source_commit": "b3c55ea4168c0f7170eec401089707f435d0bb8e",
       "host_sha256": "44c6f50f2910211facabb0916e773214d0cda3619006ff30c8d727b556e769a2",
       "worker_sha256": "5a48a7891b4686b544917c8942ef0389fac8056a4a5c933c3b70c6feed4c4185",
       "scope": "Raw integrated bounded parallel color conversion;50 scoped checks and same CLI contracts passed.6-second4K export independent fidelity passed;94-second4K-source preview still fails original startup/completion gates. Packaged runtime qualification unchanged.",
-      "delivery_ready": false
-    },
-    "previous_working_candidate": {
-      "checkpoint": "/Users/vincent/Movies/OpenCut-native-rendering/4k/upload-reuse/checkpoint.json",
-      "checkpoint_sha256": "158a639f49e7e23f56c7492d59945fe5a453e381a02b6e02392e375fc8056156",
-      "source_commit": "5eea0741a6ca29a5c5222abf93e0585459aa70ec",
-      "host_sha256": "4fec7a3534ef0e60a6c76ea6cbe17c2102f929a33a29a0825c8a56a861b72173",
-      "worker_sha256": "be1aefe28503a0ece289cfbca3a0c476dbe79517f468276e256707ba3b87221b",
-      "scope": "Raw integrated GPU upload-reuse slice;8 native checks and same CLI contracts pass;6-second4K export fidelity passes;94-second4K continuous preview still fails unchanged gates. Packaged runtime remains separately identified in current_runtime_delivery.",
       "delivery_ready": false
     }
   }

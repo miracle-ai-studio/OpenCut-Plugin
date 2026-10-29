@@ -179,7 +179,13 @@ fn scene_picture_inner(
     {
         let runtime = crate::source_preview_runtime::configured()?;
         let prior = lock(&e.state)?.source_plan.clone();
-        if let Some(plan) = prior.filter(|plan| plan.runtime_fingerprint == runtime.fingerprint) {
+        if let Some(plan) = prior.filter(|plan| {
+            plan.runtime_fingerprint == runtime.fingerprint
+                && plan
+                    .jobs
+                    .iter()
+                    .all(|job| job.authority == selected.authority)
+        }) {
             plan
         } else {
             let plan = Arc::new(crate::source_preview_runtime::prepare_plan(

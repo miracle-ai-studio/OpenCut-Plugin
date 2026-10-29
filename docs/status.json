@@ -4236,15 +4236,16 @@
     ],
     "source_preview_preparation": {
       "source_base_commit": "231cc49b47b2b0e51d8aeb9ca53a8fa745ff6350",
-      "state": "integration_type_fixes_pending_consolidated_check",
+      "state": "product_build_passed_host_scope_fix_pending",
       "implementation": "Source-only durable media.preview_source job, CPU native sequential decode, fixed lossless FFV1 RGBA, exact original/proxy frame index, editor prewarming, live preview resource and publication fences, separate video/index references and original-only export.",
       "preview": "Existing 540p canvas bound; no further reduction.",
       "export": "Original source; 720p/1080p/1440p/2160p; new Web default 1080p unchanged.",
       "preflight": "14 architecture unit checks and both architecture/contract boundary gates passed during integration. Final integrated candidate rerun pending.",
-      "build": "Two integrated build attempts failed before producing a candidate: E0308 tuple borrow, then E0609 residual image_mode field. Both fixed; failures retained. Consolidated all-target typecheck pending; no successful current CLI/worker, generated contracts or Web proof.",
-      "behavior": "New scoped checks authored, not compiled or run. No source proxy generation, pixel/PCM, editor timing or delivery result claimed.",
+      "build": "Source 11a7eac1 CLI/worker build passed in 697.844s after consolidated typechecks. CLI f0fec1e6ca2d193c8aeb4ba4f3a14de1c86e13653728a29f6545283e31351bf4; worker f6d56247e02f8e115f08625a8d2387a467d8bd3cc540d9c8a7df2ad32c70462c. Host-only caller-scope guard added afterward, awaiting checks/build.",
+      "behavior": "No new source proxy media, pixel/PCM or playback acceptance yet.",
       "delivery_ready": false,
-      "access": "Internal native proxy bytes retain original preview Read/RunJobs scope; public artifact downloads retain ReadArtifacts. New regression authored, not run."
+      "access": "Internal native proxy bytes retain original preview Read/RunJobs scope; public artifact downloads retain ReadArtifacts. New regression authored, not run.",
+      "contracts": "Generated from that exact CLI; canonical/generated check and Web build pending."
     }
   }
 }

@@ -2682,7 +2682,7 @@ export namespace OpencutQualityInspectInput {
 
 export namespace OpencutQualityInspectOutput {
   export type ArtifactAvailability = 'unchecked';
-  export type ArtifactRole = 'primary';
+  export type ArtifactRole = 'primary' | 'frame_index';
   export type MediaFrameExecutionSummary =
   | {
       decoder_libraries: NativeLibraryIdentity[];
@@ -2859,11 +2859,15 @@ export namespace OpencutAnalysisAssetInput {
 
 export namespace OpencutAnalysisAssetOutput {
   export type ArtifactAvailability = 'unchecked';
-  export type ArtifactRole = 'primary';
+  export type ArtifactRole = 'primary' | 'frame_index';
   export type PublicJobStage =
   'resolving_assets' | 'probing' | 'selecting_frame' | 'decoding' | 'encoding' | 'verifying' | 'unknown';
   export type JobPurpose = 'playback_optimization';
   export type JobResultView =
+  | {
+      data: SourcePreviewResult;
+      kind: 'media.preview_source';
+    }
   | {
       data: MediaInfo;
       kind: 'media.probe';
@@ -2972,6 +2976,7 @@ export namespace OpencutAnalysisAssetOutput {
       data: VideoRangeResult;
       kind: 'render.video_range';
     };
+  export type SourcePreviewEncoding = 'ffv1_rgba';
   export type StreamKind = 'video' | 'audio' | 'subtitle' | 'data' | 'attachment' | 'unknown';
   export type FrameAlignment = 'exact' | 'nearest' | 'floor' | 'ceil';
   export type FrameQuality = 'accurate_source_frame';
@@ -3329,6 +3334,80 @@ export namespace OpencutAnalysisAssetOutput {
   resource_kind: string;
   [k: string]: any;
 }
+  export interface SourcePreviewResult {
+  actual_stream_index: number;
+  actual_track_id: number;
+  encoding: SourcePreviewEncoding;
+  first_source_pts: string;
+  frame_count: string;
+  frame_index: SourcePreviewArtifact;
+  identity: SourcePreviewIdentity;
+  last_source_duration: string;
+  last_source_pts: string;
+  /**
+   * The immutable producer is not relabelled when another revision reuses
+   * the same original bytes, selected track, raster and runtime.
+   */
+  producer_revision: string;
+  proxy_time_base: SourcePreviewTimeBase;
+  runtime: SourcePreviewRuntimeIdentity;
+  source_time_base: SourcePreviewTimeBase;
+  video: SourcePreviewArtifact;
+}
+  export interface SourcePreviewArtifact {
+  content_hash: string;
+  mime_type: string;
+  size_bytes: string;
+}
+  export interface SourcePreviewIdentity {
+  asset_id: string;
+  policy_fingerprint: string;
+  project_id: string;
+  raster_bound: SourcePreviewRaster;
+  runtime_fingerprint: string;
+  selected_video_stream?: number | null;
+  source_version: AssetVersion;
+}
+  export interface SourcePreviewRaster {
+  height: number;
+  width: number;
+}
+  export interface AssetVersion {
+  content_hash: string;
+  id: string;
+  size: number;
+}
+  export interface SourcePreviewTimeBase {
+  denominator: number;
+  numerator: number;
+}
+  export interface SourcePreviewRuntimeIdentity {
+  decoder: SourcePreviewDecoderIdentity;
+  ffmpeg_sha256: string;
+  ffprobe_sha256: string;
+  host_sha256: string;
+}
+  export interface SourcePreviewDecoderIdentity {
+  decoder_libraries: NativeLibraryIdentity[];
+  platform: NativeSystemIdentity;
+  worker_sha256: string;
+}
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+/**
+ * Audio execution observes its OS/CPU without claiming a graphics or font
+ * subsystem. These are runtime facts, independent of saved project formats.
+ */
+  export interface NativeSystemIdentity {
+  architecture: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
+}
   export interface MediaInfo {
   bit_rate?: number | null;
   duration?: MediaTime | null;
@@ -3510,11 +3589,6 @@ export namespace OpencutAnalysisAssetOutput {
   uri: string;
   version?: AssetVersion | null;
 }
-  export interface AssetVersion {
-  content_hash: string;
-  id: string;
-  size: number;
-}
   export interface AssetAnalysisResult {
   asset_id: string;
   asset_version: LockedAsset;
@@ -3633,22 +3707,6 @@ export namespace OpencutAnalysisAssetOutput {
   content_hash: string;
   mime_type: string;
   size_bytes: string;
-}
-  export interface NativeLibraryIdentity {
-  binary_sha256: string;
-  configuration_sha256: string;
-  name: string;
-  version: string;
-}
-/**
- * Audio execution observes its OS/CPU without claiming a graphics or font
- * subsystem. These are runtime facts, independent of saved project formats.
- */
-  export interface NativeSystemIdentity {
-  architecture: string;
-  kernel_release: string;
-  os: string;
-  system_build: string;
 }
   export interface AudioRangeWavIdentity {
   channels: number;
@@ -7003,7 +7061,7 @@ export namespace OpencutArtifactGetInput {
 
 export namespace OpencutArtifactGetOutput {
   export type ArtifactAvailability = 'unchecked';
-  export type ArtifactRole = 'primary';
+  export type ArtifactRole = 'primary' | 'frame_index';
 
   export interface Response {
   data?: ArtifactAccess | null;
@@ -13070,6 +13128,28 @@ export namespace OpencutVisualPreviewFrameOutput {
       kind: 'effect';
     };
   export type NativeGraphicsApi = 'metal' | 'vulkan' | 'direct_x';
+  export type SourcePreviewUse =
+  | {
+      asset_id: string;
+      element_id: string;
+      job_id?: string | null;
+      kind: 'original';
+      state: SourcePreviewState;
+    }
+  | {
+      element_id: string;
+      /**
+       * None is an observed source gap before the first frame, rather than
+       * a fabricated timestamp or an alternate rendering implementation.
+       */
+      frame?: SourcePreviewFrameSelection | null;
+      job_id: string;
+      kind: 'prepared';
+      source: SourcePreviewResult;
+    };
+  export type SourcePreviewState = 'not_requested' | 'queued' | 'running' | 'failed' | 'cancelled';
+  export type SourcePreviewMatrix = 'bt601' | 'bt709' | 'bt2020' | 'rgb' | 'unspecified';
+  export type SourcePreviewEncoding = 'ffv1_rgba';
   export type VisualDecodeRequest =
   | {
       kind: 'image';
@@ -13501,6 +13581,7 @@ export namespace OpencutVisualPreviewFrameOutput {
   peak_worker_rss_bytes: string;
   picture_id: string;
   renderer: NativeVisualIdentity;
+  source_preparation?: SourcePreviewUse[];
   width: number;
 }
   export interface NativeVisualIdentity {
@@ -13531,6 +13612,95 @@ export namespace OpencutVisualPreviewFrameOutput {
   export interface NativePlatformIdentity {
   architecture: string;
   font_backend: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
+}
+  export interface SourcePreviewFrameSelection {
+  last_frame: boolean;
+  ordinal: string;
+  proxy_duration: string;
+  proxy_pts: string;
+  source_duration: string;
+  source_pts: string;
+  source_video: SourcePreviewFrameVideo;
+}
+  export interface SourcePreviewFrameVideo {
+  full_range: boolean;
+  has_alpha: boolean;
+  matrix: SourcePreviewMatrix;
+  pixel_aspect_denominator: number;
+  pixel_aspect_numerator: number;
+  raster_height: number;
+  raster_width: number;
+  rotation_degrees: number;
+  source_height: number;
+  source_width: number;
+}
+  export interface SourcePreviewResult {
+  actual_stream_index: number;
+  actual_track_id: number;
+  encoding: SourcePreviewEncoding;
+  first_source_pts: string;
+  frame_count: string;
+  frame_index: SourcePreviewArtifact;
+  identity: SourcePreviewIdentity;
+  last_source_duration: string;
+  last_source_pts: string;
+  /**
+   * The immutable producer is not relabelled when another revision reuses
+   * the same original bytes, selected track, raster and runtime.
+   */
+  producer_revision: string;
+  proxy_time_base: SourcePreviewTimeBase;
+  runtime: SourcePreviewRuntimeIdentity;
+  source_time_base: SourcePreviewTimeBase;
+  video: SourcePreviewArtifact;
+}
+  export interface SourcePreviewArtifact {
+  content_hash: string;
+  mime_type: string;
+  size_bytes: string;
+}
+  export interface SourcePreviewIdentity {
+  asset_id: string;
+  policy_fingerprint: string;
+  project_id: string;
+  raster_bound: SourcePreviewRaster;
+  runtime_fingerprint: string;
+  selected_video_stream?: number | null;
+  source_version: AssetVersion;
+}
+  export interface SourcePreviewRaster {
+  height: number;
+  width: number;
+}
+  export interface AssetVersion {
+  content_hash: string;
+  id: string;
+  size: number;
+}
+  export interface SourcePreviewTimeBase {
+  denominator: number;
+  numerator: number;
+}
+  export interface SourcePreviewRuntimeIdentity {
+  decoder: SourcePreviewDecoderIdentity;
+  ffmpeg_sha256: string;
+  ffprobe_sha256: string;
+  host_sha256: string;
+}
+  export interface SourcePreviewDecoderIdentity {
+  decoder_libraries: NativeLibraryIdentity[];
+  platform: NativeSystemIdentity;
+  worker_sha256: string;
+}
+/**
+ * Audio execution observes its OS/CPU without claiming a graphics or font
+ * subsystem. These are runtime facts, independent of saved project formats.
+ */
+  export interface NativeSystemIdentity {
+  architecture: string;
   kernel_release: string;
   os: string;
   system_build: string;
@@ -14368,6 +14538,1588 @@ export namespace OpencutSourceArtGetOutput {
   content_hash: string;
   id: string;
   size: number;
+}
+  export interface EditorError {
+  code: string;
+  details: any;
+  message: string;
+}
+
+}
+
+export namespace OpencutSourcePreviewPrepareInput {
+  export interface SourcePreviewPrepare {
+  /**
+   * Omitted to prepare the sequence's participating video assets.
+   */
+  asset_id?: string | null;
+  project_id: string;
+  revision: string;
+  selected_video_stream?: number | null;
+  sequence_id: string;
+}
+
+}
+
+export namespace OpencutSourcePreviewPrepareOutput {
+  export type ArtifactAvailability = 'unchecked';
+  export type ArtifactRole = 'primary' | 'frame_index';
+  export type PublicJobStage =
+  'resolving_assets' | 'probing' | 'selecting_frame' | 'decoding' | 'encoding' | 'verifying' | 'unknown';
+  export type JobPurpose = 'playback_optimization';
+  export type JobResultView =
+  | {
+      data: SourcePreviewResult;
+      kind: 'media.preview_source';
+    }
+  | {
+      data: MediaInfo;
+      kind: 'media.probe';
+    }
+  | {
+      data: SourceFrameView;
+      kind: 'preview.frame';
+    }
+  | {
+      data: ProjectFrameView;
+      kind: 'preview.project_frame';
+    }
+  | {
+      data: CompositedFrameView;
+      kind: 'preview.composited_frame';
+    }
+  | {
+      data: ProjectRangeView;
+      kind: 'preview.project_range';
+    }
+  | {
+      data: ExportView;
+      kind: 'render.export';
+    }
+  | {
+      data: ProjectRenderView;
+      kind: 'render.project';
+    }
+  | {
+      data: VerificationView;
+      kind: 'artifact.verify';
+    }
+  | {
+      data: MediaImportJobResult;
+      kind: 'media.import';
+    }
+  | {
+      data: AssetAnalysisResult;
+      kind: 'analysis.asset';
+    }
+  | {
+      data: SceneTranscriptionResult;
+      kind: 'analysis.sequence_transcribe';
+    }
+  | {
+      data: AudioRenderResult;
+      kind: 'render.audio';
+    }
+  | {
+      data: MediaFrameResult;
+      kind: 'render.media_frame';
+    }
+  | {
+      data: TextFrameResult;
+      kind: 'render.text_frame';
+    }
+  | {
+      data: CaptionFrameResult;
+      kind: 'render.caption_frame';
+    }
+  | {
+      data: GraphicFrameResult;
+      kind: 'render.graphic_frame';
+    }
+  | {
+      data: MaskFrameResult;
+      kind: 'render.mask_frame';
+    }
+  | {
+      data: BlendFrameResult;
+      kind: 'render.blend_frame';
+    }
+  | {
+      data: SceneFrameResult;
+      kind: 'render.frame';
+    }
+  | {
+      data: MediaVideoResult;
+      kind: 'render.media_video';
+    }
+  | {
+      data: CaptionVideoResult;
+      kind: 'render.caption_video';
+    }
+  | {
+      data: GraphicVideoResult;
+      kind: 'render.graphic_video';
+    }
+  | {
+      data: MaskVideoResult;
+      kind: 'render.mask_video';
+    }
+  | {
+      data: BlendVideoResult;
+      kind: 'render.blend_video';
+    }
+  | {
+      data: SceneVideoResult;
+      kind: 'render.scene_video';
+    }
+  | {
+      data: VideoExportResult;
+      kind: 'render.video';
+    }
+  | {
+      data: VideoRangeResult;
+      kind: 'render.video_range';
+    };
+  export type SourcePreviewEncoding = 'ffv1_rgba';
+  export type StreamKind = 'video' | 'audio' | 'subtitle' | 'data' | 'attachment' | 'unknown';
+  export type FrameAlignment = 'exact' | 'nearest' | 'floor' | 'ceil';
+  export type FrameQuality = 'accurate_source_frame';
+  export type AssetLockingMode = 'media_content_locked' | 'legacy_unlocked';
+  export type ProjectFrameQuality = 'encoded_project_frame';
+  export type FontResolutionPolicy =
+  | {
+      mode: 'strict';
+    }
+  | {
+      families: string[];
+      mode: 'explicit_fallback';
+    };
+  export type CompositedProjectFrameQuality = 'composited_project_frame';
+  export type ProjectRangeQuality = 'encoded_project_range';
+  export type AssetKind = 'video' | 'audio' | 'image' | 'text' | 'subtitle' | 'graphic';
+  export type AssetAnalysisData =
+  | {
+      kind: 'silence';
+      result: SilenceResult;
+    }
+  | {
+      kind: 'shots';
+      result: ShotsResult;
+    }
+  | {
+      kind: 'waveform';
+      result: WaveformResult;
+    }
+  | {
+      kind: 'transcribe';
+      result: TranscriptionResult;
+    }
+  | {
+      kind: 'speaker_turns';
+      result: SpeakerTurnsResult;
+    };
+  export type AssetAnalysisOptions =
+  | {
+      kind: 'silence';
+      min_duration_ms: number;
+      noise_db: number;
+    }
+  | {
+      kind: 'shots';
+      threshold: number;
+    }
+  | {
+      buckets: number;
+      kind: 'waveform';
+    }
+  | {
+      kind: 'transcribe';
+      language?: string | null;
+      word_timestamps: boolean;
+    }
+  | {
+      kind: 'speaker_turns';
+    };
+  export type AudioExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      decoder_profiles: AudioDecoderProfile[];
+      dsp_profile: string;
+      dsp_sha256: string;
+      host_sha256: string;
+      mastering_applied: boolean;
+      mastering_profile: AudioMasteringProfile;
+      pitch_profiles: AudioPitchProfile[];
+      platform: NativeSystemIdentity;
+      soundtouch_source_sha256: string;
+      worker_sha256: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profiles: AudioDecoderProfile[];
+      host_sha256: string;
+      mastering_applied: boolean;
+      mastering_profile: AudioMasteringProfile;
+      mediabunny_version: string;
+      module_sha256: string;
+      pitch_profiles: AudioPitchProfile[];
+      playwright_version: string;
+      soundtouch_version: string;
+    };
+  export type AudioDecoderProfile =
+  | 'web-audio-decode-at-target-rate'
+  | 'mediabunny-1.41.0-concatenate-offline-resample'
+  | 'native-libav-sinc-at-target-rate'
+  | 'native-libav-concatenate-linear-resample'
+  | 'native-libav-windowed-concatenate-linear-resample';
+  export type AudioMasteringProfile = 'classic-export-whole-scene-web-audio-v31';
+  export type AudioPitchProfile = 'unprepared-linear' | 'prepared-linear' | 'prepared-soundtouch';
+  export type AudioProfile = 'classic-export-v31-web-audio';
+  export type AudioSampleFormat = 'ieee_float32_le';
+  export type MediaFrameExecutionSummary =
+  | {
+      decoder_libraries: NativeLibraryIdentity[];
+      decoder_profile: string;
+      gpu_backend: NativeGraphicsApi;
+      gpu_device: string;
+      gpu_device_id: number;
+      gpu_driver: string;
+      gpu_vendor_id: number;
+      host_sha256: string;
+      /**
+       * Absent only in immutable proofs captured before platform observation.
+       * New execution requires the observed OS/font/driver platform identity.
+       */
+      platform?: NativePlatformIdentity | null;
+      rasterizer: string;
+      renderer_sha256: string;
+      shader_sha256: string;
+      texture_format: string;
+      wgpu_version: string;
+    }
+  | {
+      browser_sha256: string;
+      browser_version: string;
+      decoder_profile: string;
+      gpu_backend: string;
+      gpu_device: string;
+      host_sha256: string;
+      mediabunny_version: string;
+      module_sha256: string;
+      playwright_version: string;
+      shader_sha256: string;
+      texture_format: string;
+    };
+  export type NativeGraphicsApi = 'metal' | 'vulkan' | 'direct_x';
+  export type MediaFrameProfile = 'classic-v31-gpu-normal-frame';
+  export type MediaFrameNoSourceReason = 'outside_read_window' | 'eof' | 'timestamp_gap';
+  export type TextFrameProfile = 'classic-v31-gpu-normal-text-frame-v2';
+  export type FontStyle = 'normal' | 'italic';
+  export type CaptionFrameProfile = 'classic-v31-gpu-normal-caption-frame-v3';
+  export type GraphicFrameProfile = 'classic-v31-gpu-normal-graphic-frame-v1';
+  export type BlendMode =
+  | 'normal'
+  | 'darken'
+  | 'multiply'
+  | 'color-burn'
+  | 'lighten'
+  | 'screen'
+  | 'plus-lighter'
+  | 'color-dodge'
+  | 'overlay'
+  | 'soft-light'
+  | 'hard-light'
+  | 'difference'
+  | 'exclusion'
+  | 'hue'
+  | 'saturation'
+  | 'color'
+  | 'luminosity';
+  export type MaskFrameProfile = 'classic-v31-gpu-mask-frame-v1';
+  export type MaskFeather =
+  | {
+      unit: 'classic_pixels';
+      value: number;
+    }
+  | {
+      unit: 'legacy_canvas_fraction';
+      value: number;
+    };
+  export type LayerMaskShape =
+  | {
+      center_x: number;
+      center_y: number;
+      kind: 'split';
+      rotation_degrees: number;
+    }
+  | {
+      geometry: BoxMaskGeometry;
+      kind: 'cinematic_bars';
+    }
+  | {
+      geometry: BoxMaskGeometry;
+      kind: 'rectangle';
+    }
+  | {
+      geometry: BoxMaskGeometry;
+      kind: 'ellipse';
+    }
+  | {
+      geometry: BoxMaskGeometry;
+      kind: 'heart';
+    }
+  | {
+      geometry: BoxMaskGeometry;
+      kind: 'diamond';
+    }
+  | {
+      geometry: BoxMaskGeometry;
+      kind: 'star';
+    }
+  | {
+      kind: 'text';
+      mask: TextMask;
+    }
+  | {
+      kind: 'freeform';
+      path: FreeformMask;
+    }
+  | {
+      height: number;
+      kind: 'legacy_rectangle';
+      width: number;
+      x: number;
+      y: number;
+    }
+  | {
+      height: number;
+      kind: 'legacy_ellipse';
+      width: number;
+      x: number;
+      y: number;
+    };
+  export type TextDecoration = 'none' | 'underline' | 'line_through';
+  export type FontBinding =
+  | {
+      font_id: string;
+      kind: 'locked';
+    }
+  | {
+      family: string;
+      kind: 'unresolved_family';
+      policy: FontResolutionPolicy2;
+    };
+  export type FontResolutionPolicy2 =
+  | {
+      mode: 'strict';
+    }
+  | {
+      families: string[];
+      mode: 'explicit_fallback';
+    };
+  export type FontSize =
+  | {
+      unit: 'classic_height90';
+      value: number;
+    }
+  | {
+      unit: 'canvas_pixels';
+      value: number;
+    };
+  export type FontWeight = 'normal' | 'bold';
+  export type StrokeAlign = 'inside' | 'center' | 'outside';
+  export type ColorEncoding = 'srgb' | 'linear_srgb';
+  export type BlendFrameProfile = 'classic-v31-gpu-blend-frame-v1';
+  export type SceneBackground =
+  | {
+      color: Color;
+      kind: 'color';
+    }
+  | {
+      intensity: number;
+      kind: 'main_track_blur';
+      source_element_ids: string[];
+    };
+  export type SceneFrameProfile = 'classic-v31-gpu-scene-frame-v1';
+  export type EffectKind =
+  | {
+      intensity: number;
+      kind: 'classic_blur';
+    }
+  | {
+      kind: 'legacy_gaussian_blur';
+      radius_px: number;
+    }
+  | {
+      contrast: number;
+      exposure_ev: number;
+      kind: 'legacy_color_adjust';
+      saturation: number;
+    };
+  export type SceneStep =
+  | {
+      element_id: string;
+      kind: 'layer';
+    }
+  | {
+      effects: SceneEffect[];
+      element_id: string;
+      kind: 'effect';
+    };
+  export type MediaVideoProfile = 'classic-v31-cfr-h264-aac-v1';
+  export type CaptionVideoProfile = 'classic-v31-cfr-h264-aac-caption-v2';
+  export type GraphicVideoProfile = 'classic-v31-cfr-h264-aac-graphic-v1';
+  export type MaskVideoProfile = 'classic-v31-cfr-h264-aac-mask-v1';
+  export type BlendVideoProfile = 'classic-v31-cfr-h264-aac-blend-v1';
+  export type SceneVideoProfile = 'classic-v31-cfr-h264-aac-scene-v1';
+  export type VideoEncoderBackend = 'ffmpeg_libx264' | 'ffmpeg_libvpx_vp9' | 'webcodecs_avc';
+  export type ExportFormat = 'mp4' | 'webm';
+  export type ExportQuality = 'low' | 'medium' | 'high' | 'very_high';
+/**
+ * Raster execution size. Source remains byte-compatible with existing receipts.
+ */
+  export type RasterResolution = 'source' | 'preview540' | 'p720' | 'p1080' | 'p1440' | 'p2160';
+  export type ExportVisualProfile = 'text_v2' | 'caption_v3' | 'graphic_v1' | 'blend_v1' | 'mask_v1' | 'scene_v1';
+  export type JobState = 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled';
+
+  export interface Response {
+  data?: SourcePreviewPreparation | null;
+  error?: EditorError | null;
+  request_id: string;
+  warnings: string[];
+  [k: string]: any;
+}
+  export interface SourcePreviewPreparation {
+  jobs: JobView[];
+}
+  export interface JobView {
+  artifacts: ArtifactReference[];
+  cancel_requested: boolean;
+  failure?: PublicJobFailure | null;
+  job_id: string;
+  kind: string;
+  progress?: ProgressView | null;
+  purpose?: JobPurpose | null;
+  resource_target?: JobResourceTarget | null;
+  result?: JobResultView | null;
+  result_unavailable?: PublicJobFailure | null;
+  state: JobState;
+  target?: ProjectTaskTarget | null;
+  [k: string]: any;
+}
+  export interface ArtifactReference {
+  artifact_id: string;
+  availability: ArtifactAvailability;
+  content_hash: string;
+  job_id: string;
+  mime_type: string;
+  role: ArtifactRole;
+  size_bytes: string;
+  [k: string]: any;
+}
+  export interface PublicJobFailure {
+  code: string;
+  diagnostic_job_id: string;
+  message: string;
+  [k: string]: any;
+}
+  export interface ProgressView {
+  fraction?: number | null;
+  media_time?: Time | null;
+  stage: PublicJobStage;
+  [k: string]: any;
+}
+  export interface Time {
+  ticks: string;
+  timebase: number;
+}
+  export interface JobResourceTarget {
+  project_id: string;
+  resource_id: string;
+  resource_kind: string;
+  [k: string]: any;
+}
+  export interface SourcePreviewResult {
+  actual_stream_index: number;
+  actual_track_id: number;
+  encoding: SourcePreviewEncoding;
+  first_source_pts: string;
+  frame_count: string;
+  frame_index: SourcePreviewArtifact;
+  identity: SourcePreviewIdentity;
+  last_source_duration: string;
+  last_source_pts: string;
+  /**
+   * The immutable producer is not relabelled when another revision reuses
+   * the same original bytes, selected track, raster and runtime.
+   */
+  producer_revision: string;
+  proxy_time_base: SourcePreviewTimeBase;
+  runtime: SourcePreviewRuntimeIdentity;
+  source_time_base: SourcePreviewTimeBase;
+  video: SourcePreviewArtifact;
+}
+  export interface SourcePreviewArtifact {
+  content_hash: string;
+  mime_type: string;
+  size_bytes: string;
+}
+  export interface SourcePreviewIdentity {
+  asset_id: string;
+  policy_fingerprint: string;
+  project_id: string;
+  raster_bound: SourcePreviewRaster;
+  runtime_fingerprint: string;
+  selected_video_stream?: number | null;
+  source_version: AssetVersion;
+}
+  export interface SourcePreviewRaster {
+  height: number;
+  width: number;
+}
+  export interface AssetVersion {
+  content_hash: string;
+  id: string;
+  size: number;
+}
+  export interface SourcePreviewTimeBase {
+  denominator: number;
+  numerator: number;
+}
+  export interface SourcePreviewRuntimeIdentity {
+  decoder: SourcePreviewDecoderIdentity;
+  ffmpeg_sha256: string;
+  ffprobe_sha256: string;
+  host_sha256: string;
+}
+  export interface SourcePreviewDecoderIdentity {
+  decoder_libraries: NativeLibraryIdentity[];
+  platform: NativeSystemIdentity;
+  worker_sha256: string;
+}
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+/**
+ * Audio execution observes its OS/CPU without claiming a graphics or font
+ * subsystem. These are runtime facts, independent of saved project formats.
+ */
+  export interface NativeSystemIdentity {
+  architecture: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
+}
+  export interface MediaInfo {
+  bit_rate?: number | null;
+  duration?: MediaTime | null;
+  format_brand?: string | null;
+  format_name?: string | null;
+  streams: MediaStream[];
+  [k: string]: any;
+}
+  export interface MediaTime {
+  ticks: string;
+  timebase: number;
+}
+  export interface MediaStream {
+  average_frame_rate?: FrameRate | null;
+  channel_layout?: string | null;
+  channels?: number | null;
+  codec_name?: string | null;
+  codec_type: StreamKind;
+  color_primaries?: string | null;
+  color_space?: string | null;
+  color_transfer?: string | null;
+  duration?: MediaTime | null;
+  height?: number | null;
+  index: number;
+  pixel_format?: string | null;
+  sample_rate?: number | null;
+  time_base?: FrameRate | null;
+  width?: number | null;
+  [k: string]: any;
+}
+  export interface FrameRate {
+  denominator: number;
+  numerator: number;
+}
+  export interface SourceFrameView {
+  actual_time: MediaTime;
+  alignment: FrameAlignment;
+  exact: boolean;
+  quality: FrameQuality;
+  requested_time: MediaTime;
+  source_pts: string;
+  source_time_base: FrameRate;
+  [k: string]: any;
+}
+  export interface ProjectFrameView {
+  actual_sequence_time: Time;
+  alignment: FrameAlignment;
+  asset_lock?: AssetLockManifest | null;
+  asset_locking: AssetLockingMode;
+  height: number;
+  quality: ProjectFrameQuality;
+  requested_time: Time;
+  revision: string;
+  sequence_id: string;
+  text_layouts: TextLayoutView[];
+  width: number;
+  [k: string]: any;
+}
+  export interface AssetLockManifest {
+  assets: LockedAsset[];
+  revision: string;
+  sequence_id: string;
+  version: number;
+}
+  export interface LockedAsset {
+  asset_id: string;
+  content_hash: string;
+  size: number;
+}
+  export interface TextLayoutView {
+  cluster_ranges: TextClusterRange[];
+  glyph_count: number;
+  line_count: number;
+  pixel_bounds: PixelBounds;
+  policy: FontResolutionPolicy;
+  requested_family: string;
+  rtl_runs: number;
+  used_faces: FontFaceView[];
+  [k: string]: any;
+}
+  export interface TextClusterRange {
+  end: number;
+  rtl: boolean;
+  start: number;
+  [k: string]: any;
+}
+  export interface PixelBounds {
+  height: number;
+  width: number;
+  x: number;
+  y: number;
+  [k: string]: any;
+}
+  export interface FontFaceView {
+  face_index: number;
+  family: string;
+  postscript_name: string;
+  [k: string]: any;
+}
+  export interface CompositedFrameView {
+  actual_sequence_time: Time;
+  alignment: FrameAlignment;
+  asset_lock?: AssetLockManifest | null;
+  asset_locking: AssetLockingMode;
+  height: number;
+  quality: CompositedProjectFrameQuality;
+  requested_time: Time;
+  revision: string;
+  sequence_id: string;
+  text_layouts: TextLayoutView[];
+  width: number;
+  [k: string]: any;
+}
+  export interface ProjectRangeView {
+  actual_sequence_range: TimeRange;
+  alignment: FrameAlignment;
+  asset_lock?: AssetLockManifest | null;
+  asset_locking: AssetLockingMode;
+  media: ExportView;
+  quality: ProjectRangeQuality;
+  requested_range: TimeRange;
+  revision: string;
+  sequence_id: string;
+  [k: string]: any;
+}
+  export interface TimeRange {
+  duration: Time;
+  start: Time;
+}
+  export interface ExportView {
+  metadata: MediaInfo;
+  text_layouts: TextLayoutView[];
+  verification: VerificationView;
+  [k: string]: any;
+}
+  export interface VerificationView {
+  checks: VerificationCheckView[];
+  decoded_samples: DecodedSample[];
+  metadata: MediaInfo;
+  passed: boolean;
+  [k: string]: any;
+}
+  export interface VerificationCheckView {
+  name: string;
+  passed: boolean;
+  [k: string]: any;
+}
+  export interface DecodedSample {
+  decoded: boolean;
+  requested_time: MediaTime;
+  [k: string]: any;
+}
+  export interface ProjectRenderView {
+  asset_lock?: AssetLockManifest | null;
+  asset_locking: AssetLockingMode;
+  media: ExportView;
+  revision: string;
+  [k: string]: any;
+}
+/**
+ * A project resource, not a global CAS capability or a host filesystem location.
+ */
+  export interface MediaImportJobResult {
+  asset: Asset;
+  job_id: string;
+  media_id: string;
+  project_id: string;
+  upload_id: string;
+  [k: string]: any;
+}
+  export interface Asset {
+  duration?: Time | null;
+  id: string;
+  kind: AssetKind;
+  metadata?: {
+    [k: string]: any;
+  };
+  name: string;
+  uri: string;
+  version?: AssetVersion | null;
+}
+  export interface AssetAnalysisResult {
+  asset_id: string;
+  asset_version: LockedAsset;
+  data: AssetAnalysisData;
+  options: AssetAnalysisOptions;
+  project_id: string;
+  revision: string;
+}
+  export interface SilenceResult {
+  confidence_known: boolean;
+  intervals: SilenceInterval[];
+  method: string;
+  provider: string;
+}
+  export interface SilenceInterval {
+  end: MediaTime;
+  start: MediaTime;
+}
+  export interface ShotsResult {
+  boundaries: ShotBoundary[];
+  confidence_known: boolean;
+  method: string;
+  provider: string;
+}
+  export interface ShotBoundary {
+  at: MediaTime;
+  /**
+   * FFmpeg lavfi.scene_score; it is a frame difference score, not semantic confidence.
+   */
+  scene_score: number;
+}
+  export interface WaveformResult {
+  buckets: WaveformBucket[];
+  confidence_known: boolean;
+  method: string;
+  provider: string;
+}
+  export interface WaveformBucket {
+  end: MediaTime;
+  peak: number;
+  /**
+   * Linear amplitude 0..1 measured over this source interval.
+   */
+  rms: number;
+  start: MediaTime;
+}
+  export interface TranscriptionResult {
+  language?: string | null;
+  model: string;
+  /**
+   * SHA-256 of the exact host model bytes used for inference, when available.
+   */
+  model_sha256?: string | null;
+  provider: string;
+  segments: TranscriptionSegment[];
+  word_timing_status?: 'not_requested' | 'available' | 'unavailable';
+}
+  export interface TranscriptionSegment {
+  end: MediaTime;
+  start: MediaTime;
+  text: string;
+  /**
+   * Empty unless the configured engine actually returns validated word intervals.
+   */
+  words?: TranscriptionWord[];
+}
+  export interface TranscriptionWord {
+  end: MediaTime;
+  start: MediaTime;
+  text: string;
+}
+  export interface SpeakerTurnsResult {
+  confidence_known: boolean;
+  language: string;
+  method: string;
+  model: string;
+  model_sha256: string;
+  provider: string;
+  /**
+   * The model marks local turn boundaries, not stable speaker identities.
+   */
+  speaker_identity_status: string;
+  turns: SpeakerTurn[];
+}
+  export interface SpeakerTurn {
+  at: MediaTime1;
+}
+/**
+ * A detected change after the model segment ending at this source time.
+ */
+  export interface MediaTime1 {
+  ticks: string;
+  timebase: number;
+}
+  export interface SceneTranscriptionResult {
+  asset_lock: AssetLockManifest;
+  /**
+   * Historical FFmpeg mixes have no Classic PCM receipt. None is an absence of
+   * evidence,not a silent mix or a claim that mastering did not run.
+   */
+  audio?: AudioRenderResult | null;
+  duration: Time;
+  project_id: string;
+  revision: string;
+  sequence_id: string;
+  transcription: TranscriptionResult;
+}
+  export interface AudioRenderResult {
+  artifact: AudioArtifactMetadata;
+  asset_lock: AssetLockManifest;
+  execution: AudioExecutionSummary;
+  identity: AudioRangeWavIdentity;
+  render_input_sha256: string;
+}
+  export interface AudioArtifactMetadata {
+  content_hash: string;
+  mime_type: string;
+  size_bytes: string;
+}
+  export interface AudioRangeWavIdentity {
+  channels: number;
+  frame_count: string;
+  profile: AudioProfile;
+  project_id: string;
+  revision: string;
+  sample_format: AudioSampleFormat;
+  sample_rate: number;
+  sequence_id: string;
+  start_sample: string;
+  whole_scene_frame_count: string;
+}
+  export interface MediaFrameResult {
+  artifact: MediaFrameArtifactMetadata;
+  asset_lock: AssetLockManifest;
+  execution: MediaFrameExecutionSummary;
+  identity: MediaFrameIdentity;
+  render_input_sha256: string;
+  sources: MediaFrameSourceObservation[];
+}
+  export interface MediaFrameArtifactMetadata {
+  content_hash: string;
+  mime_type: string;
+  size_bytes: string;
+}
+  export interface NativePlatformIdentity {
+  architecture: string;
+  font_backend: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
+}
+  export interface MediaFrameIdentity {
+  height: number;
+  profile: MediaFrameProfile;
+  project_id: string;
+  revision: string;
+  sequence_id: string;
+  time: Time1;
+  width: number;
+}
+/**
+ * Exact requested scene time; actual video observations are separate.
+ */
+  export interface Time1 {
+  ticks: string;
+  timebase: number;
+}
+  export interface MediaFrameSourceObservation {
+  /**
+   * Observed presentation seconds. Exact demux ticks remain decoder facts.
+   */
+  actual_timestamp_seconds?: number | null;
+  asset_id: string;
+  element_id: string;
+  /**
+   * True only for an observed terminal video frame held by the authored
+   * layout. Omission retains the exact historical non-hold result shape.
+   */
+  eof_held?: boolean;
+  frame_duration_seconds?: number | null;
+  height?: number | null;
+  no_frame_reason?: MediaFrameNoSourceReason | null;
+  requested_time?: Time | null;
+  selected_video_stream?: number | null;
+  width?: number | null;
+}
+  export interface TextFrameResult {
+  artifact: MediaFrameArtifactMetadata;
+  asset_lock: AssetLockManifest;
+  execution: MediaFrameExecutionSummary;
+  font_lock: FontLock[];
+  identity: TextFrameJobIdentity;
+  render_input_sha256: string;
+  sources: MediaFrameSourceObservation[];
+  texts: TextRasterReceipt[];
+}
+/**
+ * Font resources remain separate from media locks and never expose a CAS path.
+ */
+  export interface FontLock {
+  content_hash: string;
+  font_id: string;
+  size: number;
+}
+  export interface TextFrameJobIdentity {
+  height: number;
+  profile: TextFrameProfile;
+  project_id: string;
+  revision: string;
+  sequence_id: string;
+  time: Time;
+  width: number;
+}
+  export interface TextRasterReceipt {
+  elementId: string;
+  height: number;
+  layout: TextLayout;
+  width: number;
+}
+  export interface TextLayout {
+  align: string;
+  background?: TextBackgroundRect | null;
+  baseline: string;
+  block: TextBlockMetrics;
+  faceIndex: number;
+  fontContentHash: string;
+  fontId: string;
+  fontSizePx: number;
+  fontStyle: FontStyle;
+  fontWeight: number;
+  letterSpacingPx: number;
+  lineHeightPx: number;
+  lines: TextLineMetrics[];
+  transform: TextRasterTransform;
+  validatedTextHash: string;
+}
+  export interface TextBackgroundRect {
+  height: number;
+  left: number;
+  radius: number;
+  top: number;
+  width: number;
+}
+  export interface TextBlockMetrics {
+  height: number;
+  maxWidth: number;
+  visualCenterOffset: number;
+}
+  export interface TextLineMetrics {
+  ascent: number;
+  baselineY: number;
+  content: string;
+  decoration?: TextRect | null;
+  descent: number;
+  width: number;
+}
+  export interface TextRect {
+  height: number;
+  left: number;
+  top: number;
+  width: number;
+}
+  export interface TextRasterTransform {
+  centerX: number;
+  centerY: number;
+  rotationRadians: number;
+  scaleX: number;
+  scaleY: number;
+}
+  export interface CaptionFrameResult {
+  artifact: MediaFrameArtifactMetadata;
+  asset_lock: AssetLockManifest;
+  captions: CaptionLayoutReceipt[];
+  execution: MediaFrameExecutionSummary;
+  font_lock: FontLock[];
+  identity: CaptionFrameIdentity;
+  render_input_sha256: string;
+  sources: MediaFrameSourceObservation[];
+  texts: TextRasterReceipt[];
+}
+  export interface CaptionLayoutReceipt {
+  elementId: string;
+  /**
+   * Every greedy candidate in order, including rejected overflow candidates.
+   * Widths are measured with the same fixed font as the actual raster.
+   */
+  measurements: CaptionWrapMeasurement[];
+  originalTextHash: string;
+  wrappedText: string;
+}
+  export interface CaptionWrapMeasurement {
+  content: string;
+  width: number;
+}
+  export interface CaptionFrameIdentity {
+  height: number;
+  profile: CaptionFrameProfile;
+  project_id: string;
+  revision: string;
+  sequence_id: string;
+  time: Time;
+  width: number;
+}
+  export interface GraphicFrameResult {
+  artifact: MediaFrameArtifactMetadata;
+  asset_lock: AssetLockManifest;
+  captions: CaptionLayoutReceipt[];
+  execution: MediaFrameExecutionSummary;
+  font_lock: FontLock[];
+  graphics: GraphicRasterReceipt[];
+  identity: GraphicFrameIdentity;
+  render_input_sha256: string;
+  sources: MediaFrameSourceObservation[];
+  texts: TextRasterReceipt[];
+}
+  export interface GraphicRasterReceipt {
+  elementId: string;
+  height: number;
+  originX: number;
+  originY: number;
+  width: number;
+}
+  export interface GraphicFrameIdentity {
+  height: number;
+  profile: GraphicFrameProfile;
+  project_id: string;
+  revision: string;
+  sequence_id: string;
+  time: Time;
+  width: number;
+}
+  export interface MaskFrameResult {
+  artifact: MediaFrameArtifactMetadata;
+  asset_lock: AssetLockManifest;
+  blends: LayerBlend[];
+  captions: CaptionLayoutReceipt[];
+  execution: MediaFrameExecutionSummary;
+  font_lock: FontLock[];
+  graphics: GraphicRasterReceipt[];
+  identity: MaskFrameIdentity;
+  masks: LayerMask[];
+  render_input_sha256: string;
+  sources: MediaFrameSourceObservation[];
+  texts: TextRasterReceipt[];
+}
+  export interface LayerBlend {
+  blendMode: BlendMode;
+  elementId: string;
+}
+  export interface MaskFrameIdentity {
+  height: number;
+  profile: MaskFrameProfile;
+  project_id: string;
+  revision: string;
+  sequence_id: string;
+  time: Time;
+  width: number;
+}
+  export interface LayerMask {
+  elementId: string;
+  mask?: Mask | null;
+}
+  export interface Mask {
+  enabled: boolean;
+  feather: MaskFeather;
+  id: string;
+  inverted: boolean;
+  shape: LayerMaskShape;
+  stroke: Stroke;
+}
+/**
+ * Center offsets and dimensions are fractions of the untransformed element,
+ * not normalized canvas coordinates. Classic scale is retained even where a
+ * particular shape renderer does not use it, so recovery never loses fields.
+ */
+  export interface BoxMaskGeometry {
+  center_x: number;
+  center_y: number;
+  height: number;
+  rotation_degrees: number;
+  scale: number;
+  width: number;
+}
+  export interface TextMask {
+  center_x: number;
+  center_y: number;
+  content: string;
+  decoration: TextDecoration;
+  font: FontBinding;
+  font_size: FontSize;
+  font_style: FontStyle;
+  font_weight: FontWeight;
+  letter_spacing_px: number;
+  line_height_multiplier: number;
+  rotation_degrees: number;
+  scale: number;
+}
+  export interface FreeformMask {
+  center_x: number;
+  center_y: number;
+  closed: boolean;
+  points: FreeformPoint[];
+  rotation_degrees: number;
+  scale: number;
+}
+/**
+ * Coordinates and absolute handle positions are normalized element-local
+ * coordinates around its center, matching Classic's stored path geometry.
+ */
+  export interface FreeformPoint {
+  id: string;
+  in_x: number;
+  in_y: number;
+  out_x: number;
+  out_y: number;
+  x: number;
+  y: number;
+}
+  export interface Stroke {
+  align: StrokeAlign;
+  color: Color;
+  width_px: number;
+}
+  export interface Color {
+  /**
+   * Straight alpha, independent of RGB encoding.
+   */
+  alpha: number;
+  blue: number;
+  encoding: ColorEncoding;
+  green: number;
+  red: number;
+}
+  export interface BlendFrameResult {
+  artifact: MediaFrameArtifactMetadata;
+  asset_lock: AssetLockManifest;
+  blends: LayerBlend[];
+  captions: CaptionLayoutReceipt[];
+  execution: MediaFrameExecutionSummary;
+  font_lock: FontLock[];
+  graphics: GraphicRasterReceipt[];
+  identity: BlendFrameIdentity;
+  render_input_sha256: string;
+  sources: MediaFrameSourceObservation[];
+  texts: TextRasterReceipt[];
+}
+  export interface BlendFrameIdentity {
+  height: number;
+  profile: BlendFrameProfile;
+  project_id: string;
+  revision: string;
+  sequence_id: string;
+  time: Time;
+  width: number;
+}
+  export interface SceneFrameResult {
+  artifact: MediaFrameArtifactMetadata;
+  asset_lock: AssetLockManifest;
+  background: SceneBackground;
+  blends: LayerBlend[];
+  captions: CaptionLayoutReceipt[];
+  execution: MediaFrameExecutionSummary;
+  font_lock: FontLock[];
+  graphics: GraphicRasterReceipt[];
+  identity: SceneFrameIdentity;
+  render_input_sha256: string;
+  sources: MediaFrameSourceObservation[];
+  stacks: SceneLayerStack[];
+  steps: SceneStep[];
+  texts: TextRasterReceipt[];
+}
+  export interface SceneFrameIdentity {
+  height: number;
+  profile: SceneFrameProfile;
+  project_id: string;
+  revision: string;
+  sequence_id: string;
+  time: Time;
+  width: number;
+}
+  export interface SceneLayerStack {
+  effects: SceneEffect[];
+  elementId: string;
+  masks: Mask[];
+}
+  export interface SceneEffect {
+  effect: EffectKind;
+  enabled: boolean;
+  id: string;
+}
+  export interface MediaVideoResult {
+  artifact: MediaFrameArtifactMetadata;
+  asset_lock: AssetLockManifest;
+  execution: MediaVideoExecutionSummary;
+  font_lock: FontLock[];
+  identity: MediaVideoIdentity;
+  render_input_sha256: string;
+}
+  export interface MediaVideoExecutionSummary {
+  audio: AudioExecutionSummary;
+  encoder: MediaVideoEncoderSummary;
+  /**
+   * Ordered digest of individually validated frame receipts, not all frames
+   * retained in a public response or a claim of exact codec reproducibility.
+   */
+  frame_receipts_sha256: string;
+  frames_rendered: string;
+  rgba_bytes: string;
+  visual: MediaFrameExecutionSummary;
+}
+  export interface MediaVideoEncoderSummary {
+  audio_bitrate: number;
+  audio_codec: string;
+  crf: number;
+  ffmpeg_sha256: string;
+  ffprobe_sha256: string;
+  observed_audio_duration_seconds: number;
+  observed_video_duration_seconds: number;
+  observed_video_frames: string;
+  pixel_format: string;
+  video_codec: string;
+}
+  export interface MediaVideoIdentity {
+  /**
+   * Pre-encoding shared Classic PCM. AAC framing is separately observed.
+   */
+  audio_frame_count: string;
+  channels: number;
+  fps: FrameRate2;
+  frame_count: string;
+  height: number;
+  profile: MediaVideoProfile;
+  project_id: string;
+  revision: string;
+  sample_rate: number;
+  sequence_id: string;
+  timeline_duration: Time2;
+  video_duration: Time;
+  width: number;
+}
+  export interface FrameRate2 {
+  denominator: number;
+  numerator: number;
+}
+/**
+ * Original scene end; CFR rounds up to the last complete output frame.
+ */
+  export interface Time2 {
+  ticks: string;
+  timebase: number;
+}
+  export interface CaptionVideoResult {
+  artifact: MediaFrameArtifactMetadata;
+  asset_lock: AssetLockManifest;
+  execution: MediaVideoExecutionSummary;
+  font_lock: FontLock[];
+  identity: CaptionVideoIdentity;
+  render_input_sha256: string;
+}
+  export interface CaptionVideoIdentity {
+  /**
+   * Pre-encoding shared Classic PCM. AAC framing is separately observed.
+   */
+  audio_frame_count: string;
+  channels: number;
+  fps: FrameRate2;
+  frame_count: string;
+  height: number;
+  profile: CaptionVideoProfile;
+  project_id: string;
+  revision: string;
+  sample_rate: number;
+  sequence_id: string;
+  timeline_duration: Time3;
+  video_duration: Time;
+  width: number;
+}
+/**
+ * Original scene end; CFR rounds up to the last complete output frame.
+ */
+  export interface Time3 {
+  ticks: string;
+  timebase: number;
+}
+  export interface GraphicVideoResult {
+  artifact: MediaFrameArtifactMetadata;
+  asset_lock: AssetLockManifest;
+  execution: MediaVideoExecutionSummary;
+  font_lock: FontLock[];
+  identity: GraphicVideoIdentity;
+  render_input_sha256: string;
+}
+  export interface GraphicVideoIdentity {
+  /**
+   * Pre-encoding shared Classic PCM. AAC framing is separately observed.
+   */
+  audio_frame_count: string;
+  channels: number;
+  fps: FrameRate2;
+  frame_count: string;
+  height: number;
+  profile: GraphicVideoProfile;
+  project_id: string;
+  revision: string;
+  sample_rate: number;
+  sequence_id: string;
+  timeline_duration: Time4;
+  video_duration: Time;
+  width: number;
+}
+/**
+ * Original scene end; CFR rounds up to the last complete output frame.
+ */
+  export interface Time4 {
+  ticks: string;
+  timebase: number;
+}
+  export interface MaskVideoResult {
+  artifact: MediaFrameArtifactMetadata;
+  asset_lock: AssetLockManifest;
+  execution: MediaVideoExecutionSummary;
+  font_lock: FontLock[];
+  identity: MaskVideoIdentity;
+  render_input_sha256: string;
+}
+  export interface MaskVideoIdentity {
+  /**
+   * Pre-encoding shared Classic PCM. AAC framing is separately observed.
+   */
+  audio_frame_count: string;
+  channels: number;
+  fps: FrameRate2;
+  frame_count: string;
+  height: number;
+  profile: MaskVideoProfile;
+  project_id: string;
+  revision: string;
+  sample_rate: number;
+  sequence_id: string;
+  timeline_duration: Time5;
+  video_duration: Time;
+  width: number;
+}
+/**
+ * Original scene end; CFR rounds up to the last complete output frame.
+ */
+  export interface Time5 {
+  ticks: string;
+  timebase: number;
+}
+  export interface BlendVideoResult {
+  artifact: MediaFrameArtifactMetadata;
+  asset_lock: AssetLockManifest;
+  execution: MediaVideoExecutionSummary;
+  font_lock: FontLock[];
+  identity: BlendVideoIdentity;
+  render_input_sha256: string;
+}
+  export interface BlendVideoIdentity {
+  /**
+   * Pre-encoding shared Classic PCM. AAC framing is separately observed.
+   */
+  audio_frame_count: string;
+  channels: number;
+  fps: FrameRate2;
+  frame_count: string;
+  height: number;
+  profile: BlendVideoProfile;
+  project_id: string;
+  revision: string;
+  sample_rate: number;
+  sequence_id: string;
+  timeline_duration: Time6;
+  video_duration: Time;
+  width: number;
+}
+/**
+ * Original scene end; CFR rounds up to the last complete output frame.
+ */
+  export interface Time6 {
+  ticks: string;
+  timebase: number;
+}
+  export interface SceneVideoResult {
+  artifact: MediaFrameArtifactMetadata;
+  asset_lock: AssetLockManifest;
+  execution: MediaVideoExecutionSummary;
+  font_lock: FontLock[];
+  identity: SceneVideoIdentity;
+  render_input_sha256: string;
+}
+  export interface SceneVideoIdentity {
+  /**
+   * Pre-encoding shared Classic PCM. AAC framing is separately observed.
+   */
+  audio_frame_count: string;
+  channels: number;
+  fps: FrameRate2;
+  frame_count: string;
+  height: number;
+  profile: SceneVideoProfile;
+  project_id: string;
+  revision: string;
+  sample_rate: number;
+  sequence_id: string;
+  timeline_duration: Time7;
+  video_duration: Time;
+  width: number;
+}
+/**
+ * Original scene end; CFR rounds up to the last complete output frame.
+ */
+  export interface Time7 {
+  ticks: string;
+  timebase: number;
+}
+  export interface VideoExportResult {
+  artifact: MediaFrameArtifactMetadata;
+  asset_lock: AssetLockManifest;
+  execution: ExportVideoExecution;
+  font_lock: FontLock[];
+  identity: ExportVideoIdentity;
+  render_input_sha256: string;
+}
+  export interface ExportVideoExecution {
+  audio?: AudioExecutionSummary | null;
+  encoder: ExportVideoEncoderSummary;
+  frame_receipts_sha256: string;
+  frames_rendered: string;
+  rgba_bytes: string;
+  visual: MediaFrameExecutionSummary;
+}
+  export interface ExportVideoEncoderSummary {
+  audio_codec?: string | null;
+  backend?: VideoEncoderBackend | null;
+  ffmpeg_sha256: string;
+  ffprobe_sha256: string;
+  observed_audio_duration_seconds?: number | null;
+  observed_video_duration_seconds: number;
+  observed_video_frames: string;
+  pixel_format: string;
+  rates: ExportVideoRates;
+  video_codec: string;
+}
+/**
+ * Numeric target bitrates from Classic's pinned Mediabunny 1.41.0 Quality.
+ * These are encoder targets, not promises about final bytes or exact equality
+ * between native codecs and the browser WebCodecs encoder.
+ */
+  export interface ExportVideoRates {
+  audio_bitrate?: number | null;
+  video_bitrate: number;
+}
+  export interface ExportVideoIdentity {
+  /**
+   * None means there is no output audio stream, not a silent encoded stream.
+   */
+  audio_frame_count?: string | null;
+  fps: FrameRate2;
+  frame_count: string;
+  height: number;
+  options: ExportVideoOptions;
+  project_id: string;
+  revision: string;
+  sequence_id: string;
+  timeline_duration: Time;
+  video_duration: Time;
+  visual_profile: ExportVisualProfile;
+  width: number;
+}
+  export interface ExportVideoOptions {
+  format: ExportFormat;
+  include_audio: boolean;
+  quality: ExportQuality;
+  resolution?: RasterResolution;
+  /**
+   * Optional native runtime fence for reusable derived pictures.
+   */
+  runtime_fingerprint?: string | null;
+}
+  export interface VideoRangeResult {
+  mapping: ExportRangeMapping;
+  output: VideoExportResult1;
+}
+  export interface ExportRangeMapping {
+  /**
+   * 48 kHz sample boundaries use floor(frame * fps_den * 48000 / fps_num).
+   * End is clipped to the full scene PCM length; mastering precedes cropping.
+   */
+  audio?: AudioSampleRange | null;
+  frames: VideoFrameRange;
+  source_end: Time;
+  source_start: Time;
+}
+/**
+ * Half-open sample interval at the target sample rate; mastering precedes cropping.
+ */
+  export interface AudioSampleRange {
+  frame_count: string;
+  start_sample: string;
+}
+/**
+ * Half-open interval on the original scene frame grid, preserving animation clocks.
+ */
+  export interface VideoFrameRange {
+  frame_count: string;
+  start_frame: string;
+}
+/**
+ * Output frame/sample counts and duration; timeline_duration is the original scene extent.
+ */
+  export interface VideoExportResult1 {
+  artifact: MediaFrameArtifactMetadata;
+  asset_lock: AssetLockManifest;
+  execution: ExportVideoExecution;
+  font_lock: FontLock[];
+  identity: ExportVideoIdentity;
+  render_input_sha256: string;
+}
+  export interface ProjectTaskTarget {
+  project_id: string;
+  revision: string;
+  sequence_id: string;
+  [k: string]: any;
 }
   export interface EditorError {
   code: string;
@@ -17968,11 +19720,15 @@ export namespace OpencutResourceReadOutput {
   export type TransitionKind = 'legacy_crossfade_v3';
   export type SceneTrackKind = 'video' | 'audio' | 'text' | 'graphic' | 'effect' | 'caption';
   export type ArtifactAvailability = 'unchecked';
-  export type ArtifactRole = 'primary';
+  export type ArtifactRole = 'primary' | 'frame_index';
   export type PublicJobStage =
   'resolving_assets' | 'probing' | 'selecting_frame' | 'decoding' | 'encoding' | 'verifying' | 'unknown';
   export type JobPurpose = 'playback_optimization';
   export type JobResultView =
+  | {
+      data: SourcePreviewResult;
+      kind: 'media.preview_source';
+    }
   | {
       data: MediaInfo;
       kind: 'media.probe';
@@ -18081,6 +19837,7 @@ export namespace OpencutResourceReadOutput {
       data: VideoRangeResult;
       kind: 'render.video_range';
     };
+  export type SourcePreviewEncoding = 'ffv1_rgba';
   export type StreamKind = 'video' | 'audio' | 'subtitle' | 'data' | 'attachment' | 'unknown';
   export type FrameAlignment = 'exact' | 'nearest' | 'floor' | 'ceil';
   export type FrameQuality = 'accurate_source_frame';
@@ -19167,6 +20924,75 @@ export namespace OpencutResourceReadOutput {
   resource_kind: string;
   [k: string]: any;
 }
+  export interface SourcePreviewResult {
+  actual_stream_index: number;
+  actual_track_id: number;
+  encoding: SourcePreviewEncoding;
+  first_source_pts: string;
+  frame_count: string;
+  frame_index: SourcePreviewArtifact;
+  identity: SourcePreviewIdentity;
+  last_source_duration: string;
+  last_source_pts: string;
+  /**
+   * The immutable producer is not relabelled when another revision reuses
+   * the same original bytes, selected track, raster and runtime.
+   */
+  producer_revision: string;
+  proxy_time_base: SourcePreviewTimeBase;
+  runtime: SourcePreviewRuntimeIdentity;
+  source_time_base: SourcePreviewTimeBase;
+  video: SourcePreviewArtifact;
+}
+  export interface SourcePreviewArtifact {
+  content_hash: string;
+  mime_type: string;
+  size_bytes: string;
+}
+  export interface SourcePreviewIdentity {
+  asset_id: string;
+  policy_fingerprint: string;
+  project_id: string;
+  raster_bound: SourcePreviewRaster;
+  runtime_fingerprint: string;
+  selected_video_stream?: number | null;
+  source_version: AssetVersion;
+}
+  export interface SourcePreviewRaster {
+  height: number;
+  width: number;
+}
+  export interface SourcePreviewTimeBase {
+  denominator: number;
+  numerator: number;
+}
+  export interface SourcePreviewRuntimeIdentity {
+  decoder: SourcePreviewDecoderIdentity;
+  ffmpeg_sha256: string;
+  ffprobe_sha256: string;
+  host_sha256: string;
+}
+  export interface SourcePreviewDecoderIdentity {
+  decoder_libraries: NativeLibraryIdentity[];
+  platform: NativeSystemIdentity;
+  worker_sha256: string;
+}
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+/**
+ * Audio execution observes its OS/CPU without claiming a graphics or font
+ * subsystem. These are runtime facts, independent of saved project formats.
+ */
+  export interface NativeSystemIdentity {
+  architecture: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
+}
   export interface MediaInfo {
   bit_rate?: number | null;
   duration?: MediaTime | null;
@@ -19462,22 +21288,6 @@ export namespace OpencutResourceReadOutput {
   content_hash: string;
   mime_type: string;
   size_bytes: string;
-}
-  export interface NativeLibraryIdentity {
-  binary_sha256: string;
-  configuration_sha256: string;
-  name: string;
-  version: string;
-}
-/**
- * Audio execution observes its OS/CPU without claiming a graphics or font
- * subsystem. These are runtime facts, independent of saved project formats.
- */
-  export interface NativeSystemIdentity {
-  architecture: string;
-  kernel_release: string;
-  os: string;
-  system_build: string;
 }
   export interface AudioRangeWavIdentity {
   channels: number;
@@ -20219,11 +22029,15 @@ export namespace OpencutJobViewInput {
 
 export namespace OpencutJobViewOutput {
   export type ArtifactAvailability = 'unchecked';
-  export type ArtifactRole = 'primary';
+  export type ArtifactRole = 'primary' | 'frame_index';
   export type PublicJobStage =
   'resolving_assets' | 'probing' | 'selecting_frame' | 'decoding' | 'encoding' | 'verifying' | 'unknown';
   export type JobPurpose = 'playback_optimization';
   export type JobResultView =
+  | {
+      data: SourcePreviewResult;
+      kind: 'media.preview_source';
+    }
   | {
       data: MediaInfo;
       kind: 'media.probe';
@@ -20332,6 +22146,7 @@ export namespace OpencutJobViewOutput {
       data: VideoRangeResult;
       kind: 'render.video_range';
     };
+  export type SourcePreviewEncoding = 'ffv1_rgba';
   export type StreamKind = 'video' | 'audio' | 'subtitle' | 'data' | 'attachment' | 'unknown';
   export type FrameAlignment = 'exact' | 'nearest' | 'floor' | 'ceil';
   export type FrameQuality = 'accurate_source_frame';
@@ -20689,6 +22504,80 @@ export namespace OpencutJobViewOutput {
   resource_kind: string;
   [k: string]: any;
 }
+  export interface SourcePreviewResult {
+  actual_stream_index: number;
+  actual_track_id: number;
+  encoding: SourcePreviewEncoding;
+  first_source_pts: string;
+  frame_count: string;
+  frame_index: SourcePreviewArtifact;
+  identity: SourcePreviewIdentity;
+  last_source_duration: string;
+  last_source_pts: string;
+  /**
+   * The immutable producer is not relabelled when another revision reuses
+   * the same original bytes, selected track, raster and runtime.
+   */
+  producer_revision: string;
+  proxy_time_base: SourcePreviewTimeBase;
+  runtime: SourcePreviewRuntimeIdentity;
+  source_time_base: SourcePreviewTimeBase;
+  video: SourcePreviewArtifact;
+}
+  export interface SourcePreviewArtifact {
+  content_hash: string;
+  mime_type: string;
+  size_bytes: string;
+}
+  export interface SourcePreviewIdentity {
+  asset_id: string;
+  policy_fingerprint: string;
+  project_id: string;
+  raster_bound: SourcePreviewRaster;
+  runtime_fingerprint: string;
+  selected_video_stream?: number | null;
+  source_version: AssetVersion;
+}
+  export interface SourcePreviewRaster {
+  height: number;
+  width: number;
+}
+  export interface AssetVersion {
+  content_hash: string;
+  id: string;
+  size: number;
+}
+  export interface SourcePreviewTimeBase {
+  denominator: number;
+  numerator: number;
+}
+  export interface SourcePreviewRuntimeIdentity {
+  decoder: SourcePreviewDecoderIdentity;
+  ffmpeg_sha256: string;
+  ffprobe_sha256: string;
+  host_sha256: string;
+}
+  export interface SourcePreviewDecoderIdentity {
+  decoder_libraries: NativeLibraryIdentity[];
+  platform: NativeSystemIdentity;
+  worker_sha256: string;
+}
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+/**
+ * Audio execution observes its OS/CPU without claiming a graphics or font
+ * subsystem. These are runtime facts, independent of saved project formats.
+ */
+  export interface NativeSystemIdentity {
+  architecture: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
+}
   export interface MediaInfo {
   bit_rate?: number | null;
   duration?: MediaTime | null;
@@ -20870,11 +22759,6 @@ export namespace OpencutJobViewOutput {
   uri: string;
   version?: AssetVersion | null;
 }
-  export interface AssetVersion {
-  content_hash: string;
-  id: string;
-  size: number;
-}
   export interface AssetAnalysisResult {
   asset_id: string;
   asset_version: LockedAsset;
@@ -20993,22 +22877,6 @@ export namespace OpencutJobViewOutput {
   content_hash: string;
   mime_type: string;
   size_bytes: string;
-}
-  export interface NativeLibraryIdentity {
-  binary_sha256: string;
-  configuration_sha256: string;
-  name: string;
-  version: string;
-}
-/**
- * Audio execution observes its OS/CPU without claiming a graphics or font
- * subsystem. These are runtime facts, independent of saved project formats.
- */
-  export interface NativeSystemIdentity {
-  architecture: string;
-  kernel_release: string;
-  os: string;
-  system_build: string;
 }
   export interface AudioRangeWavIdentity {
   channels: number;
@@ -21734,11 +23602,15 @@ export namespace OpencutJobQueryInput {
 
 export namespace OpencutJobQueryOutput {
   export type ArtifactAvailability = 'unchecked';
-  export type ArtifactRole = 'primary';
+  export type ArtifactRole = 'primary' | 'frame_index';
   export type PublicJobStage =
   'resolving_assets' | 'probing' | 'selecting_frame' | 'decoding' | 'encoding' | 'verifying' | 'unknown';
   export type JobPurpose = 'playback_optimization';
   export type JobResultView =
+  | {
+      data: SourcePreviewResult;
+      kind: 'media.preview_source';
+    }
   | {
       data: MediaInfo;
       kind: 'media.probe';
@@ -21847,6 +23719,7 @@ export namespace OpencutJobQueryOutput {
       data: VideoRangeResult;
       kind: 'render.video_range';
     };
+  export type SourcePreviewEncoding = 'ffv1_rgba';
   export type StreamKind = 'video' | 'audio' | 'subtitle' | 'data' | 'attachment' | 'unknown';
   export type FrameAlignment = 'exact' | 'nearest' | 'floor' | 'ceil';
   export type FrameQuality = 'accurate_source_frame';
@@ -22209,6 +24082,80 @@ export namespace OpencutJobQueryOutput {
   resource_kind: string;
   [k: string]: any;
 }
+  export interface SourcePreviewResult {
+  actual_stream_index: number;
+  actual_track_id: number;
+  encoding: SourcePreviewEncoding;
+  first_source_pts: string;
+  frame_count: string;
+  frame_index: SourcePreviewArtifact;
+  identity: SourcePreviewIdentity;
+  last_source_duration: string;
+  last_source_pts: string;
+  /**
+   * The immutable producer is not relabelled when another revision reuses
+   * the same original bytes, selected track, raster and runtime.
+   */
+  producer_revision: string;
+  proxy_time_base: SourcePreviewTimeBase;
+  runtime: SourcePreviewRuntimeIdentity;
+  source_time_base: SourcePreviewTimeBase;
+  video: SourcePreviewArtifact;
+}
+  export interface SourcePreviewArtifact {
+  content_hash: string;
+  mime_type: string;
+  size_bytes: string;
+}
+  export interface SourcePreviewIdentity {
+  asset_id: string;
+  policy_fingerprint: string;
+  project_id: string;
+  raster_bound: SourcePreviewRaster;
+  runtime_fingerprint: string;
+  selected_video_stream?: number | null;
+  source_version: AssetVersion;
+}
+  export interface SourcePreviewRaster {
+  height: number;
+  width: number;
+}
+  export interface AssetVersion {
+  content_hash: string;
+  id: string;
+  size: number;
+}
+  export interface SourcePreviewTimeBase {
+  denominator: number;
+  numerator: number;
+}
+  export interface SourcePreviewRuntimeIdentity {
+  decoder: SourcePreviewDecoderIdentity;
+  ffmpeg_sha256: string;
+  ffprobe_sha256: string;
+  host_sha256: string;
+}
+  export interface SourcePreviewDecoderIdentity {
+  decoder_libraries: NativeLibraryIdentity[];
+  platform: NativeSystemIdentity;
+  worker_sha256: string;
+}
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+/**
+ * Audio execution observes its OS/CPU without claiming a graphics or font
+ * subsystem. These are runtime facts, independent of saved project formats.
+ */
+  export interface NativeSystemIdentity {
+  architecture: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
+}
   export interface MediaInfo {
   bit_rate?: number | null;
   duration?: MediaTime | null;
@@ -22390,11 +24337,6 @@ export namespace OpencutJobQueryOutput {
   uri: string;
   version?: AssetVersion | null;
 }
-  export interface AssetVersion {
-  content_hash: string;
-  id: string;
-  size: number;
-}
   export interface AssetAnalysisResult {
   asset_id: string;
   asset_version: LockedAsset;
@@ -22513,22 +24455,6 @@ export namespace OpencutJobQueryOutput {
   content_hash: string;
   mime_type: string;
   size_bytes: string;
-}
-  export interface NativeLibraryIdentity {
-  binary_sha256: string;
-  configuration_sha256: string;
-  name: string;
-  version: string;
-}
-/**
- * Audio execution observes its OS/CPU without claiming a graphics or font
- * subsystem. These are runtime facts, independent of saved project formats.
- */
-  export interface NativeSystemIdentity {
-  architecture: string;
-  kernel_release: string;
-  os: string;
-  system_build: string;
 }
   export interface AudioRangeWavIdentity {
   channels: number;
@@ -23516,11 +25442,15 @@ export namespace OpencutJobSubmitInput {
 
 export namespace OpencutJobSubmitOutput {
   export type ArtifactAvailability = 'unchecked';
-  export type ArtifactRole = 'primary';
+  export type ArtifactRole = 'primary' | 'frame_index';
   export type PublicJobStage =
   'resolving_assets' | 'probing' | 'selecting_frame' | 'decoding' | 'encoding' | 'verifying' | 'unknown';
   export type JobPurpose = 'playback_optimization';
   export type JobResultView =
+  | {
+      data: SourcePreviewResult;
+      kind: 'media.preview_source';
+    }
   | {
       data: MediaInfo;
       kind: 'media.probe';
@@ -23629,6 +25559,7 @@ export namespace OpencutJobSubmitOutput {
       data: VideoRangeResult;
       kind: 'render.video_range';
     };
+  export type SourcePreviewEncoding = 'ffv1_rgba';
   export type StreamKind = 'video' | 'audio' | 'subtitle' | 'data' | 'attachment' | 'unknown';
   export type FrameAlignment = 'exact' | 'nearest' | 'floor' | 'ceil';
   export type FrameQuality = 'accurate_source_frame';
@@ -23986,6 +25917,80 @@ export namespace OpencutJobSubmitOutput {
   resource_kind: string;
   [k: string]: any;
 }
+  export interface SourcePreviewResult {
+  actual_stream_index: number;
+  actual_track_id: number;
+  encoding: SourcePreviewEncoding;
+  first_source_pts: string;
+  frame_count: string;
+  frame_index: SourcePreviewArtifact;
+  identity: SourcePreviewIdentity;
+  last_source_duration: string;
+  last_source_pts: string;
+  /**
+   * The immutable producer is not relabelled when another revision reuses
+   * the same original bytes, selected track, raster and runtime.
+   */
+  producer_revision: string;
+  proxy_time_base: SourcePreviewTimeBase;
+  runtime: SourcePreviewRuntimeIdentity;
+  source_time_base: SourcePreviewTimeBase;
+  video: SourcePreviewArtifact;
+}
+  export interface SourcePreviewArtifact {
+  content_hash: string;
+  mime_type: string;
+  size_bytes: string;
+}
+  export interface SourcePreviewIdentity {
+  asset_id: string;
+  policy_fingerprint: string;
+  project_id: string;
+  raster_bound: SourcePreviewRaster;
+  runtime_fingerprint: string;
+  selected_video_stream?: number | null;
+  source_version: AssetVersion;
+}
+  export interface SourcePreviewRaster {
+  height: number;
+  width: number;
+}
+  export interface AssetVersion {
+  content_hash: string;
+  id: string;
+  size: number;
+}
+  export interface SourcePreviewTimeBase {
+  denominator: number;
+  numerator: number;
+}
+  export interface SourcePreviewRuntimeIdentity {
+  decoder: SourcePreviewDecoderIdentity;
+  ffmpeg_sha256: string;
+  ffprobe_sha256: string;
+  host_sha256: string;
+}
+  export interface SourcePreviewDecoderIdentity {
+  decoder_libraries: NativeLibraryIdentity[];
+  platform: NativeSystemIdentity;
+  worker_sha256: string;
+}
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+/**
+ * Audio execution observes its OS/CPU without claiming a graphics or font
+ * subsystem. These are runtime facts, independent of saved project formats.
+ */
+  export interface NativeSystemIdentity {
+  architecture: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
+}
   export interface MediaInfo {
   bit_rate?: number | null;
   duration?: MediaTime | null;
@@ -24167,11 +26172,6 @@ export namespace OpencutJobSubmitOutput {
   uri: string;
   version?: AssetVersion | null;
 }
-  export interface AssetVersion {
-  content_hash: string;
-  id: string;
-  size: number;
-}
   export interface AssetAnalysisResult {
   asset_id: string;
   asset_version: LockedAsset;
@@ -24290,22 +26290,6 @@ export namespace OpencutJobSubmitOutput {
   content_hash: string;
   mime_type: string;
   size_bytes: string;
-}
-  export interface NativeLibraryIdentity {
-  binary_sha256: string;
-  configuration_sha256: string;
-  name: string;
-  version: string;
-}
-/**
- * Audio execution observes its OS/CPU without claiming a graphics or font
- * subsystem. These are runtime facts, independent of saved project formats.
- */
-  export interface NativeSystemIdentity {
-  architecture: string;
-  kernel_release: string;
-  os: string;
-  system_build: string;
 }
   export interface AudioRangeWavIdentity {
   channels: number;
@@ -25141,11 +27125,15 @@ export namespace OpencutRenderSubmitInput {
 
 export namespace OpencutRenderSubmitOutput {
   export type ArtifactAvailability = 'unchecked';
-  export type ArtifactRole = 'primary';
+  export type ArtifactRole = 'primary' | 'frame_index';
   export type PublicJobStage =
   'resolving_assets' | 'probing' | 'selecting_frame' | 'decoding' | 'encoding' | 'verifying' | 'unknown';
   export type JobPurpose = 'playback_optimization';
   export type JobResultView =
+  | {
+      data: SourcePreviewResult;
+      kind: 'media.preview_source';
+    }
   | {
       data: MediaInfo;
       kind: 'media.probe';
@@ -25254,6 +27242,7 @@ export namespace OpencutRenderSubmitOutput {
       data: VideoRangeResult;
       kind: 'render.video_range';
     };
+  export type SourcePreviewEncoding = 'ffv1_rgba';
   export type StreamKind = 'video' | 'audio' | 'subtitle' | 'data' | 'attachment' | 'unknown';
   export type FrameAlignment = 'exact' | 'nearest' | 'floor' | 'ceil';
   export type FrameQuality = 'accurate_source_frame';
@@ -25611,6 +27600,80 @@ export namespace OpencutRenderSubmitOutput {
   resource_kind: string;
   [k: string]: any;
 }
+  export interface SourcePreviewResult {
+  actual_stream_index: number;
+  actual_track_id: number;
+  encoding: SourcePreviewEncoding;
+  first_source_pts: string;
+  frame_count: string;
+  frame_index: SourcePreviewArtifact;
+  identity: SourcePreviewIdentity;
+  last_source_duration: string;
+  last_source_pts: string;
+  /**
+   * The immutable producer is not relabelled when another revision reuses
+   * the same original bytes, selected track, raster and runtime.
+   */
+  producer_revision: string;
+  proxy_time_base: SourcePreviewTimeBase;
+  runtime: SourcePreviewRuntimeIdentity;
+  source_time_base: SourcePreviewTimeBase;
+  video: SourcePreviewArtifact;
+}
+  export interface SourcePreviewArtifact {
+  content_hash: string;
+  mime_type: string;
+  size_bytes: string;
+}
+  export interface SourcePreviewIdentity {
+  asset_id: string;
+  policy_fingerprint: string;
+  project_id: string;
+  raster_bound: SourcePreviewRaster;
+  runtime_fingerprint: string;
+  selected_video_stream?: number | null;
+  source_version: AssetVersion;
+}
+  export interface SourcePreviewRaster {
+  height: number;
+  width: number;
+}
+  export interface AssetVersion {
+  content_hash: string;
+  id: string;
+  size: number;
+}
+  export interface SourcePreviewTimeBase {
+  denominator: number;
+  numerator: number;
+}
+  export interface SourcePreviewRuntimeIdentity {
+  decoder: SourcePreviewDecoderIdentity;
+  ffmpeg_sha256: string;
+  ffprobe_sha256: string;
+  host_sha256: string;
+}
+  export interface SourcePreviewDecoderIdentity {
+  decoder_libraries: NativeLibraryIdentity[];
+  platform: NativeSystemIdentity;
+  worker_sha256: string;
+}
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+/**
+ * Audio execution observes its OS/CPU without claiming a graphics or font
+ * subsystem. These are runtime facts, independent of saved project formats.
+ */
+  export interface NativeSystemIdentity {
+  architecture: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
+}
   export interface MediaInfo {
   bit_rate?: number | null;
   duration?: MediaTime | null;
@@ -25792,11 +27855,6 @@ export namespace OpencutRenderSubmitOutput {
   uri: string;
   version?: AssetVersion | null;
 }
-  export interface AssetVersion {
-  content_hash: string;
-  id: string;
-  size: number;
-}
   export interface AssetAnalysisResult {
   asset_id: string;
   asset_version: LockedAsset;
@@ -25915,22 +27973,6 @@ export namespace OpencutRenderSubmitOutput {
   content_hash: string;
   mime_type: string;
   size_bytes: string;
-}
-  export interface NativeLibraryIdentity {
-  binary_sha256: string;
-  configuration_sha256: string;
-  name: string;
-  version: string;
-}
-/**
- * Audio execution observes its OS/CPU without claiming a graphics or font
- * subsystem. These are runtime facts, independent of saved project formats.
- */
-  export interface NativeSystemIdentity {
-  architecture: string;
-  kernel_release: string;
-  os: string;
-  system_build: string;
 }
   export interface AudioRangeWavIdentity {
   channels: number;
@@ -37550,11 +39592,15 @@ export namespace OpencutAnalysisSequenceTranscribeInput {
 
 export namespace OpencutAnalysisSequenceTranscribeOutput {
   export type ArtifactAvailability = 'unchecked';
-  export type ArtifactRole = 'primary';
+  export type ArtifactRole = 'primary' | 'frame_index';
   export type PublicJobStage =
   'resolving_assets' | 'probing' | 'selecting_frame' | 'decoding' | 'encoding' | 'verifying' | 'unknown';
   export type JobPurpose = 'playback_optimization';
   export type JobResultView =
+  | {
+      data: SourcePreviewResult;
+      kind: 'media.preview_source';
+    }
   | {
       data: MediaInfo;
       kind: 'media.probe';
@@ -37663,6 +39709,7 @@ export namespace OpencutAnalysisSequenceTranscribeOutput {
       data: VideoRangeResult;
       kind: 'render.video_range';
     };
+  export type SourcePreviewEncoding = 'ffv1_rgba';
   export type StreamKind = 'video' | 'audio' | 'subtitle' | 'data' | 'attachment' | 'unknown';
   export type FrameAlignment = 'exact' | 'nearest' | 'floor' | 'ceil';
   export type FrameQuality = 'accurate_source_frame';
@@ -38020,6 +40067,80 @@ export namespace OpencutAnalysisSequenceTranscribeOutput {
   resource_kind: string;
   [k: string]: any;
 }
+  export interface SourcePreviewResult {
+  actual_stream_index: number;
+  actual_track_id: number;
+  encoding: SourcePreviewEncoding;
+  first_source_pts: string;
+  frame_count: string;
+  frame_index: SourcePreviewArtifact;
+  identity: SourcePreviewIdentity;
+  last_source_duration: string;
+  last_source_pts: string;
+  /**
+   * The immutable producer is not relabelled when another revision reuses
+   * the same original bytes, selected track, raster and runtime.
+   */
+  producer_revision: string;
+  proxy_time_base: SourcePreviewTimeBase;
+  runtime: SourcePreviewRuntimeIdentity;
+  source_time_base: SourcePreviewTimeBase;
+  video: SourcePreviewArtifact;
+}
+  export interface SourcePreviewArtifact {
+  content_hash: string;
+  mime_type: string;
+  size_bytes: string;
+}
+  export interface SourcePreviewIdentity {
+  asset_id: string;
+  policy_fingerprint: string;
+  project_id: string;
+  raster_bound: SourcePreviewRaster;
+  runtime_fingerprint: string;
+  selected_video_stream?: number | null;
+  source_version: AssetVersion;
+}
+  export interface SourcePreviewRaster {
+  height: number;
+  width: number;
+}
+  export interface AssetVersion {
+  content_hash: string;
+  id: string;
+  size: number;
+}
+  export interface SourcePreviewTimeBase {
+  denominator: number;
+  numerator: number;
+}
+  export interface SourcePreviewRuntimeIdentity {
+  decoder: SourcePreviewDecoderIdentity;
+  ffmpeg_sha256: string;
+  ffprobe_sha256: string;
+  host_sha256: string;
+}
+  export interface SourcePreviewDecoderIdentity {
+  decoder_libraries: NativeLibraryIdentity[];
+  platform: NativeSystemIdentity;
+  worker_sha256: string;
+}
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+/**
+ * Audio execution observes its OS/CPU without claiming a graphics or font
+ * subsystem. These are runtime facts, independent of saved project formats.
+ */
+  export interface NativeSystemIdentity {
+  architecture: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
+}
   export interface MediaInfo {
   bit_rate?: number | null;
   duration?: MediaTime | null;
@@ -38201,11 +40322,6 @@ export namespace OpencutAnalysisSequenceTranscribeOutput {
   uri: string;
   version?: AssetVersion | null;
 }
-  export interface AssetVersion {
-  content_hash: string;
-  id: string;
-  size: number;
-}
   export interface AssetAnalysisResult {
   asset_id: string;
   asset_version: LockedAsset;
@@ -38324,22 +40440,6 @@ export namespace OpencutAnalysisSequenceTranscribeOutput {
   content_hash: string;
   mime_type: string;
   size_bytes: string;
-}
-  export interface NativeLibraryIdentity {
-  binary_sha256: string;
-  configuration_sha256: string;
-  name: string;
-  version: string;
-}
-/**
- * Audio execution observes its OS/CPU without claiming a graphics or font
- * subsystem. These are runtime facts, independent of saved project formats.
- */
-  export interface NativeSystemIdentity {
-  architecture: string;
-  kernel_release: string;
-  os: string;
-  system_build: string;
 }
   export interface AudioRangeWavIdentity {
   channels: number;
@@ -46222,11 +48322,15 @@ export namespace OpencutAnalysisSpeakerTurnsInput {
 
 export namespace OpencutAnalysisSpeakerTurnsOutput {
   export type ArtifactAvailability = 'unchecked';
-  export type ArtifactRole = 'primary';
+  export type ArtifactRole = 'primary' | 'frame_index';
   export type PublicJobStage =
   'resolving_assets' | 'probing' | 'selecting_frame' | 'decoding' | 'encoding' | 'verifying' | 'unknown';
   export type JobPurpose = 'playback_optimization';
   export type JobResultView =
+  | {
+      data: SourcePreviewResult;
+      kind: 'media.preview_source';
+    }
   | {
       data: MediaInfo;
       kind: 'media.probe';
@@ -46335,6 +48439,7 @@ export namespace OpencutAnalysisSpeakerTurnsOutput {
       data: VideoRangeResult;
       kind: 'render.video_range';
     };
+  export type SourcePreviewEncoding = 'ffv1_rgba';
   export type StreamKind = 'video' | 'audio' | 'subtitle' | 'data' | 'attachment' | 'unknown';
   export type FrameAlignment = 'exact' | 'nearest' | 'floor' | 'ceil';
   export type FrameQuality = 'accurate_source_frame';
@@ -46692,6 +48797,80 @@ export namespace OpencutAnalysisSpeakerTurnsOutput {
   resource_kind: string;
   [k: string]: any;
 }
+  export interface SourcePreviewResult {
+  actual_stream_index: number;
+  actual_track_id: number;
+  encoding: SourcePreviewEncoding;
+  first_source_pts: string;
+  frame_count: string;
+  frame_index: SourcePreviewArtifact;
+  identity: SourcePreviewIdentity;
+  last_source_duration: string;
+  last_source_pts: string;
+  /**
+   * The immutable producer is not relabelled when another revision reuses
+   * the same original bytes, selected track, raster and runtime.
+   */
+  producer_revision: string;
+  proxy_time_base: SourcePreviewTimeBase;
+  runtime: SourcePreviewRuntimeIdentity;
+  source_time_base: SourcePreviewTimeBase;
+  video: SourcePreviewArtifact;
+}
+  export interface SourcePreviewArtifact {
+  content_hash: string;
+  mime_type: string;
+  size_bytes: string;
+}
+  export interface SourcePreviewIdentity {
+  asset_id: string;
+  policy_fingerprint: string;
+  project_id: string;
+  raster_bound: SourcePreviewRaster;
+  runtime_fingerprint: string;
+  selected_video_stream?: number | null;
+  source_version: AssetVersion;
+}
+  export interface SourcePreviewRaster {
+  height: number;
+  width: number;
+}
+  export interface AssetVersion {
+  content_hash: string;
+  id: string;
+  size: number;
+}
+  export interface SourcePreviewTimeBase {
+  denominator: number;
+  numerator: number;
+}
+  export interface SourcePreviewRuntimeIdentity {
+  decoder: SourcePreviewDecoderIdentity;
+  ffmpeg_sha256: string;
+  ffprobe_sha256: string;
+  host_sha256: string;
+}
+  export interface SourcePreviewDecoderIdentity {
+  decoder_libraries: NativeLibraryIdentity[];
+  platform: NativeSystemIdentity;
+  worker_sha256: string;
+}
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+/**
+ * Audio execution observes its OS/CPU without claiming a graphics or font
+ * subsystem. These are runtime facts, independent of saved project formats.
+ */
+  export interface NativeSystemIdentity {
+  architecture: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
+}
   export interface MediaInfo {
   bit_rate?: number | null;
   duration?: MediaTime | null;
@@ -46873,11 +49052,6 @@ export namespace OpencutAnalysisSpeakerTurnsOutput {
   uri: string;
   version?: AssetVersion | null;
 }
-  export interface AssetVersion {
-  content_hash: string;
-  id: string;
-  size: number;
-}
   export interface AssetAnalysisResult {
   asset_id: string;
   asset_version: LockedAsset;
@@ -46996,22 +49170,6 @@ export namespace OpencutAnalysisSpeakerTurnsOutput {
   content_hash: string;
   mime_type: string;
   size_bytes: string;
-}
-  export interface NativeLibraryIdentity {
-  binary_sha256: string;
-  configuration_sha256: string;
-  name: string;
-  version: string;
-}
-/**
- * Audio execution observes its OS/CPU without claiming a graphics or font
- * subsystem. These are runtime facts, independent of saved project formats.
- */
-  export interface NativeSystemIdentity {
-  architecture: string;
-  kernel_release: string;
-  os: string;
-  system_build: string;
 }
   export interface AudioRangeWavIdentity {
   channels: number;
@@ -47744,11 +49902,15 @@ export namespace OpencutAnalysisTranscribeInput {
 
 export namespace OpencutAnalysisTranscribeOutput {
   export type ArtifactAvailability = 'unchecked';
-  export type ArtifactRole = 'primary';
+  export type ArtifactRole = 'primary' | 'frame_index';
   export type PublicJobStage =
   'resolving_assets' | 'probing' | 'selecting_frame' | 'decoding' | 'encoding' | 'verifying' | 'unknown';
   export type JobPurpose = 'playback_optimization';
   export type JobResultView =
+  | {
+      data: SourcePreviewResult;
+      kind: 'media.preview_source';
+    }
   | {
       data: MediaInfo;
       kind: 'media.probe';
@@ -47857,6 +50019,7 @@ export namespace OpencutAnalysisTranscribeOutput {
       data: VideoRangeResult;
       kind: 'render.video_range';
     };
+  export type SourcePreviewEncoding = 'ffv1_rgba';
   export type StreamKind = 'video' | 'audio' | 'subtitle' | 'data' | 'attachment' | 'unknown';
   export type FrameAlignment = 'exact' | 'nearest' | 'floor' | 'ceil';
   export type FrameQuality = 'accurate_source_frame';
@@ -48214,6 +50377,80 @@ export namespace OpencutAnalysisTranscribeOutput {
   resource_kind: string;
   [k: string]: any;
 }
+  export interface SourcePreviewResult {
+  actual_stream_index: number;
+  actual_track_id: number;
+  encoding: SourcePreviewEncoding;
+  first_source_pts: string;
+  frame_count: string;
+  frame_index: SourcePreviewArtifact;
+  identity: SourcePreviewIdentity;
+  last_source_duration: string;
+  last_source_pts: string;
+  /**
+   * The immutable producer is not relabelled when another revision reuses
+   * the same original bytes, selected track, raster and runtime.
+   */
+  producer_revision: string;
+  proxy_time_base: SourcePreviewTimeBase;
+  runtime: SourcePreviewRuntimeIdentity;
+  source_time_base: SourcePreviewTimeBase;
+  video: SourcePreviewArtifact;
+}
+  export interface SourcePreviewArtifact {
+  content_hash: string;
+  mime_type: string;
+  size_bytes: string;
+}
+  export interface SourcePreviewIdentity {
+  asset_id: string;
+  policy_fingerprint: string;
+  project_id: string;
+  raster_bound: SourcePreviewRaster;
+  runtime_fingerprint: string;
+  selected_video_stream?: number | null;
+  source_version: AssetVersion;
+}
+  export interface SourcePreviewRaster {
+  height: number;
+  width: number;
+}
+  export interface AssetVersion {
+  content_hash: string;
+  id: string;
+  size: number;
+}
+  export interface SourcePreviewTimeBase {
+  denominator: number;
+  numerator: number;
+}
+  export interface SourcePreviewRuntimeIdentity {
+  decoder: SourcePreviewDecoderIdentity;
+  ffmpeg_sha256: string;
+  ffprobe_sha256: string;
+  host_sha256: string;
+}
+  export interface SourcePreviewDecoderIdentity {
+  decoder_libraries: NativeLibraryIdentity[];
+  platform: NativeSystemIdentity;
+  worker_sha256: string;
+}
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+/**
+ * Audio execution observes its OS/CPU without claiming a graphics or font
+ * subsystem. These are runtime facts, independent of saved project formats.
+ */
+  export interface NativeSystemIdentity {
+  architecture: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
+}
   export interface MediaInfo {
   bit_rate?: number | null;
   duration?: MediaTime | null;
@@ -48395,11 +50632,6 @@ export namespace OpencutAnalysisTranscribeOutput {
   uri: string;
   version?: AssetVersion | null;
 }
-  export interface AssetVersion {
-  content_hash: string;
-  id: string;
-  size: number;
-}
   export interface AssetAnalysisResult {
   asset_id: string;
   asset_version: LockedAsset;
@@ -48518,22 +50750,6 @@ export namespace OpencutAnalysisTranscribeOutput {
   content_hash: string;
   mime_type: string;
   size_bytes: string;
-}
-  export interface NativeLibraryIdentity {
-  binary_sha256: string;
-  configuration_sha256: string;
-  name: string;
-  version: string;
-}
-/**
- * Audio execution observes its OS/CPU without claiming a graphics or font
- * subsystem. These are runtime facts, independent of saved project formats.
- */
-  export interface NativeSystemIdentity {
-  architecture: string;
-  kernel_release: string;
-  os: string;
-  system_build: string;
 }
   export interface AudioRangeWavIdentity {
   channels: number;
@@ -49340,11 +51556,15 @@ export namespace OpencutAnalysisSilenceInput {
 
 export namespace OpencutAnalysisSilenceOutput {
   export type ArtifactAvailability = 'unchecked';
-  export type ArtifactRole = 'primary';
+  export type ArtifactRole = 'primary' | 'frame_index';
   export type PublicJobStage =
   'resolving_assets' | 'probing' | 'selecting_frame' | 'decoding' | 'encoding' | 'verifying' | 'unknown';
   export type JobPurpose = 'playback_optimization';
   export type JobResultView =
+  | {
+      data: SourcePreviewResult;
+      kind: 'media.preview_source';
+    }
   | {
       data: MediaInfo;
       kind: 'media.probe';
@@ -49453,6 +51673,7 @@ export namespace OpencutAnalysisSilenceOutput {
       data: VideoRangeResult;
       kind: 'render.video_range';
     };
+  export type SourcePreviewEncoding = 'ffv1_rgba';
   export type StreamKind = 'video' | 'audio' | 'subtitle' | 'data' | 'attachment' | 'unknown';
   export type FrameAlignment = 'exact' | 'nearest' | 'floor' | 'ceil';
   export type FrameQuality = 'accurate_source_frame';
@@ -49810,6 +52031,80 @@ export namespace OpencutAnalysisSilenceOutput {
   resource_kind: string;
   [k: string]: any;
 }
+  export interface SourcePreviewResult {
+  actual_stream_index: number;
+  actual_track_id: number;
+  encoding: SourcePreviewEncoding;
+  first_source_pts: string;
+  frame_count: string;
+  frame_index: SourcePreviewArtifact;
+  identity: SourcePreviewIdentity;
+  last_source_duration: string;
+  last_source_pts: string;
+  /**
+   * The immutable producer is not relabelled when another revision reuses
+   * the same original bytes, selected track, raster and runtime.
+   */
+  producer_revision: string;
+  proxy_time_base: SourcePreviewTimeBase;
+  runtime: SourcePreviewRuntimeIdentity;
+  source_time_base: SourcePreviewTimeBase;
+  video: SourcePreviewArtifact;
+}
+  export interface SourcePreviewArtifact {
+  content_hash: string;
+  mime_type: string;
+  size_bytes: string;
+}
+  export interface SourcePreviewIdentity {
+  asset_id: string;
+  policy_fingerprint: string;
+  project_id: string;
+  raster_bound: SourcePreviewRaster;
+  runtime_fingerprint: string;
+  selected_video_stream?: number | null;
+  source_version: AssetVersion;
+}
+  export interface SourcePreviewRaster {
+  height: number;
+  width: number;
+}
+  export interface AssetVersion {
+  content_hash: string;
+  id: string;
+  size: number;
+}
+  export interface SourcePreviewTimeBase {
+  denominator: number;
+  numerator: number;
+}
+  export interface SourcePreviewRuntimeIdentity {
+  decoder: SourcePreviewDecoderIdentity;
+  ffmpeg_sha256: string;
+  ffprobe_sha256: string;
+  host_sha256: string;
+}
+  export interface SourcePreviewDecoderIdentity {
+  decoder_libraries: NativeLibraryIdentity[];
+  platform: NativeSystemIdentity;
+  worker_sha256: string;
+}
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+/**
+ * Audio execution observes its OS/CPU without claiming a graphics or font
+ * subsystem. These are runtime facts, independent of saved project formats.
+ */
+  export interface NativeSystemIdentity {
+  architecture: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
+}
   export interface MediaInfo {
   bit_rate?: number | null;
   duration?: MediaTime | null;
@@ -49991,11 +52286,6 @@ export namespace OpencutAnalysisSilenceOutput {
   uri: string;
   version?: AssetVersion | null;
 }
-  export interface AssetVersion {
-  content_hash: string;
-  id: string;
-  size: number;
-}
   export interface AssetAnalysisResult {
   asset_id: string;
   asset_version: LockedAsset;
@@ -50114,22 +52404,6 @@ export namespace OpencutAnalysisSilenceOutput {
   content_hash: string;
   mime_type: string;
   size_bytes: string;
-}
-  export interface NativeLibraryIdentity {
-  binary_sha256: string;
-  configuration_sha256: string;
-  name: string;
-  version: string;
-}
-/**
- * Audio execution observes its OS/CPU without claiming a graphics or font
- * subsystem. These are runtime facts, independent of saved project formats.
- */
-  export interface NativeSystemIdentity {
-  architecture: string;
-  kernel_release: string;
-  os: string;
-  system_build: string;
 }
   export interface AudioRangeWavIdentity {
   channels: number;
@@ -50858,11 +53132,15 @@ export namespace OpencutAnalysisShotsInput {
 
 export namespace OpencutAnalysisShotsOutput {
   export type ArtifactAvailability = 'unchecked';
-  export type ArtifactRole = 'primary';
+  export type ArtifactRole = 'primary' | 'frame_index';
   export type PublicJobStage =
   'resolving_assets' | 'probing' | 'selecting_frame' | 'decoding' | 'encoding' | 'verifying' | 'unknown';
   export type JobPurpose = 'playback_optimization';
   export type JobResultView =
+  | {
+      data: SourcePreviewResult;
+      kind: 'media.preview_source';
+    }
   | {
       data: MediaInfo;
       kind: 'media.probe';
@@ -50971,6 +53249,7 @@ export namespace OpencutAnalysisShotsOutput {
       data: VideoRangeResult;
       kind: 'render.video_range';
     };
+  export type SourcePreviewEncoding = 'ffv1_rgba';
   export type StreamKind = 'video' | 'audio' | 'subtitle' | 'data' | 'attachment' | 'unknown';
   export type FrameAlignment = 'exact' | 'nearest' | 'floor' | 'ceil';
   export type FrameQuality = 'accurate_source_frame';
@@ -51328,6 +53607,80 @@ export namespace OpencutAnalysisShotsOutput {
   resource_kind: string;
   [k: string]: any;
 }
+  export interface SourcePreviewResult {
+  actual_stream_index: number;
+  actual_track_id: number;
+  encoding: SourcePreviewEncoding;
+  first_source_pts: string;
+  frame_count: string;
+  frame_index: SourcePreviewArtifact;
+  identity: SourcePreviewIdentity;
+  last_source_duration: string;
+  last_source_pts: string;
+  /**
+   * The immutable producer is not relabelled when another revision reuses
+   * the same original bytes, selected track, raster and runtime.
+   */
+  producer_revision: string;
+  proxy_time_base: SourcePreviewTimeBase;
+  runtime: SourcePreviewRuntimeIdentity;
+  source_time_base: SourcePreviewTimeBase;
+  video: SourcePreviewArtifact;
+}
+  export interface SourcePreviewArtifact {
+  content_hash: string;
+  mime_type: string;
+  size_bytes: string;
+}
+  export interface SourcePreviewIdentity {
+  asset_id: string;
+  policy_fingerprint: string;
+  project_id: string;
+  raster_bound: SourcePreviewRaster;
+  runtime_fingerprint: string;
+  selected_video_stream?: number | null;
+  source_version: AssetVersion;
+}
+  export interface SourcePreviewRaster {
+  height: number;
+  width: number;
+}
+  export interface AssetVersion {
+  content_hash: string;
+  id: string;
+  size: number;
+}
+  export interface SourcePreviewTimeBase {
+  denominator: number;
+  numerator: number;
+}
+  export interface SourcePreviewRuntimeIdentity {
+  decoder: SourcePreviewDecoderIdentity;
+  ffmpeg_sha256: string;
+  ffprobe_sha256: string;
+  host_sha256: string;
+}
+  export interface SourcePreviewDecoderIdentity {
+  decoder_libraries: NativeLibraryIdentity[];
+  platform: NativeSystemIdentity;
+  worker_sha256: string;
+}
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+/**
+ * Audio execution observes its OS/CPU without claiming a graphics or font
+ * subsystem. These are runtime facts, independent of saved project formats.
+ */
+  export interface NativeSystemIdentity {
+  architecture: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
+}
   export interface MediaInfo {
   bit_rate?: number | null;
   duration?: MediaTime | null;
@@ -51509,11 +53862,6 @@ export namespace OpencutAnalysisShotsOutput {
   uri: string;
   version?: AssetVersion | null;
 }
-  export interface AssetVersion {
-  content_hash: string;
-  id: string;
-  size: number;
-}
   export interface AssetAnalysisResult {
   asset_id: string;
   asset_version: LockedAsset;
@@ -51632,22 +53980,6 @@ export namespace OpencutAnalysisShotsOutput {
   content_hash: string;
   mime_type: string;
   size_bytes: string;
-}
-  export interface NativeLibraryIdentity {
-  binary_sha256: string;
-  configuration_sha256: string;
-  name: string;
-  version: string;
-}
-/**
- * Audio execution observes its OS/CPU without claiming a graphics or font
- * subsystem. These are runtime facts, independent of saved project formats.
- */
-  export interface NativeSystemIdentity {
-  architecture: string;
-  kernel_release: string;
-  os: string;
-  system_build: string;
 }
   export interface AudioRangeWavIdentity {
   channels: number;
@@ -52376,11 +54708,15 @@ export namespace OpencutAnalysisWaveformInput {
 
 export namespace OpencutAnalysisWaveformOutput {
   export type ArtifactAvailability = 'unchecked';
-  export type ArtifactRole = 'primary';
+  export type ArtifactRole = 'primary' | 'frame_index';
   export type PublicJobStage =
   'resolving_assets' | 'probing' | 'selecting_frame' | 'decoding' | 'encoding' | 'verifying' | 'unknown';
   export type JobPurpose = 'playback_optimization';
   export type JobResultView =
+  | {
+      data: SourcePreviewResult;
+      kind: 'media.preview_source';
+    }
   | {
       data: MediaInfo;
       kind: 'media.probe';
@@ -52489,6 +54825,7 @@ export namespace OpencutAnalysisWaveformOutput {
       data: VideoRangeResult;
       kind: 'render.video_range';
     };
+  export type SourcePreviewEncoding = 'ffv1_rgba';
   export type StreamKind = 'video' | 'audio' | 'subtitle' | 'data' | 'attachment' | 'unknown';
   export type FrameAlignment = 'exact' | 'nearest' | 'floor' | 'ceil';
   export type FrameQuality = 'accurate_source_frame';
@@ -52846,6 +55183,80 @@ export namespace OpencutAnalysisWaveformOutput {
   resource_kind: string;
   [k: string]: any;
 }
+  export interface SourcePreviewResult {
+  actual_stream_index: number;
+  actual_track_id: number;
+  encoding: SourcePreviewEncoding;
+  first_source_pts: string;
+  frame_count: string;
+  frame_index: SourcePreviewArtifact;
+  identity: SourcePreviewIdentity;
+  last_source_duration: string;
+  last_source_pts: string;
+  /**
+   * The immutable producer is not relabelled when another revision reuses
+   * the same original bytes, selected track, raster and runtime.
+   */
+  producer_revision: string;
+  proxy_time_base: SourcePreviewTimeBase;
+  runtime: SourcePreviewRuntimeIdentity;
+  source_time_base: SourcePreviewTimeBase;
+  video: SourcePreviewArtifact;
+}
+  export interface SourcePreviewArtifact {
+  content_hash: string;
+  mime_type: string;
+  size_bytes: string;
+}
+  export interface SourcePreviewIdentity {
+  asset_id: string;
+  policy_fingerprint: string;
+  project_id: string;
+  raster_bound: SourcePreviewRaster;
+  runtime_fingerprint: string;
+  selected_video_stream?: number | null;
+  source_version: AssetVersion;
+}
+  export interface SourcePreviewRaster {
+  height: number;
+  width: number;
+}
+  export interface AssetVersion {
+  content_hash: string;
+  id: string;
+  size: number;
+}
+  export interface SourcePreviewTimeBase {
+  denominator: number;
+  numerator: number;
+}
+  export interface SourcePreviewRuntimeIdentity {
+  decoder: SourcePreviewDecoderIdentity;
+  ffmpeg_sha256: string;
+  ffprobe_sha256: string;
+  host_sha256: string;
+}
+  export interface SourcePreviewDecoderIdentity {
+  decoder_libraries: NativeLibraryIdentity[];
+  platform: NativeSystemIdentity;
+  worker_sha256: string;
+}
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+/**
+ * Audio execution observes its OS/CPU without claiming a graphics or font
+ * subsystem. These are runtime facts, independent of saved project formats.
+ */
+  export interface NativeSystemIdentity {
+  architecture: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
+}
   export interface MediaInfo {
   bit_rate?: number | null;
   duration?: MediaTime | null;
@@ -53027,11 +55438,6 @@ export namespace OpencutAnalysisWaveformOutput {
   uri: string;
   version?: AssetVersion | null;
 }
-  export interface AssetVersion {
-  content_hash: string;
-  id: string;
-  size: number;
-}
   export interface AssetAnalysisResult {
   asset_id: string;
   asset_version: LockedAsset;
@@ -53150,22 +55556,6 @@ export namespace OpencutAnalysisWaveformOutput {
   content_hash: string;
   mime_type: string;
   size_bytes: string;
-}
-  export interface NativeLibraryIdentity {
-  binary_sha256: string;
-  configuration_sha256: string;
-  name: string;
-  version: string;
-}
-/**
- * Audio execution observes its OS/CPU without claiming a graphics or font
- * subsystem. These are runtime facts, independent of saved project formats.
- */
-  export interface NativeSystemIdentity {
-  architecture: string;
-  kernel_release: string;
-  os: string;
-  system_build: string;
 }
   export interface AudioRangeWavIdentity {
   channels: number;
@@ -53890,11 +56280,15 @@ export namespace OpencutJobRequestCancelInput {
 
 export namespace OpencutJobRequestCancelOutput {
   export type ArtifactAvailability = 'unchecked';
-  export type ArtifactRole = 'primary';
+  export type ArtifactRole = 'primary' | 'frame_index';
   export type PublicJobStage =
   'resolving_assets' | 'probing' | 'selecting_frame' | 'decoding' | 'encoding' | 'verifying' | 'unknown';
   export type JobPurpose = 'playback_optimization';
   export type JobResultView =
+  | {
+      data: SourcePreviewResult;
+      kind: 'media.preview_source';
+    }
   | {
       data: MediaInfo;
       kind: 'media.probe';
@@ -54003,6 +56397,7 @@ export namespace OpencutJobRequestCancelOutput {
       data: VideoRangeResult;
       kind: 'render.video_range';
     };
+  export type SourcePreviewEncoding = 'ffv1_rgba';
   export type StreamKind = 'video' | 'audio' | 'subtitle' | 'data' | 'attachment' | 'unknown';
   export type FrameAlignment = 'exact' | 'nearest' | 'floor' | 'ceil';
   export type FrameQuality = 'accurate_source_frame';
@@ -54360,6 +56755,80 @@ export namespace OpencutJobRequestCancelOutput {
   resource_kind: string;
   [k: string]: any;
 }
+  export interface SourcePreviewResult {
+  actual_stream_index: number;
+  actual_track_id: number;
+  encoding: SourcePreviewEncoding;
+  first_source_pts: string;
+  frame_count: string;
+  frame_index: SourcePreviewArtifact;
+  identity: SourcePreviewIdentity;
+  last_source_duration: string;
+  last_source_pts: string;
+  /**
+   * The immutable producer is not relabelled when another revision reuses
+   * the same original bytes, selected track, raster and runtime.
+   */
+  producer_revision: string;
+  proxy_time_base: SourcePreviewTimeBase;
+  runtime: SourcePreviewRuntimeIdentity;
+  source_time_base: SourcePreviewTimeBase;
+  video: SourcePreviewArtifact;
+}
+  export interface SourcePreviewArtifact {
+  content_hash: string;
+  mime_type: string;
+  size_bytes: string;
+}
+  export interface SourcePreviewIdentity {
+  asset_id: string;
+  policy_fingerprint: string;
+  project_id: string;
+  raster_bound: SourcePreviewRaster;
+  runtime_fingerprint: string;
+  selected_video_stream?: number | null;
+  source_version: AssetVersion;
+}
+  export interface SourcePreviewRaster {
+  height: number;
+  width: number;
+}
+  export interface AssetVersion {
+  content_hash: string;
+  id: string;
+  size: number;
+}
+  export interface SourcePreviewTimeBase {
+  denominator: number;
+  numerator: number;
+}
+  export interface SourcePreviewRuntimeIdentity {
+  decoder: SourcePreviewDecoderIdentity;
+  ffmpeg_sha256: string;
+  ffprobe_sha256: string;
+  host_sha256: string;
+}
+  export interface SourcePreviewDecoderIdentity {
+  decoder_libraries: NativeLibraryIdentity[];
+  platform: NativeSystemIdentity;
+  worker_sha256: string;
+}
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+/**
+ * Audio execution observes its OS/CPU without claiming a graphics or font
+ * subsystem. These are runtime facts, independent of saved project formats.
+ */
+  export interface NativeSystemIdentity {
+  architecture: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
+}
   export interface MediaInfo {
   bit_rate?: number | null;
   duration?: MediaTime | null;
@@ -54541,11 +57010,6 @@ export namespace OpencutJobRequestCancelOutput {
   uri: string;
   version?: AssetVersion | null;
 }
-  export interface AssetVersion {
-  content_hash: string;
-  id: string;
-  size: number;
-}
   export interface AssetAnalysisResult {
   asset_id: string;
   asset_version: LockedAsset;
@@ -54664,22 +57128,6 @@ export namespace OpencutJobRequestCancelOutput {
   content_hash: string;
   mime_type: string;
   size_bytes: string;
-}
-  export interface NativeLibraryIdentity {
-  binary_sha256: string;
-  configuration_sha256: string;
-  name: string;
-  version: string;
-}
-/**
- * Audio execution observes its OS/CPU without claiming a graphics or font
- * subsystem. These are runtime facts, independent of saved project formats.
- */
-  export interface NativeSystemIdentity {
-  architecture: string;
-  kernel_release: string;
-  os: string;
-  system_build: string;
 }
   export interface AudioRangeWavIdentity {
   channels: number;
@@ -60774,6 +63222,28 @@ export namespace OpencutVisualPreviewEditDraftFrameOutput {
       kind: 'effect';
     };
   export type NativeGraphicsApi = 'metal' | 'vulkan' | 'direct_x';
+  export type SourcePreviewUse =
+  | {
+      asset_id: string;
+      element_id: string;
+      job_id?: string | null;
+      kind: 'original';
+      state: SourcePreviewState;
+    }
+  | {
+      element_id: string;
+      /**
+       * None is an observed source gap before the first frame, rather than
+       * a fabricated timestamp or an alternate rendering implementation.
+       */
+      frame?: SourcePreviewFrameSelection | null;
+      job_id: string;
+      kind: 'prepared';
+      source: SourcePreviewResult;
+    };
+  export type SourcePreviewState = 'not_requested' | 'queued' | 'running' | 'failed' | 'cancelled';
+  export type SourcePreviewMatrix = 'bt601' | 'bt709' | 'bt2020' | 'rgb' | 'unspecified';
+  export type SourcePreviewEncoding = 'ffv1_rgba';
   export type VisualDecodeRequest =
   | {
       kind: 'image';
@@ -61210,6 +63680,7 @@ export namespace OpencutVisualPreviewEditDraftFrameOutput {
   peak_worker_rss_bytes: string;
   picture_id: string;
   renderer: NativeVisualIdentity;
+  source_preparation?: SourcePreviewUse[];
   width: number;
 }
   export interface NativeVisualIdentity {
@@ -61240,6 +63711,95 @@ export namespace OpencutVisualPreviewEditDraftFrameOutput {
   export interface NativePlatformIdentity {
   architecture: string;
   font_backend: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
+}
+  export interface SourcePreviewFrameSelection {
+  last_frame: boolean;
+  ordinal: string;
+  proxy_duration: string;
+  proxy_pts: string;
+  source_duration: string;
+  source_pts: string;
+  source_video: SourcePreviewFrameVideo;
+}
+  export interface SourcePreviewFrameVideo {
+  full_range: boolean;
+  has_alpha: boolean;
+  matrix: SourcePreviewMatrix;
+  pixel_aspect_denominator: number;
+  pixel_aspect_numerator: number;
+  raster_height: number;
+  raster_width: number;
+  rotation_degrees: number;
+  source_height: number;
+  source_width: number;
+}
+  export interface SourcePreviewResult {
+  actual_stream_index: number;
+  actual_track_id: number;
+  encoding: SourcePreviewEncoding;
+  first_source_pts: string;
+  frame_count: string;
+  frame_index: SourcePreviewArtifact;
+  identity: SourcePreviewIdentity;
+  last_source_duration: string;
+  last_source_pts: string;
+  /**
+   * The immutable producer is not relabelled when another revision reuses
+   * the same original bytes, selected track, raster and runtime.
+   */
+  producer_revision: string;
+  proxy_time_base: SourcePreviewTimeBase;
+  runtime: SourcePreviewRuntimeIdentity;
+  source_time_base: SourcePreviewTimeBase;
+  video: SourcePreviewArtifact;
+}
+  export interface SourcePreviewArtifact {
+  content_hash: string;
+  mime_type: string;
+  size_bytes: string;
+}
+  export interface SourcePreviewIdentity {
+  asset_id: string;
+  policy_fingerprint: string;
+  project_id: string;
+  raster_bound: SourcePreviewRaster;
+  runtime_fingerprint: string;
+  selected_video_stream?: number | null;
+  source_version: AssetVersion;
+}
+  export interface SourcePreviewRaster {
+  height: number;
+  width: number;
+}
+  export interface AssetVersion {
+  content_hash: string;
+  id: string;
+  size: number;
+}
+  export interface SourcePreviewTimeBase {
+  denominator: number;
+  numerator: number;
+}
+  export interface SourcePreviewRuntimeIdentity {
+  decoder: SourcePreviewDecoderIdentity;
+  ffmpeg_sha256: string;
+  ffprobe_sha256: string;
+  host_sha256: string;
+}
+  export interface SourcePreviewDecoderIdentity {
+  decoder_libraries: NativeLibraryIdentity[];
+  platform: NativeSystemIdentity;
+  worker_sha256: string;
+}
+/**
+ * Audio execution observes its OS/CPU without claiming a graphics or font
+ * subsystem. These are runtime facts, independent of saved project formats.
+ */
+  export interface NativeSystemIdentity {
+  architecture: string;
   kernel_release: string;
   os: string;
   system_build: string;
@@ -64101,6 +66661,86 @@ export namespace OpencutProjectPluginPlanOutput {
   code: string;
   details: any;
   message: string;
+}
+
+}
+
+export namespace JobMediaPreviewSourceResult {
+  export type SourcePreviewEncoding = 'ffv1_rgba';
+
+  export interface SourcePreviewResult {
+  actual_stream_index: number;
+  actual_track_id: number;
+  encoding: SourcePreviewEncoding;
+  first_source_pts: string;
+  frame_count: string;
+  frame_index: SourcePreviewArtifact;
+  identity: SourcePreviewIdentity;
+  last_source_duration: string;
+  last_source_pts: string;
+  /**
+   * The immutable producer is not relabelled when another revision reuses
+   * the same original bytes, selected track, raster and runtime.
+   */
+  producer_revision: string;
+  proxy_time_base: SourcePreviewTimeBase;
+  runtime: SourcePreviewRuntimeIdentity;
+  source_time_base: SourcePreviewTimeBase;
+  video: SourcePreviewArtifact;
+}
+  export interface SourcePreviewArtifact {
+  content_hash: string;
+  mime_type: string;
+  size_bytes: string;
+}
+  export interface SourcePreviewIdentity {
+  asset_id: string;
+  policy_fingerprint: string;
+  project_id: string;
+  raster_bound: SourcePreviewRaster;
+  runtime_fingerprint: string;
+  selected_video_stream?: number | null;
+  source_version: AssetVersion;
+}
+  export interface SourcePreviewRaster {
+  height: number;
+  width: number;
+}
+  export interface AssetVersion {
+  content_hash: string;
+  id: string;
+  size: number;
+}
+  export interface SourcePreviewTimeBase {
+  denominator: number;
+  numerator: number;
+}
+  export interface SourcePreviewRuntimeIdentity {
+  decoder: SourcePreviewDecoderIdentity;
+  ffmpeg_sha256: string;
+  ffprobe_sha256: string;
+  host_sha256: string;
+}
+  export interface SourcePreviewDecoderIdentity {
+  decoder_libraries: NativeLibraryIdentity[];
+  platform: NativeSystemIdentity;
+  worker_sha256: string;
+}
+  export interface NativeLibraryIdentity {
+  binary_sha256: string;
+  configuration_sha256: string;
+  name: string;
+  version: string;
+}
+/**
+ * Audio execution observes its OS/CPU without claiming a graphics or font
+ * subsystem. These are runtime facts, independent of saved project formats.
+ */
+  export interface NativeSystemIdentity {
+  architecture: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
 }
 
 }
@@ -68532,6 +71172,28 @@ export namespace VisualPreviewTransport {
 
 export namespace VisualPreviewPixels {
   export type NativeGraphicsApi = 'metal' | 'vulkan' | 'direct_x';
+  export type SourcePreviewUse =
+  | {
+      asset_id: string;
+      element_id: string;
+      job_id?: string | null;
+      kind: 'original';
+      state: SourcePreviewState;
+    }
+  | {
+      element_id: string;
+      /**
+       * None is an observed source gap before the first frame, rather than
+       * a fabricated timestamp or an alternate rendering implementation.
+       */
+      frame?: SourcePreviewFrameSelection | null;
+      job_id: string;
+      kind: 'prepared';
+      source: SourcePreviewResult;
+    };
+  export type SourcePreviewState = 'not_requested' | 'queued' | 'running' | 'failed' | 'cancelled';
+  export type SourcePreviewMatrix = 'bt601' | 'bt709' | 'bt2020' | 'rgb' | 'unspecified';
+  export type SourcePreviewEncoding = 'ffv1_rgba';
 
   export interface VisualPreviewPicture {
   byte_length: number;
@@ -68541,6 +71203,7 @@ export namespace VisualPreviewPixels {
   peak_worker_rss_bytes: string;
   picture_id: string;
   renderer: NativeVisualIdentity;
+  source_preparation?: SourcePreviewUse[];
   width: number;
 }
   export interface NativeVisualIdentity {
@@ -68571,6 +71234,95 @@ export namespace VisualPreviewPixels {
   export interface NativePlatformIdentity {
   architecture: string;
   font_backend: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
+}
+  export interface SourcePreviewFrameSelection {
+  last_frame: boolean;
+  ordinal: string;
+  proxy_duration: string;
+  proxy_pts: string;
+  source_duration: string;
+  source_pts: string;
+  source_video: SourcePreviewFrameVideo;
+}
+  export interface SourcePreviewFrameVideo {
+  full_range: boolean;
+  has_alpha: boolean;
+  matrix: SourcePreviewMatrix;
+  pixel_aspect_denominator: number;
+  pixel_aspect_numerator: number;
+  raster_height: number;
+  raster_width: number;
+  rotation_degrees: number;
+  source_height: number;
+  source_width: number;
+}
+  export interface SourcePreviewResult {
+  actual_stream_index: number;
+  actual_track_id: number;
+  encoding: SourcePreviewEncoding;
+  first_source_pts: string;
+  frame_count: string;
+  frame_index: SourcePreviewArtifact;
+  identity: SourcePreviewIdentity;
+  last_source_duration: string;
+  last_source_pts: string;
+  /**
+   * The immutable producer is not relabelled when another revision reuses
+   * the same original bytes, selected track, raster and runtime.
+   */
+  producer_revision: string;
+  proxy_time_base: SourcePreviewTimeBase;
+  runtime: SourcePreviewRuntimeIdentity;
+  source_time_base: SourcePreviewTimeBase;
+  video: SourcePreviewArtifact;
+}
+  export interface SourcePreviewArtifact {
+  content_hash: string;
+  mime_type: string;
+  size_bytes: string;
+}
+  export interface SourcePreviewIdentity {
+  asset_id: string;
+  policy_fingerprint: string;
+  project_id: string;
+  raster_bound: SourcePreviewRaster;
+  runtime_fingerprint: string;
+  selected_video_stream?: number | null;
+  source_version: AssetVersion;
+}
+  export interface SourcePreviewRaster {
+  height: number;
+  width: number;
+}
+  export interface AssetVersion {
+  content_hash: string;
+  id: string;
+  size: number;
+}
+  export interface SourcePreviewTimeBase {
+  denominator: number;
+  numerator: number;
+}
+  export interface SourcePreviewRuntimeIdentity {
+  decoder: SourcePreviewDecoderIdentity;
+  ffmpeg_sha256: string;
+  ffprobe_sha256: string;
+  host_sha256: string;
+}
+  export interface SourcePreviewDecoderIdentity {
+  decoder_libraries: NativeLibraryIdentity[];
+  platform: NativeSystemIdentity;
+  worker_sha256: string;
+}
+/**
+ * Audio execution observes its OS/CPU without claiming a graphics or font
+ * subsystem. These are runtime facts, independent of saved project formats.
+ */
+  export interface NativeSystemIdentity {
+  architecture: string;
   kernel_release: string;
   os: string;
   system_build: string;
@@ -69675,6 +72427,28 @@ export namespace VisualPreviewPrepared {
       kind: 'effect';
     };
   export type NativeGraphicsApi = 'metal' | 'vulkan' | 'direct_x';
+  export type SourcePreviewUse =
+  | {
+      asset_id: string;
+      element_id: string;
+      job_id?: string | null;
+      kind: 'original';
+      state: SourcePreviewState;
+    }
+  | {
+      element_id: string;
+      /**
+       * None is an observed source gap before the first frame, rather than
+       * a fabricated timestamp or an alternate rendering implementation.
+       */
+      frame?: SourcePreviewFrameSelection | null;
+      job_id: string;
+      kind: 'prepared';
+      source: SourcePreviewResult;
+    };
+  export type SourcePreviewState = 'not_requested' | 'queued' | 'running' | 'failed' | 'cancelled';
+  export type SourcePreviewMatrix = 'bt601' | 'bt709' | 'bt2020' | 'rgb' | 'unspecified';
+  export type SourcePreviewEncoding = 'ffv1_rgba';
   export type VisualDecodeRequest =
   | {
       kind: 'image';
@@ -70099,6 +72873,7 @@ export namespace VisualPreviewPrepared {
   peak_worker_rss_bytes: string;
   picture_id: string;
   renderer: NativeVisualIdentity;
+  source_preparation?: SourcePreviewUse[];
   width: number;
 }
   export interface NativeVisualIdentity {
@@ -70129,6 +72904,95 @@ export namespace VisualPreviewPrepared {
   export interface NativePlatformIdentity {
   architecture: string;
   font_backend: string;
+  kernel_release: string;
+  os: string;
+  system_build: string;
+}
+  export interface SourcePreviewFrameSelection {
+  last_frame: boolean;
+  ordinal: string;
+  proxy_duration: string;
+  proxy_pts: string;
+  source_duration: string;
+  source_pts: string;
+  source_video: SourcePreviewFrameVideo;
+}
+  export interface SourcePreviewFrameVideo {
+  full_range: boolean;
+  has_alpha: boolean;
+  matrix: SourcePreviewMatrix;
+  pixel_aspect_denominator: number;
+  pixel_aspect_numerator: number;
+  raster_height: number;
+  raster_width: number;
+  rotation_degrees: number;
+  source_height: number;
+  source_width: number;
+}
+  export interface SourcePreviewResult {
+  actual_stream_index: number;
+  actual_track_id: number;
+  encoding: SourcePreviewEncoding;
+  first_source_pts: string;
+  frame_count: string;
+  frame_index: SourcePreviewArtifact;
+  identity: SourcePreviewIdentity;
+  last_source_duration: string;
+  last_source_pts: string;
+  /**
+   * The immutable producer is not relabelled when another revision reuses
+   * the same original bytes, selected track, raster and runtime.
+   */
+  producer_revision: string;
+  proxy_time_base: SourcePreviewTimeBase;
+  runtime: SourcePreviewRuntimeIdentity;
+  source_time_base: SourcePreviewTimeBase;
+  video: SourcePreviewArtifact;
+}
+  export interface SourcePreviewArtifact {
+  content_hash: string;
+  mime_type: string;
+  size_bytes: string;
+}
+  export interface SourcePreviewIdentity {
+  asset_id: string;
+  policy_fingerprint: string;
+  project_id: string;
+  raster_bound: SourcePreviewRaster;
+  runtime_fingerprint: string;
+  selected_video_stream?: number | null;
+  source_version: AssetVersion;
+}
+  export interface SourcePreviewRaster {
+  height: number;
+  width: number;
+}
+  export interface AssetVersion {
+  content_hash: string;
+  id: string;
+  size: number;
+}
+  export interface SourcePreviewTimeBase {
+  denominator: number;
+  numerator: number;
+}
+  export interface SourcePreviewRuntimeIdentity {
+  decoder: SourcePreviewDecoderIdentity;
+  ffmpeg_sha256: string;
+  ffprobe_sha256: string;
+  host_sha256: string;
+}
+  export interface SourcePreviewDecoderIdentity {
+  decoder_libraries: NativeLibraryIdentity[];
+  platform: NativeSystemIdentity;
+  worker_sha256: string;
+}
+/**
+ * Audio execution observes its OS/CPU without claiming a graphics or font
+ * subsystem. These are runtime facts, independent of saved project formats.
+ */
+  export interface NativeSystemIdentity {
+  architecture: string;
   kernel_release: string;
   os: string;
   system_build: string;
@@ -70371,6 +73235,7 @@ export interface ToolMap {
   opencut_source_art_evidence_cancel: { input: OpencutSourceArtEvidenceCancelInput.SourceArtCancel; output: NonNullable<OpencutSourceArtEvidenceCancelOutput.Response["data"]> };
   opencut_source_art_evidence: { input: OpencutSourceArtEvidenceInput.SourceEvidenceRequest; output: NonNullable<OpencutSourceArtEvidenceOutput.Response["data"]> };
   opencut_source_art_get: { input: OpencutSourceArtGetInput.SourceArtRequest; output: NonNullable<OpencutSourceArtGetOutput.Response["data"]> };
+  opencut_source_preview_prepare: { input: OpencutSourcePreviewPrepareInput.SourcePreviewPrepare; output: NonNullable<OpencutSourcePreviewPrepareOutput.Response["data"]> };
   opencut_source_art_cancel: { input: OpencutSourceArtCancelInput.SourceArtCancel; output: NonNullable<OpencutSourceArtCancelOutput.Response["data"]> };
   opencut_source_art_waveform_display_get: { input: OpencutSourceArtWaveformDisplayGetInput.SourceArtWaveformDisplayRequest; output: NonNullable<OpencutSourceArtWaveformDisplayGetOutput.Response["data"]> };
   opencut_audio_preview_recovery_stage: { input: OpencutAudioPreviewRecoveryStageInput.StageAudioPreviewRecovery; output: NonNullable<OpencutAudioPreviewRecoveryStageOutput.Response["data"]> };
@@ -70587,6 +73452,7 @@ export interface DomainMap {
     "media.map.time": ToolMap["opencut_media_map_time"];
     "source.art.frame": ToolMap["opencut_source_art_frame"];
     "source.art.get": ToolMap["opencut_source_art_get"];
+    "media.preview.prepare": ToolMap["opencut_source_preview_prepare"];
     "source.art.cancel": ToolMap["opencut_source_art_cancel"];
     "source.art.waveform.display.get": ToolMap["opencut_source_art_waveform_display_get"];
     "upload.begin": ToolMap["opencut_upload_begin"];
@@ -70811,6 +73677,7 @@ export const domainActions = {
     "media.map.time",
     "source.art.frame",
     "source.art.get",
+    "media.preview.prepare",
     "source.art.cancel",
     "source.art.waveform.display.get",
     "upload.begin",
@@ -70947,6 +73814,7 @@ export const domainActions = {
   ]
 } as const;
 export interface JobResultMap {
+  "media.preview_source": JobMediaPreviewSourceResult.SourcePreviewResult;
   "media.probe": JobMediaProbeResult.MediaInfo;
   "preview.frame": JobPreviewFrameResult.SourceFrameView;
   "preview.project_frame": JobPreviewProjectFrameResult.ProjectFrameView;
@@ -71020,6 +73888,7 @@ export const toolNames = [
   "opencut_source_art_evidence_cancel",
   "opencut_source_art_evidence",
   "opencut_source_art_get",
+  "opencut_source_preview_prepare",
   "opencut_source_art_cancel",
   "opencut_source_art_waveform_display_get",
   "opencut_audio_preview_recovery_stage",

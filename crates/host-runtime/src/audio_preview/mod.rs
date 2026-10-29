@@ -485,6 +485,7 @@ pub(crate) fn acquire(
             state.text_coverage = None;
             state.resources.clear();
             state.authority = trusted(&host.caller);
+            state.source_plan = None;
         } else {
             host.app.revalidate_audio_preview(
                 &e.request.project_id,

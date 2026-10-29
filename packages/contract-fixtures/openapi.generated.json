@@ -1728,6 +1728,45 @@
         }
       }
     },
+    "/api/tools/opencut_source_preview_prepare": {
+      "post": {
+        "operationId": "opencut_source_preview_prepare",
+        "description": "Prepare or reuse source-only lossless 540p video artifacts and exact frame indexes for a fixed editor scene. Uses live read/run_jobs authority and the shared durable queue. Original source bytes remain authoritative for export; no project mutation or rendering backend selection.",
+        "x-opencut-read-only": false,
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OpencutSourcePreviewPrepareInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OpenCut response envelope; inspect error.code on failure.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpencutSourcePreviewPrepareOutput"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "OpenCut response envelope; inspect error.code on failure.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpencutSourcePreviewPrepareOutput"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/tools/opencut_source_art_cancel": {
       "post": {
         "operationId": "opencut_source_art_cancel",
@@ -8583,6 +8622,7 @@
           "media.map.time": "opencut_media_map_time",
           "source.art.frame": "opencut_source_art_frame",
           "source.art.get": "opencut_source_art_get",
+          "media.preview.prepare": "opencut_source_preview_prepare",
           "source.art.cancel": "opencut_source_art_cancel",
           "source.art.waveform.display.get": "opencut_source_art_waveform_display_get",
           "upload.begin": "opencut_upload_begin",
@@ -8662,6 +8702,22 @@
                       },
                       "input": {
                         "$ref": "#/components/schemas/OpencutSourceArtGetInput"
+                      }
+                    },
+                    "required": [
+                      "action",
+                      "input"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "action": {
+                        "const": "media.preview.prepare"
+                      },
+                      "input": {
+                        "$ref": "#/components/schemas/OpencutSourcePreviewPrepareInput"
                       }
                     },
                     "required": [
@@ -8949,6 +9005,9 @@
                     },
                     {
                       "$ref": "#/components/schemas/OpencutSourceArtGetOutput"
+                    },
+                    {
+                      "$ref": "#/components/schemas/OpencutSourcePreviewPrepareOutput"
                     },
                     {
                       "$ref": "#/components/schemas/OpencutSourceArtCancelOutput"
@@ -18343,7 +18402,8 @@
           },
           "ArtifactRole": {
             "enum": [
-              "primary"
+              "primary",
+              "frame_index"
             ],
             "type": "string"
           },
@@ -20806,6 +20866,23 @@
           },
           "JobResultView": {
             "oneOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "data": {
+                    "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewResult"
+                  },
+                  "kind": {
+                    "const": "media.preview_source",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "data"
+                ],
+                "type": "object"
+              },
               {
                 "additionalProperties": false,
                 "properties": {
@@ -23326,6 +23403,193 @@
               "quality"
             ],
             "type": "object"
+          },
+          "SourcePreviewArtifact": {
+            "additionalProperties": false,
+            "properties": {
+              "content_hash": {
+                "type": "string"
+              },
+              "mime_type": {
+                "type": "string"
+              },
+              "size_bytes": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "content_hash",
+              "size_bytes",
+              "mime_type"
+            ],
+            "type": "object"
+          },
+          "SourcePreviewDecoderIdentity": {
+            "additionalProperties": false,
+            "properties": {
+              "decoder_libraries": {
+                "items": {
+                  "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/NativeLibraryIdentity"
+                },
+                "type": "array"
+              },
+              "platform": {
+                "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/NativeSystemIdentity"
+              },
+              "worker_sha256": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "worker_sha256",
+              "decoder_libraries",
+              "platform"
+            ],
+            "type": "object"
+          },
+          "SourcePreviewEncoding": {
+            "enum": [
+              "ffv1_rgba"
+            ],
+            "type": "string"
+          },
+          "SourcePreviewIdentity": {
+            "additionalProperties": false,
+            "properties": {
+              "asset_id": {
+                "type": "string"
+              },
+              "policy_fingerprint": {
+                "type": "string"
+              },
+              "project_id": {
+                "type": "string"
+              },
+              "raster_bound": {
+                "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewRaster"
+              },
+              "runtime_fingerprint": {
+                "type": "string"
+              },
+              "selected_video_stream": {
+                "format": "uint32",
+                "minimum": 0,
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "source_version": {
+                "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/AssetVersion"
+              }
+            },
+            "required": [
+              "project_id",
+              "asset_id",
+              "source_version",
+              "raster_bound",
+              "runtime_fingerprint",
+              "policy_fingerprint"
+            ],
+            "type": "object"
+          },
+          "SourcePreviewRaster": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/CanvasSize"
+          },
+          "SourcePreviewResult": {
+            "additionalProperties": false,
+            "properties": {
+              "actual_stream_index": {
+                "format": "uint32",
+                "minimum": 0,
+                "type": "integer"
+              },
+              "actual_track_id": {
+                "format": "int32",
+                "type": "integer"
+              },
+              "encoding": {
+                "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewEncoding"
+              },
+              "first_source_pts": {
+                "type": "string"
+              },
+              "frame_count": {
+                "type": "string"
+              },
+              "frame_index": {
+                "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewArtifact"
+              },
+              "identity": {
+                "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewIdentity"
+              },
+              "last_source_duration": {
+                "type": "string"
+              },
+              "last_source_pts": {
+                "type": "string"
+              },
+              "producer_revision": {
+                "description": "The immutable producer is not relabelled when another revision reuses\nthe same original bytes, selected track, raster and runtime.",
+                "type": "string"
+              },
+              "proxy_time_base": {
+                "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewTimeBase"
+              },
+              "runtime": {
+                "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewRuntimeIdentity"
+              },
+              "source_time_base": {
+                "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewTimeBase"
+              },
+              "video": {
+                "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewArtifact"
+              }
+            },
+            "required": [
+              "identity",
+              "producer_revision",
+              "actual_stream_index",
+              "actual_track_id",
+              "source_time_base",
+              "proxy_time_base",
+              "encoding",
+              "frame_count",
+              "first_source_pts",
+              "last_source_pts",
+              "last_source_duration",
+              "video",
+              "frame_index",
+              "runtime"
+            ],
+            "type": "object"
+          },
+          "SourcePreviewRuntimeIdentity": {
+            "additionalProperties": false,
+            "properties": {
+              "decoder": {
+                "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewDecoderIdentity"
+              },
+              "ffmpeg_sha256": {
+                "type": "string"
+              },
+              "ffprobe_sha256": {
+                "type": "string"
+              },
+              "host_sha256": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "host_sha256",
+              "decoder",
+              "ffmpeg_sha256",
+              "ffprobe_sha256"
+            ],
+            "type": "object"
+          },
+          "SourcePreviewTimeBase": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/FrameRate"
           },
           "SpeakerTurn": {
             "additionalProperties": false,
@@ -30612,6 +30876,9 @@
       },
       "OpencutVisualPreviewFrameOutput": {
         "$defs": {
+          "AssetVersion": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/AssetVersion"
+          },
           "BlendFramePlan": {
             "additionalProperties": false,
             "properties": {
@@ -31384,6 +31651,9 @@
           "NativePlatformIdentity": {
             "$ref": "#/components/schemas/OpencutQualityInspectOutput/$defs/NativePlatformIdentity"
           },
+          "NativeSystemIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/NativeSystemIdentity"
+          },
           "NativeVisualIdentity": {
             "additionalProperties": false,
             "properties": {
@@ -31593,6 +31863,218 @@
               "font"
             ],
             "type": "object"
+          },
+          "SourcePreviewArtifact": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewArtifact"
+          },
+          "SourcePreviewDecoderIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewDecoderIdentity"
+          },
+          "SourcePreviewEncoding": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewEncoding"
+          },
+          "SourcePreviewFrameSelection": {
+            "additionalProperties": false,
+            "properties": {
+              "last_frame": {
+                "type": "boolean"
+              },
+              "ordinal": {
+                "type": "string"
+              },
+              "proxy_duration": {
+                "type": "string"
+              },
+              "proxy_pts": {
+                "type": "string"
+              },
+              "source_duration": {
+                "type": "string"
+              },
+              "source_pts": {
+                "type": "string"
+              },
+              "source_video": {
+                "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/SourcePreviewFrameVideo"
+              }
+            },
+            "required": [
+              "ordinal",
+              "source_pts",
+              "source_duration",
+              "proxy_pts",
+              "proxy_duration",
+              "source_video",
+              "last_frame"
+            ],
+            "type": "object"
+          },
+          "SourcePreviewFrameVideo": {
+            "additionalProperties": false,
+            "properties": {
+              "full_range": {
+                "type": "boolean"
+              },
+              "has_alpha": {
+                "type": "boolean"
+              },
+              "matrix": {
+                "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/SourcePreviewMatrix"
+              },
+              "pixel_aspect_denominator": {
+                "format": "int32",
+                "type": "integer"
+              },
+              "pixel_aspect_numerator": {
+                "format": "int32",
+                "type": "integer"
+              },
+              "raster_height": {
+                "format": "uint32",
+                "minimum": 0,
+                "type": "integer"
+              },
+              "raster_width": {
+                "format": "uint32",
+                "minimum": 0,
+                "type": "integer"
+              },
+              "rotation_degrees": {
+                "format": "uint16",
+                "maximum": 65535,
+                "minimum": 0,
+                "type": "integer"
+              },
+              "source_height": {
+                "format": "uint32",
+                "minimum": 0,
+                "type": "integer"
+              },
+              "source_width": {
+                "format": "uint32",
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "source_width",
+              "source_height",
+              "raster_width",
+              "raster_height",
+              "rotation_degrees",
+              "pixel_aspect_numerator",
+              "pixel_aspect_denominator",
+              "matrix",
+              "full_range",
+              "has_alpha"
+            ],
+            "type": "object"
+          },
+          "SourcePreviewIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewIdentity"
+          },
+          "SourcePreviewMatrix": {
+            "enum": [
+              "bt601",
+              "bt709",
+              "bt2020",
+              "rgb",
+              "unspecified"
+            ],
+            "type": "string"
+          },
+          "SourcePreviewRaster": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/CanvasSize"
+          },
+          "SourcePreviewResult": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewResult"
+          },
+          "SourcePreviewRuntimeIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewRuntimeIdentity"
+          },
+          "SourcePreviewState": {
+            "enum": [
+              "not_requested",
+              "queued",
+              "running",
+              "failed",
+              "cancelled"
+            ],
+            "type": "string"
+          },
+          "SourcePreviewTimeBase": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/FrameRate"
+          },
+          "SourcePreviewUse": {
+            "oneOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "asset_id": {
+                    "type": "string"
+                  },
+                  "element_id": {
+                    "type": "string"
+                  },
+                  "job_id": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "kind": {
+                    "const": "original",
+                    "type": "string"
+                  },
+                  "state": {
+                    "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/SourcePreviewState"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "element_id",
+                  "asset_id",
+                  "state"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "element_id": {
+                    "type": "string"
+                  },
+                  "frame": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/SourcePreviewFrameSelection"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "None is an observed source gap before the first frame, rather than\na fabricated timestamp or an alternate rendering implementation."
+                  },
+                  "job_id": {
+                    "type": "string"
+                  },
+                  "kind": {
+                    "const": "prepared",
+                    "type": "string"
+                  },
+                  "source": {
+                    "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/SourcePreviewResult"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "element_id",
+                  "job_id",
+                  "source"
+                ],
+                "type": "object"
+              }
+            ]
           },
           "Stroke": {
             "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/Stroke"
@@ -32026,6 +32508,12 @@
               },
               "renderer": {
                 "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/NativeVisualIdentity"
+              },
+              "source_preparation": {
+                "items": {
+                  "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/SourcePreviewUse"
+                },
+                "type": "array"
               },
               "width": {
                 "format": "uint32",
@@ -33246,6 +33734,640 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/OpencutSourceArtGetOutput/$defs/EditorError"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "request_id": {
+            "type": "string"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "request_id",
+          "warnings"
+        ],
+        "title": "Response",
+        "type": "object"
+      },
+      "OpencutSourcePreviewPrepareInput": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": false,
+        "properties": {
+          "asset_id": {
+            "description": "Omitted to prepare the sequence's participating video assets.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "project_id": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "string"
+          },
+          "selected_video_stream": {
+            "format": "uint32",
+            "minimum": 0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "sequence_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "revision",
+          "sequence_id"
+        ],
+        "title": "SourcePreviewPrepare",
+        "type": "object"
+      },
+      "OpencutSourcePreviewPrepareOutput": {
+        "$defs": {
+          "ArtifactAvailability": {
+            "$ref": "#/components/schemas/OpencutQualityInspectOutput/$defs/ArtifactAvailability"
+          },
+          "ArtifactReference": {
+            "$ref": "#/components/schemas/OpencutQualityInspectOutput/$defs/ArtifactReference"
+          },
+          "ArtifactRole": {
+            "$ref": "#/components/schemas/OpencutQualityInspectOutput/$defs/ArtifactRole"
+          },
+          "Asset": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/Asset"
+          },
+          "AssetAnalysisData": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/AssetAnalysisData"
+          },
+          "AssetAnalysisOptions": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetInput/$defs/AssetAnalysisOptions"
+          },
+          "AssetAnalysisResult": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/AssetAnalysisResult"
+          },
+          "AssetKind": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/AssetKind"
+          },
+          "AssetLockManifest": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/AssetLockManifest"
+          },
+          "AssetLockingMode": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/AssetLockingMode"
+          },
+          "AssetVersion": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/AssetVersion"
+          },
+          "AudioArtifactMetadata": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/AudioArtifactMetadata"
+          },
+          "AudioDecoderProfile": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/AudioDecoderProfile"
+          },
+          "AudioExecutionSummary": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/AudioExecutionSummary"
+          },
+          "AudioMasteringProfile": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/AudioMasteringProfile"
+          },
+          "AudioPitchProfile": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/AudioPitchProfile"
+          },
+          "AudioProfile": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/AudioProfile"
+          },
+          "AudioRangeWavIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/AudioRangeWavIdentity"
+          },
+          "AudioRenderResult": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/AudioRenderResult"
+          },
+          "AudioSampleFormat": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/AudioSampleFormat"
+          },
+          "AudioSampleRange": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/AudioSampleRange"
+          },
+          "BlendFrameIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/BlendFrameIdentity"
+          },
+          "BlendFrameProfile": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/BlendFrameProfile"
+          },
+          "BlendFrameResult": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/BlendFrameResult"
+          },
+          "BlendMode": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/BlendMode"
+          },
+          "BlendVideoIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/BlendVideoIdentity"
+          },
+          "BlendVideoProfile": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/BlendVideoProfile"
+          },
+          "BlendVideoResult": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/BlendVideoResult"
+          },
+          "BoxMaskGeometry": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/BoxMaskGeometry"
+          },
+          "CaptionFrameIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/CaptionFrameIdentity"
+          },
+          "CaptionFrameProfile": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/CaptionFrameProfile"
+          },
+          "CaptionFrameResult": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/CaptionFrameResult"
+          },
+          "CaptionLayoutReceipt": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/CaptionLayoutReceipt"
+          },
+          "CaptionVideoIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/CaptionVideoIdentity"
+          },
+          "CaptionVideoProfile": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/CaptionVideoProfile"
+          },
+          "CaptionVideoResult": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/CaptionVideoResult"
+          },
+          "CaptionWrapMeasurement": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/CaptionWrapMeasurement"
+          },
+          "Color": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/Color"
+          },
+          "ColorEncoding": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/ColorEncoding"
+          },
+          "CompositedFrameView": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/CompositedFrameView"
+          },
+          "CompositedProjectFrameQuality": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/CompositedProjectFrameQuality"
+          },
+          "DecodedSample": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/DecodedSample"
+          },
+          "EditorError": {
+            "$ref": "#/components/schemas/OpencutFontCatalogOutput/$defs/EditorError"
+          },
+          "EffectKind": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/EffectKind"
+          },
+          "ExportFormat": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportFormat"
+          },
+          "ExportQuality": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportQuality"
+          },
+          "ExportRangeMapping": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportRangeMapping"
+          },
+          "ExportVideoEncoderSummary": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportVideoEncoderSummary"
+          },
+          "ExportVideoExecution": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportVideoExecution"
+          },
+          "ExportVideoIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportVideoIdentity"
+          },
+          "ExportVideoOptions": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportVideoOptions"
+          },
+          "ExportVideoRates": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportVideoRates"
+          },
+          "ExportView": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportView"
+          },
+          "ExportVisualProfile": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportVisualProfile"
+          },
+          "FontBinding": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/FontBinding"
+          },
+          "FontFaceView": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/FontFaceView"
+          },
+          "FontLock": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/FontLock"
+          },
+          "FontResolutionPolicy": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/FontResolutionPolicy"
+          },
+          "FontResolutionPolicy2": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/FontResolutionPolicy"
+          },
+          "FontSize": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/FontSize"
+          },
+          "FontStyle": {
+            "$ref": "#/components/schemas/OpencutFontCatalogOutput/$defs/FontStyle"
+          },
+          "FontWeight": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/FontWeight"
+          },
+          "FrameAlignment": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/FrameAlignment"
+          },
+          "FrameQuality": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/FrameQuality"
+          },
+          "FrameRate": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/FrameRate"
+          },
+          "FrameRate2": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/FrameRate"
+          },
+          "FreeformMask": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/FreeformMask"
+          },
+          "FreeformPoint": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/FreeformPoint"
+          },
+          "GraphicFrameIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/GraphicFrameIdentity"
+          },
+          "GraphicFrameProfile": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/GraphicFrameProfile"
+          },
+          "GraphicFrameResult": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/GraphicFrameResult"
+          },
+          "GraphicRasterReceipt": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/GraphicRasterReceipt"
+          },
+          "GraphicVideoIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/GraphicVideoIdentity"
+          },
+          "GraphicVideoProfile": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/GraphicVideoProfile"
+          },
+          "GraphicVideoResult": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/GraphicVideoResult"
+          },
+          "JobPurpose": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/JobPurpose"
+          },
+          "JobResourceTarget": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/JobResourceTarget"
+          },
+          "JobResultView": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/JobResultView"
+          },
+          "JobState": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/JobState"
+          },
+          "JobView": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/JobView"
+          },
+          "LayerBlend": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/LayerBlend"
+          },
+          "LayerMask": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/LayerMask"
+          },
+          "LayerMaskShape": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/LayerMaskShape"
+          },
+          "LockedAsset": {
+            "$ref": "#/components/schemas/OpencutMediaContentSearchOutput/$defs/LockedAsset"
+          },
+          "Mask": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/Mask"
+          },
+          "MaskFeather": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/MaskFeather"
+          },
+          "MaskFrameIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/MaskFrameIdentity"
+          },
+          "MaskFrameProfile": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/MaskFrameProfile"
+          },
+          "MaskFrameResult": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/MaskFrameResult"
+          },
+          "MaskVideoIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/MaskVideoIdentity"
+          },
+          "MaskVideoProfile": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/MaskVideoProfile"
+          },
+          "MaskVideoResult": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/MaskVideoResult"
+          },
+          "MediaFrameArtifactMetadata": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/AudioArtifactMetadata"
+          },
+          "MediaFrameExecutionSummary": {
+            "$ref": "#/components/schemas/OpencutQualityInspectOutput/$defs/MediaFrameExecutionSummary"
+          },
+          "MediaFrameIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/MediaFrameIdentity"
+          },
+          "MediaFrameNoSourceReason": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/MediaFrameNoSourceReason"
+          },
+          "MediaFrameProfile": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/MediaFrameProfile"
+          },
+          "MediaFrameResult": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/MediaFrameResult"
+          },
+          "MediaFrameSourceObservation": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/MediaFrameSourceObservation"
+          },
+          "MediaImportJobResult": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/MediaImportJobResult"
+          },
+          "MediaInfo": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/MediaInfo"
+          },
+          "MediaStream": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/MediaStream"
+          },
+          "MediaTime": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/Time"
+          },
+          "MediaVideoEncoderSummary": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/MediaVideoEncoderSummary"
+          },
+          "MediaVideoExecutionSummary": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/MediaVideoExecutionSummary"
+          },
+          "MediaVideoIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/MediaVideoIdentity"
+          },
+          "MediaVideoProfile": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/MediaVideoProfile"
+          },
+          "MediaVideoResult": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/MediaVideoResult"
+          },
+          "NativeGraphicsApi": {
+            "$ref": "#/components/schemas/OpencutQualityInspectOutput/$defs/NativeGraphicsApi"
+          },
+          "NativeLibraryIdentity": {
+            "$ref": "#/components/schemas/OpencutQualityInspectOutput/$defs/NativeLibraryIdentity"
+          },
+          "NativePlatformIdentity": {
+            "$ref": "#/components/schemas/OpencutQualityInspectOutput/$defs/NativePlatformIdentity"
+          },
+          "NativeSystemIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/NativeSystemIdentity"
+          },
+          "PixelBounds": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/PixelBounds"
+          },
+          "ProgressView": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ProgressView"
+          },
+          "ProjectFrameQuality": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ProjectFrameQuality"
+          },
+          "ProjectFrameView": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ProjectFrameView"
+          },
+          "ProjectRangeQuality": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ProjectRangeQuality"
+          },
+          "ProjectRangeView": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ProjectRangeView"
+          },
+          "ProjectRenderView": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ProjectRenderView"
+          },
+          "ProjectTaskTarget": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ProjectTaskTarget"
+          },
+          "PublicJobFailure": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/PublicJobFailure"
+          },
+          "PublicJobStage": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/PublicJobStage"
+          },
+          "RasterResolution": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/RasterResolution"
+          },
+          "SceneBackground": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SceneBackground"
+          },
+          "SceneEffect": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/SceneEffect"
+          },
+          "SceneFrameIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SceneFrameIdentity"
+          },
+          "SceneFrameProfile": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SceneFrameProfile"
+          },
+          "SceneFrameResult": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SceneFrameResult"
+          },
+          "SceneLayerStack": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SceneLayerStack"
+          },
+          "SceneStep": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SceneStep"
+          },
+          "SceneTranscriptionResult": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SceneTranscriptionResult"
+          },
+          "SceneVideoIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SceneVideoIdentity"
+          },
+          "SceneVideoProfile": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SceneVideoProfile"
+          },
+          "SceneVideoResult": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SceneVideoResult"
+          },
+          "ShotBoundary": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ShotBoundary"
+          },
+          "ShotsResult": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ShotsResult"
+          },
+          "SilenceInterval": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SilenceInterval"
+          },
+          "SilenceResult": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SilenceResult"
+          },
+          "SourceFrameView": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourceFrameView"
+          },
+          "SourcePreviewArtifact": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewArtifact"
+          },
+          "SourcePreviewDecoderIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewDecoderIdentity"
+          },
+          "SourcePreviewEncoding": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewEncoding"
+          },
+          "SourcePreviewIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewIdentity"
+          },
+          "SourcePreviewPreparation": {
+            "additionalProperties": false,
+            "properties": {
+              "jobs": {
+                "items": {
+                  "$ref": "#/components/schemas/OpencutSourcePreviewPrepareOutput/$defs/JobView"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "jobs"
+            ],
+            "type": "object"
+          },
+          "SourcePreviewRaster": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/CanvasSize"
+          },
+          "SourcePreviewResult": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewResult"
+          },
+          "SourcePreviewRuntimeIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewRuntimeIdentity"
+          },
+          "SourcePreviewTimeBase": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/FrameRate"
+          },
+          "SpeakerTurn": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SpeakerTurn"
+          },
+          "SpeakerTurnsResult": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SpeakerTurnsResult"
+          },
+          "StreamKind": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/StreamKind"
+          },
+          "Stroke": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/Stroke"
+          },
+          "StrokeAlign": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/StrokeAlign"
+          },
+          "TextBackgroundRect": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextBackgroundRect"
+          },
+          "TextBlockMetrics": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextBlockMetrics"
+          },
+          "TextClusterRange": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextClusterRange"
+          },
+          "TextDecoration": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/TextDecoration"
+          },
+          "TextFrameJobIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextFrameJobIdentity"
+          },
+          "TextFrameProfile": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextFrameProfile"
+          },
+          "TextFrameResult": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextFrameResult"
+          },
+          "TextLayout": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextLayout"
+          },
+          "TextLayoutView": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextLayoutView"
+          },
+          "TextLineMetrics": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextLineMetrics"
+          },
+          "TextMask": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextMask"
+          },
+          "TextRasterReceipt": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextRasterReceipt"
+          },
+          "TextRasterTransform": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextRasterTransform"
+          },
+          "TextRect": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TextRect"
+          },
+          "Time": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/Time"
+          },
+          "TimeRange": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/TimeRange"
+          },
+          "TranscriptionResult": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TranscriptionResult"
+          },
+          "TranscriptionSegment": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TranscriptionSegment"
+          },
+          "TranscriptionWord": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/TranscriptionWord"
+          },
+          "VerificationCheckView": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/VerificationCheckView"
+          },
+          "VerificationView": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/VerificationView"
+          },
+          "VideoEncoderBackend": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/VideoEncoderBackend"
+          },
+          "VideoExportResult": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/VideoExportResult"
+          },
+          "VideoFrameRange": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/VideoFrameRange"
+          },
+          "VideoRangeResult": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/VideoRangeResult"
+          },
+          "WaveformBucket": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/WaveformBucket"
+          },
+          "WaveformResult": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/WaveformResult"
+          },
+          "WordTimingStatus": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/WordTimingStatus"
+          }
+        },
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OpencutSourcePreviewPrepareOutput/$defs/SourcePreviewPreparation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OpencutSourcePreviewPrepareOutput/$defs/EditorError"
               },
               {
                 "type": "null"
@@ -41034,6 +42156,23 @@
                 "additionalProperties": false,
                 "properties": {
                   "data": {
+                    "$ref": "#/components/schemas/OpencutResourceReadOutput/$defs/SourcePreviewResult"
+                  },
+                  "kind": {
+                    "const": "media.preview_source",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "data"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "data": {
                     "$ref": "#/components/schemas/OpencutResourceReadOutput/$defs/MediaInfo"
                   },
                   "kind": {
@@ -43571,6 +44710,30 @@
             ],
             "type": "object"
           },
+          "SourcePreviewArtifact": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewArtifact"
+          },
+          "SourcePreviewDecoderIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewDecoderIdentity"
+          },
+          "SourcePreviewEncoding": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewEncoding"
+          },
+          "SourcePreviewIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewIdentity"
+          },
+          "SourcePreviewRaster": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/CanvasSize"
+          },
+          "SourcePreviewResult": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewResult"
+          },
+          "SourcePreviewRuntimeIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewRuntimeIdentity"
+          },
+          "SourcePreviewTimeBase": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/FrameRate"
+          },
           "SpeakerTurn": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SpeakerTurn"
           },
@@ -44893,6 +46056,30 @@
           "SourceFrameView": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourceFrameView"
           },
+          "SourcePreviewArtifact": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewArtifact"
+          },
+          "SourcePreviewDecoderIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewDecoderIdentity"
+          },
+          "SourcePreviewEncoding": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewEncoding"
+          },
+          "SourcePreviewIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewIdentity"
+          },
+          "SourcePreviewRaster": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewRaster"
+          },
+          "SourcePreviewResult": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewResult"
+          },
+          "SourcePreviewRuntimeIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewRuntimeIdentity"
+          },
+          "SourcePreviewTimeBase": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewTimeBase"
+          },
           "SpeakerTurn": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SpeakerTurn"
           },
@@ -45452,6 +46639,30 @@
           },
           "SourceFrameView": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourceFrameView"
+          },
+          "SourcePreviewArtifact": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewArtifact"
+          },
+          "SourcePreviewDecoderIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewDecoderIdentity"
+          },
+          "SourcePreviewEncoding": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewEncoding"
+          },
+          "SourcePreviewIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewIdentity"
+          },
+          "SourcePreviewRaster": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/CanvasSize"
+          },
+          "SourcePreviewResult": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewResult"
+          },
+          "SourcePreviewRuntimeIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewRuntimeIdentity"
+          },
+          "SourcePreviewTimeBase": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/FrameRate"
           },
           "SpeakerTurn": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SpeakerTurn"
@@ -46775,6 +47986,30 @@
           "SourceFrameView": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourceFrameView"
           },
+          "SourcePreviewArtifact": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewArtifact"
+          },
+          "SourcePreviewDecoderIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewDecoderIdentity"
+          },
+          "SourcePreviewEncoding": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewEncoding"
+          },
+          "SourcePreviewIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewIdentity"
+          },
+          "SourcePreviewRaster": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewRaster"
+          },
+          "SourcePreviewResult": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewResult"
+          },
+          "SourcePreviewRuntimeIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewRuntimeIdentity"
+          },
+          "SourcePreviewTimeBase": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewTimeBase"
+          },
           "SpeakerTurn": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SpeakerTurn"
           },
@@ -47505,6 +48740,30 @@
           },
           "SourceFrameView": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourceFrameView"
+          },
+          "SourcePreviewArtifact": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewArtifact"
+          },
+          "SourcePreviewDecoderIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewDecoderIdentity"
+          },
+          "SourcePreviewEncoding": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewEncoding"
+          },
+          "SourcePreviewIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewIdentity"
+          },
+          "SourcePreviewRaster": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewRaster"
+          },
+          "SourcePreviewResult": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewResult"
+          },
+          "SourcePreviewRuntimeIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewRuntimeIdentity"
+          },
+          "SourcePreviewTimeBase": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewTimeBase"
           },
           "SpeakerTurn": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SpeakerTurn"
@@ -54342,6 +55601,30 @@
           "SourceFrameView": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourceFrameView"
           },
+          "SourcePreviewArtifact": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewArtifact"
+          },
+          "SourcePreviewDecoderIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewDecoderIdentity"
+          },
+          "SourcePreviewEncoding": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewEncoding"
+          },
+          "SourcePreviewIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewIdentity"
+          },
+          "SourcePreviewRaster": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewRaster"
+          },
+          "SourcePreviewResult": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewResult"
+          },
+          "SourcePreviewRuntimeIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewRuntimeIdentity"
+          },
+          "SourcePreviewTimeBase": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewTimeBase"
+          },
           "SpeakerTurn": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SpeakerTurn"
           },
@@ -58684,6 +59967,30 @@
           "SourceFrameView": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourceFrameView"
           },
+          "SourcePreviewArtifact": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewArtifact"
+          },
+          "SourcePreviewDecoderIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewDecoderIdentity"
+          },
+          "SourcePreviewEncoding": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewEncoding"
+          },
+          "SourcePreviewIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewIdentity"
+          },
+          "SourcePreviewRaster": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewRaster"
+          },
+          "SourcePreviewResult": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewResult"
+          },
+          "SourcePreviewRuntimeIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewRuntimeIdentity"
+          },
+          "SourcePreviewTimeBase": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewTimeBase"
+          },
           "SpeakerTurn": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SpeakerTurn"
           },
@@ -59242,6 +60549,30 @@
           },
           "SourceFrameView": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourceFrameView"
+          },
+          "SourcePreviewArtifact": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewArtifact"
+          },
+          "SourcePreviewDecoderIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewDecoderIdentity"
+          },
+          "SourcePreviewEncoding": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewEncoding"
+          },
+          "SourcePreviewIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewIdentity"
+          },
+          "SourcePreviewRaster": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewRaster"
+          },
+          "SourcePreviewResult": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewResult"
+          },
+          "SourcePreviewRuntimeIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewRuntimeIdentity"
+          },
+          "SourcePreviewTimeBase": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewTimeBase"
           },
           "SpeakerTurn": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SpeakerTurn"
@@ -59948,6 +61279,30 @@
           "SourceFrameView": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourceFrameView"
           },
+          "SourcePreviewArtifact": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewArtifact"
+          },
+          "SourcePreviewDecoderIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewDecoderIdentity"
+          },
+          "SourcePreviewEncoding": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewEncoding"
+          },
+          "SourcePreviewIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewIdentity"
+          },
+          "SourcePreviewRaster": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewRaster"
+          },
+          "SourcePreviewResult": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewResult"
+          },
+          "SourcePreviewRuntimeIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewRuntimeIdentity"
+          },
+          "SourcePreviewTimeBase": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewTimeBase"
+          },
           "SpeakerTurn": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SpeakerTurn"
           },
@@ -60499,6 +61854,30 @@
           },
           "SourceFrameView": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourceFrameView"
+          },
+          "SourcePreviewArtifact": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewArtifact"
+          },
+          "SourcePreviewDecoderIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewDecoderIdentity"
+          },
+          "SourcePreviewEncoding": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewEncoding"
+          },
+          "SourcePreviewIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewIdentity"
+          },
+          "SourcePreviewRaster": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewRaster"
+          },
+          "SourcePreviewResult": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewResult"
+          },
+          "SourcePreviewRuntimeIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewRuntimeIdentity"
+          },
+          "SourcePreviewTimeBase": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewTimeBase"
           },
           "SpeakerTurn": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SpeakerTurn"
@@ -61054,6 +62433,30 @@
           "SourceFrameView": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourceFrameView"
           },
+          "SourcePreviewArtifact": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewArtifact"
+          },
+          "SourcePreviewDecoderIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewDecoderIdentity"
+          },
+          "SourcePreviewEncoding": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewEncoding"
+          },
+          "SourcePreviewIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewIdentity"
+          },
+          "SourcePreviewRaster": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewRaster"
+          },
+          "SourcePreviewResult": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewResult"
+          },
+          "SourcePreviewRuntimeIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewRuntimeIdentity"
+          },
+          "SourcePreviewTimeBase": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewTimeBase"
+          },
           "SpeakerTurn": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SpeakerTurn"
           },
@@ -61577,6 +62980,30 @@
           },
           "SourceFrameView": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourceFrameView"
+          },
+          "SourcePreviewArtifact": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewArtifact"
+          },
+          "SourcePreviewDecoderIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewDecoderIdentity"
+          },
+          "SourcePreviewEncoding": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewEncoding"
+          },
+          "SourcePreviewIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewIdentity"
+          },
+          "SourcePreviewRaster": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewRaster"
+          },
+          "SourcePreviewResult": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewResult"
+          },
+          "SourcePreviewRuntimeIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewRuntimeIdentity"
+          },
+          "SourcePreviewTimeBase": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewTimeBase"
           },
           "SpeakerTurn": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SpeakerTurn"
@@ -66489,6 +67916,9 @@
       },
       "OpencutVisualPreviewEditDraftFrameOutput": {
         "$defs": {
+          "AssetVersion": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/AssetVersion"
+          },
           "BlendFramePlan": {
             "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/BlendFramePlan"
           },
@@ -66627,6 +68057,9 @@
           "NativePlatformIdentity": {
             "$ref": "#/components/schemas/OpencutQualityInspectOutput/$defs/NativePlatformIdentity"
           },
+          "NativeSystemIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/NativeSystemIdentity"
+          },
           "NativeVisualIdentity": {
             "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/NativeVisualIdentity"
           },
@@ -66653,6 +68086,45 @@
           },
           "SceneTextMaskFont": {
             "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/SceneTextMaskFont"
+          },
+          "SourcePreviewArtifact": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewArtifact"
+          },
+          "SourcePreviewDecoderIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewDecoderIdentity"
+          },
+          "SourcePreviewEncoding": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewEncoding"
+          },
+          "SourcePreviewFrameSelection": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/SourcePreviewFrameSelection"
+          },
+          "SourcePreviewFrameVideo": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/SourcePreviewFrameVideo"
+          },
+          "SourcePreviewIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewIdentity"
+          },
+          "SourcePreviewMatrix": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/SourcePreviewMatrix"
+          },
+          "SourcePreviewRaster": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/CanvasSize"
+          },
+          "SourcePreviewResult": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewResult"
+          },
+          "SourcePreviewRuntimeIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewRuntimeIdentity"
+          },
+          "SourcePreviewState": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/SourcePreviewState"
+          },
+          "SourcePreviewTimeBase": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/FrameRate"
+          },
+          "SourcePreviewUse": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/SourcePreviewUse"
           },
           "Stroke": {
             "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/Stroke"
@@ -69771,6 +71243,9 @@
       },
       "VisualPreviewPreparedPicture": {
         "$defs": {
+          "AssetVersion": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/AssetVersion"
+          },
           "BlendFramePlan": {
             "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/BlendFramePlan"
           },
@@ -69906,6 +71381,9 @@
           "NativePlatformIdentity": {
             "$ref": "#/components/schemas/OpencutQualityInspectOutput/$defs/NativePlatformIdentity"
           },
+          "NativeSystemIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/NativeSystemIdentity"
+          },
           "NativeVisualIdentity": {
             "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/NativeVisualIdentity"
           },
@@ -69932,6 +71410,45 @@
           },
           "SceneTextMaskFont": {
             "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/SceneTextMaskFont"
+          },
+          "SourcePreviewArtifact": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewArtifact"
+          },
+          "SourcePreviewDecoderIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewDecoderIdentity"
+          },
+          "SourcePreviewEncoding": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewEncoding"
+          },
+          "SourcePreviewFrameSelection": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/SourcePreviewFrameSelection"
+          },
+          "SourcePreviewFrameVideo": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/SourcePreviewFrameVideo"
+          },
+          "SourcePreviewIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewIdentity"
+          },
+          "SourcePreviewMatrix": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/SourcePreviewMatrix"
+          },
+          "SourcePreviewRaster": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/CanvasSize"
+          },
+          "SourcePreviewResult": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewResult"
+          },
+          "SourcePreviewRuntimeIdentity": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/SourcePreviewRuntimeIdentity"
+          },
+          "SourcePreviewState": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/SourcePreviewState"
+          },
+          "SourcePreviewTimeBase": {
+            "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/FrameRate"
+          },
+          "SourcePreviewUse": {
+            "$ref": "#/components/schemas/OpencutVisualPreviewFrameOutput/$defs/SourcePreviewUse"
           },
           "Stroke": {
             "$ref": "#/components/schemas/OpencutMediaRemovePlanOutput/$defs/Stroke"

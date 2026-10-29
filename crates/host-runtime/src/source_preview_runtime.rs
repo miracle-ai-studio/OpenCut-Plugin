@@ -13,6 +13,7 @@ pub(crate) use resources::{PreviewResources, SourceCache};
 #[derive(Clone)]
 pub(crate) struct SourcePlanJob {
     pub identity: SourcePreviewIdentity,
+    pub authority: opencut_job_execution::scene_audio::TrustedJobAuthority,
     pub job_id: String,
 }
 #[derive(Clone)]
@@ -40,8 +41,16 @@ pub(crate) fn prepare_plan(
                         "Source task omitted captured identity",
                     )
                 })?;
+            let authority =
+                serde_json::from_value(job.input["authority"].clone()).map_err(|_| {
+                    EditorError::new(
+                        "INVALID_STORED_RESULT",
+                        "Source task omitted captured caller scope",
+                    )
+                })?;
             Ok(SourcePlanJob {
                 identity,
+                authority,
                 job_id: job.job_id,
             })
         })

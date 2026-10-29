@@ -226,12 +226,12 @@ impl EditorApplication {
             &self.connection.1,
             &captured.prepared.identity.project_id,
         )?;
-        sqlite_access::require_job(
-            &tx,
-            &self.connection.1,
-            &captured.job_id,
-            ProjectAction::ReadArtifacts,
-        )?;
+        // Internal source bytes are confined to the native preview worker,
+        // under the same Read/RunJobs scope as original CAS decoding. Public
+        // artifact downloads independently retain ReadArtifacts authority.
+        if captured.prepared.authority != authority(&self.connection.1) {
+            return Err(access::denied());
+        }
         let valid: bool = tx.prepare_cached("SELECT EXISTS(SELECT 1 FROM jobs j JOIN job_projects p USING(job_id) JOIN revisions r ON r.project_id=p.project_id AND r.revision=p.revision WHERE j.job_id=?1 AND j.kind=?2 AND j.state='succeeded' AND j.attempt=?3 AND j.cancel_requested=0 AND j.input_json=?4 AND j.result_json=?5 AND p.project_id=?6 AND p.revision=?7)").map_err(storage_error)?.query_row(params![captured.job_id,source::KIND,captured.published_attempt,captured.input_text,captured.result_text,captured.prepared.snapshot.project.id,captured.prepared.snapshot.revision],|row|row.get(0)).map_err(storage_error)?;
         if !valid {
             return Err(EditorError::new(

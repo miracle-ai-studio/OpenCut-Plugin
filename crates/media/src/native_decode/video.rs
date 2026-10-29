@@ -709,7 +709,7 @@ impl NativeVideoDecoder {
                 64,
             )
         };
-        let surfaces = if self.image_mode == Some(true) {
+        let surfaces = if self.access == Some(DecodeAccess::Image) {
             1
         } else {
             // Codec headers expose the actual reference count after decoding.

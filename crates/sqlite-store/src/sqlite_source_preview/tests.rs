@@ -365,3 +365,46 @@ fn revocation_blocks_source_checkpoints_and_completion_in_the_original_lease() {
         JobState::Running
     );
 }
+
+#[test]
+fn native_preview_keeps_original_execution_scope_while_download_requires_artifact_access() {
+    let mut fixture = Fixture::new();
+    let caller = fixture.credential();
+    let mask = ProjectAction::Read.mask() | ProjectAction::RunJobs.mask();
+    fixture
+        .app
+        .connection
+        .execute(
+            "UPDATE access_grants SET action_mask=?1 WHERE principal_id='preview-agent'",
+            [mask],
+        )
+        .unwrap();
+    fixture.app.set_caller(caller.clone());
+    fixture.prepare();
+    let running = fixture.claim();
+    let stored = fixture.stored(&running);
+    fixture
+        .app
+        .live_jobs()
+        .complete(
+            &running.job_id,
+            "preview-worker",
+            running.attempt,
+            serde_json::to_value(stored).unwrap(),
+        )
+        .unwrap();
+    fixture.app.set_caller(caller);
+    let mut captured = fixture
+        .app
+        .capture_source_preview_job(&running.job_id)
+        .unwrap();
+    fixture
+        .app
+        .source_preview_job_status(&mut captured)
+        .unwrap();
+    fixture.app.require_source_preview_read(&captured).unwrap();
+    assert_eq!(
+        fixture.app.artifact_job(&running.job_id).unwrap_err().code,
+        "NOT_AUTHORIZED"
+    );
+}

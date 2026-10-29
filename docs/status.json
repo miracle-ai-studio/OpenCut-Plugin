@@ -4236,14 +4236,15 @@
     ],
     "source_preview_preparation": {
       "source_base_commit": "231cc49b47b2b0e51d8aeb9ca53a8fa745ff6350",
-      "state": "first_integrated_build_failed_borrow_fix_pending_retry",
+      "state": "integration_type_fixes_pending_consolidated_check",
       "implementation": "Source-only durable media.preview_source job, CPU native sequential decode, fixed lossless FFV1 RGBA, exact original/proxy frame index, editor prewarming, live preview resource and publication fences, separate video/index references and original-only export.",
       "preview": "Existing 540p canvas bound; no further reduction.",
       "export": "Original source; 720p/1080p/1440p/2160p; new Web default 1080p unchanged.",
       "preflight": "14 architecture unit checks and both architecture/contract boundary gates passed during integration. Final integrated candidate rerun pending.",
-      "build": "First integrated CLI/worker build failed E0308 at source request tuple serialization; missing borrow fixed. No successful current binary, generated-contract or Web result yet.",
+      "build": "Two integrated build attempts failed before producing a candidate: E0308 tuple borrow, then E0609 residual image_mode field. Both fixed; failures retained. Consolidated all-target typecheck pending; no successful current CLI/worker, generated contracts or Web proof.",
       "behavior": "New scoped checks authored, not compiled or run. No source proxy generation, pixel/PCM, editor timing or delivery result claimed.",
-      "delivery_ready": false
+      "delivery_ready": false,
+      "access": "Internal native proxy bytes retain original preview Read/RunJobs scope; public artifact downloads retain ReadArtifacts. New regression authored, not run."
     }
   }
 }

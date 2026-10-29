@@ -16,7 +16,7 @@
       "cleanup": "Both retained project snapshots unchanged; owned service stopped, no active jobs or candidate workers.",
       "qualification": "No new installation/package or whole-product acceptance."
     },
-    "next_candidate": "Bounded 1-4 frame decode threads and extra surface accounting implemented; pending integrated build, retained B-frame/VFR/seek/EOF/authority checks and product acceptance. No source proxies or GPU YUV input yet."
+    "next_candidate": "Initial bounded-thread candidate built but failed regressions: test assumed stream duration then a frame before nonzero first PTS. Logs also proved absent container pixel format kept production serial. Repaired source resolves threads once after an admitted decoded frame and reseeks with remaining I/O budget; pending integrated rebuild/acceptance. Both failures retained; no source proxies or GPU YUV input."
   },
   "scope": "Local CLI/HTTP/MCP/SDK service and Web editor; GPUI shell is not an integrated editor.",
   "public_contract": {

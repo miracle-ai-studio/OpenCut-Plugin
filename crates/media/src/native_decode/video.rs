@@ -76,6 +76,7 @@ pub struct NativeVideoDecoder {
     image_mode: Option<bool>,
     reference_frames: u64,
     decode_threads: usize,
+    threading_resolved: bool,
 }
 struct Operation {
     packets: usize,
@@ -165,6 +166,7 @@ impl NativeVideoDecoder {
             image_mode: None,
             reference_frames,
             decode_threads,
+            threading_resolved: decode_threads > 1,
         })
     }
 
@@ -278,13 +280,23 @@ impl NativeVideoDecoder {
             delta < 0 || delta > 2 * i128::from(previous.timebase) * i128::from(requested.timebase)
         });
         if !self.positioned || distant {
-            self.seek(source, requested, deadline)?;
+            self.seek(
+                source,
+                requested,
+                deadline,
+                self.limits.max_io_bytes_per_operation,
+            )?;
         }
         let target = timestamp(requested, self.time_base[0], self.time_base[1]);
         loop {
             checkpoint(source, deadline)?;
             if self.next.is_none() && !self.ended {
                 self.next = self.read_frame(source, deadline, &mut operation)?;
+                if self.next.is_some()
+                    && self.resolve_threading(source, requested, deadline, &operation)?
+                {
+                    continue;
+                }
             }
             let Some(next) = &self.next else { break };
             let pts = next
@@ -328,32 +340,80 @@ impl NativeVideoDecoder {
         self.convert(pts, duration).map(Some)
     }
 
+    fn resolve_threading(
+        &mut self,
+        source: &mut dyn ByteSource,
+        requested: MediaTime,
+        deadline: Instant,
+        operation: &Operation,
+    ) -> MediaResult<bool> {
+        if self.threading_resolved {
+            return Ok(false);
+        }
+        self.threading_resolved = true;
+        // Custom AVIO deliberately skips find_stream_info's unbounded implicit
+        // decoding. A container may not declare the pixel format, so choose
+        // parallelism after the first admitted real frame exposes it. Reopen
+        // once, then seek to the original request; no probe pixels are emitted
+        // and the same operation's packet/byte accounting continues.
+        let threads = decode_threads(&self.decoder, self.reference_frames, self.limits);
+        if threads <= 1 {
+            return Ok(false);
+        }
+        checkpoint(source, deadline)?;
+        let stream = self
+            .input
+            .stream(self.stream)
+            .ok_or_else(|| invalid("Selected native video stream disappeared"))?;
+        let mut context =
+            av::codec::Context::from_parameters(stream.parameters()).map_err(failed)?;
+        context.set_threading(av::codec::threading::Config {
+            count: threads,
+            kind: av::codec::threading::Type::Frame,
+            ..Default::default()
+        });
+        // No decoded surfaces are allocated until packets enter this context.
+        unsafe { (*context.as_mut_ptr()).max_pixels = self.limits.max_pixels as i64 };
+        self.decoder = context.decoder().video().map_err(failed)?;
+        self.decode_threads = threads;
+        let remaining = self
+            .limits
+            .max_io_bytes_per_operation
+            .checked_sub(
+                self.bridge
+                    .bytes_read()
+                    .saturating_sub(operation.first_byte),
+            )
+            .ok_or(MediaError::OutputLimit {
+                limit_bytes: self.limits.max_io_bytes_per_operation,
+            })?;
+        self.seek(source, requested, deadline, remaining)?;
+        checkpoint(source, deadline)?;
+        Ok(true)
+    }
+
     fn seek(
         &mut self,
         source: &mut dyn ByteSource,
         requested: MediaTime,
         deadline: Instant,
+        max_io_bytes: u64,
     ) -> MediaResult<()> {
         let pts = i64::try_from(timestamp(requested, self.time_base[0], self.time_base[1]))
             .map_err(|_| invalid("Native seek timestamp overflow"))?;
         let input = &mut self.input;
         let stream = self.stream as i32;
-        self.bridge.run(
-            source,
-            deadline,
-            self.limits.max_io_bytes_per_operation,
-            || {
-                // SAFETY: the input remains exclusively borrowed; its current
-                // authorized AVIO scope is installed for this synchronous seek.
-                let result = unsafe {
-                    ffi::av_seek_frame(input.as_mut_ptr(), stream, pts, ffi::AVSEEK_FLAG_BACKWARD)
-                };
-                if result < 0 {
-                    return Err(failed(av::Error::from(result)));
-                }
-                Ok(())
-            },
-        )?;
+        self.bridge.run(source, deadline, max_io_bytes, || {
+            // SAFETY: the input remains exclusively borrowed; its current
+            // authorized AVIO scope is installed for this synchronous seek.
+            let result = unsafe {
+                ffi::av_seek_frame(input.as_mut_ptr(), stream, pts, ffi::AVSEEK_FLAG_BACKWARD)
+            };
+            if result < 0 {
+                return Err(failed(av::Error::from(result)));
+            }
+            Ok(())
+        })?;
         self.decoder.flush();
         self.previous = None;
         self.next = None;
@@ -623,9 +683,8 @@ fn decode_threads(context: &av::codec::Context, references: u64, limits: DecodeL
 }
 
 fn admitted_decode_threads(pixels: u64, surface: u64, references: u64, limit: u64) -> usize {
-    // Use the codec's conservative reference maximum until decoded headers
-    // reveal the real count. Unknown metadata keeps the serial policy above;
-    // ordinary frame admission still rejects invalid or oversized sources.
+    // Use the codec's conservative reference maximum. Unknown metadata starts
+    // serially and is resolved once after the first admitted decoded frame.
     let resident = surface * (references + 2) + pixels * 4;
     let desired = (pixels / (512 * 512)).clamp(1, 4);
     desired.min(1 + limit.saturating_sub(resident) / decode_thread_reserve(surface, 2)) as usize
@@ -748,6 +807,16 @@ mod tests {
             let deadline = Instant::now() + std::time::Duration::from_secs(120);
             let mut parallel =
                 NativeVideoDecoder::open(&mut source, None, limits, deadline).unwrap();
+            parallel
+                .sample(
+                    &mut source,
+                    MediaTime {
+                        ticks: 0,
+                        timebase: 30,
+                    },
+                    deadline,
+                )
+                .unwrap();
             eprintln!(
                 "retained source {index}: policy threads {}",
                 parallel.decode_threads
@@ -770,6 +839,18 @@ mod tests {
                 unsafe { (*context.as_mut_ptr()).max_pixels = limits.max_pixels as i64 };
                 decoder.decoder = context.decoder().video().unwrap();
                 decoder.decode_threads = count;
+                decoder.threading_resolved = true;
+                decoder
+                    .seek(
+                        &mut source,
+                        MediaTime {
+                            ticks: 0,
+                            timebase: 30,
+                        },
+                        deadline,
+                        limits.max_io_bytes_per_operation,
+                    )
+                    .unwrap();
             }
             assert_eq!(
                 parallel.decoder.threading().kind,
@@ -807,7 +888,11 @@ mod tests {
             assert_eq!(parallel.encoded_bytes_read(), before);
             source.revoked = false;
             compare_samples(&mut serial, &mut parallel, &mut source, at, deadline);
-            let frame = parallel.previous.as_ref().unwrap();
+            let frame = parallel
+                .previous
+                .as_ref()
+                .or(parallel.next.as_ref())
+                .unwrap();
             let resident = parallel.frame_residency(frame).unwrap();
             parallel.limits.max_resident_bytes = resident - 1;
             assert!(matches!(

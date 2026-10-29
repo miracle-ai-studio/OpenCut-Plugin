@@ -835,7 +835,7 @@
         "scope": "No external Python or media tools required for this local diagnostic; clean-machine signing/installation remains open"
       }
     },
-    "current_code_commit": "5eea0741a6ca29a5c5222abf93e0585459aa70ec",
+    "current_code_commit": "b3c55ea4168c0f7170eec401089707f435d0bb8e",
     "native_rgba_transfer": {
       "checkpoint": "/Users/vincent/Movies/OpenCut-native-rendering/4k/rgba-transfer/checkpoint.json",
       "checkpoint_sha256": "9d196d42b7be7a8f2731112650d191b46e4ff31b32b8ca2c20a773a2de8ab0b6",
@@ -1008,6 +1008,70 @@
         "/Users/vincent/Movies/OpenCut-native-rendering/4k/upload-reuse/profile-4fec7a3534ef-be1aefe28503/resources-a1b3a623-3b98-4322-9022-a2d572050a32.json": "99f0407c72692aeed99e66d746ad4d336704ac2266fb353381ba0fd7ebede965",
         "/Users/vincent/Movies/OpenCut-native-rendering/4k/upload-reuse/profile-4fec7a3534ef-be1aefe28503/job_c5554968186a4b4799ef2713ccfd941e-1.json": "3406674cc75883cd4c1540562457edfd100d3d724ebbbd46589b704772a7f2fc"
       }
+    },
+    "native_parallel_conversion": {
+      "checkpoint": "/Users/vincent/Movies/OpenCut-native-rendering/4k/parallel-conversion/checkpoint.json",
+      "checkpoint_sha256": "fad2e7d458696db93aee313b221c2d8e4f60c927051eddf9f6102584a9c4a523",
+      "source_commit": "b3c55ea4168c0f7170eec401089707f435d0bb8e",
+      "runtime": {
+        "opencut": {
+          "path": "/Users/vincent/Movies/OpenCut-native-rendering/candidates/44c6f50f2910211facabb0916e773214d0cda3619006ff30c8d727b556e769a2/opencut",
+          "sha256": "44c6f50f2910211facabb0916e773214d0cda3619006ff30c8d727b556e769a2"
+        },
+        "opencut-render-worker": {
+          "path": "/Users/vincent/Movies/OpenCut-native-rendering/candidates/5a48a7891b4686b544917c8942ef0389fac8056a4a5c933c3b70c6feed4c4185/opencut-render-worker",
+          "sha256": "5a48a7891b4686b544917c8942ef0389fac8056a4a5c933c3b70c6feed4c4185"
+        }
+      },
+      "build_passed": true,
+      "scoped_checks": {
+        "media_library": 32,
+        "source_art_and_process": 13,
+        "native_visual_integration": 5,
+        "initial_failure": "One missing OPENCUT_AUDIO_PCM_REFERENCE in verifier; original failure retained. Exact failing test alone passed with original retained reference, no rebuild.",
+        "generated_and_canonical_contracts": "passed against same explicit raw CLI",
+        "architecture_tests": 14,
+        "boundary_gates": "passed;25 modules,zero exceptions"
+      },
+      "distribution_scope": "Raw integrated CLI/worker; unchanged retained auxiliary tools/native libraries/Web. Previous packaged runtime proof keeps its original identity; no new package/install acceptance.",
+      "range_export": {
+        "job_id": "job_b1c6748abcaf4628b27358d0448d6d79",
+        "seconds": 59.82748220697977,
+        "previous_raw_observation_seconds": 62.66543928300962,
+        "comparison_scope": "Same fixed source/project/options/encoder; single raw candidate observations, not stable benchmark or exclusive attribution.",
+        "frame_total_median_ms": 154.571426,
+        "checkpoint_calls": 211841,
+        "checkpoints_ms": 14599.307364,
+        "startup_ms": 13019.894091999999,
+        "finish_ms": 9633.388071000001,
+        "native_worker_peak_rss_kib": 216988,
+        "same_mp4_sha256": "da10feb14158c09d4c0464abb1b6605d78b328ba4ab7b3702184f3c450ace172",
+        "independent_preencode_pcm_maximum_error": 0,
+        "frames": 288000,
+        "fidelity_reuse": "Exact complete MP4 byte identity reuses original recorded independent pixel/AAC report, with producer unchanged. New preencode PCM directly compared to original full independent reference prefix."
+      },
+      "preview": {
+        "passed": false,
+        "instrumented": false,
+        "startup_seconds": 6.200391168999999,
+        "startup_gate_seconds": 5,
+        "completion_gate_seconds": 150,
+        "timeline_seconds_observed": 44.56666666666667,
+        "presented_frames": 1338,
+        "max_wall_frame_gap_ms": 746.4000000953674,
+        "response_count": 6542,
+        "error_response_count": 0,
+        "native_worker_peak_rss_kib": 191928,
+        "scope": "94-second timeline repeats existing 12-second4K source; UI preview540, not full4K display. Original startup/completion gates still fail; no physical audibility acceptance.",
+        "previous_timeline_seconds_observed": 34.3
+      },
+      "local_conversion_study": {
+        "checkpoint": "/Users/vincent/Movies/OpenCut-native-rendering/4k/remaining-costs/checkpoint.json",
+        "sha256": "6e50b702ed547507fc0779ce0e698c7993bbd4e1c50a1a5c422b767d5a503920",
+        "summary": "Initialized frame API4threads,borrowed output,unchanged fullRGBA vs legacy sws_scale; dynamic chroma and fast inaccurate conversion rejected. Product regression covers8formats,3matrices,2ranges,odd extents,1/4threads,repeated borrowed buffers and canaries."
+      },
+      "next_direction": "Remove costly cross-process authority roundtrips from purely internal GPU upload copies while preserving deadlines, parent process monitoring, pre-submit fences, every output chunk check and publication authorization. Host hash/transfer still open.",
+      "delivery_ready": false
     }
   },
   "known_limits": [
@@ -2451,6 +2515,15 @@
       "delivery_ready": false
     },
     "current_working_candidate": {
+      "checkpoint": "/Users/vincent/Movies/OpenCut-native-rendering/4k/parallel-conversion/checkpoint.json",
+      "checkpoint_sha256": "fad2e7d458696db93aee313b221c2d8e4f60c927051eddf9f6102584a9c4a523",
+      "source_commit": "b3c55ea4168c0f7170eec401089707f435d0bb8e",
+      "host_sha256": "44c6f50f2910211facabb0916e773214d0cda3619006ff30c8d727b556e769a2",
+      "worker_sha256": "5a48a7891b4686b544917c8942ef0389fac8056a4a5c933c3b70c6feed4c4185",
+      "scope": "Raw integrated bounded parallel color conversion;50 scoped checks and same CLI contracts passed.6-second4K export independent fidelity passed;94-second4K-source preview still fails original startup/completion gates. Packaged runtime qualification unchanged.",
+      "delivery_ready": false
+    },
+    "previous_working_candidate": {
       "checkpoint": "/Users/vincent/Movies/OpenCut-native-rendering/4k/upload-reuse/checkpoint.json",
       "checkpoint_sha256": "158a639f49e7e23f56c7492d59945fe5a453e381a02b6e02392e375fc8056156",
       "source_commit": "5eea0741a6ca29a5c5222abf93e0585459aa70ec",

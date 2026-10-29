@@ -2,7 +2,7 @@
   "format": "opencut.delivery-status.v1",
   "delivery_ready": false,
   "in_progress": {
-    "execution_scope_optimization": "Source committed at 6115dd66; integrated build and new behavioral regressions pending.",
+    "execution_scope_optimization": "Initial integrated build of b13d55fe failed: CurrentPolicy omitted existing SourceArtPolicy caller. Added exact typed variant and serialization/change regression; incremental build and behavioral checks pending.",
     "preview_resolution": "Keep existing preview540 raster policy. Unbuilt preview360 candidate withdrawn; Web preview request restored to accepted source.",
     "export_resolution": "Source integrated for explicit 720p,1080p,1440p,2160p; new UI default1080p. Historical omitted resolution remains source. Initial Web32passed/3failed; isolated parameterized recovery storage then4resolution cases passed. Generated contracts, build and runtime acceptance pending.",
     "bottleneck_attribution": "Confirmed full-source-size RGBA conversion and one configured slice decoder thread. Recorded4K preview91ms includes native request70.2ms plus read/bitmap20.6ms; it is not a decode-only measurement. Independent stage attribution remains open."

@@ -140,6 +140,7 @@ pub(super) enum CurrentPolicy {
     Visual(opencut_job_execution::media_frame::LocalVisualExecutionPolicy),
     Audio(opencut_job_execution::scene_audio::LocalAudioExecutionPolicy),
     Video(opencut_job_execution::media_video::LocalVideoExecutionPolicy),
+    SourceArt(opencut_editor_application::source_art::SourceArtPolicy),
 }
 impl From<&opencut_job_execution::media_frame::LocalVisualExecutionPolicy> for CurrentPolicy {
     fn from(value: &opencut_job_execution::media_frame::LocalVisualExecutionPolicy) -> Self {
@@ -154,6 +155,11 @@ impl From<&opencut_job_execution::scene_audio::LocalAudioExecutionPolicy> for Cu
 impl From<&opencut_job_execution::media_video::LocalVideoExecutionPolicy> for CurrentPolicy {
     fn from(value: &opencut_job_execution::media_video::LocalVideoExecutionPolicy) -> Self {
         Self::Video(value.clone())
+    }
+}
+impl From<&opencut_editor_application::source_art::SourceArtPolicy> for CurrentPolicy {
+    fn from(value: &opencut_editor_application::source_art::SourceArtPolicy) -> Self {
+        Self::SourceArt(value.clone())
     }
 }
 pub(super) struct FixedJobInput {
@@ -287,6 +293,15 @@ mod policy_continuity_tests {
         let visual = sqlite_scene_text_frame_jobs::policy();
         let audio = sqlite_scene_audio_jobs::policy();
         let video = sqlite_media_video_jobs::policy();
+        let source_art = sqlite_source_art::policy();
+        assert_eq!(
+            serde_json::to_value(CurrentPolicy::from(&source_art)).unwrap(),
+            serde_json::to_value(&source_art).unwrap()
+        );
+        let mut changed = source_art.clone();
+        changed.max_encoded_bytes -= 1;
+        assert!(CurrentPolicy::from(&source_art) != CurrentPolicy::from(&changed));
+        assert!(!matches_policy(&source_art, &CurrentPolicy::from(&changed)).unwrap());
         assert_eq!(
             serde_json::to_value(CurrentPolicy::from(&visual)).unwrap(),
             serde_json::to_value(&visual).unwrap()

@@ -632,6 +632,37 @@
         "Current candidate preserves previous Web build producer and exact CLI contract proof identities.No package or user-service promotion."
       ],
       "delivery_ready": false
+    },
+    "native_primary_selection": {
+      "state": "implementation_pending_native_media_validation",
+      "source_base_commit": "e00691a6",
+      "change": "One shared native AVIO stream selector.Explicit indices remain physical;implicit ISO BMFF/Matroska prioritizes default disposition stably,matching retained demuxer.Other containers preserve stored order.No public DTO,module,dependency,allocation or admission change.",
+      "fixture": "/Users/vincent/Movies/OpenCut-native-rendering/4k/source-primary-selection/fixture.json",
+      "fixture_sha256": "37bab73b80d97047eeaca70f2982697c5c3d6f827a15bb6a9286046f6ef6357c",
+      "cases": 6,
+      "oracle": "Pinned retained Mediabunny primary-track metadata,independent authored red/blue frames and distinct audio rate/channel/tone.",
+      "build_scope": "Plan one native media test compilation;no production CLI/worker or Web build yet.Existing sealed candidate/proofs remain their original identities.",
+      "preview_cache_preflight": {
+        "runtime": {
+          "opencut": {
+            "path": "/Users/vincent/Movies/OpenCut-native-rendering/candidates/82a597f91dccd97027ed1a0fab4b76e465fa8d3446cb041b04eeb33d56f53e82/opencut",
+            "sha256": "82a597f91dccd97027ed1a0fab4b76e465fa8d3446cb041b04eeb33d56f53e82"
+          },
+          "opencut-render-worker": {
+            "path": "/Users/vincent/Movies/OpenCut-native-rendering/candidates/b3527e2edb26658e4bc54cabe72a6fecae8f397d0830a848357710ea9bd19be1/opencut-render-worker",
+            "sha256": "b3527e2edb26658e4bc54cabe72a6fecae8f397d0830a848357710ea9bd19be1"
+          }
+        },
+        "job_id": "job_69b4a90f42b24ae18f34ea2ba356bbee",
+        "seconds": 13.475373313995078,
+        "frames": 60,
+        "width": 960,
+        "height": 540,
+        "include_audio": false,
+        "scope": "New retained-source native render range,not a source proxy or browser real-time qualification.",
+        "result": "Succeeded;cold2s segment generation slower than its duration,not switched into live playback."
+      },
+      "delivery_ready": false
     }
   },
   "scope": "Local CLI/HTTP/MCP/SDK service and Web editor; GPUI shell is not an integrated editor.",

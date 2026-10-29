@@ -10,6 +10,43 @@ use std::{
     thread::{self, ThreadId},
 };
 
+/// Match the retained demuxers' primary-track ordering. ISO BMFF and Matroska
+/// stably put default tracks first; other containers preserve stored order.
+/// This is deliberately not libav's codec/resolution-ranked "best" stream.
+/// Explicit indices remain physical stream indices and are never re-ranked.
+pub(crate) fn select_stream(
+    input: &av::format::context::Input,
+    medium: av::media::Type,
+    selected: Option<u32>,
+) -> Option<av::Stream<'_>> {
+    if let Some(index) = selected {
+        return input.stream(index as usize);
+    }
+    let prefer_default = input
+        .format()
+        .name()
+        .split(',')
+        .any(|name| matches!(name, "mov" | "matroska" | "webm"));
+    let mut streams = input
+        .streams()
+        .filter(|stream| stream.parameters().medium() == medium);
+    let first = streams.next()?;
+    if !prefer_default
+        || first
+            .disposition()
+            .contains(av::format::stream::Disposition::DEFAULT)
+    {
+        return Some(first);
+    }
+    streams
+        .find(|stream| {
+            stream
+                .disposition()
+                .contains(av::format::stream::Disposition::DEFAULT)
+        })
+        .or(Some(first))
+}
+
 struct Borrowed<'a> {
     source: &'a mut dyn ByteSource,
 }

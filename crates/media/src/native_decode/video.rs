@@ -151,13 +151,8 @@ impl NativeVideoDecoder {
         // and global log mutations; this adapter cannot open URLs or devices.
         let mut bridge = Bridge::new(source.len())?;
         let input = bridge.open(source, limits.max_io_bytes_per_operation, deadline)?;
-        let stream = match selected_stream {
-            Some(index) => input.stream(index as usize),
-            None => input
-                .streams()
-                .find(|stream| stream.parameters().medium() == av::media::Type::Video),
-        }
-        .ok_or_else(|| invalid("Selected native video stream is missing"))?;
+        let stream = super::input::select_stream(&input, av::media::Type::Video, selected_stream)
+            .ok_or_else(|| invalid("Selected native video stream is missing"))?;
         if stream.parameters().medium() != av::media::Type::Video {
             return Err(invalid("Selected native stream is not video"));
         }

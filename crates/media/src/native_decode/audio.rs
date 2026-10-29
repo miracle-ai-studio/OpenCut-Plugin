@@ -77,15 +77,10 @@ impl NativeAudioDecoder {
         limits.validate()?;
         let mut bridge = Bridge::new(source.len())?;
         let input = bridge.open(source, limits.max_io_bytes_per_operation, deadline)?;
-        // The retained pinned demuxer selects the first audio track in stored
-        // order. Do not silently replace that with libav's ranked "best" stream.
-        let stream = match selected_stream {
-            Some(n) => input.stream(n as usize),
-            None => input
-                .streams()
-                .find(|s| s.parameters().medium() == av::media::Type::Audio),
-        }
-        .ok_or_else(|| MediaError::Unsupported("Selected native audio stream is missing".into()))?;
+        let stream = super::input::select_stream(&input, av::media::Type::Audio, selected_stream)
+            .ok_or_else(|| {
+            MediaError::Unsupported("Selected native audio stream is missing".into())
+        })?;
         if stream.parameters().medium() != av::media::Type::Audio {
             return Err(invalid("Selected native stream is not audio"));
         }

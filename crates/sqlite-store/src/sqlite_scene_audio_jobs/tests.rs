@@ -844,3 +844,115 @@ fn warm_preview_statements_observe_other_connections_grant_and_credential_change
         .revalidate_scene_audio_preview("audio-project", &revision)
         .unwrap();
 }
+
+#[test]
+fn fresh_execution_scope_preserves_ordered_errors_and_all_grant_decoding() {
+    let mut fixture = Fixture::new();
+    let (caller, _) = fixture.credential();
+    fixture
+        .app
+        .create_scene_project(&CreateProjectRequest {
+            project: CreateProject {
+                id: "unrelated".into(),
+                name: "Unrelated grant integrity".into(),
+                sequence_id: "unrelated-scene".into(),
+                width: 8,
+                height: 8,
+                fps: FrameRate {
+                    numerator: 30,
+                    denominator: 1,
+                },
+            },
+            idempotency_key: "unrelated".into(),
+        })
+        .unwrap();
+    fixture.app.connection.execute("INSERT INTO access_grants(principal_id,project_id,action_mask) VALUES('audio-agent','unrelated',1)",[]).unwrap();
+    let mut reader = EditorApplication::open_managed(fixture.path()).unwrap();
+    reader.set_caller(caller);
+    let revision = fixture.fixed.revision.as_str();
+    for (sql, selected, expected) in [
+        ("", revision, None),
+        ("", "missing", Some("NOT_FOUND")),
+        (
+            "UPDATE access_grants SET action_mask=1 WHERE project_id='audio-project'",
+            revision,
+            Some("NOT_AUTHORIZED"),
+        ),
+        (
+            "UPDATE access_grants SET action_mask=8 WHERE project_id='audio-project'",
+            revision,
+            Some("NOT_AUTHORIZED"),
+        ),
+        (
+            "INSERT INTO deleted_projects(project_id,revision,request_id) SELECT project_id,head_revision,'test' FROM projects WHERE project_id='audio-project'",
+            revision,
+            Some("NOT_FOUND"),
+        ),
+        (
+            "UPDATE access_grants SET action_mask=1 WHERE project_id='audio-project';INSERT INTO deleted_projects(project_id,revision,request_id) SELECT project_id,head_revision,'test' FROM projects WHERE project_id='audio-project'",
+            revision,
+            Some("NOT_FOUND"),
+        ),
+        (
+            "UPDATE access_grants SET action_mask=8 WHERE project_id='audio-project';INSERT INTO deleted_projects(project_id,revision,request_id) SELECT project_id,head_revision,'test' FROM projects WHERE project_id='audio-project'",
+            revision,
+            Some("NOT_AUTHORIZED"),
+        ),
+        (
+            "UPDATE access_credentials SET revoked=1",
+            revision,
+            Some("NOT_AUTHORIZED"),
+        ),
+        (
+            "UPDATE access_principals SET enabled=0",
+            revision,
+            Some("NOT_AUTHORIZED"),
+        ),
+        (
+            "UPDATE access_grants SET action_mask=-1 WHERE project_id='unrelated'",
+            revision,
+            Some("STORAGE_ERROR"),
+        ),
+        (
+            "UPDATE access_credentials SET revoked=1;UPDATE access_grants SET action_mask=-1 WHERE project_id='unrelated'",
+            revision,
+            Some("NOT_AUTHORIZED"),
+        ),
+    ] {
+        fixture.app.connection.execute_batch("UPDATE access_credentials SET revoked=0;UPDATE access_principals SET enabled=1;UPDATE access_grants SET action_mask=9 WHERE project_id='audio-project';UPDATE access_grants SET action_mask=1 WHERE project_id='unrelated';DELETE FROM deleted_projects;").unwrap();
+        fixture.app.connection.execute_batch(sql).unwrap();
+        // Independent previous sequence supplies the original permission/error
+        // ordering; both reads use the same actual database and warmed caller.
+        let original = (|| -> Result<(), EditorError> {
+            let tx = reader
+                .connection
+                .unchecked_transaction()
+                .map_err(storage_error)?;
+            for action in [ProjectAction::Read, ProjectAction::RunJobs] {
+                sqlite_access::require(&tx, &reader.connection.1, "audio-project", action)?;
+            }
+            let present: bool = tx
+                .query_row(
+                    "SELECT EXISTS(SELECT 1 FROM revisions WHERE project_id=?1 AND revision=?2)",
+                    params!["audio-project", selected],
+                    |r| r.get(0),
+                )
+                .map_err(storage_error)?;
+            if !present {
+                return Err(EditorError::new(
+                    "NOT_FOUND",
+                    "Fixed preview revision is unavailable",
+                ));
+            }
+            Ok(())
+        })()
+        .err()
+        .map(|e| e.code);
+        let current = reader
+            .revalidate_scene_audio_preview("audio-project", selected)
+            .err()
+            .map(|e| e.code);
+        assert_eq!(original.as_deref(), expected, "Original fixture: {sql}");
+        assert_eq!(current, original, "Fresh combined scope: {sql}");
+    }
+}

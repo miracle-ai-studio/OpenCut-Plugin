@@ -53,8 +53,7 @@ pub(super) fn require_scope(
     caller: &ExecutionContext,
     project: &str,
 ) -> Result<(), EditorError> {
-    sqlite_access::require(connection, caller, project, ProjectAction::Read)?;
-    sqlite_access::require(connection, caller, project, ProjectAction::RunJobs)
+    sqlite_access::require_execution_scope(connection, caller, project, None).map(|_| ())
 }
 /// A retained job keeps its exact, stricter pre-font-reserve policy. Accept only
 /// that complete historical policy or the complete current policy, never an
@@ -135,6 +134,28 @@ pub(super) fn matches_policy(
 // project size. Larger inputs still take the same uncached validation path.
 // This stores immutable facts only, never a successful lease/access decision.
 const MAX_FIXED_JOB_INPUT_BYTES: usize = 1024 * 1024;
+#[derive(Clone, PartialEq, Eq, serde::Serialize)]
+#[serde(untagged)]
+pub(super) enum CurrentPolicy {
+    Visual(opencut_job_execution::media_frame::LocalVisualExecutionPolicy),
+    Audio(opencut_job_execution::scene_audio::LocalAudioExecutionPolicy),
+    Video(opencut_job_execution::media_video::LocalVideoExecutionPolicy),
+}
+impl From<&opencut_job_execution::media_frame::LocalVisualExecutionPolicy> for CurrentPolicy {
+    fn from(value: &opencut_job_execution::media_frame::LocalVisualExecutionPolicy) -> Self {
+        Self::Visual(value.clone())
+    }
+}
+impl From<&opencut_job_execution::scene_audio::LocalAudioExecutionPolicy> for CurrentPolicy {
+    fn from(value: &opencut_job_execution::scene_audio::LocalAudioExecutionPolicy) -> Self {
+        Self::Audio(value.clone())
+    }
+}
+impl From<&opencut_job_execution::media_video::LocalVideoExecutionPolicy> for CurrentPolicy {
+    fn from(value: &opencut_job_execution::media_video::LocalVideoExecutionPolicy) -> Self {
+        Self::Video(value.clone())
+    }
+}
 pub(super) struct FixedJobInput {
     job_id: String,
     kind: String,
@@ -142,7 +163,7 @@ pub(super) struct FixedJobInput {
     project: String,
     revision: String,
     authority: TrustedJobAuthority,
-    current_policy: Value,
+    current_policy: CurrentPolicy,
     processing: Value,
 }
 struct LiveJob {
@@ -192,23 +213,28 @@ pub(super) fn revalidate(
     worker: &str,
     attempt: u32,
     selected_authority: &TrustedJobAuthority,
-    policy: &impl serde::Serialize,
+    policy: impl Into<CurrentPolicy>,
 ) -> Result<(), EditorError> {
     let tx = app
         .connection
         .unchecked_transaction()
         .map_err(storage_error)?;
-    let current_policy = serde_json::to_value(policy).map_err(|_| access::denied())?;
+    // Compare every typed field before materializing JSON. No lease, caller,
+    // access, input or publication result is memoized by this immutable fact.
+    let current_policy = policy.into();
     let mut fixed = app.scene_job_input.borrow_mut();
     if let Some(prior) = fixed
         .as_mut()
         .filter(|p| p.job_id == job_id && p.kind == kind)
     {
-        if &prior.authority != selected_authority
-            || (prior.current_policy != current_policy
-                && !matches_policy(&prior.processing, &current_policy)?)
-        {
+        if &prior.authority != selected_authority {
             return Err(access::denied());
+        }
+        if prior.current_policy != current_policy {
+            let json = serde_json::to_value(&current_policy).map_err(|_| access::denied())?;
+            if !matches_policy(&prior.processing, &json)? {
+                return Err(access::denied());
+            }
         }
         // Read all mutable fences in a fresh transaction. SQL compares the
         // entire original TEXT, not a revision/hash/mtime approximation. Any
@@ -230,7 +256,8 @@ pub(super) fn revalidate(
     require_live(&job, worker, attempt)?;
     let original: TrustedJobAuthority = decode_json(&authority, "V4 authority")?;
     let processing: Value = decode_json(&processing, "V4 processing policy")?;
-    if &original != selected_authority || !matches_policy(&processing, &current_policy)? {
+    let policy_json = serde_json::to_value(&current_policy).map_err(|_| access::denied())?;
+    if &original != selected_authority || !matches_policy(&processing, &policy_json)? {
         return Err(access::denied());
     }
     require_scope(&tx, &context(&original), &job.project)?;
@@ -254,6 +281,33 @@ pub(super) fn revalidate(
 #[cfg(test)]
 mod policy_continuity_tests {
     use super::*;
+
+    #[test]
+    fn typed_current_policies_keep_exact_existing_json_and_all_fields() {
+        let visual = sqlite_scene_text_frame_jobs::policy();
+        let audio = sqlite_scene_audio_jobs::policy();
+        let video = sqlite_media_video_jobs::policy();
+        assert_eq!(
+            serde_json::to_value(CurrentPolicy::from(&visual)).unwrap(),
+            serde_json::to_value(&visual).unwrap()
+        );
+        assert_eq!(
+            serde_json::to_value(CurrentPolicy::from(&audio)).unwrap(),
+            serde_json::to_value(&audio).unwrap()
+        );
+        assert_eq!(
+            serde_json::to_value(CurrentPolicy::from(&video)).unwrap(),
+            serde_json::to_value(&video).unwrap()
+        );
+        let mut changed = video.clone();
+        changed.audio.max_pcm_bytes -= 1;
+        assert!(CurrentPolicy::from(&video) != CurrentPolicy::from(&changed));
+        assert!(!matches_policy(&video, &CurrentPolicy::from(&changed)).unwrap());
+        let mut changed = video.clone();
+        changed.visual.max_gpu_bytes -= 1;
+        assert!(CurrentPolicy::from(&video) != CurrentPolicy::from(&changed));
+        assert!(!matches_policy(&video, &CurrentPolicy::from(&changed)).unwrap());
+    }
 
     #[test]
     fn font_reserve_preserves_only_exact_historical_visual_policies() {

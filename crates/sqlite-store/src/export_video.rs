@@ -454,6 +454,25 @@ mod tests {
             validate(&app).unwrap();
             validate(&app).unwrap();
             assert!(app.scene_job_input.borrow().is_some());
+            // A warm typed-policy comparison must not reuse admission after
+            // even a nested field changes. Denial cannot poison the valid key.
+            let mut changed = policy();
+            changed.audio.max_pcm_bytes -= 1;
+            assert_eq!(
+                sqlite_scene_jobs::revalidate(
+                    &app,
+                    EXPORT_VIDEO_KIND,
+                    &job.job_id,
+                    "export-worker",
+                    running.attempt,
+                    &input.execution.authority,
+                    &changed,
+                )
+                .unwrap_err()
+                .code,
+                "NOT_AUTHORIZED"
+            );
+            validate(&app).unwrap();
             let sql = match fault {
                 "cancel" => "UPDATE jobs SET cancel_requested=1",
                 "attempt" => "UPDATE jobs SET attempt=attempt+1",

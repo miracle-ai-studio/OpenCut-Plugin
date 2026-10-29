@@ -30,6 +30,9 @@ pub(super) fn require_live(c: &Connection, project: &str) -> Result<(), EditorEr
         .map_err(storage_error)?
         .query_row([project], |r| r.get(0))
         .map_err(storage_error)?;
+    check_live(deleted)
+}
+pub(super) fn check_live(deleted: bool) -> Result<(), EditorError> {
     if deleted {
         return Err(EditorError::new("NOT_FOUND", "Project does not exist"));
     }

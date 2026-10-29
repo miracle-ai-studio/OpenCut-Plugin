@@ -51,6 +51,16 @@ const ACTIONS: [ProjectAction; 7] = [
     ProjectAction::ReadArtifacts,
     ProjectAction::ReadAudit,
 ];
+fn grant(project_id: String, mask: u32) -> ProjectGrant {
+    ProjectGrant {
+        project_id,
+        actions: ACTIONS
+            .iter()
+            .copied()
+            .filter(|a| mask & a.mask() != 0)
+            .collect(),
+    }
+}
 fn grants(connection: &Connection, principal: &str) -> Result<Vec<ProjectGrant>, EditorError> {
     let mut statement=connection.prepare_cached("SELECT project_id,action_mask FROM access_grants WHERE principal_id=?1 ORDER BY project_id").map_err(storage_error)?;
     statement
@@ -60,18 +70,80 @@ fn grants(connection: &Connection, principal: &str) -> Result<Vec<ProjectGrant>,
         .map_err(storage_error)?
         .map(|row| {
             let (project_id, mask) = row.map_err(storage_error)?;
-            Ok(ProjectGrant {
-                project_id,
-                actions: ACTIONS
-                    .iter()
-                    .copied()
-                    .filter(|a| mask & a.mask() != 0)
-                    .collect(),
-            })
+            Ok(grant(project_id, mask))
         })
         .collect()
 }
 struct Read<'a>(&'a Connection);
+
+/// One freshly read execution checkpoint, never retained by the connection.
+/// The original application policy still checks each action in order. All
+/// grant rows are decoded, including malformed unrelated rows, as before.
+pub(super) fn require_execution_scope(
+    connection: &Connection,
+    context: &ExecutionContext,
+    project: &str,
+    revision: Option<&str>,
+) -> Result<bool, EditorError> {
+    struct Snapshot<'a> {
+        caller: &'a Caller,
+        grants: Vec<ProjectGrant>,
+    }
+    impl AuthorizationRead for Snapshot<'_> {
+        fn current_grants(&self, caller: &Caller) -> Result<Vec<ProjectGrant>, EditorError> {
+            if caller != self.caller {
+                return Err(access::denied());
+            }
+            Ok(self.grants.clone())
+        }
+    }
+    let caller = context.caller();
+    let (grants, deleted, present) = match caller {
+        Caller::LocalOwner => {
+            let (deleted,present) = connection.prepare_cached(
+                "SELECT EXISTS(SELECT 1 FROM deleted_projects WHERE project_id=?1),CASE WHEN ?2 IS NULL THEN 1 ELSE EXISTS(SELECT 1 FROM revisions WHERE project_id=?1 AND revision=?2) END"
+            ).map_err(storage_error)?.query_row(params![project,revision],|row|Ok((row.get::<_,bool>(0)?,row.get::<_,bool>(1)?))).map_err(storage_error)?;
+            (Vec::new(), deleted, present)
+        }
+        Caller::Credential(credential) => {
+            let mut statement = connection.prepare_cached(
+                "SELECT EXISTS(SELECT 1 FROM access_credentials c JOIN access_principals p USING(principal_id) WHERE c.credential_id=?2 AND c.principal_id=?1 AND c.revoked=0 AND p.enabled=1),g.project_id,g.action_mask,EXISTS(SELECT 1 FROM deleted_projects WHERE project_id=?3),CASE WHEN ?4 IS NULL THEN 1 ELSE EXISTS(SELECT 1 FROM revisions WHERE project_id=?3 AND revision=?4) END FROM (SELECT 1) LEFT JOIN access_grants g ON g.principal_id=?1 ORDER BY g.project_id"
+            ).map_err(storage_error)?;
+            let mut rows = statement
+                .query(params![
+                    credential.principal_id(),
+                    credential.credential_id(),
+                    project,
+                    revision
+                ])
+                .map_err(storage_error)?;
+            let mut grants = Vec::new();
+            let mut facts = None;
+            while let Some(row) = rows.next().map_err(storage_error)? {
+                if !row.get::<_, bool>(0).map_err(storage_error)? {
+                    return Err(access::denied());
+                }
+                facts = Some((
+                    row.get::<_, bool>(3).map_err(storage_error)?,
+                    row.get::<_, bool>(4).map_err(storage_error)?,
+                ));
+                if let Some(id) = row.get::<_, Option<String>>(1).map_err(storage_error)? {
+                    grants.push(grant(id, row.get::<_, u32>(2).map_err(storage_error)?));
+                }
+            }
+            let (deleted, present) = facts.ok_or_else(access::denied)?;
+            (grants, deleted, present)
+        }
+    };
+    let snapshot = Snapshot { caller, grants };
+    for action in [ProjectAction::Read, ProjectAction::RunJobs] {
+        access::require(&snapshot, caller, project, action)?;
+        // Preserve Read -> project visibility -> RunJobs -> visibility error
+        // ordering. Both checks consume the same fresh transaction snapshot.
+        sqlite_project_library::check_live(deleted)?;
+    }
+    Ok(present)
+}
 impl AuthorizationRead for Read<'_> {
     fn current_grants(&self, caller: &Caller) -> Result<Vec<ProjectGrant>, EditorError> {
         let Caller::Credential(caller) = caller else {

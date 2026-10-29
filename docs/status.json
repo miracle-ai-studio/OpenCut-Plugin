@@ -4342,6 +4342,39 @@
           "scope": "Prior Webe7839eb8 ordinary540p paused picture,4K full gates passed but non-realtime;small startup6.229s failed;retain exact producer."
         }
       ]
+    },
+    "output_attempt_path_fence": {
+      "state": "rust_component_and_namespace_regressions_passed_pending_integrated_build_and_export",
+      "source_base_commit": "fee17706",
+      "evidence_root": "/Users/vincent/Movies/OpenCut-native-rendering/4k/export-fence-causal",
+      "hypothesis": "Repeated full realpath traversal in each212105execution checkpoints is avoidable filesystem work. No authorization or checkpoint-frequency change.",
+      "component_actual_rust": {
+        "reference_us": 24.0096815,
+        "kernel_path_us": 4.13174675,
+        "fraction_improvement": 0.8279133044726146,
+        "order": [
+          "reference-a1",
+          "kernel-b1",
+          "kernel-b2",
+          "reference-a2"
+        ],
+        "checks_per_case": 40000,
+        "scope": "Compiled actual storage adapter, normal retained attempt path. Not integrated export throughput."
+      },
+      "namespace_regressions": {
+        "passed": 3,
+        "failed": 0,
+        "scope": "Canonical/dot/parent paths,ancestor rename/replacement/alias,final alias and loop,deleted/recreated held inode,lookup errors,native filename,open child lifetime and cleanup lock."
+      },
+      "failures_retained": [
+        "first-rust-failure.json",
+        "first-rust-patch.diff",
+        "first-attempt-names.rs"
+      ],
+      "boundary": "Existing storage adapter and host output helper; existing rustix dependency. No new module/publicDTO/operation/grant cache/policy or baseline expansion. macOS positive current-name/live-inode shortcut, original lookup/error semantics otherwise. Other platforms unchanged.",
+      "public_contract_changed": false,
+      "web_changed": false,
+      "delivery_ready": false
     }
   }
 }

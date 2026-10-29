@@ -59,6 +59,26 @@ impl AttemptLease {
     pub fn still_names(&self, path: &Path) -> io::Result<bool> {
         same_directory(&self.0, path)
     }
+    /// Check the canonical name and live inode without caching either fact.
+    /// macOS can report the held directory's current name directly. Only a
+    /// matching name and live inode shortcut the original lookup. Negative or
+    /// unavailable observations retain its alias and lookup-error semantics.
+    pub fn still_names_canonical(&self, path: &Path) -> io::Result<bool> {
+        #[cfg(target_os = "macos")]
+        {
+            use std::{ffi::OsStr, os::unix::ffi::OsStrExt};
+            if let Ok(current) = rustix::fs::getpath(&*self.0)
+                && Path::new(OsStr::from_bytes(current.as_bytes())) == path
+                && same_directory(&self.0, path)?
+            {
+                return Ok(true);
+            }
+        }
+        if std::fs::canonicalize(path)? != path {
+            return Ok(false);
+        }
+        same_directory(&self.0, path)
+    }
     /// Open a direct child of the locked attempt inode, never following a
     /// replacement of the attempt path or a symbolic link at the file name.
     pub fn open_readonly_child(&self, name: &OsStr) -> io::Result<File> {

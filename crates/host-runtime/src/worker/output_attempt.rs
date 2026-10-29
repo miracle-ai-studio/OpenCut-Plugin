@@ -48,9 +48,7 @@ fn real_directory(path: &Path) -> Result<(), EditorError> {
     Ok(())
 }
 pub(super) fn check_attempt(attempt: &AttemptLease, directory: &Path) -> Result<(), EditorError> {
-    if fs::canonicalize(directory).map_err(io_error)? != directory
-        || !attempt.still_names(directory).map_err(io_error)?
-    {
+    if !attempt.still_names_canonical(directory).map_err(io_error)? {
         return Err(error(
             "JOB_LEASE_LOST",
             "Private output attempt was replaced",

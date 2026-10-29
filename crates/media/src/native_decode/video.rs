@@ -728,10 +728,27 @@ mod tests {
             "Recycling must retain the ordinary complete conversion pixels"
         );
         source.revoked = true;
+        let before_revocation = decoder.encoded_bytes_read();
         assert!(
             matches!(decoder.sample(&mut source,MediaTime {ticks:3,timebase:30},deadline),Err(MediaError::Admission {code,..}) if code=="NOT_AUTHORIZED")
         );
-        assert!(decoder.retired && decoder.converted.is_none());
+        // Entry rejection precedes an operation. It must not read or expose
+        // cached bytes; retirement belongs to failures during admitted work.
+        assert_eq!(decoder.encoded_bytes_read(), before_revocation);
+        source.revoked = false;
+        let resumed = decoder
+            .sample(
+                &mut source,
+                MediaTime {
+                    ticks: 2,
+                    timebase: 30,
+                },
+                deadline,
+            )
+            .unwrap()
+            .unwrap();
+        assert!(Arc::ptr_eq(&third, &resumed));
+        drop(decoder);
         assert_eq!(third.rgba, reference.rgba);
     }
 }

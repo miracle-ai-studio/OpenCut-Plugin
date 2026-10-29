@@ -220,6 +220,10 @@ pub async fn serve(
             "/api/preview/picture/stream",
             post(crate::visual_preview_http::stream),
         )
+        .route(
+            opencut_host_runtime::visual_preview_contracts::PICTURE_PREPARE_PATH,
+            post(crate::visual_preview_http::prepare),
+        )
         .route("/api/media/upload", post(crate::media_http::upload))
         .route(
             "/api/uploads/{upload_id}/chunks/{offset}",

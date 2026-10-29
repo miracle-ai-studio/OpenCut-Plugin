@@ -1,7 +1,7 @@
 export { requestEnvelope, OpenCutApiError, OpenCutProtocolError, OpenCutTransportError, type Envelope } from "./transport.js";
 import { requestEnvelope, OpenCutApiError, OpenCutProtocolError, OpenCutTransportError, type Envelope } from "./transport.js";
 export * from "./contracts.generated.js";
-import { toolNames, domainNames, domainActions, type ToolMap, type DomainMap, type JobResultMap, type AudioPreviewPcm, type AudioPreviewTransport, type VisualPreviewTransport } from "./contracts.generated.js";
+import { toolNames, domainNames, domainActions, picturePreparationTransport, type ToolMap, type DomainMap, type JobResultMap, type AudioPreviewPcm, type AudioPreviewTransport, type VisualPreviewTransport, type VisualPreviewPreparation, type VisualPreviewPrepared } from "./contracts.generated.js";
 
 export type AudioPreviewPcmHeader = AudioPreviewPcm.AudioPreviewPcmHeader;
 export type AudioPreviewStreamInput = AudioPreviewTransport.AudioPreviewStream;
@@ -51,6 +51,12 @@ export interface CallOptions {
   /** Standard fetch best-effort delivery during document departure. */
   keepalive?: boolean;
 }
+export type PreparedVisualPicture = {
+  /** The native picture has already been claimed; pixels still require verification. */
+  header: VisualPreviewPrepared.VisualPreviewPreparedPicture;
+  pixels: Promise<Uint8ClampedArray<ArrayBuffer>>;
+  cancel(reason?: unknown): void;
+};
 export interface AdmissionRetryOptions extends CallOptions {
   /** Opt-in deferral of explicit budget-lock contention; never retries an unknown outcome. */
   admissionTimeoutMs?: number;
@@ -64,6 +70,22 @@ export interface WaitOptions extends CallOptions {
 
 function object(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function validateNativePicture(picture: ToolOutput<"opencut_visual_preview_frame">["picture"]) {
+  const length = picture.byte_length;
+  if (!Number.isInteger(length) || length < 4 || length > 64 * 1024 * 1024 ||
+      !Number.isInteger(picture.width) || picture.width < 1 || picture.width > 16384 ||
+      !Number.isInteger(picture.height) || picture.height < 1 || picture.height > 16384 ||
+      length !== picture.width * picture.height * 4 || !/^[0-9a-f]{64}$/.test(picture.content_hash))
+    throw new TypeError("Invalid native picture descriptor");
+  return length;
+}
+async function verifyNativePicture(bytes: Uint8ClampedArray<ArrayBuffer>, hash: string, signal?: AbortSignal) {
+  const actual = Array.from(new Uint8Array(await globalThis.crypto.subtle.digest("SHA-256", bytes.buffer)), b => b.toString(16).padStart(2, "0")).join("");
+  signal?.throwIfAborted();
+  if (actual !== hash) throw new TypeError("Native picture changed its content hash");
+  return bytes;
 }
 
 function pause(ms: number, signal: AbortSignal): Promise<void> {
@@ -265,12 +287,7 @@ export class OpenCutClient {
      * This permits the next native intent, not presentation of unverified bytes. */
     onClaimed?: () => void;
   } = {}): Promise<Uint8ClampedArray<ArrayBuffer>> {
-    const length = picture.byte_length;
-    if (!Number.isInteger(length) || length < 4 || length > 64 * 1024 * 1024 ||
-        !Number.isInteger(picture.width) || picture.width < 1 || picture.width > 16384 ||
-        !Number.isInteger(picture.height) || picture.height < 1 || picture.height > 16384 ||
-        length !== picture.width * picture.height * 4 || !/^[0-9a-f]{64}$/.test(picture.content_hash))
-      throw new TypeError("Invalid native picture descriptor");
+    const length = validateNativePicture(picture);
     const input: VisualPreviewTransport.VisualPreviewPictureRead = { session, picture_id: picture.picture_id };
     const response = await this.#downloadBytes(`${this.baseUrl}/api/preview/picture/stream`, "native preview picture", options, JSON.stringify(input));
     if (response.headers.get("content-type") !== "application/vnd.opencut.rgba" || response.headers.get("content-length") !== String(length)) {
@@ -290,11 +307,93 @@ export class OpenCutClient {
         bytes.set(chunk.value, offset); offset += chunk.value.length;
       }
       if (offset !== length) throw new TypeError("Native picture changed length");
-      const hash = Array.from(new Uint8Array(await globalThis.crypto.subtle.digest("SHA-256", bytes.buffer)), b => b.toString(16).padStart(2, "0")).join("");
-      options.signal?.throwIfAborted();
-      if (hash !== picture.content_hash) throw new TypeError("Native picture changed its content hash");
-      return bytes;
+      return await verifyNativePicture(bytes, picture.content_hash, options.signal);
     } finally { await reader.cancel().catch(() => {}); reader.releaseLock(); }
+  }
+  /** Execute the existing scene/draft frame use case and claim its pixels in one request.
+   * Resolves at validated metadata; the separate pixels promise never exposes partial bytes. */
+  async prepareVisualPreviewPicture(input: VisualPreviewPreparation.VisualPreviewPicturePrepare, options: CallOptions = {}): Promise<PreparedVisualPicture> {
+    const local = new AbortController();
+    const signal = options.signal ? AbortSignal.any([options.signal, local.signal]) : local.signal;
+    signal.throwIfAborted();
+    // Capture the kind before awaiting, just as the serialized request is captured.
+    const kind = input.kind;
+    const response = await this.#downloadBytes(`${this.baseUrl}${picturePreparationTransport.path}`, "native picture preparation", { ...options, signal }, JSON.stringify(input));
+    const declared = response.headers.get("content-length");
+    const length = Number(declared);
+    if (response.headers.get("content-type") !== picturePreparationTransport.content_type ||
+        !declared || !/^[1-9][0-9]*$/.test(declared) || !Number.isSafeInteger(length) || length < picturePreparationTransport.prefix_bytes + 5 ||
+        length > picturePreparationTransport.prefix_bytes + picturePreparationTransport.max_header_bytes + 64 * 1024 * 1024) {
+      await response.body?.cancel(); throw new TypeError("Invalid native picture preparation transport");
+    }
+    const reader = response.body?.getReader();
+    if (!reader) throw new TypeError("Native picture bytes unavailable");
+    const abort = () => { void reader.cancel(signal.reason).catch(() => {}); };
+    signal.addEventListener("abort", abort, { once: true });
+    if (signal.aborted) abort();
+    let chunk: Uint8Array = new Uint8Array(0), position = 0, received = 0;
+    const fill = async (target: Uint8Array<ArrayBuffer> | Uint8ClampedArray<ArrayBuffer>) => {
+      let offset = 0;
+      while (offset < target.length) {
+        signal.throwIfAborted();
+        if (position === chunk.length) {
+          const next = await reader.read();
+          signal.throwIfAborted();
+          if (next.done) throw new TypeError("Native picture changed length");
+          if (next.value.length > length - received) throw new TypeError("Native picture exceeded its byte bound");
+          chunk = next.value; position = 0; received += chunk.length;
+          if (!chunk.length) continue;
+        }
+        const count = Math.min(target.length - offset, chunk.length - position);
+        target.set(chunk.subarray(position, position + count), offset);
+        position += count; offset += count;
+      }
+    };
+    const cleanup = async () => {
+      signal.removeEventListener("abort", abort);
+      try { await reader.cancel().catch(() => {}); } finally { reader.releaseLock(); }
+    };
+    try {
+      const prefix = new Uint8Array(picturePreparationTransport.prefix_bytes);
+      await fill(prefix);
+      if (String.fromCharCode(...prefix.subarray(0, 4)) !== picturePreparationTransport.magic)
+        throw new TypeError("Invalid native picture preparation magic");
+      const view = new DataView(prefix.buffer);
+      const headerLength = view.getUint32(4, true), pixelLength = view.getUint32(8, true);
+      if (!headerLength || headerLength > picturePreparationTransport.max_header_bytes ||
+          pixelLength < 4 || pixelLength > 64 * 1024 * 1024 ||
+          prefix.length + headerLength + pixelLength !== length)
+        throw new TypeError("Invalid native picture preparation lengths");
+      const metadata = new Uint8Array(headerLength);
+      await fill(metadata);
+      const value: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(metadata));
+      if (!object(value) || value.kind !== kind || !["scene", "edit_draft"].includes(kind))
+        throw new TypeError("Native picture changed preparation kind");
+      const frame = kind === "scene" ? value.frame : object(value.draft) ? value.draft.frame : null;
+      if (!object(frame) || !object(frame.picture)) throw new TypeError("Invalid native picture preparation header");
+      const picture = frame.picture as ToolOutput<"opencut_visual_preview_frame">["picture"];
+      if (validateNativePicture(picture) !== pixelLength) throw new TypeError("Native picture changed its descriptor length");
+      signal.throwIfAborted();
+      const pixels = (async () => {
+        try {
+          const bytes = new Uint8ClampedArray(pixelLength);
+          await fill(bytes);
+          if (position !== chunk.length) throw new TypeError("Native picture exceeded its byte bound");
+          chunk = new Uint8Array(0);
+          for (;;) {
+            const tail = await reader.read();
+            signal.throwIfAborted();
+            if (tail.done) break;
+            if (tail.value.length) throw new TypeError("Native picture exceeded its byte bound");
+          }
+          return await verifyNativePicture(bytes, picture.content_hash, signal);
+        } finally { await cleanup(); }
+      })();
+      void pixels.catch(() => {});
+      return { header: value as PreparedVisualPicture["header"], pixels, cancel: reason => local.abort(reason) };
+    } catch (error) {
+      await cleanup(); throw error;
+    }
   }
   /** Download a locked font authorized by the current preview owner and generation. */
   downloadVisualPreviewFont(input: ToolInput<"opencut_visual_preview_font_authorize">, options: CallOptions = {}): Promise<Response> {

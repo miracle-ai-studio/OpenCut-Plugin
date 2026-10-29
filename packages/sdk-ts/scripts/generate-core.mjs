@@ -104,6 +104,14 @@ export function preflightRegistry({ tools, jobs, domains, eventSchema, audioStre
     }
     if (visualStream.content_type !== "application/vnd.opencut.rgba" || visualStream.pixel_format !== "rgba8" || visualStream.chunk_bytes !== 65536)
       throw new Error("Unsupported native picture byte transport");
+    const prepare = visualStream.prepare;
+    for (const [name, value] of [["VisualPreviewPreparation", prepare?.input], ["VisualPreviewPrepared", prepare?.header]]) {
+      namespace(name); schema(value, name);
+      if (!rootTitle(value)) throw new Error(`Unsupported root type in ${name}`);
+    }
+    if (prepare.path !== "/api/preview/picture/prepare" || prepare.content_type !== "application/vnd.opencut.picture" ||
+        prepare.magic !== "OCVP" || prepare.prefix_bytes !== 12 || prepare.max_header_bytes !== 2097152 || prepare.chunk_bytes !== 65536)
+      throw new Error("Unsupported prepared native picture transport");
   }
   if (uploads && (uploads.chunk_method !== "PUT" || uploads.chunk_path_template !== "/api/uploads/{upload_id}/chunks/{offset}"
       || !Array.isArray(uploads.chunk_query_fields) || uploads.chunk_query_fields.join(",") !== "size_bytes,content_hash")) {
@@ -328,12 +336,16 @@ for (const [namespace, schema] of [
   ["AudioPreviewPcm", audioStreamEnvelope.data.header],
   ["VisualPreviewTransport", visualStreamEnvelope.data.input],
   ["VisualPreviewPixels", visualStreamEnvelope.data.descriptor],
+  ["VisualPreviewPreparation", visualStreamEnvelope.data.prepare.input],
+  ["VisualPreviewPrepared", visualStreamEnvelope.data.prepare.header],
 ]) {
   const source = await compile(schema, "Schema", {
     bannerComment: "", style: { singleQuote: true }, unknownAny: false,
   });
   output += `export namespace ${namespace} {\n${source.replace(/^export /gm, "  export ")}\n}\n\n`;
 }
+const { input: _prepareInput, header: _prepareHeader, ...picturePreparationTransport } = visualStreamEnvelope.data.prepare;
+output += `export const picturePreparationTransport = ${JSON.stringify(picturePreparationTransport, null, 2)} as const;\n\n`;
 output += "export interface ToolMap {\n";
 for (const tool of envelope.data) {
   const title = tool.input_schema.title;
@@ -467,6 +479,17 @@ paths["/api/preview/picture/stream"] = { post: {
   requestBody: { required: true, content: { "application/json": { schema: nativePictureInput } } },
   responses: { "200": { description: "Exact straight RGBA8 bytes; dimensions, length and SHA-256 are supplied by the generated picture descriptor.", content: {
     "application/vnd.opencut.rgba": { schema: { type: "string", format: "binary" } },
+  } }, default: transportError },
+} };
+const picturePrepare = visualStreamEnvelope.data.prepare;
+const picturePrepareInput = component(picturePrepare.input, "VisualPreviewPicturePrepare");
+component(picturePrepare.header, "VisualPreviewPreparedPicture");
+paths[picturePrepare.path] = { post: {
+  operationId: "opencut_visual_preview_picture_prepare",
+  description: "Execute the same scene or edit-draft frame use case and claim its pixels before responding. OCVP contains12 little-endian prefix bytes (magic,JSON-header length,RGBA length),a generated prepared-picture JSON header bounded to2MiB,and exact straight RGBA8 bytes. Metadata and pixels retain64KiB live authorization/generation checkpoints,one-second backpressure and the original residency budget. Receiving metadata is not presentation;verify the full pixel length/hash before use.",
+  requestBody: { required: true, content: { "application/json": { schema: picturePrepareInput } } },
+  responses: { "200": { description: "Already-claimed native picture with generated metadata and bounded RGBA payload.", content: {
+    [picturePrepare.content_type]: { schema: { type: "string", format: "binary" } },
   } }, default: transportError },
 } };
 const previewFontTool = envelope.data.find(tool => tool.name === "opencut_visual_preview_font_authorize");

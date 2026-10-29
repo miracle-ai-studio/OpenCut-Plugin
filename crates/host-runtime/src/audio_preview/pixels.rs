@@ -5,7 +5,7 @@ use opencut_api_contracts::visual_preview::VisualPreviewPictureRead;
 use ring::digest::{SHA256, digest};
 use std::{collections::VecDeque, sync::Weak, time::Duration};
 
-const CHUNK: usize = 65536;
+const CHUNK: usize = opencut_api_contracts::visual_preview::PICTURE_CHUNK_BYTES;
 const READER_OVERHEAD: usize = CHUNK * 3;
 const TICKET_LIFETIME: Duration = Duration::from_secs(5);
 #[derive(Default)]

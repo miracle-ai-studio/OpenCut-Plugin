@@ -7,7 +7,7 @@ type Input = ToolInput<"opencut_visual_preview_frame">;
 type Frame = ToolOutput<"opencut_visual_preview_frame">;
 export type VisualPreviewExecutionApi = {
   scene: Pick<EditorApi["scene"], "resource">;
-  sdk: Pick<EditorApi["sdk"], "call" | "readVisualPreviewPicture">;
+  sdk: Pick<EditorApi["sdk"], "prepareVisualPreviewPicture">;
 };
 export type NativePictureResult = {
   frame: Frame;
@@ -53,18 +53,13 @@ export class VisualPreviewRenderer {
       retained_picture_bytes: preparation?.reservedBytes ?? 0,
       hit_query: hitQuery ? { x: hitQuery.x, y: hitQuery.y } : null,
     };
-    let frame: Frame | undefined;
+    let prepared: Awaited<ReturnType<VisualPreviewExecutionApi["sdk"]["prepareVisualPreviewPicture"]>>;
     for (let attempt = 0; ; attempt++) {
       try {
-        if (transformDraft) {
-          const draft = await api.sdk.call("opencut_visual_preview_edit_draft_frame", {
+        prepared = await api.sdk.prepareVisualPreviewPicture(transformDraft ? { kind: "edit_draft", draft: {
             draft_id: transformDraft.draftId, intent: transformDraft.intent,
             transaction: transformDraft.transaction, frame: request,
-          }, { signal: intent });
-          if (draft.draft_id !== transformDraft.draftId || !draft.transaction_digest)
-            throw Error("Native draft changed its identity");
-          frame = draft.frame;
-        } else frame = await api.sdk.call("opencut_visual_preview_frame", request, { signal: intent });
+        } } : { kind: "scene", frame: request }, { signal: intent });
         break;
       } catch (error) {
         if (!(error instanceof OpenCutApiError && ["PREVIEW_PICTURE_BUSY", "PREVIEW_DRAFT_BUSY"].includes(error.code)) || attempt >= 6) throw error;
@@ -76,22 +71,32 @@ export class VisualPreviewRenderer {
         });
       }
     }
-    intent.throwIfAborted();
-    if (!frame.bound || !frame.bound_media || !frame.bound_execution || !frame.bound_graphic || !frame.bound_blend)
-      throw Error("Native picture omitted its complete scene binding");
+    let frame: Frame;
+    try {
+      intent.throwIfAborted();
+      const header = prepared.header;
+      if (transformDraft) {
+        if (header.kind !== "edit_draft" || header.draft.draft_id !== transformDraft.draftId || !header.draft.transaction_digest)
+          throw Error("Native draft changed its identity");
+        frame = header.draft.frame;
+      } else {
+        if (header.kind !== "scene") throw Error("Native picture changed preparation kind");
+        frame = header.frame;
+      }
+      if (!frame.bound || !frame.bound_media || !frame.bound_execution || !frame.bound_graphic || !frame.bound_blend)
+        throw Error("Native picture omitted its complete scene binding");
+      const picture = frame.picture, identity = frame.plan.identity;
+      if (!picture || picture.width !== identity.width || picture.height !== identity.height ||
+          frame.prepare_ahead !== request.prepare_ahead ||
+          (hitQuery && (!frame.hit_test || frame.hit_test.point.x !== hitQuery.x || frame.hit_test.point.y !== hitQuery.y ||
+            JSON.stringify(frame.hit_test.identity) !== JSON.stringify(identity))))
+        throw Error("Native picture changed its prepared identity");
+    } catch (error) { prepared.cancel(error); throw error; }
     const picture = frame.picture;
-    const identity = frame.plan.identity;
-    if (!picture || picture.width !== identity.width || picture.height !== identity.height ||
-        frame.prepare_ahead !== request.prepare_ahead ||
-        (hitQuery && (!frame.hit_test || frame.hit_test.point.x !== hitQuery.x || frame.hit_test.point.y !== hitQuery.y ||
-          JSON.stringify(frame.hit_test.identity) !== JSON.stringify(identity))))
-      throw Error("Native picture changed its prepared identity");
     const preparedAt = performance.now();
-    let claim!: () => void, claimFailed!: (error: unknown) => void;
-    const claimed = new Promise<void>((yes, no) => { claim = yes; claimFailed = no; });
     const completedFrame = frame;
     const complete = (async (): Promise<NativePictureResult> => {
-      const bytes = await api.sdk.readVisualPreviewPicture(session, picture, { signal: intent, onClaimed: claim });
+      const bytes = await prepared.pixels;
       intent.throwIfAborted();
       const pixels = await createImageBitmap(new ImageData(bytes, picture.width, picture.height), { colorSpaceConversion: "none", premultiplyAlpha: "none" });
       try {
@@ -111,10 +116,9 @@ export class VisualPreviewRenderer {
         };
       } catch (error) { pixels.close(); throw error; }
     })();
-    // Completion also proves the claim; early failures settle both stages.
-    void complete.then(claim, claimFailed);
-    void claimed.catch(() => {});
-    return { frame: completedFrame, claimed, complete };
+    void complete.catch(() => {});
+    // The host claims before emitting the validated metadata returned by the SDK.
+    return { frame: completedFrame, claimed: Promise.resolve(), complete };
   }
   surfacePresenter(canvas: OffscreenCanvas) {
     const context = canvas.getContext("2d", { desynchronized: true });

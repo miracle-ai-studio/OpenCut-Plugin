@@ -145,6 +145,89 @@ impl Automation {
     ) -> Result<audio_preview::VisualPictureReader, EditorError> {
         audio_preview::open_picture(self, input)
     }
+    /// Prepare and claim within one native data-plane request. The typed
+    /// scene/draft use cases below are the same ones used by tool dispatch.
+    pub fn prepare_visual_preview_picture(
+        &mut self,
+        input: visual_preview_contracts::VisualPreviewPicturePrepare,
+    ) -> Result<
+        (
+            visual_preview_contracts::VisualPreviewPreparedPicture,
+            audio_preview::VisualPictureReader,
+        ),
+        EditorError,
+    > {
+        use opencut_editor_application::tool_execution::ToolExecution;
+        use visual_preview_contracts::{
+            VisualPreviewPicturePrepare as Input, VisualPreviewPictureRead,
+            VisualPreviewPreparedPicture as Output,
+        };
+        let name = match &input {
+            Input::Scene { .. } => "opencut_visual_preview_frame",
+            Input::EditDraft { .. } => "opencut_visual_preview_edit_draft_frame",
+        };
+        let context = ExecutionContext::for_caller(self.source, self.caller.clone());
+        let result = (|| {
+            self.begin(context.clone())?;
+            if serde_json::to_vec(&input)
+                .map_err(|_| {
+                    EditorError::new("INVALID_ARGUMENT", "Invalid native preparation request")
+                })?
+                .len()
+                > 2_097_152
+            {
+                return Err(EditorError::new(
+                    "INVALID_ARGUMENT",
+                    "Control request exceeds 2 MiB",
+                ));
+            }
+            opencut_editor_application::access::authorize_tool(context.caller(), name)?;
+            let session = match &input {
+                Input::Scene { frame } => frame.session.clone(),
+                Input::EditDraft { draft } => draft.frame.session.clone(),
+            };
+            let header = match input {
+                Input::Scene { frame } => Output::Scene {
+                    frame: Box::new(audio_preview::scene_picture(self, frame)?),
+                },
+                Input::EditDraft { draft } => Output::EditDraft {
+                    draft: Box::new(audio_preview::edit_draft_picture(self, draft)?),
+                },
+            };
+            let reader = self.open_visual_preview_picture(VisualPreviewPictureRead {
+                session,
+                picture_id: header.frame().picture.picture_id.clone(),
+            })?;
+            if reader.byte_length() != u64::from(header.frame().picture.byte_length) {
+                return Err(EditorError::new(
+                    "INVALID_VISUAL_PLAN",
+                    "Prepared picture changed its claimed length",
+                ));
+            }
+            Ok((header, reader))
+        })();
+        if result
+            .as_ref()
+            .err()
+            .is_some_and(opencut_automation::denials::is_denial)
+            && self
+                .record_tool_denial(&opencut_editor_application::denials::Denial {
+                    request_id: context.request_id(),
+                    source: context.actor().source,
+                    caller: Some(context.caller()),
+                    operation: opencut_automation::denials::operation(name),
+                    reason: opencut_editor_application::denials::DenialReason::AuthorizationDenied,
+                })
+                .is_err()
+        {
+            eprintln!(
+                "{}: {}",
+                opencut_automation::denials::FAILURE_WARNING,
+                context.request_id()
+            );
+        }
+        result
+    }
     pub fn open_visual_preview_font(
         &mut self,
         input: visual_preview_contracts::VisualPreviewFont,

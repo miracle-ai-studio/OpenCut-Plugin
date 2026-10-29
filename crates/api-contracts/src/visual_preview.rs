@@ -169,13 +169,62 @@ pub struct VisualPreviewFrameResult {
     pub hit_test: Option<VisualPreviewHitTest>,
 }
 
+/// A presentation transport over the existing scene/draft use cases. This
+/// does not create a second rendering operation or grant resource authority.
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+pub enum VisualPreviewPicturePrepare {
+    Scene {
+        frame: VisualPreviewFrame,
+    },
+    EditDraft {
+        draft: crate::visual_edit_draft::VisualEditDraftFrame,
+    },
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+pub enum VisualPreviewPreparedPicture {
+    Scene {
+        frame: Box<VisualPreviewFrameResult>,
+    },
+    EditDraft {
+        draft: Box<crate::visual_edit_draft::VisualEditDraftFrameResult>,
+    },
+}
+impl VisualPreviewPreparedPicture {
+    pub fn frame(&self) -> &VisualPreviewFrameResult {
+        match self {
+            Self::Scene { frame } => frame,
+            Self::EditDraft { draft } => &draft.frame,
+        }
+    }
+}
+
+pub const PICTURE_PREPARE_PATH: &str = "/api/preview/picture/prepare";
+pub const PICTURE_PREPARE_CONTENT_TYPE: &str = "application/vnd.opencut.picture";
+pub const PICTURE_PREPARE_MAGIC: &[u8; 4] = b"OCVP";
+pub const PICTURE_PREPARE_PREFIX_BYTES: usize = 12;
+pub const PICTURE_PREPARE_MAX_HEADER_BYTES: usize = 2_097_152;
+pub const PICTURE_CHUNK_BYTES: usize = 65_536;
+
 pub fn picture_stream_schemas() -> serde_json::Value {
     serde_json::json!({
         "input": schemars::schema_for!(VisualPreviewPictureRead),
         "descriptor": schemars::schema_for!(VisualPreviewPicture),
         "content_type": "application/vnd.opencut.rgba",
         "pixel_format": "rgba8",
-        "chunk_bytes": 65536,
+        "chunk_bytes": PICTURE_CHUNK_BYTES,
+        "prepare": {
+            "path": PICTURE_PREPARE_PATH,
+            "input": schemars::schema_for!(VisualPreviewPicturePrepare),
+            "header": schemars::schema_for!(VisualPreviewPreparedPicture),
+            "content_type": PICTURE_PREPARE_CONTENT_TYPE,
+            "magic": "OCVP",
+            "prefix_bytes": PICTURE_PREPARE_PREFIX_BYTES,
+            "max_header_bytes": PICTURE_PREPARE_MAX_HEADER_BYTES,
+            "chunk_bytes": PICTURE_CHUNK_BYTES,
+        },
     })
 }
 

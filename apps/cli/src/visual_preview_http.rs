@@ -6,8 +6,51 @@ use axum::{
     http::header,
     response::{IntoResponse, Response},
 };
-use opencut_host_runtime::visual_preview_contracts::VisualPreviewPictureRead;
-use std::time::Duration;
+use opencut_contracts::EditorError;
+use opencut_host_runtime::{audio_preview::VisualPictureReader, visual_preview_contracts::*};
+use std::{io::Write, time::Duration};
+
+/// One bounded control header, followed by the unchanged RGBA payload.
+fn prepared_header(
+    header: &impl serde::Serialize,
+    pixel_length: u64,
+) -> Result<Vec<u8>, EditorError> {
+    struct Bounded(Vec<u8>);
+    impl Write for Bounded {
+        fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+            if bytes.len()
+                > PICTURE_PREPARE_PREFIX_BYTES + PICTURE_PREPARE_MAX_HEADER_BYTES - self.0.len()
+            {
+                return Err(std::io::Error::other(
+                    "Native picture header exceeds its bound",
+                ));
+            }
+            self.0.extend_from_slice(bytes);
+            Ok(bytes.len())
+        }
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
+    if pixel_length == 0 || pixel_length > 64 * 1024 * 1024 {
+        return Err(EditorError::new(
+            "INVALID_VISUAL_PLAN",
+            "Native picture payload exceeds its bound",
+        ));
+    }
+    let mut bytes = Bounded(vec![0; PICTURE_PREPARE_PREFIX_BYTES]);
+    serde_json::to_writer(&mut bytes, header).map_err(|_| {
+        EditorError::new(
+            "VISUAL_BUDGET_EXCEEDED",
+            "Native picture header exceeds its bound",
+        )
+    })?;
+    let length = (bytes.0.len() - PICTURE_PREPARE_PREFIX_BYTES) as u32;
+    bytes.0[..4].copy_from_slice(PICTURE_PREPARE_MAGIC);
+    bytes.0[4..8].copy_from_slice(&length.to_le_bytes());
+    bytes.0[8..12].copy_from_slice(&(pixel_length as u32).to_le_bytes());
+    Ok(bytes.0)
+}
 
 async fn send_picture_chunk(
     send: &tokio::sync::mpsc::Sender<Result<Bytes, std::io::Error>>,
@@ -57,14 +100,58 @@ pub(super) async fn stream(
         opened_host.with_automation(|app| app.open_visual_preview_picture(input))
     })
     .await;
-    let mut reader = match opened {
+    let reader = match opened {
         Ok(Ok(reader)) => reader,
         Ok(Err(error)) => return crate::http::error_response(&error.code, &error.message),
         Err(_) => {
             return crate::http::error_response("INTERNAL_ERROR", "Native picture could not start");
         }
     };
-    let length = reader.byte_length();
+    picture_response(host, reader, None)
+}
+
+pub(super) async fn prepare(
+    AuthorizedHost(host): AuthorizedHost,
+    input: Result<Json<VisualPreviewPicturePrepare>, axum::extract::rejection::JsonRejection>,
+) -> Response {
+    let input = match input {
+        Ok(Json(input)) => input,
+        Err(_) => {
+            return crate::http::error_response(
+                "INVALID_ARGUMENT",
+                "Invalid native picture preparation",
+            );
+        }
+    };
+    let identity = host.identity.clone();
+    let opened_host = host.clone();
+    let opened = tokio::task::spawn_blocking(move || {
+        identity.check_lifetime()?;
+        opened_host.with_automation(|app| {
+            let (header, reader) = app.prepare_visual_preview_picture(input)?;
+            let metadata = prepared_header(&header, reader.byte_length())?;
+            Ok((metadata, reader))
+        })
+    })
+    .await;
+    match opened {
+        Ok(Ok((metadata, reader))) => picture_response(host, reader, Some(metadata)),
+        Ok(Err(error)) => crate::http::error_response(&error.code, &error.message),
+        Err(_) => crate::http::error_response("INTERNAL_ERROR", "Native picture could not prepare"),
+    }
+}
+
+fn picture_response(
+    host: crate::http::Host,
+    mut reader: VisualPictureReader,
+    metadata: Option<Vec<u8>>,
+) -> Response {
+    let content_type = if metadata.is_some() {
+        PICTURE_PREPARE_CONTENT_TYPE
+    } else {
+        "application/vnd.opencut.rgba"
+    };
+    let length = reader.byte_length() + metadata.as_ref().map_or(0, |bytes| bytes.len() as u64);
     let (send, receive) = tokio::sync::mpsc::channel::<Result<Bytes, std::io::Error>>(2);
     let runtime = tokio::runtime::Handle::current();
     tokio::task::spawn_blocking(move || {
@@ -74,6 +161,22 @@ pub(super) async fn stream(
             Ok(authority) => authority,
             Err(_) => return,
         };
+        if let Some(metadata) = metadata {
+            for chunk in metadata.chunks(PICTURE_CHUNK_BYTES) {
+                if host.identity.validate(&mut authority).is_err() || reader.checkpoint().is_err() {
+                    return;
+                }
+                let bytes = Bytes::copy_from_slice(chunk);
+                if reader.checkpoint().is_err() || host.identity.validate(&mut authority).is_err() {
+                    return;
+                }
+                if !runtime.block_on(send_picture_chunk(&send, bytes, || {
+                    reader.checkpoint().is_ok() && host.identity.validate(&mut authority).is_ok()
+                })) {
+                    return;
+                }
+            }
+        }
         loop {
             if send.is_closed() || host.identity.validate(&mut authority).is_err() {
                 return;
@@ -104,7 +207,7 @@ pub(super) async fn stream(
     ));
     let mut response = (
         [
-            (header::CONTENT_TYPE, "application/vnd.opencut.rgba"),
+            (header::CONTENT_TYPE, content_type),
             (header::CACHE_CONTROL, "no-store"),
         ],
         body,
@@ -125,6 +228,30 @@ pub(super) async fn stream(
 mod tests {
     use super::*;
     use std::cell::Cell;
+
+    #[test]
+    fn prepared_prefix_has_exact_lengths_and_bounded_metadata() {
+        let value = serde_json::json!({"kind":"scene","frame":{"fixed":true}});
+        let encoded = prepared_header(&value, 16).unwrap();
+        assert_eq!(&encoded[..4], b"OCVP");
+        assert_eq!(
+            u32::from_le_bytes(encoded[4..8].try_into().unwrap()) as usize,
+            encoded.len() - 12
+        );
+        assert_eq!(u32::from_le_bytes(encoded[8..12].try_into().unwrap()), 16);
+        assert_eq!(
+            serde_json::from_slice::<serde_json::Value>(&encoded[12..]).unwrap(),
+            value
+        );
+        assert!(prepared_header(&value, 0).is_err());
+        assert!(prepared_header(&value, 64 * 1024 * 1024 + 1).is_err());
+        let exact = "x".repeat(PICTURE_PREPARE_MAX_HEADER_BYTES - 2);
+        assert_eq!(
+            prepared_header(&exact, 4).unwrap().len(),
+            PICTURE_PREPARE_MAX_HEADER_BYTES + 12
+        );
+        assert!(prepared_header(&(exact + "x"), 4).is_err());
+    }
 
     #[tokio::test]
     async fn available_capacity_requires_fresh_authority_before_publishing() {

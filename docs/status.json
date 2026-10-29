@@ -108,6 +108,14 @@
           "reason": "Diagnostic nested helper used the wrong relative path after starting the service. Reused the confirmed live service and parent verifier;no restart or product rebuild."
         }
       ]
+    },
+    "picture_preparation_transport": {
+      "state": "implementation_pending_integrated_build_and_acceptance",
+      "base_commit": "998ce746",
+      "scope": "One typed prepare/claim stream over existing scene/draft usecases;Web hard switch;64KiB authority fences,2-slot queue,1s backpressure and full length/hash verification retained.",
+      "evidence_root": "/Users/vincent/Movies/OpenCut-native-rendering/4k/picture-preparation",
+      "builds_this_candidate": 0,
+      "qualification": "Previous accepted results below retain their original producers;no current transport acceptance claim."
     }
   },
   "scope": "Local CLI/HTTP/MCP/SDK service and Web editor; GPUI shell is not an integrated editor.",

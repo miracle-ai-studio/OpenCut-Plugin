@@ -25,47 +25,52 @@ function fixture() {
       renderer: { renderer_sha256: "b".repeat(64), gpu_backend: "metal", gpu_device: "native-device" }, peak_worker_rss_bytes: "123" },
     hit_test: null as null | { identity: typeof identity; point: { x: number; y: number }; hits: { element_id: string; alpha: number }[] },
   };
-  const call = vi.fn().mockResolvedValue(frame), read = vi.fn().mockResolvedValue(new Uint8ClampedArray(16));
+  const read = vi.fn().mockResolvedValue(new Uint8ClampedArray(16)), cancel = vi.fn();
+  const prepared = (header: unknown) => {
+    const pixels = read(); void pixels.catch(() => {});
+    return { header, pixels, cancel };
+  };
+  const call = vi.fn().mockImplementation(async () => prepared({ kind: "scene", frame }));
   const resource = vi.fn();
-  const api = { scene: { resource }, sdk: { call, readVisualPreviewPicture: read } } as unknown as VisualPreviewExecutionApi;
-  return { frame, call, read, resource, api, renderer: new VisualPreviewRenderer() };
+  const api = { scene: { resource }, sdk: { prepareVisualPreviewPicture: call } } as unknown as VisualPreviewExecutionApi;
+  return { frame, call, read, cancel, prepared, resource, api, renderer: new VisualPreviewRenderer() };
 }
 it("submits one native intent per frame and presents verified RGBA without source decoding", async () => {
   const f = fixture(), signal = new AbortController().signal;
   const result = await f.renderer.render(f.api, session, signal);
   expect(f.call).toHaveBeenCalledOnce();
-  expect(f.call.mock.calls[0].slice(0, 2)).toEqual(["opencut_visual_preview_frame", {
+  expect(f.call.mock.calls[0][0]).toEqual({ kind: "scene", frame: {
     session, resolution: "source", time: null, prepare_ahead: false, retained_picture_bytes: 0, hit_query: null,
-  }]);
-  expect(f.read).toHaveBeenCalledWith(session, f.frame.picture, { signal: expect.any(AbortSignal), onClaimed: expect.any(Function) });
+  } });
+  expect(f.call.mock.calls[0][1]).toEqual({ signal: expect.any(AbortSignal) });
   expect(create).toHaveBeenCalledWith(expect.objectContaining({ data: new Uint8ClampedArray(16), width: 2, height: 2 }), { colorSpaceConversion: "none", premultiplyAlpha: "none" });
   expect(result.pixels).toBe(bitmap);
   expect(result.runtime).toMatchObject({ renderer: "native", gpuBackend: "metal", rendererSha256: "b".repeat(64) });
   expect(f.resource).not.toHaveBeenCalled();
   await f.renderer.render(f.api, { ...session, generation: "2" }, signal);
   expect(f.call).toHaveBeenCalledTimes(2);
-  expect(f.read.mock.calls[1][0].generation).toBe("2");
+  expect(f.call.mock.calls[1][0].frame.session.generation).toBe("2");
 });
 it.each(["bound", "bound_media", "bound_execution", "bound_graphic", "bound_blend", "size", "intent"])(
-  "refuses incomplete or changed native %s before reading bytes", async kind => {
+  "refuses incomplete or changed native %s and cancels the claimed stream", async kind => {
     const f = fixture();
     if (kind === "size") f.frame.picture.width = 3;
     else if (kind === "intent") f.frame.prepare_ahead = true;
     else (f.frame as Record<string, unknown>)[kind] = null;
     await expect(f.renderer.render(f.api, session, new AbortController().signal)).rejects.toThrow();
-    expect(f.read).not.toHaveBeenCalled(); expect(create).not.toHaveBeenCalled();
+    expect(f.cancel).toHaveBeenCalledOnce(); expect(create).not.toHaveBeenCalled();
   },
 );
 it("binds the exact draft, time, preparation memory and native hit point in one call", async () => {
   const f = fixture(), time = { ticks: "7", timebase: 25 }, transaction = { project_id: "p", expected_revision: "r", idempotency_key: "draft", label: "Move", operations: [] };
   f.frame.prepare_ahead = true;
   f.frame.hit_test = { identity: f.frame.plan.identity, point: { x: 1, y: 0 }, hits: [{ element_id: "e", alpha: 128 }] };
-  f.call.mockResolvedValue({ draft_id: "draft", transaction_digest: "digest", frame: f.frame });
+  f.call.mockResolvedValue(f.prepared({ kind: "edit_draft", draft: { draft_id: "draft", transaction_digest: "digest", frame: f.frame } }));
   const result = await f.renderer.render(f.api, session, new AbortController().signal, { x: 1, y: 0 }, { draftId: "draft", intent: "transform" as never, transaction, time }, { time: { ticks: "2", timebase: 25 }, reservedBytes: 1234 });
-  expect(f.call.mock.calls[0].slice(0, 2)).toEqual(["opencut_visual_preview_edit_draft_frame", {
+  expect(f.call.mock.calls[0][0]).toEqual({ kind: "edit_draft", draft: {
     draft_id: "draft", intent: "transform", transaction,
     frame: { session, time, resolution: "preview540", prepare_ahead: true, retained_picture_bytes: 1234, hit_query: { x: 1, y: 0 } },
-  }]);
+  } });
   expect(result.hitTest).toEqual(f.frame.hit_test);
 });
 it.each(["draft", "digest", "hit-point", "hit-identity"])("rejects changed %s before presentation", async kind => {
@@ -76,10 +81,10 @@ it.each(["draft", "digest", "hit-point", "hit-identity"])("rejects changed %s be
     else f.frame.hit_test.identity.revision = "other";
     await expect(f.renderer.render(f.api, session, new AbortController().signal, { x: 1, y: 0 })).rejects.toThrow();
   } else {
-    f.call.mockResolvedValue({ draft_id: kind === "draft" ? "other" : "draft", transaction_digest: kind === "digest" ? "" : "digest", frame: f.frame });
+    f.call.mockResolvedValue(f.prepared({ kind: "edit_draft", draft: { draft_id: kind === "draft" ? "other" : "draft", transaction_digest: kind === "digest" ? "" : "digest", frame: f.frame } }));
     await expect(f.renderer.render(f.api, session, new AbortController().signal, undefined, { draftId: "draft", intent: "transform" as never, transaction: {} as never, time: { ticks: "0", timebase: 1 } })).rejects.toThrow();
   }
-  expect(f.read).not.toHaveBeenCalled();
+  expect(f.cancel).toHaveBeenCalledOnce(); expect(create).not.toHaveBeenCalled();
 });
 it("propagates revoked native byte reads and closes a bitmap delivered after cancellation", async () => {
   const f = fixture(); f.read.mockRejectedValueOnce(Error("Owner replaced"));
@@ -116,21 +121,24 @@ it("uses only a display context for presentation", () => {
   expect(getContext).toHaveBeenCalledExactlyOnceWith("2d", { desynchronized: true });
   expect(drawImage).toHaveBeenCalledWith(bitmap, 0, 0); expect(clearRect).toHaveBeenCalledWith(0, 0, 2, 2);
 });
-it("exposes only prepared facts after a native claim and completes pixels after validation", async () => {
-  const f = fixture(); let claim!: () => void, bytes!: (value: Uint8ClampedArray) => void;
-  f.read.mockImplementationOnce((_session, _picture, options) => { claim = options.onClaimed; return new Promise(resolve => { bytes = resolve; }); });
+it("releases the next preparation after claimed metadata while verified pixels are pending", async () => {
+  const f = fixture(); let bytes!: (value: Uint8ClampedArray) => void;
+  f.read.mockImplementationOnce(() => new Promise(resolve => { bytes = resolve; }));
   const pending = await f.renderer.prepare(f.api, session, new AbortController().signal);
-  let claimed = false, completed = false;
-  void pending.claimed.then(() => { claimed = true; });
+  let completed = false;
   void pending.complete.then(() => { completed = true; });
-  expect(pending.frame).toBe(f.frame); expect(claimed).toBe(false); expect(create).not.toHaveBeenCalled();
-  claim(); await Promise.resolve(); expect(claimed).toBe(true); expect(completed).toBe(false);
+  await pending.claimed;
+  expect(pending.frame).toBe(f.frame); expect(completed).toBe(false); expect(create).not.toHaveBeenCalled();
   bytes(new Uint8ClampedArray(16)); expect((await pending.complete).pixels).toBe(bitmap);
 });
-it("rejects both preparation stages when a scoped read fails before its claim", async () => {
-  const f = fixture(); f.read.mockRejectedValueOnce(Error("Revoked reader"));
-  const pending = await f.renderer.prepare(f.api, session, new AbortController().signal);
-  await expect(pending.claimed).rejects.toThrow("Revoked reader");
-  await expect(pending.complete).rejects.toThrow("Revoked reader");
-  expect(create).not.toHaveBeenCalled();
+it("propagates preparation rejection without exposing claimed metadata or retrying unknown failures", async () => {
+  const f = fixture(); f.call.mockRejectedValueOnce(Error("Revoked reader"));
+  await expect(f.renderer.prepare(f.api, session, new AbortController().signal)).rejects.toThrow("Revoked reader");
+  expect(f.call).toHaveBeenCalledOnce(); expect(create).not.toHaveBeenCalled();
+});
+it("never repeats a prepared frame when its pixel body fails with a busy error", async () => {
+  const f = fixture();
+  f.read.mockRejectedValueOnce(new OpenCutApiError("PREVIEW_PICTURE_BUSY", "Retired body", null, 429, "body", []));
+  await expect(f.renderer.render(f.api, session, new AbortController().signal)).rejects.toThrow("Retired body");
+  expect(f.call).toHaveBeenCalledOnce(); expect(create).not.toHaveBeenCalled();
 });

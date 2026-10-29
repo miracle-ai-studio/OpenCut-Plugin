@@ -49,7 +49,8 @@ function registry() {
   return { tools: [{ name: "opencut_example", input_schema: object("Example"), output_schema: object("Response") }],
     jobs: [], domains: [{ domain: "edit", actions: [{ action: "example", operation: "opencut_example" }] }],
     eventSchema: object("Event"), audioStream: { input: object("Stream"), header: object("Header") },
-    visualStream: { input: object("PictureRead"), descriptor: object("Picture"), content_type: "application/vnd.opencut.rgba", pixel_format: "rgba8", chunk_bytes: 65536 } };
+    visualStream: { input: object("PictureRead"), descriptor: object("Picture"), content_type: "application/vnd.opencut.rgba", pixel_format: "rgba8", chunk_bytes: 65536,
+      prepare: { input: object("PicturePrepare"), header: object("PicturePrepared"), path: "/api/preview/picture/prepare", content_type: "application/vnd.opencut.picture", magic: "OCVP", prefix_bytes: 12, max_header_bytes: 2097152, chunk_bytes: 65536 } } };
 }
 test("preflight rejects incomplete routes, collisions, root titles and non-local or dangling refs", () => {
   preflightRegistry(registry());
@@ -64,6 +65,10 @@ test("preflight rejects incomplete routes, collisions, root titles and non-local
     (r) => { r.visualStream.descriptor.$ref = "#/$defs/Missing"; },
     (r) => { r.visualStream.chunk_bytes = 131072; },
     (r) => { r.visualStream.content_type = "image/png"; },
+    (r) => { delete r.visualStream.prepare; },
+    (r) => { r.visualStream.prepare.header.$ref = "#/$defs/Missing"; },
+    (r) => { r.visualStream.prepare.magic = "OCAP"; },
+    (r) => { r.visualStream.prepare.max_header_bytes *= 2; },
     (r) => { delete r.visualStream; },
     (r) => { r.jobs.push({name:"media.a-b",input_schema:object("Job"),result_schema:object("Result")},
       {name:"media.a_b",input_schema:object("Job"),result_schema:object("Result")}); },

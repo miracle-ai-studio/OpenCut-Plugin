@@ -14,6 +14,7 @@ opencut-media = { path = "../media" }
 opencut-project-render = { path = "../project-render" }
 opencut-time = { path = "../time" }
 sha2 = "0.10"
+ring = "=0.17.14"
 opencut-automation = { path = "../automation" }
 opencut-native-services = { path = "../native-services" }
 opencut-sqlite-store = { path = "../sqlite-store" }

@@ -4789,6 +4789,7 @@ dependencies = [
  "opencut-sqlite-store",
  "opencut-storage-budget",
  "opencut-time",
+ "ring",
  "rusqlite",
  "serde",
  "serde_json",

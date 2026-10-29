@@ -2,7 +2,7 @@
 //! residency ledger; claiming a ticket must not make its bytes unaccounted.
 use super::*;
 use opencut_api_contracts::visual_preview::VisualPreviewPictureRead;
-use sha2::{Digest, Sha256};
+use ring::digest::{SHA256, digest};
 use std::{collections::VecDeque, sync::Weak, time::Duration};
 
 const CHUNK: usize = 65536;
@@ -33,6 +33,20 @@ pub(super) struct PixelTicket {
     pub id: String,
     pub length: u32,
     pub hash: String,
+}
+pub(super) struct PreparedPixels {
+    reservation: PixelReservation,
+    ticket: PixelTicket,
+    bytes: Arc<Vec<u8>>,
+}
+fn content_hash(bytes: &[u8]) -> String {
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    digest(&SHA256, bytes)
+        .as_ref()
+        .iter()
+        .flat_map(|byte| [HEX[(byte >> 4) as usize], HEX[(byte & 15) as usize]])
+        .map(char::from)
+        .collect()
 }
 impl FramePixels {
     pub fn reserve(
@@ -96,32 +110,40 @@ impl FramePixels {
     }
 }
 impl PixelReservation {
-    pub fn publish(
-        mut self,
-        session: AudioPreviewStream,
-        bytes: Vec<u8>,
-    ) -> Result<PixelTicket, EditorError> {
+    // Hash before the caller reacquires its presentation/audio state lock.
+    // The reservation stays charged through preparation and final fencing.
+    pub fn prepare(self, bytes: Vec<u8>) -> Result<PreparedPixels, EditorError> {
         if bytes.len() != self.length {
             return Err(error("INVALID_VISUAL_PLAN"));
         }
         let ticket = PixelTicket {
             id: new_identity().replace('-', ""),
             length: bytes.len() as u32,
-            hash: format!("{:x}", Sha256::digest(&bytes)),
+            hash: content_hash(&bytes),
         };
-        let bytes = Arc::new(bytes);
-        let mut state = lock(&self.store.0)?;
-        state.reserved -= self.charged;
+        Ok(PreparedPixels {
+            reservation: self,
+            ticket,
+            bytes: Arc::new(bytes),
+        })
+    }
+}
+impl PreparedPixels {
+    pub fn publish(mut self, session: AudioPreviewStream) -> Result<PixelTicket, EditorError> {
+        let mut state = lock(&self.reservation.store.0)?;
+        state.reserved -= self.reservation.charged;
         state.allocations -= 1;
-        self.active = false;
-        state.live.push((Arc::downgrade(&bytes), self.charged));
+        self.reservation.active = false;
+        state
+            .live
+            .push((Arc::downgrade(&self.bytes), self.reservation.charged));
         state.queued.push_back(Pending {
-            id: ticket.id.clone(),
+            id: self.ticket.id.clone(),
             session,
-            bytes,
+            bytes: self.bytes,
             expires: Instant::now() + TICKET_LIFETIME,
         });
-        Ok(ticket)
+        Ok(self.ticket)
     }
 }
 impl Drop for PixelReservation {
@@ -201,6 +223,60 @@ mod tests {
         }
     }
     #[test]
+    fn prepared_pixels_keep_their_charge_without_publishing_a_ticket() {
+        let store = Arc::new(FramePixels::default());
+        let capacity = (1024 + READER_OVERHEAD) as u32;
+        let prepared = store
+            .reserve(1024, capacity)
+            .unwrap()
+            .prepare(vec![9; 1024])
+            .unwrap();
+        assert_eq!(
+            store
+                .claim(&session(), &prepared.ticket.id)
+                .err()
+                .unwrap()
+                .code,
+            "PREVIEW_PICTURE_UNAVAILABLE"
+        );
+        store.clear();
+        assert!(store.reserve(1024, capacity).is_err());
+        // A failed final authority/generation fence drops the prepared value.
+        drop(prepared);
+        assert!(store.reserve(1024, capacity).is_ok());
+        assert_eq!(
+            store
+                .reserve(1024, capacity)
+                .unwrap()
+                .prepare(vec![0; 1023])
+                .err()
+                .unwrap()
+                .code,
+            "INVALID_VISUAL_PLAN"
+        );
+        assert!(store.reserve(1024, capacity).is_ok());
+    }
+
+    #[test]
+    fn picture_hash_preserves_independent_sha256_vectors() {
+        assert_eq!(
+            content_hash(b""),
+            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        );
+        assert_eq!(
+            content_hash(b"abc"),
+            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+        );
+        // Independent Python hashlib reference, retained native 960x540 RGBA
+        // digest study. This is the full payload, not a fitted frame sample.
+        let bytes: Vec<_> = (0..2_073_600).map(|n| (n * 37 % 251) as u8).collect();
+        assert_eq!(
+            content_hash(&bytes),
+            "01c18a29fde359d29dd17364b1f99d0955048b93f2e26368deaeb055be75ca4c"
+        );
+    }
+
+    #[test]
     fn claimed_payload_keeps_its_budget_until_last_reader_drops() {
         let store = Arc::new(FramePixels::default());
         let size = 1024;
@@ -208,7 +284,9 @@ mod tests {
         let ticket = store
             .reserve(size as u32, capacity)
             .unwrap()
-            .publish(session(), vec![7; size])
+            .prepare(vec![7; size])
+            .unwrap()
+            .publish(session())
             .unwrap();
         let bytes = store.claim(&session(), &ticket.id).unwrap();
         assert_eq!(bytes.as_slice(), vec![7; size]);
@@ -234,7 +312,9 @@ mod tests {
         let ticket = store
             .reserve(1024, capacity)
             .unwrap()
-            .publish(session(), vec![0; 1024])
+            .prepare(vec![0; 1024])
+            .unwrap()
+            .publish(session())
             .unwrap();
         let mut stale = session();
         stale.generation = "2".into();

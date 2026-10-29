@@ -249,6 +249,7 @@ fn scene_picture_inner(
     if pixels.bytes.len() != length as usize {
         return Err(error("INVALID_VISUAL_PLAN"));
     }
+    let pixels = reservation.prepare(pixels.bytes)?;
     authorize(host, &e, true)?;
     if let Some(transaction) = draft {
         host.app.authorize_project(
@@ -282,7 +283,7 @@ fn scene_picture_inner(
         &consumer.presentation_time,
         input.prepare_ahead,
     )?;
-    let ticket = reservation.publish(input.session.clone(), pixels.bytes)?;
+    let ticket = pixels.publish(input.session.clone())?;
     let descriptor = VisualPreviewPicture {
         picture_id: ticket.id.clone(),
         width,

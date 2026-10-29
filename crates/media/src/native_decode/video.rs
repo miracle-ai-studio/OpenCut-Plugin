@@ -75,6 +75,7 @@ pub struct NativeVideoDecoder {
     retired: bool,
     image_mode: Option<bool>,
     reference_frames: u64,
+    decode_threads: usize,
 }
 struct Operation {
     packets: usize,
@@ -114,11 +115,6 @@ impl NativeVideoDecoder {
         let index = stream.index();
         let mut context =
             av::codec::Context::from_parameters(stream.parameters()).map_err(failed)?;
-        context.set_threading(av::codec::threading::Config {
-            count: 1,
-            kind: av::codec::threading::Type::Slice,
-            ..Default::default()
-        });
         // SAFETY: the context is uniquely owned and not opened yet. This is
         // checked by codec allocation before accepting coded dimensions.
         unsafe {
@@ -135,6 +131,16 @@ impl NativeVideoDecoder {
             | av::codec::Id::GIF => 0,
             _ => 16,
         };
+        let decode_threads = decode_threads(&context, reference_frames, limits);
+        context.set_threading(av::codec::threading::Config {
+            count: decode_threads,
+            kind: if decode_threads > 1 {
+                av::codec::threading::Type::Frame
+            } else {
+                av::codec::threading::Type::Slice
+            },
+            ..Default::default()
+        });
         let decoder = context.decoder().video().map_err(failed)?;
         checkpoint(source, deadline)?;
         Ok(Self {
@@ -158,6 +164,7 @@ impl NativeVideoDecoder {
             retired: false,
             image_mode: None,
             reference_frames,
+            decode_threads,
         })
     }
 
@@ -446,9 +453,10 @@ impl NativeVideoDecoder {
                 limit_bytes: self.limits.max_resident_bytes,
             });
         }
-        // Reserve up to sixteen codec reference surfaces, two neighboring
-        // frames and one immutable conversion output. The host must
-        // additionally enforce RSS for codec-private allocations.
+        // References, neighboring frames and RGBA are separate from frame
+        // workers' delayed/in-flight surfaces. Recompute for the actual format
+        // on every received frame, including format/extent changes. The host
+        // additionally enforces RSS for codec-private allocations.
         let surface = unsafe {
             ffi::av_image_get_buffer_size(
                 frame.format().into(),
@@ -470,12 +478,20 @@ impl NativeVideoDecoder {
             }
         };
         let output = (pixels * 4).max(self.converted.as_ref().map_or(0, |f| f.rgba.len() as u64));
-        if surface <= 0 || (surface as u64) * surfaces + output > self.limits.max_resident_bytes {
+        if surface <= 0 {
             return Err(MediaError::OutputLimit {
                 limit_bytes: self.limits.max_resident_bytes,
             });
         }
-        Ok((surface as u64) * surfaces + output)
+        let resident = (surface as u64) * surfaces
+            + output
+            + decode_thread_reserve(surface as u64, self.decode_threads);
+        if resident > self.limits.max_resident_bytes {
+            return Err(MediaError::OutputLimit {
+                limit_bytes: self.limits.max_resident_bytes,
+            });
+        }
+        Ok(resident)
     }
 
     fn admit_frame(&self, frame: &av::frame::Video) -> MediaResult<()> {
@@ -563,6 +579,58 @@ impl NativeVideoDecoder {
     }
 }
 
+// Frame threading delays output and retains both in-flight and finished
+// frames. Reserve two source surfaces plus 2 MiB of stack/private bookkeeping
+// per extra worker. Codec-private allocation is also subject to parent RSS
+// monitoring; this is an admission estimate, not a native allocator hard cap.
+fn decode_thread_reserve(surface: u64, threads: usize) -> u64 {
+    (surface * 2 + 2 * 1024 * 1024) * (threads.saturating_sub(1) as u64)
+}
+
+fn decode_threads(context: &av::codec::Context, references: u64, limits: DecodeLimits) -> usize {
+    // SAFETY: context is owned and unopened. This only reads codec parameters
+    // and the static decoder descriptor; no custom AVIO callback runs here or
+    // on codec workers. Demuxing remains on the authorized calling thread.
+    let (width, height, surface, frame_threading) = unsafe {
+        let c = &*context.as_ptr();
+        let codec = ffi::avcodec_find_decoder(c.codec_id);
+        if codec.is_null()
+            || c.width <= 0
+            || c.height <= 0
+            || c.width > 16384
+            || c.height > 16384
+            || c.pix_fmt == ffi::AVPixelFormat::AV_PIX_FMT_NONE
+        {
+            return 1;
+        }
+        (
+            c.width as u64,
+            c.height as u64,
+            ffi::av_image_get_buffer_size(c.pix_fmt, c.width, c.height, 64),
+            (*codec).capabilities & ffi::AV_CODEC_CAP_FRAME_THREADS as i32 != 0,
+        )
+    };
+    let pixels = width * height;
+    if !frame_threading || surface <= 0 || pixels > limits.max_pixels {
+        return 1;
+    }
+    admitted_decode_threads(
+        pixels,
+        surface as u64,
+        references,
+        limits.max_resident_bytes,
+    )
+}
+
+fn admitted_decode_threads(pixels: u64, surface: u64, references: u64, limit: u64) -> usize {
+    // Use the codec's conservative reference maximum until decoded headers
+    // reveal the real count. Unknown metadata keeps the serial policy above;
+    // ordinary frame admission still rejects invalid or oversized sources.
+    let resident = surface * (references + 2) + pixels * 4;
+    let desired = (pixels / (512 * 512)).clamp(1, 4);
+    desired.min(1 + limit.saturating_sub(resident) / decode_thread_reserve(surface, 2)) as usize
+}
+
 fn timestamp(time: MediaTime, top: u32, bottom: u32) -> i128 {
     (i128::from(time.ticks) * i128::from(bottom))
         .div_euclid(i128::from(time.timebase) * i128::from(top))
@@ -603,6 +671,32 @@ fn rotation(stream: &av::Stream<'_>) -> MediaResult<u16> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn frame_workers_fit_the_existing_resident_admission() {
+        let pixels = 3840 * 2160;
+        let surface = pixels * 3 / 2;
+        let base = surface * 18 + pixels * 4;
+        let extra = decode_thread_reserve(surface, 2);
+        assert_eq!(admitted_decode_threads(pixels, surface, 16, base), 1);
+        assert_eq!(
+            admitted_decode_threads(pixels, surface, 16, base + extra - 1),
+            1
+        );
+        assert_eq!(
+            admitted_decode_threads(pixels, surface, 16, base + extra),
+            2
+        );
+        assert_eq!(
+            admitted_decode_threads(pixels, surface, 16, base + 3 * extra),
+            4
+        );
+        assert_eq!(admitted_decode_threads(pixels, surface, 16, u64::MAX), 4);
+        assert_eq!(
+            admitted_decode_threads(320 * 180, 320 * 180 * 3 / 2, 16, u64::MAX),
+            1
+        );
+    }
+
     struct Source {
         bytes: Vec<u8>,
         revoked: bool,
@@ -629,6 +723,139 @@ mod tests {
             }
         }
     }
+
+    #[test]
+    #[ignore = "Requires retained OPENCUT_NATIVE_VIDEO_SOURCES JSON paths; no media generation"]
+    fn frame_threading_preserves_pts_pixels_seek_drain_and_authority() {
+        let paths: Vec<String> = serde_json::from_str(
+            &std::env::var("OPENCUT_NATIVE_VIDEO_SOURCES")
+                .expect("Retained 4K/B-frame/VFR sources"),
+        )
+        .unwrap();
+        assert!(!paths.is_empty());
+        let limits = DecodeLimits {
+            max_pixels: 16_777_216,
+            max_resident_bytes: 512 * 1024 * 1024,
+            max_io_bytes_per_operation: 512 * 1024 * 1024,
+            max_packets_per_operation: 100_000,
+        };
+        let mut production_parallel = false;
+        for path in paths {
+            let mut source = Source {
+                bytes: std::fs::read(path).unwrap(),
+                revoked: false,
+            };
+            let deadline = Instant::now() + std::time::Duration::from_secs(120);
+            let mut parallel =
+                NativeVideoDecoder::open(&mut source, None, limits, deadline).unwrap();
+            production_parallel |= parallel.decode_threads == 4;
+            let mut serial = NativeVideoDecoder::open(&mut source, None, limits, deadline).unwrap();
+            // Exercise the same decoding state machine under both modes,
+            // including small retained VFR fixtures whose production policy
+            // intentionally stays serial. No second production decode route.
+            for (decoder, count) in [(&mut serial, 1), (&mut parallel, 4)] {
+                let mut context = av::codec::Context::from_parameters(
+                    decoder.input.stream(decoder.stream).unwrap().parameters(),
+                )
+                .unwrap();
+                context.set_threading(av::codec::threading::Config {
+                    count,
+                    kind: av::codec::threading::Type::Frame,
+                    ..Default::default()
+                });
+                unsafe { (*context.as_mut_ptr()).max_pixels = limits.max_pixels as i64 };
+                decoder.decoder = context.decoder().video().unwrap();
+                decoder.decode_threads = count;
+            }
+            assert_eq!(
+                parallel.decoder.threading().kind,
+                av::codec::threading::Type::Frame
+            );
+            assert_eq!(parallel.decoder.threading().count, 4);
+            let end = parallel.end_pts.expect("Retained fixture duration");
+            let top = i64::from(parallel.time_base[0]);
+            let bottom = parallel.time_base[1];
+            // Sequential samples, fractional positions, distant forward seek,
+            // EOF drain, backwards seek and then playback after that flush.
+            for ticks in [0, 1, 2, 3, 7, 11, 35, 80, 119, 0, 5, 6, 7] {
+                let at = MediaTime {
+                    ticks,
+                    timebase: 30,
+                };
+                compare_samples(&mut serial, &mut parallel, &mut source, at, deadline);
+            }
+            for ticks in [end - 1, end, end + 1] {
+                let at = MediaTime {
+                    ticks: ticks * top,
+                    timebase: bottom,
+                };
+                compare_samples(&mut serial, &mut parallel, &mut source, at, deadline);
+            }
+            assert!(serial.reached_eof() && parallel.reached_eof());
+            let at = MediaTime {
+                ticks: 1,
+                timebase: 30,
+            };
+            compare_samples(&mut serial, &mut parallel, &mut source, at, deadline);
+            let before = parallel.encoded_bytes_read();
+            source.revoked = true;
+            assert!(matches!(parallel.sample(&mut source, at, deadline),
+                Err(MediaError::Admission { code, .. }) if code == "NOT_AUTHORIZED"));
+            assert_eq!(parallel.encoded_bytes_read(), before);
+            source.revoked = false;
+            compare_samples(&mut serial, &mut parallel, &mut source, at, deadline);
+            let frame = parallel.previous.as_ref().unwrap();
+            let resident = parallel.frame_residency(frame).unwrap();
+            parallel.limits.max_resident_bytes = resident - 1;
+            assert!(matches!(
+                parallel.admit_frame(frame),
+                Err(MediaError::OutputLimit { .. })
+            ));
+        }
+        assert!(
+            production_parallel,
+            "At least one retained source must select four threads naturally"
+        );
+    }
+
+    fn compare_samples(
+        serial: &mut NativeVideoDecoder,
+        parallel: &mut NativeVideoDecoder,
+        source: &mut Source,
+        at: MediaTime,
+        deadline: Instant,
+    ) {
+        let expected = serial.sample(source, at, deadline).unwrap();
+        let actual = parallel.sample(source, at, deadline).unwrap();
+        match (expected, actual) {
+            (None, None) => {}
+            (Some(expected), Some(actual)) => {
+                assert_eq!(
+                    (actual.pts, actual.duration),
+                    (expected.pts, expected.duration)
+                );
+                assert_eq!(
+                    (
+                        actual.width,
+                        actual.height,
+                        actual.matrix,
+                        actual.full_range
+                    ),
+                    (
+                        expected.width,
+                        expected.height,
+                        expected.matrix,
+                        expected.full_range
+                    )
+                );
+                // Hash full bytes so a failing assertion cannot dump frames.
+                use sha2::{Digest, Sha256};
+                assert_eq!(Sha256::digest(&actual.rgba), Sha256::digest(&expected.rgba));
+            }
+            _ => panic!("Parallel decode changed frame presence"),
+        }
+    }
+
     #[test]
     #[ignore = "Requires retained OPENCUT_NATIVE_VIDEO_SOURCE; no media generation"]
     fn continuous_rgba_reuse_keeps_live_frames_immutable_and_rechecks_authority() {

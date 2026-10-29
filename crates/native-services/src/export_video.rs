@@ -68,7 +68,7 @@ pub(crate) fn append_arguments(
             "-f",
             "rawvideo",
             "-pixel_format",
-            "rgba",
+            "rgb24",
             "-video_size",
         ])
         .arg(format!("{}x{}", config.width, config.height))
@@ -296,6 +296,8 @@ mod tests {
                     .get_args()
                     .map(|s| s.to_string_lossy().into_owned())
                     .collect::<Vec<_>>();
+                let pixels = args.iter().position(|a| a == "-pixel_format").unwrap();
+                assert_eq!(args[pixels + 1], "rgb24");
                 let at = args.iter().position(|a| a == "-b:v").unwrap();
                 observed.insert(args[at + 1].clone());
                 assert!(

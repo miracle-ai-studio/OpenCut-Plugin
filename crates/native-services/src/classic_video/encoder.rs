@@ -276,7 +276,7 @@ impl<F: FnMut(bool) -> Result<(), EditorError>> ClassicVideoEncoder<F> {
                     "-f",
                     "rawvideo",
                     "-pixel_format",
-                    "rgba",
+                    "rgb24",
                     "-video_size",
                 ])
                 .arg(format!("{}x{}", config.width, config.height))
@@ -641,7 +641,24 @@ impl<F: FnMut(bool) -> Result<(), EditorError>> ClassicVisualRgbaSink for Classi
         {
             return Err(err("RGBA encoder stream changed frame order"));
         }
-        let mut remaining = bytes;
+        if self.source_preview {
+            self.write_input(bytes)?;
+        } else {
+            // All video outputs use opaque yuv420p. Preserve the original RGB
+            // bytes while avoiding alpha in FFmpeg's queued raw frames/packets.
+            // Source proxies keep their complete lossless RGBA input above.
+            let mut rgb = [0u8; 65536 / 4 * 3];
+            for (pixel, packed) in bytes.chunks_exact(4).zip(rgb.chunks_exact_mut(3)) {
+                packed.copy_from_slice(&pixel[..3]);
+            }
+            self.write_input(&rgb[..bytes.len() / 4 * 3])?;
+        }
+        self.offset += bytes.len() as u64;
+        Ok(())
+    }
+}
+impl<F: FnMut(bool) -> Result<(), EditorError>> ClassicVideoEncoder<F> {
+    fn write_input(&mut self, mut remaining: &[u8]) -> Result<(), EditorError> {
         while !remaining.is_empty() {
             match self
                 .input
@@ -666,7 +683,6 @@ impl<F: FnMut(bool) -> Result<(), EditorError>> ClassicVisualRgbaSink for Classi
                 Err(e) => return Err(io(e)),
             }
         }
-        self.offset += bytes.len() as u64;
         Ok(())
     }
 }
@@ -1199,6 +1215,101 @@ mod tests {
         }
         fn write(&self, _: &Path, _: &[u8]) -> opencut_media::MediaResult<()> {
             unreachable!()
+        }
+    }
+    #[derive(Debug)]
+    struct CaptureInput {
+        path: PathBuf,
+        arguments: std::sync::Mutex<Vec<std::ffi::OsString>>,
+    }
+    impl OutputAdmission for CaptureInput {
+        fn spawn(
+            &self,
+            command: Command,
+            _: Option<&Path>,
+        ) -> opencut_media::MediaResult<Box<dyn OutputProcess>> {
+            *self.arguments.lock().unwrap() = command.get_args().map(|s| s.to_owned()).collect();
+            let child = Command::new("/bin/sh")
+                .args(["-c", "exec /bin/cat > \"$1\"", "capture-encoder-input"])
+                .arg(&self.path)
+                .stdin(Stdio::piped())
+                .stdout(Stdio::null())
+                .stderr(Stdio::piped())
+                .spawn()?;
+            Ok(Box::new(Process(child)))
+        }
+        fn write(&self, _: &Path, _: &[u8]) -> opencut_media::MediaResult<()> {
+            unreachable!()
+        }
+    }
+    #[test]
+    fn opaque_video_input_packs_rgb_while_source_proxy_keeps_alpha_and_hidden_rgb() {
+        let directory = tempfile::tempdir().unwrap();
+        let rgba = [9, 17, 31, 0, 255, 0, 0, 1, 0, 255, 0, 128, 0, 0, 255, 255];
+        let rgb = [9, 17, 31, 255, 0, 0, 0, 255, 0, 0, 0, 255];
+        for (width, height, rgba, rgb) in [
+            (2, 2, rgba.to_vec(), rgb.to_vec()),
+            (
+                128,
+                128,
+                [13, 21, 34, 0].repeat(16384),
+                [13, 21, 34].repeat(16384),
+            ),
+        ] {
+            for source in [false, true] {
+                let admission = CaptureInput {
+                    path: directory.path().join(format!("{width}-{source}")),
+                    arguments: Default::default(),
+                };
+                let config = ClassicVideoEncoderConfig {
+                    ffmpeg: "/bin/cat".into(),
+                    ffprobe: "/bin/cat".into(),
+                    output: directory.path().join("unused-output"),
+                    audio: directory.path().join("unused-audio"),
+                    width,
+                    height,
+                    fps_numerator: 30,
+                    fps_denominator: 1,
+                    frame_count: 2,
+                    max_output_bytes: 1048576,
+                    max_rss_bytes: 67108864,
+                    execution_limit: VideoExecutionLimit::Total { milliseconds: 5000 },
+                };
+                let checkpoint: fn(bool) -> Result<(), EditorError> = |_| Ok(());
+                let mut encoder = if source {
+                    ClassicVideoEncoder::start_source_preview(config, &admission, checkpoint)
+                        .unwrap()
+                } else {
+                    ClassicVideoEncoder::start(config, &admission, checkpoint).unwrap()
+                };
+                let arguments = admission.arguments.lock().unwrap();
+                let at = arguments.iter().position(|a| a == "-pixel_format").unwrap();
+                assert_eq!(arguments[at + 1], if source { "rgba" } else { "rgb24" });
+                drop(arguments);
+                for _ in 0..2 {
+                    if rgba.len() == 16 {
+                        encoder.chunk(0, &rgba[..4]).unwrap();
+                        encoder.chunk(4, &rgba[4..]).unwrap();
+                    } else {
+                        encoder.chunk(0, &rgba).unwrap();
+                    }
+                    encoder.finish_frame().unwrap();
+                }
+                drop(encoder.input.take());
+                assert!(
+                    encoder
+                        .process
+                        .as_mut()
+                        .unwrap()
+                        .child()
+                        .wait()
+                        .unwrap()
+                        .success()
+                );
+                drop(encoder);
+                let expected = if source { rgba.clone() } else { rgb.clone() };
+                assert_eq!(std::fs::read(&admission.path).unwrap(), expected.repeat(2));
+            }
         }
     }
     #[test]

@@ -4869,6 +4869,298 @@
       "scope": "Same997Rust/989Web,7independentHTTPframes+7guards pass;4K94sflow126.398s passes original gates but non-realtime;small fullflow100.704s,6.182s startup fails5s;both2820frames/4512000deviceframes/seek/pause/resume. No package promotion. Export separate latest997checkpoint retained.",
       "qualification": "small_startup_failed_realtime_and_old_stall_open",
       "delivery_ready": false
+    },
+    "opaque_video_input": {
+      "state": "implemented_component_and_focused_tests_passed_product_build_pending",
+      "source_before_commit": "974afd47",
+      "evidence_root": "/Users/vincent/Movies/OpenCut-native-rendering/4k/opaque-encoder-input",
+      "component": {
+        "decision": "support_opaque_RGB24_packing_for_implementation",
+        "rgba_encoder_peak_kib": 2143908,
+        "worst_rgb24_encoder_peak_kib": 1739832,
+        "minimum_fraction_reduction": 0.18847637118756966,
+        "worst_rgb24_fraction_of_production_rss_limit": 0.8296165466308594,
+        "complete_mp4_all_identical": true,
+        "normalized_rgb_input_all_identical": true,
+        "alpha_opaque_encode_identical": true,
+        "source_proxy_policy": "Unchanged complete losslessRGBA;native product source proof still required",
+        "component_scope_only": true,
+        "production_build": "pending",
+        "owned_component_pids_checked": [
+          95237,
+          95236,
+          95499,
+          95498,
+          95742,
+          95741,
+          95996,
+          95995
+        ],
+        "owned_component_pids_remaining": [],
+        "delivery_ready": false
+      },
+      "cases": [
+        {
+          "case": "rgba-a1",
+          "identity": {
+            "encoder_pid": 95237,
+            "decoder_pid": 95236,
+            "mode": "rgba"
+          },
+          "state": "passed",
+          "result": {
+            "frames": 180,
+            "width": 3840,
+            "height": 2160,
+            "mode": "rgba",
+            "seconds": 27.88837179,
+            "all_rgb_sha256": "06e4d84b474ed7208cdb7591eff25b78d65a66a741d81855865c829131d61192",
+            "mp4_sha256": "800d6423b89b4fdafb8303db564bcb45f3aad8f14998136d658eac6db30caa56",
+            "mp4_bytes": 17135990
+          },
+          "encoder_peak_rss_kib": 2143908
+        },
+        {
+          "case": "rgb24-b1",
+          "identity": {
+            "encoder_pid": 95499,
+            "decoder_pid": 95498,
+            "mode": "rgb24"
+          },
+          "state": "passed",
+          "result": {
+            "frames": 180,
+            "width": 3840,
+            "height": 2160,
+            "mode": "rgb24",
+            "seconds": 26.084270393,
+            "all_rgb_sha256": "06e4d84b474ed7208cdb7591eff25b78d65a66a741d81855865c829131d61192",
+            "mp4_sha256": "800d6423b89b4fdafb8303db564bcb45f3aad8f14998136d658eac6db30caa56",
+            "mp4_bytes": 17135990
+          },
+          "encoder_peak_rss_kib": 1739452
+        },
+        {
+          "case": "rgb24-b2",
+          "identity": {
+            "encoder_pid": 95742,
+            "decoder_pid": 95741,
+            "mode": "rgb24"
+          },
+          "state": "passed",
+          "result": {
+            "frames": 180,
+            "width": 3840,
+            "height": 2160,
+            "mode": "rgb24",
+            "seconds": 27.333513458,
+            "all_rgb_sha256": "06e4d84b474ed7208cdb7591eff25b78d65a66a741d81855865c829131d61192",
+            "mp4_sha256": "800d6423b89b4fdafb8303db564bcb45f3aad8f14998136d658eac6db30caa56",
+            "mp4_bytes": 17135990
+          },
+          "encoder_peak_rss_kib": 1739832
+        },
+        {
+          "case": "rgba-a2",
+          "identity": {
+            "encoder_pid": 95996,
+            "decoder_pid": 95995,
+            "mode": "rgba"
+          },
+          "state": "passed",
+          "result": {
+            "frames": 180,
+            "width": 3840,
+            "height": 2160,
+            "mode": "rgba",
+            "seconds": 28.523014389,
+            "all_rgb_sha256": "06e4d84b474ed7208cdb7591eff25b78d65a66a741d81855865c829131d61192",
+            "mp4_sha256": "800d6423b89b4fdafb8303db564bcb45f3aad8f14998136d658eac6db30caa56",
+            "mp4_bytes": 17135990
+          },
+          "encoder_peak_rss_kib": 2143908
+        }
+      ],
+      "alpha_mp4": {
+        "passed": true,
+        "rows": [
+          {
+            "mode": "rgba",
+            "source_sha256": "67ded7a174f736dde849159c5515ea70dbbe23f28c1bc35218e12d5616506560",
+            "mp4_sha256": "942acfc42d0c14d970740a20b4c3395e7cb9860fc5d0aedad5d8907ee4436f73",
+            "decoded_rgba_sha256": "4b853dcfb9efe844df32b8ee5052529d405e159630b96f4e16f0e8faaa312fa1",
+            "frames": 8
+          },
+          {
+            "mode": "rgb24",
+            "source_sha256": "2618291d1e5d29fca382a99e05ca2990dba9c72a8674092c5a2d23d679124b40",
+            "mp4_sha256": "942acfc42d0c14d970740a20b4c3395e7cb9860fc5d0aedad5d8907ee4436f73",
+            "decoded_rgba_sha256": "4b853dcfb9efe844df32b8ee5052529d405e159630b96f4e16f0e8faaa312fa1",
+            "frames": 8
+          }
+        ],
+        "scope": "Opaque yuv420p export input packing,including authored hiddenRGB and alpha. Not source-proxy preservation or native product acceptance."
+      },
+      "alpha_webm": {
+        "passed": true,
+        "rows": [
+          {
+            "mode": "rgba",
+            "command": [
+              "/Users/vincent/Movies/OpenCut-native-rendering/4k/rgba-transfer/relocated install/opencut-0.1.0-x86_64-apple-darwin/bin/libexec/runtimes/ffmpeg/bin/ffmpeg",
+              "-hide_banner",
+              "-loglevel",
+              "error",
+              "-nostdin",
+              "-n",
+              "-f",
+              "rawvideo",
+              "-pixel_format",
+              "rgba",
+              "-video_size",
+              "128x96",
+              "-framerate",
+              "30/1",
+              "-i",
+              "/Users/vincent/Movies/OpenCut-native-rendering/4k/source-preview-throughput/alpha-codec/authored.rgba",
+              "-an",
+              "-map",
+              "0:v:0",
+              "-c:v",
+              "libvpx-vp9",
+              "-pix_fmt",
+              "yuv420p",
+              "-b:v",
+              "28000",
+              "-threads",
+              "2",
+              "-filter_threads",
+              "1",
+              "-filter_complex_threads",
+              "1",
+              "-deadline",
+              "good",
+              "-cpu-used",
+              "2",
+              "-row-mt",
+              "1",
+              "-f",
+              "webm",
+              "/Users/vincent/Movies/OpenCut-native-rendering/4k/opaque-encoder-input/alpha-rgba.webm"
+            ],
+            "frames": 8,
+            "complete_webm_sha256": "998adc201b7796033aadca96a54aeadede56e8817d15bd2acba5b315b87333b1",
+            "encoded_packets_sha256": "afc57179300a1fe56df47da69860bf540b749f63eb10a9500dd435b1161155e6",
+            "decoded_rgba_sha256": "40de3fac475db505b61d62ce4624c637002919fc2285d4928dd2846e8ce9ab6a"
+          },
+          {
+            "mode": "rgb24",
+            "command": [
+              "/Users/vincent/Movies/OpenCut-native-rendering/4k/rgba-transfer/relocated install/opencut-0.1.0-x86_64-apple-darwin/bin/libexec/runtimes/ffmpeg/bin/ffmpeg",
+              "-hide_banner",
+              "-loglevel",
+              "error",
+              "-nostdin",
+              "-n",
+              "-f",
+              "rawvideo",
+              "-pixel_format",
+              "rgb24",
+              "-video_size",
+              "128x96",
+              "-framerate",
+              "30/1",
+              "-i",
+              "/Users/vincent/Movies/OpenCut-native-rendering/4k/opaque-encoder-input/alpha.rgb24",
+              "-an",
+              "-map",
+              "0:v:0",
+              "-c:v",
+              "libvpx-vp9",
+              "-pix_fmt",
+              "yuv420p",
+              "-b:v",
+              "28000",
+              "-threads",
+              "2",
+              "-filter_threads",
+              "1",
+              "-filter_complex_threads",
+              "1",
+              "-deadline",
+              "good",
+              "-cpu-used",
+              "2",
+              "-row-mt",
+              "1",
+              "-f",
+              "webm",
+              "/Users/vincent/Movies/OpenCut-native-rendering/4k/opaque-encoder-input/alpha-rgb24.webm"
+            ],
+            "frames": 8,
+            "complete_webm_sha256": "def99114a8086f1f19b0f63a0504a71c33c69c72bdd77d25b5ff78fe2852fda0",
+            "encoded_packets_sha256": "afc57179300a1fe56df47da69860bf540b749f63eb10a9500dd435b1161155e6",
+            "decoded_rgba_sha256": "40de3fac475db505b61d62ce4624c637002919fc2285d4928dd2846e8ce9ab6a"
+          }
+        ],
+        "scope": "Additional affectedVP9opaque input packing:authored8alpha-frame reference;compare compressed video packets and decoded pixels because WebM container identities may vary. Not native publication or performance acceptance."
+      },
+      "validation": {
+        "source_before_commit": "974afd47",
+        "source_files_sha256": {
+          "crates/native-services/src/classic_video/encoder.rs": "c9c0bf8d760f9f5b8af148caf4fabd12c53fa66e33576b009cffce8b1c54cb3c",
+          "crates/native-services/src/export_video.rs": "1976905577449b71d52d92dea63e1f284e744ec4442aef7578b40ee10e2d33c7"
+        },
+        "native_tests": {
+          "test_binary": "/Users/vincent/Desktop/OpenCut/target/release/deps/opencut_native_services-91f01df8604994ce",
+          "passed": 4,
+          "failed": 0,
+          "tests": [
+            {
+              "test": "classic_video::encoder::tests::opaque_video_input_packs_rgb_while_source_proxy_keeps_alpha_and_hidden_rgb",
+              "exit_code": 0,
+              "log": "/Users/vincent/Movies/OpenCut-native-rendering/4k/opaque-encoder-input/opaque_video_input_packs_rgb_while_source_proxy_keeps_alpha_and_hidden_rgb.log",
+              "ran_one": true
+            },
+            {
+              "test": "classic_video::encoder::tests::encoder_backpressure_remains_cancellable_and_reaps_child",
+              "exit_code": 0,
+              "log": "/Users/vincent/Movies/OpenCut-native-rendering/4k/opaque-encoder-input/encoder_backpressure_remains_cancellable_and_reaps_child.log",
+              "ran_one": true
+            },
+            {
+              "test": "classic_video::encoder::tests::compact_probe_progress_preserves_decoded_counts_and_bounded_stream_facts",
+              "exit_code": 0,
+              "log": "/Users/vincent/Movies/OpenCut-native-rendering/4k/opaque-encoder-input/compact_probe_progress_preserves_decoded_counts_and_bounded_stream_facts.log",
+              "ran_one": true
+            },
+            {
+              "test": "export_video::tests::all_quality_targets_reach_encoder_and_audio_off_has_no_audio_input_or_encoder",
+              "exit_code": 0,
+              "log": "/Users/vincent/Movies/OpenCut-native-rendering/4k/opaque-encoder-input/all_quality_targets_reach_encoder_and_audio_off_has_no_audio_input_or_encoder.log",
+              "ran_one": true
+            }
+          ]
+        },
+        "native_test_binary_sha256": "2ca9dcdf5acdce6afc71c6d9774c4be2ea03840e99f75ed246f3bbc7378c6160",
+        "architecture_tests": 14,
+        "architecture_and_contract_boundary_gates": "passed",
+        "public_DTO_registry_domain_host_dispatch_access_error_generated_consumers": "unchanged",
+        "dependencies_modules_baseline_changes": false,
+        "implementation": "Video input headerRGB24 and sameRGBA sink bounded48KiB packing;source-preview exactRGBA;alloriginalRGBA chunk order/length and10mscancel/reap fences preserved. Originalcodec/rate/preset/RSSdeadline/output budgets unchanged.",
+        "first_failure_retained": "first-native-tests contains13.484s compile failures from testmockmissingDebug and closuretype mismatch;no media/product retries.",
+        "product_build": "pending",
+        "manual_acceptance": false,
+        "delivery_ready": false
+      },
+      "native_fidelity_and_editor_acceptance": "pending",
+      "checkpoint": {
+        "path": "/Users/vincent/Movies/OpenCut-native-rendering/4k/opaque-encoder-input/checkpoint.json",
+        "sha256": "ef4206cb69f5479f1fe51aa77f16058869197d13eaa58ce229634772143f8dc8",
+        "files": 49
+      },
+      "manual_acceptance": false,
+      "delivery_ready": false
     }
   }
 }

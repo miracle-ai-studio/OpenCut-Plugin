@@ -6365,5 +6365,67 @@
     "change": "Authorized identity lookup before capture;only missing task assets captured and checked before acceptance. Runtime/authority partitions,original producer revision,source/proxy integrity and publication fences preserved.",
     "validation_plan": "One integrated CLI build with unchanged native worker;affected source queue tests,exact CLI contracts,independent pixels plus actual prepared landscape pause/resume. No replay of passed export algorithm or whole synthetic94s unless new evidence warrants.",
     "delivery_ready": false
+  },
+  "local_service_upgrade": {
+    "state": "installed_with_followup_performance_fix_building",
+    "assembly_commits": [
+      "3136836a",
+      "161cd597"
+    ],
+    "native_source_commit": "10b27506",
+    "installed_cli_sha256": "106307ddb5ac2645838c1db49356754bbfb594a04cd6a3dec40771bbf6eb9dff",
+    "installed_worker_sha256": "ed7a1cab49ec3c81b9921c1b6828f51ab2ae325d4d87d5873c28592537b489c2",
+    "services_switched": 2,
+    "web_assets_verified_per_service": 285,
+    "projects_unchanged": 4,
+    "old_jobs_unchanged": 420,
+    "new_source_jobs": 11,
+    "all_new_source_jobs_succeeded": true,
+    "installation_doctor_checks": 2541,
+    "packaging_tests": 8,
+    "architecture_tests": 14,
+    "discovery_ABBA": {
+      "automatic_warm_seconds": 0.051986118545755744,
+      "explicit_warm_seconds": 0.021447775536216795,
+      "independent_identical_frames": 32
+    },
+    "actual_4K_fixture": {
+      "startup_seconds": 4.319700000047684,
+      "action_to_end_seconds": 109.199886325,
+      "duration_seconds": 94,
+      "API_page_errors": 0,
+      "uncorrelated_network_failure_events": 339
+    },
+    "source_4K_export": {
+      "duration_seconds": 6,
+      "job_seconds": 47.303803973132744,
+      "whole_mp4_matches_retained_reference": true,
+      "preencode_pcm_maximum_error": 0
+    },
+    "real_projects": {
+      "landscape_prepared": {
+        "startup_seconds": 17.439877325999998,
+        "resume_seconds": 9.849330058000003,
+        "functional_passed": true,
+        "performance_accepted": false
+      },
+      "workbench_cold": {
+        "startup_seconds": 13.589996691,
+        "resume_seconds": 4.295083181000002,
+        "functional_passed": true
+      }
+    },
+    "preview_floor": "540p",
+    "export_default": "p1080",
+    "export_choices": [
+      "p720",
+      "p1080",
+      "p1440",
+      "p2160"
+    ],
+    "checkpoint_sha256": "7c5b87b2efff703126b910fd64dc21f35d8b8df2530c2bb40856960bd09f03be",
+    "checkpoint_files": 151,
+    "manual_acceptance": false,
+    "delivery_ready": false
   }
 }

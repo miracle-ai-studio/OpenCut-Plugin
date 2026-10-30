@@ -2,26 +2,197 @@
   "format": "opencut.delivery-status.v1",
   "delivery_ready": false,
   "in_progress": {
-    "candidate_cli_sha256": "82a597f91dccd97027ed1a0fab4b76e465fa8d3446cb041b04eeb33d56f53e82",
-    "candidate_worker_sha256": "b3527e2edb26658e4bc54cabe72a6fecae8f397d0830a848357710ea9bd19be1",
-    "candidate_web_source_digest": "913c73b65f9ff061f2456221e523793f4bcb1dd292159fd0619de6cd00563c77",
-    "execution_scope_optimization": "Native GPU source8ae9dea1:reuse admitted source textures with existing staging slots and bounded completion-event waits.One production build,3test compilations;12related native checks and14architecture tests passed.Unchanged exactCLI contract and Web producer proofs reused;0Web builds.No shader,DTO,dependency,module,budget or operation changes.",
-    "preview_resolution": "Keep preview540 output. Native preview video conversion now fits the prepared canvas before RGBA allocation; source dimensions remain original for binding. No further preview reduction.",
-    "export_resolution": "720p/1080p/1440p/2160p and Web default1080p unchanged.Four presets independently validated on their original ee7d2027ac37/2759865d927a candidate.Current original-source4K6s export has identical wholeMP4 and independently exact current preencode PCM;four presets not rerun.",
-    "bottleneck_attribution": "Single-run94s4K118.709476229s versus121.684352283s prior;small98.642318429s versus98.207615618s.No stable improvement established,4K remains non-realtime.Current4K prepared/claimed-header median38.7ms exceeds33.3ms at30fps;includes preparation,claim and JSON-header parsing,not decoder-only.Read/bitmap18.1ms overlaps;latency sum is not throughput.Pre-change CPU diagnostic found same-decoded-frame costs too;do not attribute all delay to decoding.Proxy comparison retains its previous runtime/Web identity.",
+    "candidate_cli_sha256": "2e2c682bc72903d7e7a3661b46fc0c4a5cc5c91a1ed60f97188118f90f875f72",
+    "candidate_worker_sha256": "6dc2eaedf9f795ba536ff3b104d639d574de29f4083f8039607f88659d18de61",
+    "candidate_web_source_digest": "5cfed08f1bdfa63fd8645eae2123ef0118d2badcfe5c7e6b2333ebb456d98826",
+    "execution_scope_optimization": "Explicit BLAKE3 for complete ephemeral nativeRGBA only;Rust53ffb058,Web32421ea2. Existing asset/runtime/export/storedSHA256 proofs,original540p and freshfences preserved.61SDK/43Web/7Rust/14architecture/7independentframes/7guards andtwo94sUIflows passed.Originalfailures retained.",
+    "preview_resolution": "Actual preview540 output960x540 for4K source;smallsource320x180 retained,no further reduction.",
+    "export_resolution": "Original-source exports keep720/1080/1440/2160and Webdefault1080. No export/PCM rerun inthisslice;preceding6c615de9/555/5d producerproof retains original scope.",
+    "bottleneck_attribution": "Current4K action-to-end107.01352566s vsprior126.216166s for94scontent;singleobservations,not stablebenchmark or realtime. Nativeprepare/claim/header median34.7ms,read/verify/bitmap13.1msoverlap;notpuredecode or additive throughput. Scope0.007ms,snapshotIR0.94ms rejected asprimary;completeSHA cost is repairable and explicitBLAKE3 accepted.",
     "runtime_acceptance": {
-      "small_source": "Current native worker/retained Web:startup3.880698116s,94s click-to-ended98.642318429s;2820frames/0discarded/4512000deviceframes,90sseek/pause/resume.6198observed responses include prepare;0observedAPI/pageerrors.860transport abort/incomplete events retained,not fully attributed.",
-      "source_4k": "Current startup4.719901218s,94s click-to-ended118.709476229s;2820frames/0discarded/4512000deviceframes,90sseek/pause/resume.6581observed responses include prepare;0observedAPI/pageerrors.451transport aborts retained.Original150s gate passed,realtime remains open.",
-      "source_4k_export": "Current producerjob_c1c2cb8460ac46eebee976d674f0a01c,6s3840x2160 export53.697422227s;MP4 identical to original producer.Current288000stereo preencode PCM independently exact;originalRGB/AAC report reused only after wholeMP4 equality.Not a speedup.",
-      "native_worker_peak_rss_kib": {
-        "preview_4k": 296084,
-        "preview_small": 19304,
-        "export_current_producer": 315876
+      "small_source": {
+        "fixture": "small",
+        "report": "/Users/vincent/Movies/OpenCut-native-rendering/4k/preview-digest-integration/editor/native-long-ui-2e2c682bc729-6dc2eaedf9f7-small.json",
+        "report_sha256": "efc8a0d69ba276d76a0b494555d34956310a66c52709ff39580f738d40ad76c0",
+        "startup_actual_click_to_visible_seconds": 4.007400000095368,
+        "startup_gate_seconds": 5,
+        "startup_clock": "same browser monotonic actual click to first visible native frame",
+        "legacy_action_startup_seconds": 5.062818346999999,
+        "legacy_action_gate_passed": false,
+        "action_to_end_seconds": 99.474973525,
+        "actual_click_to_full_last_run_DOM_upper_seconds": 98.53510009765625,
+        "DOM_upper_sample_interval_ms": 250,
+        "presented_frames": 2820,
+        "discarded_frames": 0,
+        "submitted_device_content_frames": "4512000",
+        "observed_projected_device_content_frames": "4512000",
+        "max_wall_frame_gap_ms": 43.60000014305115,
+        "source_art_replies": 358,
+        "preview_response_count": 6217,
+        "observed_api_errors": 0,
+        "page_errors": 0,
+        "uncorrelated_network_failure_events": 614,
+        "sampled_stage_latency_medians_ms": {
+          "nativeFrameMs": 22.100000143051147,
+          "pictureReadMs": 1.2000000476837158,
+          "totalMs": 23.5
+        },
+        "stage_limit": "Nativeframe includes claim andHTTP/JSONmetadata,not puredecode;overlapping medians are not additive throughput.",
+        "ended_picture": {
+          "width": 320,
+          "height": 180
+        },
+        "sampled_native_worker_peak_rss_kib": 27376,
+        "sampled_owned_tree_peak_rss_kib": 1952320,
+        "RSS_scope": "Observed1ssamples,notGPU/driver/hard/universal bound",
+        "browser_sha256": "b5626938028f718a6cdb0c8eff9d0346b186d68b4e04b43df4f9f579c81ecf28",
+        "passed": true
       },
-      "cleanup": "All3retained fixture snapshots unchanged;owned service stopped,0activejobs/ownedworkers after export.",
-      "qualification": "Current working candidate only,no install/package promotion.Process RSS samples exclude GPU/driver allocation;agent screenshots are not physical/human acceptance."
+      "source_4k": {
+        "fixture": "4k",
+        "report": "/Users/vincent/Movies/OpenCut-native-rendering/4k/preview-digest-integration/editor/native-long-ui-2e2c682bc729-6dc2eaedf9f7.json",
+        "report_sha256": "87927a9123d6311dcd791b00d872e50f401680336efd8641733bc6d99fac97a2",
+        "startup_actual_click_to_visible_seconds": 4.207399999856949,
+        "startup_gate_seconds": 5,
+        "startup_clock": "same browser monotonic actual click to first visible native frame",
+        "legacy_action_startup_seconds": 5.154253409999999,
+        "legacy_action_gate_passed": false,
+        "action_to_end_seconds": 107.01352566,
+        "actual_click_to_full_last_run_DOM_upper_seconds": 105.98159985351562,
+        "DOM_upper_sample_interval_ms": 250,
+        "presented_frames": 2820,
+        "discarded_frames": 0,
+        "submitted_device_content_frames": "4512000",
+        "observed_projected_device_content_frames": "4512000",
+        "max_wall_frame_gap_ms": 169.29999995231628,
+        "source_art_replies": 494,
+        "preview_response_count": 6364,
+        "observed_api_errors": 0,
+        "page_errors": 0,
+        "uncorrelated_network_failure_events": 350,
+        "sampled_stage_latency_medians_ms": {
+          "nativeFrameMs": 34.700000047683716,
+          "pictureReadMs": 13.100000143051147,
+          "totalMs": 48.700000047683716
+        },
+        "stage_limit": "Nativeframe includes claim andHTTP/JSONmetadata,not puredecode;overlapping medians are not additive throughput.",
+        "ended_picture": {
+          "width": 960,
+          "height": 540
+        },
+        "sampled_native_worker_peak_rss_kib": 106700,
+        "sampled_owned_tree_peak_rss_kib": 2130216,
+        "RSS_scope": "Observed1ssamples,notGPU/driver/hard/universal bound",
+        "browser_sha256": "b5626938028f718a6cdb0c8eff9d0346b186d68b4e04b43df4f9f579c81ecf28",
+        "passed": true
+      },
+      "source_4k_export": "Not rerun;keep original6c615de9/555/5d producerproof. No new exportclaim on2e/6dc.",
+      "cleanup": {
+        "snapshots": {
+          "native-4k-media-acceptance": {
+            "revision": "rev_6529d28c682afd7010dc7f4a916863cf20f1ffd7c31d4be22c7eabd4d1b02378",
+            "document_sha256": "1e16be88f86a91a853045f14fa4c93eefc9527e921ae6b0c5828224affa7e54b"
+          },
+          "native-long-media-acceptance": {
+            "revision": "rev_6f73274b38fc46253eb9a1fd77196556f1a2079b9682107cd681f1fe2120ad66",
+            "document_sha256": "e6efd0a3c714b40ba78ae41aac37808270851cee1bb47cd7841bdc7e8f85a5bb"
+          },
+          "native-source-proxy-diagnostic": {
+            "revision": "rev_9d1bbba383419af35fe9cf3cec71da28a48729e331f6fdd2e1fabbb5889eb478",
+            "document_sha256": "372e3a35a214ddd8655c4706d16034241ae0f598c56eff69f1099af6f6cda6f2"
+          },
+          "native-source-alpha-acceptance": {
+            "revision": "rev_f74f370bf1ff6b3806870dbdba5ca5295d6e2309d8e4053cfa9e7af5a8d8b236",
+            "document_sha256": "64cf1becae393f27e74069a51c206c1388fc52590f6ddec44b30210f592e2f5c"
+          }
+        },
+        "projects_unchanged": 4,
+        "prior_terminal_job_results_and_errors_unchanged": 90,
+        "jobs_unchanged_during_editor_flows": 92,
+        "new_successful_source_jobs": {
+          "job_8adaa6c2a77b461eac981daa4b331c22": {
+            "state": "succeeded",
+            "attempt": 1,
+            "result_sha256": "fb42860af276c0e1b64c4ae41978f976ed8c5b33b6d7ffb3fd946670b1ade5cb",
+            "error_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "job_cae1ca139aca49a0aeb8ccbf0afd42be": {
+            "state": "succeeded",
+            "attempt": 1,
+            "result_sha256": "8b49c44414b83db15207b6f4b8a55c7131d46dfa304b6e2b78dc3c99dad82bb8",
+            "error_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "active_jobs": 0,
+        "owned_service_stopped": true,
+        "observed_owned_pids_checked": [
+          5882,
+          6200,
+          6208,
+          6217,
+          6218,
+          6219,
+          6221,
+          6222,
+          6223,
+          6227,
+          6228,
+          6234,
+          6235,
+          6237,
+          6363,
+          6365,
+          6369,
+          6370,
+          6380,
+          6385,
+          6387,
+          6394,
+          6397,
+          6409,
+          6410,
+          6411,
+          6413,
+          6414,
+          6415,
+          6418,
+          6421,
+          6425,
+          6427,
+          6547,
+          6548,
+          6551,
+          6553,
+          6559,
+          6561,
+          6569,
+          6571
+        ],
+        "observed_owned_pids_remaining": [],
+        "exact_candidate_processes_remaining": [],
+        "web_sources_verified": 743,
+        "web_assets_verified": 285,
+        "previous_checkpoints_preserved": [
+          {
+            "checkpoint": "/Users/vincent/Movies/OpenCut-native-rendering/4k/opaque-export-acceptance/checkpoint.json",
+            "sha256": "6eab8828bd9ca0ccbcad4c77a2953b634c58e532df40e49bf3c1be5b8b890f0b",
+            "files_unchanged": 107
+          },
+          {
+            "checkpoint": "/Users/vincent/Movies/OpenCut-native-rendering/4k/opaque-export-acceptance/editor-clock/checkpoint.json",
+            "sha256": "a2d834e012f2938ab8e1743d578f8d642a50077c5faa2c467fe92110e3885824",
+            "files_unchanged": 26
+          }
+        ],
+        "new_export_job": false,
+        "user_services_and_packages_untouched": true,
+        "agent_visual_review": "Both current syntheticeditor screenshots show native preview,sourcecards,timeline thumbnailsandwaveform;not human/physicalaudioacceptance.",
+        "manual_acceptance": false,
+        "delivery_ready": false
+      },
+      "qualification": "Scopedcurrentcandidate only;4K nonrealtime,old incompleteheadstallopen,networkeventsnotfullycorrelated,manual/physicalA/V/crossplatform/full deliveryopen. No installedpackage promotion."
     },
-    "next_candidate": "Integrate actual preview-only source preparation through shared application/job/storage ports:fixed original asset+selected track+native decoder/raster/encoder identity,an exact original-to-proxy frame-ordinal map,geometry/color/rotation and live authority.Original PTS/duration must remain separate from encoded proxy time;do not rely on copyts.No new backend/version chooser or silent fallback.Export always reads original and keeps four resolutions/default1080.Collect full-source/native-proxy and original editor/export acceptance in one integrated build;reuse17media checks and retained fixtures for their exact source/dependency identities.",
+    "next_candidate": "Causally locate remaining frame prepare/transport cost before another fix;native prepare/claim/header34.7ms still exceeds33.3ms budget. Keep540p,originalexport,auth/revision/lease/generation/publicationfences. Reuse passedscopes;no observation-only fullflow retries.",
     "decoder_regression_failures": "Initial test required optional stream duration, then assumed previous frame existed before nonzero firstPTS; preserved both failures. It also exposed production metadata selection staying serial. Integrated repair uses first admitted frame; all25 affected checks now pass.",
     "decoder_candidate_evidence": {
       "source_commit": "cbe924e9fffdb16d42b4636b86fcc732417945e2",
@@ -759,7 +930,26 @@
       "manual_acceptance": "No new browser or human/device acceptance;previous runtime/Web proofs keep original producer identities.",
       "preserved_collection_observation_failure": "Collector initially required exit0 for stopped server status;CLI returns exit1 unless ready.Corrected observation retained all completed tests/media without rebuild or rerender.",
       "qualification": "17native media checks and14architecture tests passed.One media-only compilation.No current production CLI/worker/Web build or integrated source proxy qualification;previous current working candidate retains its original identities."
-    }
+    },
+    "previous_top_candidate_identity": {
+      "candidate_cli_sha256": "82a597f91dccd97027ed1a0fab4b76e465fa8d3446cb041b04eeb33d56f53e82",
+      "candidate_worker_sha256": "b3527e2edb26658e4bc54cabe72a6fecae8f397d0830a848357710ea9bd19be1",
+      "candidate_web_source_digest": "913c73b65f9ff061f2456221e523793f4bcb1dd292159fd0619de6cd00563c77"
+    },
+    "previous_execution_scope_optimization": "Native GPU source8ae9dea1:reuse admitted source textures with existing staging slots and bounded completion-event waits.One production build,3test compilations;12related native checks and14architecture tests passed.Unchanged exactCLI contract and Web producer proofs reused;0Web builds.No shader,DTO,dependency,module,budget or operation changes.",
+    "previous_runtime_acceptance_before_preview_digest": {
+      "small_source": "Current native worker/retained Web:startup3.880698116s,94s click-to-ended98.642318429s;2820frames/0discarded/4512000deviceframes,90sseek/pause/resume.6198observed responses include prepare;0observedAPI/pageerrors.860transport abort/incomplete events retained,not fully attributed.",
+      "source_4k": "Current startup4.719901218s,94s click-to-ended118.709476229s;2820frames/0discarded/4512000deviceframes,90sseek/pause/resume.6581observed responses include prepare;0observedAPI/pageerrors.451transport aborts retained.Original150s gate passed,realtime remains open.",
+      "source_4k_export": "Current producerjob_c1c2cb8460ac46eebee976d674f0a01c,6s3840x2160 export53.697422227s;MP4 identical to original producer.Current288000stereo preencode PCM independently exact;originalRGB/AAC report reused only after wholeMP4 equality.Not a speedup.",
+      "native_worker_peak_rss_kib": {
+        "preview_4k": 296084,
+        "preview_small": 19304,
+        "export_current_producer": 315876
+      },
+      "cleanup": "All3retained fixture snapshots unchanged;owned service stopped,0activejobs/ownedworkers after export.",
+      "qualification": "Current working candidate only,no install/package promotion.Process RSS samples exclude GPU/driver allocation;agent screenshots are not physical/human acceptance."
+    },
+    "web_build_policy": "Use an owned external candidate outDir for Web validation;do not overwrite liveapps/web/dist. ExistingPID51897 at127.0.0.1:59790 keepsmatchinginstalledWeb(294assets),newnativecandidateWeb remainsindependent(285assets);no oldservice restart oruserprojectwrite."
   },
   "scope": "Local CLI/HTTP/MCP/SDK service and Web editor; GPUI shell is not an integrated editor.",
   "public_contract": {
@@ -5585,7 +5775,7 @@
     "scope": "Ephemeral native-preview RGBA transport only",
     "implemented": true,
     "built": true,
-    "scoped_behavior_accepted": false,
+    "scoped_behavior_accepted": true,
     "manual_acceptance": false,
     "delivery_ready": false,
     "public_contract": "content_digest:{algorithm:blake3,value:hex};no legacy hash fallback",
@@ -5602,6 +5792,205 @@
       }
     },
     "contracts": "GeneratedandcheckedagainstexactCLI;canonicalcontractpassed",
-    "client_tests": "60SDKandaffectedWebtests passed;typesonlyrecovery,noRustrebuild"
+    "client_tests": "60SDKandaffectedWebtests passed;typesonlyrecovery,noRustrebuild",
+    "web_source_commit": "32421ea267cedd33cf451f87d7a1709624c76eb1",
+    "web_source_digest": "5cfed08f1bdfa63fd8645eae2123ef0118d2badcfe5c7e6b2333ebb456d98826",
+    "checkpoint_sha256": "cb61b6dfd6ab75c472e8929ff95d0a0cac966465c16aa24928c2a99910f24d06",
+    "flows": [
+      {
+        "fixture": "4k",
+        "report": "/Users/vincent/Movies/OpenCut-native-rendering/4k/preview-digest-integration/editor/native-long-ui-2e2c682bc729-6dc2eaedf9f7.json",
+        "report_sha256": "87927a9123d6311dcd791b00d872e50f401680336efd8641733bc6d99fac97a2",
+        "startup_actual_click_to_visible_seconds": 4.207399999856949,
+        "startup_gate_seconds": 5,
+        "startup_clock": "same browser monotonic actual click to first visible native frame",
+        "legacy_action_startup_seconds": 5.154253409999999,
+        "legacy_action_gate_passed": false,
+        "action_to_end_seconds": 107.01352566,
+        "actual_click_to_full_last_run_DOM_upper_seconds": 105.98159985351562,
+        "DOM_upper_sample_interval_ms": 250,
+        "presented_frames": 2820,
+        "discarded_frames": 0,
+        "submitted_device_content_frames": "4512000",
+        "observed_projected_device_content_frames": "4512000",
+        "max_wall_frame_gap_ms": 169.29999995231628,
+        "source_art_replies": 494,
+        "preview_response_count": 6364,
+        "observed_api_errors": 0,
+        "page_errors": 0,
+        "uncorrelated_network_failure_events": 350,
+        "sampled_stage_latency_medians_ms": {
+          "nativeFrameMs": 34.700000047683716,
+          "pictureReadMs": 13.100000143051147,
+          "totalMs": 48.700000047683716
+        },
+        "stage_limit": "Nativeframe includes claim andHTTP/JSONmetadata,not puredecode;overlapping medians are not additive throughput.",
+        "ended_picture": {
+          "width": 960,
+          "height": 540
+        },
+        "sampled_native_worker_peak_rss_kib": 106700,
+        "sampled_owned_tree_peak_rss_kib": 2130216,
+        "RSS_scope": "Observed1ssamples,notGPU/driver/hard/universal bound",
+        "browser_sha256": "b5626938028f718a6cdb0c8eff9d0346b186d68b4e04b43df4f9f579c81ecf28",
+        "passed": true
+      },
+      {
+        "fixture": "small",
+        "report": "/Users/vincent/Movies/OpenCut-native-rendering/4k/preview-digest-integration/editor/native-long-ui-2e2c682bc729-6dc2eaedf9f7-small.json",
+        "report_sha256": "efc8a0d69ba276d76a0b494555d34956310a66c52709ff39580f738d40ad76c0",
+        "startup_actual_click_to_visible_seconds": 4.007400000095368,
+        "startup_gate_seconds": 5,
+        "startup_clock": "same browser monotonic actual click to first visible native frame",
+        "legacy_action_startup_seconds": 5.062818346999999,
+        "legacy_action_gate_passed": false,
+        "action_to_end_seconds": 99.474973525,
+        "actual_click_to_full_last_run_DOM_upper_seconds": 98.53510009765625,
+        "DOM_upper_sample_interval_ms": 250,
+        "presented_frames": 2820,
+        "discarded_frames": 0,
+        "submitted_device_content_frames": "4512000",
+        "observed_projected_device_content_frames": "4512000",
+        "max_wall_frame_gap_ms": 43.60000014305115,
+        "source_art_replies": 358,
+        "preview_response_count": 6217,
+        "observed_api_errors": 0,
+        "page_errors": 0,
+        "uncorrelated_network_failure_events": 614,
+        "sampled_stage_latency_medians_ms": {
+          "nativeFrameMs": 22.100000143051147,
+          "pictureReadMs": 1.2000000476837158,
+          "totalMs": 23.5
+        },
+        "stage_limit": "Nativeframe includes claim andHTTP/JSONmetadata,not puredecode;overlapping medians are not additive throughput.",
+        "ended_picture": {
+          "width": 320,
+          "height": 180
+        },
+        "sampled_native_worker_peak_rss_kib": 27376,
+        "sampled_owned_tree_peak_rss_kib": 1952320,
+        "RSS_scope": "Observed1ssamples,notGPU/driver/hard/universal bound",
+        "browser_sha256": "b5626938028f718a6cdb0c8eff9d0346b186d68b4e04b43df4f9f579c81ecf28",
+        "passed": true
+      }
+    ]
+  },
+  "preview_digest_acceptance": {
+    "summary": "/Users/vincent/Movies/OpenCut-native-rendering/4k/preview-digest-integration/summary.json",
+    "checkpoint": "/Users/vincent/Movies/OpenCut-native-rendering/4k/preview-digest-integration/checkpoint.json",
+    "checkpoint_sha256": "cb61b6dfd6ab75c472e8929ff95d0a0cac966465c16aa24928c2a99910f24d06",
+    "evidence_files": 402,
+    "native_source_commit": "53ffb058e413fad432a870c9f68ca49a0c61baad",
+    "runtime": {
+      "opencut": {
+        "path": "/Users/vincent/Movies/OpenCut-native-rendering/candidates/2e2c682bc72903d7e7a3661b46fc0c4a5cc5c91a1ed60f97188118f90f875f72/opencut",
+        "sha256": "2e2c682bc72903d7e7a3661b46fc0c4a5cc5c91a1ed60f97188118f90f875f72"
+      },
+      "opencut-render-worker": {
+        "path": "/Users/vincent/Movies/OpenCut-native-rendering/candidates/6dc2eaedf9f795ba536ff3b104d639d574de29f4083f8039607f88659d18de61/opencut-render-worker",
+        "sha256": "6dc2eaedf9f795ba536ff3b104d639d574de29f4083f8039607f88659d18de61"
+      }
+    },
+    "Web_source_commit": "32421ea267cedd33cf451f87d7a1709624c76eb1",
+    "tests": {
+      "API_digest_contract": 1,
+      "host_pixel_integrity_budget_lifecycle": 6,
+      "SDK_original_suite": 60,
+      "SDK_new_full540p_and_lastbyte_corruption": 1,
+      "Web_affected": 43,
+      "architecture": 14,
+      "generated_and_canonical_exact_CLI": true,
+      "independent_raw540p_complete_frames": 7,
+      "native_HTTP_guards": 7
+    },
+    "builds": {
+      "first_product_attempt": {
+        "source_commit": "6407a544bfb0437e64e214409b6981b44dcd7164",
+        "command": [
+          "cargo",
+          "build",
+          "--release",
+          "--locked",
+          "--offline",
+          "-p",
+          "opencut-cli",
+          "-p",
+          "opencut-render-worker",
+          "-j",
+          "2"
+        ],
+        "exit_code": 101,
+        "seconds": 128.74179939297028,
+        "web_rebuilt": false
+      },
+      "successful_product_build": {
+        "source_commit": "53ffb058e413fad432a870c9f68ca49a0c61baad",
+        "command": [
+          "cargo",
+          "build",
+          "--release",
+          "--locked",
+          "--offline",
+          "-p",
+          "opencut-cli",
+          "-p",
+          "opencut-render-worker",
+          "-j",
+          "2"
+        ],
+        "exit_code": 0,
+        "seconds": 829.1032298030332,
+        "web_rebuilt": false
+      },
+      "Rust_test_program_build_seconds": 752.9657944499049,
+      "Web": {
+        "source_commit": "32421ea267cedd33cf451f87d7a1709624c76eb1",
+        "args": [
+          "npm",
+          "run",
+          "build"
+        ],
+        "exit_code": 0,
+        "seconds": 19.984887303085998
+      },
+      "limits": "First128.7sproductfieldconsumerfailureandtwoSDKtypecompilefailuresretained;one successfulproductbuildandoneWebbuild. SeparateRusttestprogrambuildalso recompiled dependencies;build overhead not solved."
+    },
+    "limitations": [
+      "Repairable:entireRGBAintegritydigestcaused measurableavoidedCPUcost;explicitBLAKE3implementedandscopedcorrectnessaccepted.",
+      "Rejected as primary:scope6-7microseconds/snapshot+IR0.94ms;keepfreshfences.",
+      "Current4Kaction-to-end107.014s vsprior126.216s is one retainedobservation;not stablebenchmark orreal-time94sdelivery.",
+      "Oldincomplete-headstallnotreproducedorclosed;networkcancel/incompleteeventsnotfullycorrelated;manual,physicalA/V,crossplatformandwhole-product acceptanceopen."
+    ],
+    "manual_acceptance": false,
+    "delivery_ready": false
+  },
+  "live_web_preservation": {
+    "checkpoint": "/Users/vincent/Movies/OpenCut-native-rendering/4k/live-web-preservation/checkpoint.json",
+    "checkpoint_sha256": "43942591e67948c9ad7d293b73fd9d063913594fe69a7cab66b8442b28e5174e",
+    "files": 575,
+    "final_restoration": {
+      "reason": "Freshschemaoftheexactoldbinaryhaspre-native-previewframeDTOandnoVisualPreviewPicture. Previousexperimental989Webisalso notitsmatchingfrontend;finalrestorationusesWebfromsamepackageandmanifestasrunningbinary.",
+      "old_binary": "/Users/vincent/Desktop/OpenCut/dist/repairs/20261028-74f670cd/runtime/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+      "old_binary_sha256": "74f670cd51be9b5c1810c7e05d7df21bc75cf2a2130597eecd27fcb13e2a4821",
+      "old_package_manifest_sha256": "66d621b4938f829c6c688b87e6844b08fb5a9916e81b095d4fd9a8095dd4883a",
+      "package_web_assets_verified": 294,
+      "web_root": "/Users/vincent/Desktop/OpenCut/apps/web/dist",
+      "served_endpoint": "http://localhost:59790",
+      "served_assets": {
+        "index.html": "6839e0122101b7ff0214fa9f24bd3ee16605aa2abb7e995a7ba3353c03b76b2f",
+        "assets/index-CoB-S_pQ.js": "b47acea3d1cc3115ef7d610ce7d1a71d3cc6a4fca5dafb4c98df0c4d4a106371",
+        "assets/index-CYEQYzW8.css": "8cb9e27bcad017e7c20e496d1dec553e72517e7e5b11ad128e1a442b298323bf"
+      },
+      "pid_unchanged": 51897,
+      "process_restarted": false,
+      "user_database_or_project_write": false,
+      "schema_probe_database": "/Users/vincent/Movies/OpenCut-native-rendering/4k/live-web-preservation/schema-only.sqlite",
+      "new_native_candidate_web_retained": "/Users/vincent/Movies/OpenCut-native-rendering/4k/preview-digest-integration/web",
+      "current_page_reload_needed_if_new_bundle_was_loaded": true,
+      "scope": "Exactmatchinginstalledbinary/Webmanifestandstaticservedbytes;no wholeuser-project or physicalA/Vacceptance. Pre-builddistwasnotseparatelycaptured,so do notclaimbyte-for-byte restorationofanunrecordedpriorbuild."
+    },
+    "new_candidate_switched_into_old_service": false,
+    "pre_build_repo_dist_independently_captured": false,
+    "manual_user_project_acceptance": false
   }
 }

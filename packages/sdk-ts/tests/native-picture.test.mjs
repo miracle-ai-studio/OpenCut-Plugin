@@ -12,6 +12,24 @@ function fixture(response) {
   return { client, calls };
 }
 const headers = { "content-type": "application/vnd.opencut.rgba", "content-length": "8" };
+test("540p digest verifies the complete payload and rejects corruption beyond the first64KiB", async () => {
+  const length = 960 * 540 * 4;
+  const expected = Uint8Array.from({ length }, (_, n) => n * 37 % 251);
+  // Independent Noble BLAKE3 vector, also checked by the native test program.
+  const descriptor = { ...picture, width: 960, height: 540, byte_length: length,
+    content_digest: { algorithm: "blake3", value: "a0df3135546b83ed5aead8ecf34b17987adb6029f66861adcc460e93fa344ce1" } };
+  for (const corrupt of [false, true]) {
+    const data = expected.slice();
+    if (corrupt) data[length - 1] ^= 1;
+    const f = fixture(() => new Response(new ReadableStream({ start(controller) {
+      controller.enqueue(data.subarray(0, 65537));
+      controller.enqueue(data.subarray(65537)); controller.close();
+    } }), { headers: { ...headers, "content-length": String(length) } }));
+    const result = f.client.readVisualPreviewPicture(session, descriptor);
+    if (corrupt) await assert.rejects(result, /content hash/);
+    else assert.deepEqual(new Uint8Array((await result).buffer), expected);
+  }
+});
 test("native picture consumes scoped bounded chunks and verifies length/hash before returning RGBA", async () => {
   const f = fixture(() => new Response(new ReadableStream({ start(c) { c.enqueue(bytes.slice(0, 3)); c.enqueue(bytes.slice(3)); c.close(); } }), { headers }));
   const signal = new AbortController().signal;

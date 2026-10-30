@@ -2,13 +2,13 @@
   "format": "opencut.delivery-status.v1",
   "delivery_ready": false,
   "in_progress": {
-    "candidate_cli_sha256": "2e2c682bc72903d7e7a3661b46fc0c4a5cc5c91a1ed60f97188118f90f875f72",
-    "candidate_worker_sha256": "6dc2eaedf9f795ba536ff3b104d639d574de29f4083f8039607f88659d18de61",
+    "candidate_cli_sha256": "c96e67a1344e123f7ef4cff42aa13627f46e5a94b8f4c4e268e083c3dcd8ec91",
+    "candidate_worker_sha256": "779cc996aa07dfb709c41ea03623eeffbd9cdfa6a5c8d28d1e5395e06731bb62",
     "candidate_web_source_digest": "4132c3b2688a1beb7669c0600d029967dc39d061a34b799245c21f95883ef2db",
-    "execution_scope_optimization": "Paused visual authority uses strict 1s heartbeat without full-resolution rendering. Stable confirmed same-position paused seeks reuse a valid picture and local lease; unknown, expired, pending or missing-picture operations retain recovery. Web e3953742 only; native runtime unchanged. All original authority, revision, lease, generation, overlay and publication fences preserved.",
+    "execution_scope_optimization": "Native10b27506 retains one bounded visual owner within the same fixed session/principal/owner/lease and identical policy. Full runtime/counter revalidation per generation/overlay handoff;old pixels/readers invalidated and fresh per-frame authority/admission/publication fences preserved. Handoff errors retire without silent retry. Existing paused heartbeat/same-position dedupe from unchanged Webe3953742 retained.",
     "preview_resolution": "Actual preview540 output960x540 for4K source;smallsource320x180 retained,no further reduction.",
     "export_resolution": "Original-source exports keep720/1080/1440/2160and Webdefault1080. No export/PCM rerun inthisslice;preceding6c615de9/555/5d producerproof retains original scope.",
-    "bottleneck_attribution": "Confirmed and repaired: discarded full4K paused authorization frames and redundant same-position seeks. Genuine seeks still recreate generation-scoped visual resources. Retained Web32421ea2 observation: 94s 4K action-to-end107.01352566s, native prepare/header34.7ms and read/verify/bitmap13.1ms overlap; not pure decode or additive throughput. No full94s/export replay with Web e3953742.",
+    "bottleneck_attribution": "Comparable actual browser6s/30s native prepare observations865.7/840.2ms to371.9/328.0ms with exact same Web. Same child PID sets across pause/seek/resume/active42sseek. One observation,not stablebenchmark or puredecode. Full runtime checks remain;new lease,idle or execution faults may cold-start. No full94s/export replay. Prior4K107.0135s result belongs to CLI2e/worker6dc/Web324,not current candidate.",
     "runtime_acceptance": {
       "small_source": {
         "fixture": "small",
@@ -954,8 +954,9 @@
     "runtime_acceptance_original_producer_scope": {
       "web_source_commit": "32421ea267cedd33cf451f87d7a1709624c76eb1",
       "web_source_digest": "5cfed08f1bdfa63fd8645eae2123ef0118d2badcfe5c7e6b2333ebb456d98826",
-      "native_runtime": "Same CLI2e2c682bc729/worker6dc2eaedf9f7; existing 94s/pixel evidence retains its original Web scope."
-    }
+      "native_runtime": "Retained original CLI2e2c682bc729/worker6dc2eaedf9f7 only;not rerun with current CLIc96/worker779. New bounded preview acceptance is seek_owner_implementation."
+    },
+    "candidate_native_source_commit": "10b2750671e1606683e00f7d847226435e487541"
   },
   "scope": "Local CLI/HTTP/MCP/SDK service and Web editor; GPUI shell is not an integrated editor.",
   "public_contract": {
@@ -6111,17 +6112,247 @@
     "implemented": false,
     "built": false,
     "scoped_behavior_accepted": false,
-    "delivery_ready": false
+    "delivery_ready": false,
+    "baseline_only": true
   },
   "seek_owner_implementation": {
     "implemented": true,
-    "built": false,
-    "scoped_behavior_accepted": false,
+    "built": true,
+    "scoped_behavior_accepted": true,
     "manual_acceptance": false,
     "delivery_ready": false,
+    "source_commit": "10b2750671e1606683e00f7d847226435e487541",
+    "runtime": {
+      "opencut": {
+        "path": "/Users/vincent/Movies/OpenCut-native-rendering/candidates/c96e67a1344e123f7ef4cff42aa13627f46e5a94b8f4c4e268e083c3dcd8ec91/opencut",
+        "sha256": "c96e67a1344e123f7ef4cff42aa13627f46e5a94b8f4c4e268e083c3dcd8ec91"
+      },
+      "opencut-render-worker": {
+        "path": "/Users/vincent/Movies/OpenCut-native-rendering/candidates/779cc996aa07dfb709c41ea03623eeffbd9cdfa6a5c8d28d1e5395e06731bb62/opencut-render-worker",
+        "sha256": "779cc996aa07dfb709c41ea03623eeffbd9cdfa6a5c8d28d1e5395e06731bb62"
+      }
+    },
+    "Web_source_commit": "e39537420edee9c062574e1adc8cb206663c7bb2",
+    "Web_source_digest": "4132c3b2688a1beb7669c0600d029967dc39d061a34b799245c21f95883ef2db",
+    "Web_rebuilt": false,
+    "baseline_commit_before_changes": "fcccd19d",
+    "baseline_checkpoint_sha256": "2d99edd5b107501b228c705d9b5112d9cd901df1c982bd4d383e1de54e6f01db",
+    "summary": "/Users/vincent/Movies/OpenCut-native-rendering/4k/seek-owner-integration/summary.json",
+    "checkpoint": "/Users/vincent/Movies/OpenCut-native-rendering/4k/seek-owner-integration/checkpoint.json",
+    "checkpoint_sha256": "cfa0461fae09e3b15834b3766915fac11f6035c35dac9a1afd8210fa04011e28",
+    "checkpoint_files": 46,
     "public_contracts_changed": false,
-    "new_dependencies": false,
-    "slice": "Same fixed session/principal/owner/lease and identical policy retain bounded native resources;full runtime revalidation per scope handoff and original frame publication fences.",
-    "baseline_commit": "fcccd19d"
+    "new_modules_or_dependencies": false,
+    "scope": "Same fixed session/principal/owner/lease and policy retain bounded GPU/decode/source resources;full runtime revalidation at handoff and fresh current-scope frame preparation/admission/read/bind/publication remain. Errors stop and retire;no fallback chain.",
+    "browser_comparison": {
+      "prior_native_prepare_ms": [
+        865.7000000476837,
+        840.2000000476837
+      ],
+      "current_native_prepare_ms": [
+        371.90000009536743,
+        328.0
+      ],
+      "current_read_verify_bitmap_ms": [
+        11.099999904632568,
+        9.400000095367432
+      ],
+      "current_stage_totals_ms": [
+        383.0,
+        337.40000009536743
+      ],
+      "limit": "Single retained bounded browser observation,not stable benchmark,pure decode,whole94s throughput or end-to-end click-to-frame attribution.",
+      "actual_child_PID_sets": {
+        "pause-ready": [
+          19164,
+          19166
+        ],
+        "paused-idle-end": [
+          19164,
+          19166
+        ],
+        "seek6": [
+          19164,
+          19166
+        ],
+        "seek6-idle-end": [
+          19164,
+          19166
+        ],
+        "same6": [
+          19164,
+          19166
+        ],
+        "same6-idle-end": [
+          19164,
+          19166
+        ],
+        "seek30": [
+          19164,
+          19166
+        ],
+        "seek30-idle-end": [
+          19164,
+          19166
+        ],
+        "resume-ready": [
+          19164,
+          19166
+        ],
+        "active-seek42-ready": [
+          19164,
+          19166
+        ],
+        "final-pause": [
+          19164,
+          19166
+        ]
+      },
+      "active_seek42_PID_reused": true,
+      "HTTP_or_page_errors_observed": 0,
+      "unused_full4K_frame_calls": 0,
+      "same_position_seek_calls": 0
+    },
+    "tests": {
+      "native_host_tests_passed": 4,
+      "native_process_tests_passed": 2,
+      "architecture_tests_passed": 14,
+      "architecture_and_contract_boundaries": "passed before integrated build",
+      "exact_CLI_generated_and_canonical_contracts": "passed",
+      "independent_complete_540p_frames": 7,
+      "independent_pixel_MAE": 0,
+      "input_lifecycle_old_ticket_guard_cases": 9
+    },
+    "build": {
+      "source_commit": "10b2750671e1606683e00f7d847226435e487541",
+      "command": [
+        "cargo",
+        "build",
+        "--release",
+        "--locked",
+        "--offline",
+        "-p",
+        "opencut-cli",
+        "-p",
+        "opencut-render-worker",
+        "-j",
+        "2"
+      ],
+      "exit_code": 0,
+      "seconds": 458.77090923604555,
+      "web_rebuilt": false
+    },
+    "test_program_build": {
+      "command": [
+        "cargo",
+        "test",
+        "--release",
+        "--locked",
+        "--offline",
+        "-j",
+        "2",
+        "--no-run",
+        "--lib",
+        "--message-format=json",
+        "-p",
+        "opencut-host-runtime",
+        "-p",
+        "opencut-native-services"
+      ],
+      "exit_code": 0,
+      "seconds": 434.4402699870989,
+      "product_rebuilt": false,
+      "programs": [
+        {
+          "name": "opencut_native_services",
+          "args": [
+            "/Users/vincent/Desktop/OpenCut/target/release/deps/opencut_native_services-91f01df8604994ce",
+            "native_visual::tests",
+            "--include-ignored",
+            "--test-threads=1"
+          ],
+          "exit_code": 0,
+          "seconds": 8.809219036949798
+        },
+        {
+          "name": "opencut_host_runtime",
+          "args": [
+            "/Users/vincent/Desktop/OpenCut/target/release/deps/opencut_host_runtime-3df1983ba24cdcc0",
+            "audio_preview::visual_owner::tests",
+            "--test-threads=1"
+          ],
+          "exit_code": 0,
+          "seconds": 3.0917881729546934
+        }
+      ]
+    },
+    "source_preparation": {
+      "job_id": "job_b17f5ac496db4f60a9723f3e8b7e59c0",
+      "reason": "Host and worker execution identities changed;one new exact-identity source job on original4Kfixture. No retry or new project.",
+      "frames": "360",
+      "elapsed_seconds": 14.894329730188474
+    },
+    "source_output_identity": {
+      "prior_and_current_source_outputs": [
+        {
+          "job_id": "job_8adaa6c2a77b461eac981daa4b331c22",
+          "files": {
+            "artifact": {
+              "sha256": "7548010f2b16b7b57e8dfafceee995d0f6a632e2d16caac184b569345123c78c",
+              "bytes": 27805777
+            },
+            "frame_index": {
+              "sha256": "34488d4f5bfac0206eaf62ad1097de846c94912476a03f2dc69f07c232496283",
+              "bytes": 23056
+            }
+          }
+        },
+        {
+          "job_id": "job_b17f5ac496db4f60a9723f3e8b7e59c0",
+          "files": {
+            "artifact": {
+              "sha256": "09344969c1de98d05c852e04f43dff0037d8a170364d11416ba160c845b48a32",
+              "bytes": 27805777
+            },
+            "frame_index": {
+              "sha256": "34488d4f5bfac0206eaf62ad1097de846c94912476a03f2dc69f07c232496283",
+              "bytes": 23056
+            }
+          }
+        }
+      ],
+      "all_output_bytes_match": false,
+      "scope": "Full published FFV1 source video and exact index bytes,not composite/export proof. Original independent source samples retain their producer scope.",
+      "container_byte_differences": {
+        "count": 44,
+        "first_offset": 220,
+        "last_offset": 511
+      },
+      "all_360_coded_packet_hashes_timing_and_stream_facts_equal": true,
+      "independent_probe": "Exact retained ffprobe;SHA256 of every coded packet and exactPTS/DTS/duration/size/flags pluscodec/raster/pixfmt/timebase;no new decode or artifact. Container hash remains distinct,not relabeled."
+    },
+    "preservation": {
+      "old_jobs_state_attempt_result_error_unchanged": 92,
+      "total_terminal_jobs": 93,
+      "projects_unchanged": 4,
+      "new_export_jobs": 0,
+      "full94s_replays": 0,
+      "owned_service_stopped": true,
+      "owned_candidate_processes_remaining": 0,
+      "active_jobs": 0,
+      "legacy_services_PIDs_preserved": [
+        51886,
+        51897
+      ],
+      "legacy_Web_files_unchanged": 294,
+      "Web_sources_verified": 743,
+      "Web_assets_verified": 285
+    },
+    "remaining": [
+      "Full runtime revalidation still costs time at handoff;same-lease retention is not zero-cost seek.",
+      "4K continuous realtime,rare historical stall,full network attribution,export throughput,human/physical A/V and crossplatform delivery remain open.",
+      "Export/PCM and broader source codec/alpha proofs retain their original producers;not rerun for this preview-only lifecycle slice.",
+      "Existing user runtime is not upgraded;new candidate remains in owned external workspace."
+    ]
   }
 }

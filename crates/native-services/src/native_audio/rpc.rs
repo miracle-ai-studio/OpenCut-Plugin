@@ -175,7 +175,7 @@ pub(super) fn service(
         if block.start_sample != window.cursor || block.frame_count != request.frame_count {
             return Err(error("Native preview compiler changed its admitted prefix"));
         }
-        let bytes = protocol::encode(&block)?;
+        let bytes = protocol::encode_preview(block)?;
         window.bindings.push(InputBinding {
             start_sample: request.start_sample,
             frame_count: request.frame_count,
@@ -184,7 +184,7 @@ pub(super) fn service(
         window.cursor += u64::from(request.frame_count);
         window.admitted = None;
         window.planned = None;
-        return reply_json(worker, frame, *requests, &bytes, resources);
+        return reply_facts(worker, frame, *requests, &bytes, resources, true);
     }
     if kind != "request" {
         return Err(error("Unexpected native audio callback packet"));
@@ -285,15 +285,30 @@ fn reply_json(
     data: &[u8],
     resources: &mut dyn ClassicAudioResources,
 ) -> Result<()> {
+    reply_facts(worker, frame, id, data, resources, false)
+}
+fn reply_facts(
+    worker: &mut WorkerProcess,
+    frame: u64,
+    id: u64,
+    data: &[u8],
+    resources: &mut dyn ClassicAudioResources,
+    preview: bool,
+) -> Result<()> {
+    let (reply, chunk_type) = if preview {
+        ("preview_reply", "preview_chunk")
+    } else {
+        ("json_reply", "json_chunk")
+    };
     resources.checkpoint()?;
     worker.send(
-        json!({"type":"json_reply","frame":frame,"id":id,"length":data.len()}),
+        json!({"type":reply,"frame":frame,"id":id,"length":data.len()}),
         &[],
     )?;
     for (n, chunk) in data.chunks(wire::DATA_BYTES).enumerate() {
         resources.checkpoint()?;
         worker.send(
-            json!({"type":"json_chunk","frame":frame,"id":id,"offset":n*wire::DATA_BYTES}),
+            json!({"type":chunk_type,"frame":frame,"id":id,"offset":n*wire::DATA_BYTES}),
             chunk,
         )?;
     }

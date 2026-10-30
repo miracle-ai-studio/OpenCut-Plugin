@@ -6906,5 +6906,18 @@
     "checkpoint_sha256": "f35e1c5fde025dd6e12b0df2f908af404b7072ed3ce152876dd836dd2e610558",
     "manual_physical_AV_accepted": false,
     "complete_delivery_accepted": false
+  },
+  "preview_audio_fact_transport": {
+    "state": "implemented_pending_build_and_behavior",
+    "baseline_commit": "0898bcbc",
+    "scope": "Private preview sample transport only; original JSON binding digest and public contracts unchanged.",
+    "diagnostic": "/private/tmp/opencut-local-upgrade-20261031/post-slice-attribution/attribution-summary.json",
+    "binary_record_bytes": 37,
+    "maximum_body_bytes": 16777216,
+    "maximum_block_frames": 4096,
+    "maximum_voice_count": 32,
+    "maximum_sample_work": 65536,
+    "installed": false,
+    "delivery_ready": false
   }
 }

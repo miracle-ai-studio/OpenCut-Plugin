@@ -66,9 +66,19 @@ impl Channel<'_> {
         &mut self,
         packet: wire::Packet,
     ) -> Result<T, EditorError> {
+        let data = self.fact_reply(packet, "json_reply", "json_chunk")?;
+        serde_json::from_slice(&data)
+            .map_err(|_| error("Native audio facts differ from their shared Rust declaration"))
+    }
+    fn fact_reply(
+        &mut self,
+        packet: wire::Packet,
+        reply_kind: &str,
+        chunk_kind: &str,
+    ) -> Result<Vec<u8>, EditorError> {
         let length = usize::try_from(wire::integer(&packet.meta, "length")?)
             .map_err(|_| error("Invalid audio fact length"))?;
-        if wire::text(&packet.meta, "type")? != "json_reply"
+        if wire::text(&packet.meta, "type")? != reply_kind
             || !packet.data.is_empty()
             || length == 0
             || length > protocol::JSON_BYTES
@@ -86,7 +96,7 @@ impl Channel<'_> {
                 ));
             }
             let packet = wire::read(self.input)?;
-            if wire::text(&packet.meta, "type")? != "json_chunk"
+            if wire::text(&packet.meta, "type")? != chunk_kind
                 || wire::integer(&packet.meta, "frame")? != self.frame
                 || wire::integer(&packet.meta, "id")? != self.request
                 || wire::integer(&packet.meta, "offset")? != data.len() as u64
@@ -99,16 +109,15 @@ impl Channel<'_> {
             }
             data.extend_from_slice(&packet.data);
         }
-        serde_json::from_slice(&data)
-            .map_err(|_| error("Native audio facts differ from their shared Rust declaration"))
+        Ok(data)
     }
-    /// Binding timestamps and compiled Float64 facts cross as bounded JSON
-    /// bodies, not through a metadata Value parse that can change float bits.
-    pub(super) fn json_body<T: serde::de::DeserializeOwned, U: serde::Serialize>(
+    /// Binding timestamps keep their exact JSON spelling; dense compiled facts
+    /// return as bounded little-endian sample records with exact Float64 bits.
+    fn preview_body(
         &mut self,
-        operation: &str,
-        args: &U,
-    ) -> Result<T, EditorError> {
+        args: &BindPreviewSources,
+    ) -> Result<opencut_composition::scene::PreviewAudioBlock, EditorError> {
+        let operation = "preview_block";
         let data = protocol::encode(args)?;
         self.advance()?;
         wire::send(
@@ -135,7 +144,8 @@ impl Channel<'_> {
         {
             return Err(error("Native audio body reply changed its callback"));
         }
-        self.json_reply(packet)
+        let bytes = self.fact_reply(packet, "preview_reply", "preview_chunk")?;
+        protocol::decode_preview(&bytes)
     }
 }
 pub(super) struct Resources<'a> {
@@ -212,9 +222,7 @@ impl AudioSession<Resources<'_>> for Session<'_> {
         request: BindPreviewSources,
         _: &mut Resources<'_>,
     ) -> Result<opencut_composition::scene::PreviewAudioBlock, EditorError> {
-        self.channel
-            .borrow_mut()
-            .json_body("preview_block", &request)
+        self.channel.borrow_mut().preview_body(&request)
     }
 }
 pub(super) struct Output<'a>(pub(super) Rc<RefCell<Channel<'a>>>);
@@ -236,5 +244,56 @@ impl ClassicAudioPcmSink for Output<'_> {
             json!({"type":"pcm","frame":frame,"channel":channel,"offset":offset,"count":samples.len()}),
             &bytes,
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Cursor;
+    use std::time::Duration;
+    #[test]
+    fn preview_fact_chunks_keep_order_identity_deadline_and_type_fences() {
+        for (frame, id, offset, kind, expired, valid) in [
+            (7, 9, 0, "preview_chunk", false, true),
+            (8, 9, 0, "preview_chunk", false, false),
+            (7, 10, 0, "preview_chunk", false, false),
+            (7, 9, 1, "preview_chunk", false, false),
+            (7, 9, 0, "json_chunk", false, false),
+            (7, 9, 0, "preview_chunk", true, false),
+        ] {
+            let mut bytes = Vec::new();
+            wire::send(
+                &mut bytes,
+                json!({"type":"preview_reply","frame":7,"id":9,"length":3}),
+                &[],
+            )
+            .unwrap();
+            wire::send(
+                &mut bytes,
+                json!({"type":kind,"frame":frame,"id":id,"offset":offset}),
+                &[1, 2, 3],
+            )
+            .unwrap();
+            let mut input = Cursor::new(bytes);
+            let mut output = Vec::new();
+            let packet = wire::read(&mut input).unwrap();
+            let mut channel = Channel {
+                input: &mut input,
+                output: &mut output,
+                request: 9,
+                frame: 7,
+                deadline: if expired {
+                    Instant::now()
+                } else {
+                    Instant::now() + Duration::from_secs(5)
+                },
+            };
+            let result = channel.fact_reply(packet, "preview_reply", "preview_chunk");
+            assert_eq!(result.is_ok(), valid);
+            if valid {
+                assert_eq!(result.unwrap(), vec![1, 2, 3]);
+            }
+        }
     }
 }

@@ -188,6 +188,72 @@ fn continuous_audio_frames_and_exact_stream_seek_do_not_reopen_or_invent_time() 
     assert_eq!(frame.channels[0][0], actual[512]);
 }
 #[test]
+fn initial_wave_seek_keeps_bounded_payload_probe_and_exact_samples() {
+    // Long enough to expose seek resetting WAV's probe budget. The first
+    // decoded samples are checked independently of the adapter's packet sizes.
+    let sample = |frame: usize, channel: usize| ((frame % 997) as i16 - 498) * (channel as i16 + 1);
+    let bytes: Vec<u8> = (0..48000 * 24)
+        .flat_map(|frame| (0..2).flat_map(move |channel| sample(frame, channel).to_le_bytes()))
+        .collect();
+    for start in [0, 48000, 48000 * 20] {
+        let mut source = wave(1, 16, 2, 48000, &bytes);
+        let mut decoder =
+            NativeAudioDecoder::open(&mut source, None, limits(), deadline()).unwrap();
+        for target in [start, 24000, 0] {
+            let before = decoder.encoded_bytes_read();
+            decoder.seek_pts(&mut source, target, deadline()).unwrap();
+            decoder
+                .select_keyframe_at_pts(&mut source, target, deadline())
+                .unwrap();
+            let frame = decoder.read(&mut source, deadline()).unwrap().unwrap();
+            assert_eq!(frame.pts, Some(target));
+            assert_eq!(frame.sample_rate, 48000);
+            assert_eq!(frame.channels.len(), 2);
+            for (channel, samples) in frame.channels.iter().enumerate() {
+                for (offset, actual) in samples.iter().enumerate() {
+                    assert_eq!(
+                        *actual,
+                        f32::from(sample(target as usize + offset, channel)) / 32768.0
+                    );
+                }
+            }
+            assert!(
+                decoder.encoded_bytes_read() - before < 1024 * 1024,
+                "A seek must not expand WAV's initial payload probe to megabytes"
+            );
+        }
+    }
+}
+
+#[test]
+fn initial_wave_seek_probe_preserves_revocation_deadline_and_io_admission() {
+    for failure in ["revoked", "deadline", "budget"] {
+        let mut source = wave(1, 16, 2, 48000, &vec![0; 4 * 48000 * 24]);
+        let mut limits = limits();
+        if failure == "budget" {
+            // Admit the header/SPDIF check, but not the full payload probe.
+            limits.max_io_bytes_per_operation = 256 * 1024;
+        }
+        let mut decoder = NativeAudioDecoder::open(&mut source, None, limits, deadline()).unwrap();
+        source.revoked = failure == "revoked";
+        let until = if failure == "deadline" {
+            Instant::now()
+        } else {
+            deadline()
+        };
+        assert!(
+            decoder.seek_pts(&mut source, 48000, until).is_err(),
+            "{failure}"
+        );
+        source.revoked = false;
+        assert!(
+            decoder.read(&mut source, deadline()).is_err(),
+            "failed decoder stays retired"
+        );
+    }
+}
+
+#[test]
 fn revocation_invalid_pcm_deadline_and_admission_retire_instead_of_falling_back() {
     let mut source = wave(1, 16, 1, 48000, &[0; 16]);
     let mut decoder = NativeAudioDecoder::open(&mut source, None, limits(), deadline()).unwrap();

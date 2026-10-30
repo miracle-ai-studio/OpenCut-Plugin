@@ -66,6 +66,7 @@ pub struct NativeAudioDecoder {
     pending: std::collections::VecDeque<av::Packet>,
     started: bool,
     demux_eof: bool,
+    demux_started: bool,
 }
 impl NativeAudioDecoder {
     pub fn open(
@@ -117,6 +118,7 @@ impl NativeAudioDecoder {
             pending: std::collections::VecDeque::new(),
             started: false,
             demux_eof: false,
+            demux_started: false,
         })
     }
     pub fn track(&self) -> &NativeAudioTrack {
@@ -297,6 +299,7 @@ impl NativeAudioDecoder {
             let read = self
                 .bridge
                 .run(source, deadline, remaining, || Ok(packet.read(input)))?;
+            self.demux_started = true;
             match read {
                 Ok(()) => {
                     *packets += 1;
@@ -456,23 +459,50 @@ impl NativeAudioDecoder {
         if self.retired {
             return Err(invalid("Native audio decoder was retired"));
         }
+        // WAV's PCM16 header still requires libav's bounded payload probe.
+        // Seeking before the first packet resets that demuxer's 32-packet
+        // allowance to the generic max_probe_packets, scanning megabytes per
+        // voice. Finish the normal probe once before seek can reset it. This
+        // reads encoded packets only: no decoded preroll or changed PCM origin.
+        let first = self.bridge.bytes_read();
+        if !self.demux_started && self.track.container == "wav" && self.track.codec == "pcm_s16le" {
+            let mut packets = 0;
+            let primed = self
+                .next_packet(source, deadline, first, &mut packets)
+                .and_then(|_| {
+                    let parameters = self
+                        .input
+                        .stream(self.track.stream_index as usize)
+                        .ok_or_else(|| invalid("Selected native audio stream disappeared"))?
+                        .parameters();
+                    if parameters.id() != self.decoder.id() {
+                        return Err(invalid(
+                            "Native audio payload differs from its admitted codec",
+                        ));
+                    }
+                    Ok(())
+                });
+            if let Err(error) = primed {
+                self.retired = true;
+                return Err(error);
+            }
+        }
         let input = &mut self.input;
         let stream = self.track.stream_index as i32;
-        let result = self.bridge.run(
-            source,
-            deadline,
-            self.limits.max_io_bytes_per_operation,
-            || {
-                // SAFETY: only this decoder borrows the input, with a live AVIO scope.
-                let code = unsafe {
-                    ffi::av_seek_frame(input.as_mut_ptr(), stream, pts, ffi::AVSEEK_FLAG_BACKWARD)
-                };
-                if code < 0 {
-                    return Err(failed(av::Error::from(code)));
-                }
-                Ok(())
-            },
-        );
+        let remaining = self
+            .limits
+            .max_io_bytes_per_operation
+            .saturating_sub(self.bridge.bytes_read().saturating_sub(first));
+        let result = self.bridge.run(source, deadline, remaining, || {
+            // SAFETY: only this decoder borrows the input, with a live AVIO scope.
+            let code = unsafe {
+                ffi::av_seek_frame(input.as_mut_ptr(), stream, pts, ffi::AVSEEK_FLAG_BACKWARD)
+            };
+            if code < 0 {
+                return Err(failed(av::Error::from(code)));
+            }
+            Ok(())
+        });
         // A fresh iterator has fresh codec state, including AAC overlap and
         // PNS state. Merely flushing decoded frames does not establish that
         // reset contract for every codec. Keep the demuxer and authorized AVIO.

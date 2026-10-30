@@ -7062,5 +7062,26 @@
       "original-resolution export throughput",
       "human physical A/V and whole-product acceptance"
     ]
+  },
+  "wave_seek_probe": {
+    "state": "implemented_pending_validation",
+    "cause": "First seek resets WAV demuxer initial 32-packet probe allowance to generic max_probe_packets before payload classification completes",
+    "fix": "Complete original bounded encoded-packet probe once before initial PCM16 WAV seek; preserve codec, authorization, deadline and aggregate I/O admission; no decoded preroll",
+    "component_ms": {
+      "direct": [
+        39.342,
+        32.956
+      ],
+      "seek_first": [
+        273.953,
+        260.121
+      ],
+      "probe_then_seek": [
+        39.289,
+        31.93
+      ]
+    },
+    "validation": "pending",
+    "deployed": false
   }
 }

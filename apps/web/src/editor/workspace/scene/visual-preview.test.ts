@@ -407,19 +407,88 @@ it("retains the fixed session for paused authority checks after mutable UI conte
     // Mutable UI content cannot select a different authority or fixed session.
     sequence.tracks[0].elements.pop();
     sequence.captions.length = 0;
-    vi.mocked(f.api.sdk.call).mockResolvedValue({} as never);
+    vi.mocked(f.api.scene.audioPreviewControl).mockResolvedValue({ ...f.s, state: "paused" });
     await vi.advanceTimersByTimeAsync(1000);
-    expect(f.api.sdk.call).toHaveBeenCalledWith(
-      "opencut_visual_preview_frame",
+    expect(f.api.scene.audioPreviewControl).toHaveBeenCalledWith(
       expect.objectContaining({
-        session: expect.objectContaining({ generation: f.s.generation }),
-        time: null,
+        session_id: f.s.session_id, generation: f.s.generation,
+        owner_id: f.s.owner_id, lease_id: f.s.lease_id,
+        command: { kind: "heartbeat" },
       }),
       expect.anything(),
     );
+    expect(vi.mocked(f.api.sdk.call).mock.calls.filter(([name]) => name === "opencut_visual_preview_frame")).toHaveLength(0);
   } finally {
     port.close();
   }
+});
+
+async function pausedAuthorityFixture() {
+  const f = await fixture(true), port = f.visual.start();
+  const first = port.prepare(f.s, new AbortController().signal);
+  await flush(); f.calls[0].resolve(0); await first;
+  const paused = { ...f.s, state: "paused" as const };
+  vi.mocked(f.api.scene.audioPreviewControl).mockResolvedValue(paused);
+  vi.useFakeTimers(); f.observe(port, paused, "paused"); await flush();
+  return { ...f, port, paused };
+}
+
+it("checks paused authority every second without creating unclaimed source-resolution pictures", async () => {
+  const f = await pausedAuthorityFixture();
+  try {
+    const rendered = f.renderer.render.mock.calls.length;
+    await vi.advanceTimersByTimeAsync(3000);
+    const heartbeats = vi.mocked(f.api.scene.audioPreviewControl).mock.calls;
+    expect(heartbeats).toHaveLength(3);
+    expect(heartbeats.every(([input]) => input.command.kind === "heartbeat")).toBe(true);
+    expect(new Set(heartbeats.map(([input]) => input.control_id)).size).toBe(3);
+    expect(f.renderer.render).toHaveBeenCalledTimes(rendered);
+    expect(vi.mocked(f.api.sdk.call).mock.calls.filter(([name]) => name === "opencut_visual_preview_frame")).toHaveLength(0);
+    expect(f.visual.snapshot().pixels).not.toBeNull();
+    expect(f.port.hasPausedPicture?.(f.paused)).toBe(true);
+  } finally { f.port.close(); }
+});
+
+it.each(["generation", "overlay_epoch", "owner_id", "lease_id", "revision", "sequence", "state"])(
+  "retires a paused picture when heartbeat returns changed %s", async field => {
+    const f = await pausedAuthorityFixture();
+    try {
+      const next = structuredClone(f.paused);
+      if (field === "revision") next.identity.revision = "foreign";
+      else if (field === "sequence") next.identity.sequence_id = "foreign";
+      else if (field === "state") Object.assign(next, { state: "playing" });
+      else Object.assign(next, { [field]: "foreign" });
+      vi.mocked(f.api.scene.audioPreviewControl).mockResolvedValue(next);
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(f.visual.snapshot()).toMatchObject({ phase: "failed", pixels: null });
+      expect(f.port.hasPausedPicture?.(f.paused)).toBe(false);
+    } finally { f.port.close(); }
+  },
+);
+
+it("clears the paused picture on fresh heartbeat authorization failure", async () => {
+  const f = await pausedAuthorityFixture();
+  try {
+    vi.mocked(f.api.scene.audioPreviewControl).mockRejectedValue(Error("permission revoked"));
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(f.visual.snapshot()).toMatchObject({ phase: "failed", pixels: null, error: "permission revoked" });
+  } finally { f.port.close(); }
+});
+
+it("ignores a late old-authority failure after the next picture generation is ready", async () => {
+  const f = await pausedAuthorityFixture();
+  let reject!: (error: Error) => void;
+  try {
+    vi.mocked(f.api.scene.audioPreviewControl).mockImplementationOnce(() => new Promise((_yes, no) => { reject = no; }));
+    await vi.advanceTimersByTimeAsync(1000);
+    const next = { ...f.paused, generation: "2" };
+    f.observe(f.port, next, "paused"); await flush();
+    f.calls.at(-1)!.resolve(0); await flush();
+    reject(Error("old generation revoked")); await flush();
+    expect(f.visual.snapshot().phase).not.toBe("failed");
+    expect(f.visual.snapshot().generation).toBe("2");
+    expect(f.visual.snapshot().pixels).not.toBeNull();
+  } finally { f.port.close(); }
 });
 
 it("rejects a preview session for another revision before rendering", async () => {

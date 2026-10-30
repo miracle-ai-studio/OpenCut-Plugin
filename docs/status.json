@@ -6002,5 +6002,13 @@
     "prior_projects_unchanged": 4,
     "repair_implemented": false,
     "delivery_ready": false
+  },
+  "preview_refresh_implementation": {
+    "implemented": true,
+    "built": false,
+    "scoped_behavior_accepted": false,
+    "manual_acceptance": false,
+    "delivery_ready": false,
+    "native_runtime_unchanged": true
   }
 }

@@ -1824,3 +1824,69 @@ it("retires a paused still owner before sound-only creation while retaining sync
     release();await playing;expect(f.create).toHaveBeenCalledOnce();
   }finally{release();f.cleanup();}
 });
+
+it("keeps the paused device and picture for an equivalent confirmed seek position", async () => {
+  const f = await setupAudioPreview(), suspend = vi.fn();
+  try {
+    await f.preview.play(48000, { prepare: async () => {}, observe: () => {}, suspend, close: () => {}, hasPausedPicture: () => true });
+    f.outputs[0].finalFrames = "256";
+    await f.preview.pause();
+    const session = f.state().audioPreview.session, controls = f.controls.length, suspended = suspend.mock.calls.length;
+    expect(session?.presentation_time).toEqual({ ticks: "256", timebase: 48000 });
+    expect(f.preview.seek({ ticks: "16", timebase: 3000 })).toBe(true);
+    await Promise.resolve();
+    expect(f.controls).toHaveLength(controls);
+    expect(suspend).toHaveBeenCalledTimes(suspended);
+    expect(f.state().audioPreview.session).toBe(session);
+    expect(f.state().audioPreview.phase).toBe("paused");
+    expect(f.outputs).toHaveLength(1);
+    expect(f.stream).toHaveBeenCalledOnce();
+  } finally { f.cleanup(); }
+});
+
+it("retains a return-to-old-position intent while a different paused seek is in flight", async () => {
+  const f = await setupAudioPreview();
+  let release!: () => void;
+  try {
+    await f.preview.play(48000); await f.preview.pause();
+    const old = f.state().audioPreview.session!.presentation_time;
+    const original = f.control.getMockImplementation()!;
+    let delayed = false;
+    f.control.mockImplementation(async request => {
+      if (request.command.kind === "seek" && !delayed) {
+        delayed = true; await new Promise<void>(done => { release = done; });
+      }
+      return original(request);
+    });
+    f.preview.seek({ ticks: "1", timebase: 2 });
+    await vi.waitFor(() => expect(delayed).toBe(true));
+    expect(f.preview.seek(old)).toBe(true);
+    release();
+    await vi.waitFor(() => expect(f.controls.filter(v => v.command.kind === "seek")).toHaveLength(2));
+    const seeks = f.controls.filter(v => v.command.kind === "seek");
+    expect(seeks.map(v => v.command.kind === "seek" && v.command.sequence_time)).toEqual([{ ticks: "1", timebase: 2 }, old]);
+  } finally { release?.(); f.cleanup(); }
+});
+
+it("dispatches an unchanged paused seek after the locally confirmed lease has expired", async () => {
+  const f = await setupAudioPreview();
+  let clock: { mockRestore(): void } | undefined;
+  try {
+    await f.preview.play(48000); await f.preview.pause();
+    const position = f.state().audioPreview.session!.presentation_time;
+    const now = performance.now();
+    clock = vi.spyOn(performance, "now").mockReturnValue(now + 31000);
+    expect(f.preview.seek(position)).toBe(true);
+    await vi.waitFor(() => expect(f.controls.some(v => v.command.kind === "seek")).toBe(true));
+  } finally { clock?.mockRestore(); f.cleanup(); }
+});
+
+it("dispatches an unchanged paused seek when its displayed picture is unavailable", async () => {
+  const f = await setupAudioPreview();
+  try {
+    await f.preview.play(48000, { prepare: async () => {}, observe: () => {}, suspend: () => {}, close: () => {}, hasPausedPicture: () => false });
+    await f.preview.pause();
+    expect(f.preview.seek(f.state().audioPreview.session!.presentation_time)).toBe(true);
+    await vi.waitFor(() => expect(f.controls.some(v => v.command.kind === "seek")).toBe(true));
+  } finally { f.cleanup(); }
+});

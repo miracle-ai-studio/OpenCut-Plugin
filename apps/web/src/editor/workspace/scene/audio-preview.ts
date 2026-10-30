@@ -42,6 +42,7 @@ type OutputFactory = (
 ) => Output;
 export type PicturePresentation = {
   beforeCreate?():Promise<void>;
+  hasPausedPicture?(session: AudioPreviewSession): boolean;
   prepare(session: AudioPreviewSession, signal: AbortSignal, pictureReady?: (time: Time) => void,clockSource?:PresentationClockSource): Promise<void>;
   observe(state: AudioPreviewState): void;
   consume?(session: AudioPreviewSession, frames: string, atRefresh?: boolean,deviceTimestamp?:DeviceTimestamp): void;
@@ -799,6 +800,14 @@ export class AudioPreview {
   }
   seek(time?: Time) {
     const a = this.active;
+    // Pending controls and expired lease observations still need the original
+    // recovery path, even when the requested paused position is unchanged.
+    if (time && a?.session && this.same(a) &&
+      this.host.state()?.audioPreview.phase === "paused" && a.session.state === "paused" &&
+      !a.preparing && !a.transitionTask && !a.seekTarget && !a.gainPending && !a.pauseAfterTransition &&
+      a.leaseDeadline > performance.now() &&
+      (!a.picture || a.picture.hasPausedPicture?.(a.session) === true) &&
+      compareTime(time, a.session.presentation_time) === 0) return true;
     if (
       time &&
       a?.session &&

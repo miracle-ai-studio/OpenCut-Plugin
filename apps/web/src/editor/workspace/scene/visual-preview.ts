@@ -674,6 +674,10 @@ export class VisualPreview {
       suspend: (retainPicture=false) => {
         if (valid()) this.clear(retainPicture);
       },
+      hasPausedPicture: session => valid() && this.currentToken === token(session) &&
+        !this.transformDraftId && !this.editRestoration &&
+        this.view.phase === "ready" && this.view.generation === session.generation &&
+        (this.view.surfaceActive || !!this.view.pixels),
       consume: (session, frames, atRefresh,deviceTimestamp) => {
         if (!valid() || this.currentToken !== token(session)) return;
         // Device output observation only fences presentation. It never compiles IR
@@ -751,23 +755,24 @@ export class VisualPreview {
         identity = token(session);
       let checking = false;
       this.authorityTimer = setInterval(() => {
-        if (checking || !api) return;
+        if (checking || !api || epoch !== this.epoch || this.currentToken !== identity) return;
         checking = true;
-        const input = {
-          session: {
-            session_id: session.session_id,
-            generation: session.generation,
-            overlay_epoch: session.overlay_epoch,
-            owner_id: session.owner_id,
-            lease_id: session.lease_id,
-          },
-          time: null,
-        };
-        const authority = api.sdk.call(
-          "opencut_visual_preview_frame",
-          input,
-          { signal: this.abort.signal },
-        );
+        // Heartbeat checks the original execution authority and live lease
+        // without rendering a new, unclaimed source-resolution picture.
+        const authority = api.scene.audioPreviewControl({
+          session_id: session.session_id,
+          generation: session.generation,
+          owner_id: session.owner_id,
+          lease_id: session.lease_id,
+          control_id: crypto.randomUUID(),
+          command: { kind: "heartbeat" },
+        }, AbortSignal.any([this.abort.signal, AbortSignal.timeout(3000)]))
+          .then(current => {
+            // Control also returns overlay and fixed project identity. They
+            // must still match the already displayed picture's complete scope.
+            if (token(current) !== identity || current.state !== "paused")
+              throw Error("Paused preview session changed during authorization");
+          });
         void authority
           .catch((error) => {
             if (epoch === this.epoch && this.currentToken === identity) {

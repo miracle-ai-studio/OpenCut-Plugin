@@ -87,12 +87,13 @@ impl PreparedPicture {
         };
         let bound = self.result(&observed, consumer)?;
         let identity = &bound.plan.identity;
+        let VisualPreviewDigest::Blake3 { value: digest } = &picture.content_digest;
         if receipt.identity != *identity
             || picture.width != identity.width
             || picture.height != identity.height
             || u64::from(picture.byte_length)
                 != u64::from(identity.width) * u64::from(identity.height) * 4
-            || !crate::media_frame_jobs::valid_hash(&picture.content_hash)
+            || !crate::media_frame_jobs::valid_hash(digest)
             || bound.bound.is_none()
         {
             return Err(EditorError::new(

@@ -327,3 +327,18 @@ macOS 复用既有 `rustix` 的内核目录名接口；[Apple 官方指南](http
 准备含领取、HTTP、帧头等，不能当作纯解码；两个阶段重叠，不能相加为吞吐。定位 90 秒、暂停和恢复通过，结束画面仍为 960×540/320×180；素材卡片、时间线缩略图和波形有实际截图，agent 视觉检查不代替人工验收。旧队头未完成的长期停顿未复现或关闭。四工程、原 86 项任务结果/错误保持，四项新任务成功；校正验证器延续期间原 90 项任务保持，自有服务和进程结束。首次清理观察把 stopped 的预期退出码 1 当作失败，原停止日志保留，只读确认完成，没有重启/重提。
 
 检查点 `opaque-export-acceptance/checkpoint.json` 绑定 107 项文件，摘要 `6eab8828bd9ca0ccbcad4c77a2953b634c58e532df40e49bf3c1be5b8b890f0b`；计时延续子检查点 26 项，摘要 `a2d834e012f2938ab8e1743d578f8d642a50077c5faa2c467fe92110e3885824`。结论：编码内存可修复且实际范围已验证；启动旧计时存在可修复的测量错误；4K 预览实时性、其余导出成本与完整交付仍未解决，目前没有不可修复的平台限制结论。
+
+
+## 2026-10-31: exact audio facts and bounded picture response retirement
+
+Native source `da668781`, Web source `1dc8c1b8`, installed CLI `a6665fef4a50` / worker `d7b0d11456f5` are active on 8791 and 59790. One native build and one later Web build; the Web follow-up reused all 2208 identical packaged native runtime files, seven independent full540p frame checks, nine denial cases, six actual worker checks/independent PCM and the original4K export. The 6-second export took43.107s; complete MP4 and preencode PCM remain identical to the retained reference. No export quality/resolution reduction.
+
+The dense private audio-fact boundary measured JSON2121.391/2103.627ms and binary51.189/50.063ms for500 blocks of4096 samples, in ABBA order. This is a component measurement with exact u64/f64 bit checks, not whole-editor speedup. The actual audio PCM references stayed within1e-6 (maximum3.5762786865234375e-7).
+
+An initial full UI run froze at79.9667s while129024 audio frames remained buffered and native workers were idle. Do not erase this failure. GC/response-retention short diagnostics and subsequent instrumented/unwrapped runs did not establish its root cause. A minimal stream harness hit its60s budget with all3000 bodies already completed; it is not evidence of a stuck body and is excluded from performance acceptance. Hundreds of automation request-abort records did not correspond to native network failures in the captured network-log run; this scoped correlation does not classify every historical abort.
+
+A separately reproducible defect was unbounded accepted-body reading and cancellation cleanup. Old SDK fault injection remained pending. New SDK22 checks and34 related Web checks pass; realbrowser injection with a nonsettling cancellation retired in5010.9ms and an explicit Play action recovered. No automatic retry, new frame generation or integrity bypass was introduced. This bounds the symptom and lifecycle; underlying intermittent stall remains open.
+
+The final unmodified installed UI passed the original5s first-frame and150s full94s gates:3.292s actual first frame,109.573s action-to-end, with seek/pause/resume. Not strict realtime. Actual warm landscape/workbench first frames were0.947/1.627s, advance4.094/6.936s and resume1.712/3.333s. The original warm advance/resume5s gate remains false. Cold measurements, exact scopes and all four observations are in status.md and the checkpoint; these are single observations rather than a stable comparative benchmark.
+
+All four user project heads and475 old jobs were preserved, with11 successful new-runtime source preparations. Both services verified285 Web files and the actual native renderer identity. Checkpoint `local-upgrade-20261031/audio-guard/checkpoint.json`: `590dc5da3b041ad3f9bc5d6b207cc2a98b483ac7442d9109890f1d9a237aa0f7`. Initial failure and native proofs are separately sealed and referenced. Human physical A/V, strict realtime, export throughput and full delivery remain open.

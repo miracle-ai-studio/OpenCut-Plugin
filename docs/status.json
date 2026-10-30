@@ -6908,16 +6908,16 @@
     "complete_delivery_accepted": false
   },
   "preview_audio_fact_transport": {
-    "state": "native_verified_picture_idle_guard_pending_web_and_install",
+    "state": "installed_scoped_verification_passed_remaining_performance_open",
     "baseline_commit": "0898bcbc",
     "scope": "Private preview sample transport only; original JSON binding digest and public contracts unchanged.",
-    "diagnostic": "/private/tmp/opencut-local-upgrade-20261031/post-slice-attribution/attribution-summary.json",
+    "diagnostic": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261031/audio-facts/attribution/attribution-summary.json",
     "binary_record_bytes": 37,
     "maximum_body_bytes": 16777216,
     "maximum_block_frames": 4096,
     "maximum_voice_count": 32,
     "maximum_sample_work": 65536,
-    "installed": false,
+    "installed": true,
     "delivery_ready": false,
     "implementation_commit": "da668781624f76ead7961a3db195279266ac2937",
     "build_passed": true,
@@ -6935,8 +6935,132 @@
       "implemented": true,
       "idle_seconds": 5,
       "sdk_checks_passed": 22,
-      "web_build_passed": false,
-      "scope": "Bound accepted response consumption and cancellation; do not claim intermittent underlying stall repaired."
-    }
+      "web_build_passed": true,
+      "scope": "Bound accepted response consumption and cancellation; do not claim intermittent underlying stall repaired.",
+      "related_web_checks_passed": 34,
+      "browser_injected_stall_passed": true,
+      "browser_retirement_ms": 5010.900000095367,
+      "explicit_restart_passed": true
+    },
+    "web_source_commit": "1dc8c1b8866ca707a4ec601acb0fcbafd4a8cebd",
+    "installed_cli_sha256": "a6665fef4a504db856b85d3d762ea97ec64e8d9d090c474bbb8f5da5abbc8c8e",
+    "installed_worker_sha256": "d7b0d11456f592b73937cc06245402d00d11f516a9d4021a4e9ac7936b6eb676",
+    "endpoints": [
+      "http://127.0.0.1:8791",
+      "http://127.0.0.1:59790"
+    ],
+    "actual_projects_preserved_at_switch": 4,
+    "prior_jobs_preserved_at_switch": 475,
+    "guarded_long_ui_passed": true,
+    "guarded_long_ui_seconds": 109.572912879,
+    "guarded_first_frame_seconds": 3.2918999998569487,
+    "installed_runtime": {
+      "opencut": {
+        "path": "/Users/vincent/.opencut/runtime/native-local-audio-guard-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+        "sha256": "a6665fef4a504db856b85d3d762ea97ec64e8d9d090c474bbb8f5da5abbc8c8e"
+      },
+      "opencut-render-worker": {
+        "path": "/Users/vincent/.opencut/runtime/native-local-audio-guard-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+        "sha256": "d7b0d11456f592b73937cc06245402d00d11f516a9d4021a4e9ac7936b6eb676"
+      }
+    },
+    "checkpoint": {
+      "path": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261031/audio-guard/checkpoint.json",
+      "sha256": "590dc5da3b041ad3f9bc5d6b207cc2a98b483ac7442d9109890f1d9a237aa0f7",
+      "files": 73
+    },
+    "native_reference_checkpoint": {
+      "path": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261031/audio-facts/checkpoint.json",
+      "sha256": "40455f11bde5e7caf7e91abce952b0237aeec827ccc084af1f69bd24b5b2e205",
+      "files": 133
+    },
+    "actual_project_ui_checks_passed": 4,
+    "actual_project_observations": [
+      {
+        "name": "landscape",
+        "pass": "cold",
+        "start_seconds": 7.662256342999999,
+        "resume_seconds": 1.7131309849999998,
+        "resume_under_5s": true,
+        "actual_click_to_first_frame_seconds": 5.327599999904632,
+        "first_frame_under_5s": false
+      },
+      {
+        "name": "landscape",
+        "pass": "warm",
+        "start_seconds": 4.093576875999999,
+        "resume_seconds": 1.7122804020000004,
+        "resume_under_5s": true,
+        "actual_click_to_first_frame_seconds": 0.9469000000953675,
+        "first_frame_under_5s": true
+      },
+      {
+        "name": "workbench",
+        "pass": "cold",
+        "start_seconds": 8.919148110000002,
+        "resume_seconds": 2.754407890999995,
+        "resume_under_5s": true,
+        "actual_click_to_first_frame_seconds": 3.6831999998092653,
+        "first_frame_under_5s": true
+      },
+      {
+        "name": "workbench",
+        "pass": "warm",
+        "start_seconds": 6.936071302000004,
+        "resume_seconds": 3.3328759199999984,
+        "resume_under_5s": true,
+        "actual_click_to_first_frame_seconds": 1.6271999998092652,
+        "first_frame_under_5s": true
+      }
+    ],
+    "warm_actual_first_frame_5s_gate_passed": true,
+    "warm_original_advance_and_resume_5s_gate_passed": false,
+    "preservation": [
+      {
+        "name": "landscape",
+        "projects_preserved": 2,
+        "prior_jobs_preserved": 27,
+        "new_jobs": {
+          "job_c8dc89c031784e2da653e26b8dcb2195": "succeeded",
+          "job_4f9e638370404b938ea1758b2e9715fc": "succeeded",
+          "job_3d57989de5b744e898f991483d411dc1": "succeeded"
+        },
+        "integrity": "ok"
+      },
+      {
+        "name": "workbench",
+        "projects_preserved": 2,
+        "prior_jobs_preserved": 448,
+        "new_jobs": {
+          "job_95df5bf0c5624be7a540147cb68c7b5f": "succeeded",
+          "job_d9b31f6b0e0941faa9eee7811dfe2ced": "succeeded",
+          "job_f5b510ed71f042b9b553b13cc6b365e8": "succeeded",
+          "job_970ebfe411854099b3b9b929c2020dfd": "succeeded",
+          "job_ed7b5999258a4fe488a1b985f3a7fd0e": "succeeded",
+          "job_90bac4f8cf5f4ef9b118b76a41476c22": "succeeded",
+          "job_5386e7e9fb8a41b1838272550534965c": "succeeded",
+          "job_de1b6f8f028b4d8eaf681a9c09e6ba50": "succeeded"
+        },
+        "integrity": "ok"
+      }
+    ],
+    "new_source_jobs_succeeded": 11,
+    "backup_directory": "/Users/vincent/.opencut/backups/native-audio-guard-20261031",
+    "synthetic_workspace_preservation": {
+      "projects_unchanged": 9,
+      "prior_jobs_unchanged": 101,
+      "new_jobs": {
+        "job_aac7b15d09e347fb818543d8d2ee205a": "succeeded",
+        "job_1496bd0049484ad28fd7f9a9276a4f04": "succeeded"
+      },
+      "total_jobs": 103
+    },
+    "remaining": [
+      "intermittent underlying picture transport stall root cause",
+      "workbench warm playback advance remains6.936s above5s gate",
+      "strict continuous realtime",
+      "original-resolution export throughput",
+      "human physical A/V and whole-product acceptance"
+    ]
   }
 }

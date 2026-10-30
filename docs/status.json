@@ -4,11 +4,11 @@
   "in_progress": {
     "candidate_cli_sha256": "2e2c682bc72903d7e7a3661b46fc0c4a5cc5c91a1ed60f97188118f90f875f72",
     "candidate_worker_sha256": "6dc2eaedf9f795ba536ff3b104d639d574de29f4083f8039607f88659d18de61",
-    "candidate_web_source_digest": "5cfed08f1bdfa63fd8645eae2123ef0118d2badcfe5c7e6b2333ebb456d98826",
-    "execution_scope_optimization": "Explicit BLAKE3 for complete ephemeral nativeRGBA only;Rust53ffb058,Web32421ea2. Existing asset/runtime/export/storedSHA256 proofs,original540p and freshfences preserved.61SDK/43Web/7Rust/14architecture/7independentframes/7guards andtwo94sUIflows passed.Originalfailures retained.",
+    "candidate_web_source_digest": "4132c3b2688a1beb7669c0600d029967dc39d061a34b799245c21f95883ef2db",
+    "execution_scope_optimization": "Paused visual authority uses strict 1s heartbeat without full-resolution rendering. Stable confirmed same-position paused seeks reuse a valid picture and local lease; unknown, expired, pending or missing-picture operations retain recovery. Web e3953742 only; native runtime unchanged. All original authority, revision, lease, generation, overlay and publication fences preserved.",
     "preview_resolution": "Actual preview540 output960x540 for4K source;smallsource320x180 retained,no further reduction.",
     "export_resolution": "Original-source exports keep720/1080/1440/2160and Webdefault1080. No export/PCM rerun inthisslice;preceding6c615de9/555/5d producerproof retains original scope.",
-    "bottleneck_attribution": "Current4K action-to-end107.01352566s vsprior126.216166s for94scontent;singleobservations,not stablebenchmark or realtime. Nativeprepare/claim/header median34.7ms,read/verify/bitmap13.1msoverlap;notpuredecode or additive throughput. Scope0.007ms,snapshotIR0.94ms rejected asprimary;completeSHA cost is repairable and explicitBLAKE3 accepted.",
+    "bottleneck_attribution": "Confirmed and repaired: discarded full4K paused authorization frames and redundant same-position seeks. Genuine seeks still recreate generation-scoped visual resources. Retained Web32421ea2 observation: 94s 4K action-to-end107.01352566s, native prepare/header34.7ms and read/verify/bitmap13.1ms overlap; not pure decode or additive throughput. No full94s/export replay with Web e3953742.",
     "runtime_acceptance": {
       "small_source": {
         "fixture": "small",
@@ -949,7 +949,13 @@
       "cleanup": "All3retained fixture snapshots unchanged;owned service stopped,0activejobs/ownedworkers after export.",
       "qualification": "Current working candidate only,no install/package promotion.Process RSS samples exclude GPU/driver allocation;agent screenshots are not physical/human acceptance."
     },
-    "web_build_policy": "Use an owned external candidate outDir for Web validation;do not overwrite liveapps/web/dist. ExistingPID51897 at127.0.0.1:59790 keepsmatchinginstalledWeb(294assets),newnativecandidateWeb remainsindependent(285assets);no oldservice restart oruserprojectwrite."
+    "web_build_policy": "Use an owned external candidate outDir for Web validation;do not overwrite liveapps/web/dist. ExistingPID51897 at127.0.0.1:59790 keepsmatchinginstalledWeb(294assets),newnativecandidateWeb remainsindependent(285assets);no oldservice restart oruserprojectwrite.",
+    "candidate_web_source_commit": "e39537420edee9c062574e1adc8cb206663c7bb2",
+    "runtime_acceptance_original_producer_scope": {
+      "web_source_commit": "32421ea267cedd33cf451f87d7a1709624c76eb1",
+      "web_source_digest": "5cfed08f1bdfa63fd8645eae2123ef0118d2badcfe5c7e6b2333ebb456d98826",
+      "native_runtime": "Same CLI2e2c682bc729/worker6dc2eaedf9f7; existing 94s/pixel evidence retains its original Web scope."
+    }
   },
   "scope": "Local CLI/HTTP/MCP/SDK service and Web editor; GPUI shell is not an integrated editor.",
   "public_contract": {
@@ -6005,10 +6011,90 @@
   },
   "preview_refresh_implementation": {
     "implemented": true,
-    "built": false,
-    "scoped_behavior_accepted": false,
+    "built": true,
+    "scoped_behavior_accepted": true,
     "manual_acceptance": false,
     "delivery_ready": false,
-    "native_runtime_unchanged": true
+    "source_commit": "e39537420edee9c062574e1adc8cb206663c7bb2",
+    "web_source_digest": "4132c3b2688a1beb7669c0600d029967dc39d061a34b799245c21f95883ef2db",
+    "native_runtime_unchanged": true,
+    "public_contracts_changed": false,
+    "summary": "/Users/vincent/Movies/OpenCut-native-rendering/4k/preview-refresh-integration/summary.json",
+    "checkpoint": "/Users/vincent/Movies/OpenCut-native-rendering/4k/preview-refresh-integration/checkpoint.json",
+    "checkpoint_sha256": "f85ce82d802ba8ab06f0f0c2c2dea7b31f47f0dc79d0adb79384626ad28c99e9",
+    "checkpoint_files": 311,
+    "baseline_commit_before_changes": "88301ab7",
+    "baseline_checkpoint_sha256": "822816f3dec6151122e7cc7dfc118c9c7443417dd874c7ab580979f700ecd48f",
+    "bounded_browser": {
+      "completed_unconsumed_full4K_frames_before_after": [
+        7,
+        0
+      ],
+      "3400ms_paused_idle_full4K_frames_before_after": [
+        3,
+        0
+      ],
+      "3400ms_paused_idle_heartbeat_count": 3,
+      "recovery_seek_controls_before_after": [
+        3,
+        2
+      ],
+      "same6s_recovery_seek_controls_before_after": [
+        1,
+        0
+      ],
+      "same6s_preserved_candidate_child_PID_set": [
+        11525,
+        11554
+      ],
+      "picture_prepare_requests": 87,
+      "picture_request_resolution": "All 87 scene frame requests explicitly preview540; no source-resolution background rendering. Current output algorithm/runtime unchanged; independent raster proofs retain R16 producer scope.",
+      "observed_non200_responses": 0,
+      "observed_page_errors": 0
+    },
+    "tests": {
+      "affected_cases_covered": 117,
+      "final_group_run": "116 passed/1 failed due to misplaced test-only fixture assertion",
+      "targeted_repair_run": "4 passed/35 filtered after moving assertion; failed and changed cases only",
+      "failure_retained": "web-tests-final.log",
+      "architecture_tests_passed": 14,
+      "client_boundaries_passed_files": 264
+    },
+    "build": {
+      "source_commit": "e39537420edee9c062574e1adc8cb206663c7bb2",
+      "args": [
+        "npm",
+        "run",
+        "build",
+        "--",
+        "--outDir",
+        "/Users/vincent/Movies/OpenCut-native-rendering/4k/preview-refresh-integration/web"
+      ],
+      "exit_code": 0,
+      "seconds": 16.580285757780075,
+      "Rust_rebuilt": false
+    },
+    "preservation": {
+      "verified_web_source_files": 743,
+      "verified_web_assets": 285,
+      "projects_unchanged": 4,
+      "prior_jobs_state_attempt_result_error_unchanged": 92,
+      "new_source_or_render_or_export_jobs": 0,
+      "active_jobs": 0,
+      "owned_service_stopped": true,
+      "owned_candidate_processes_remaining": [],
+      "legacy_web_assets_unchanged": 294,
+      "legacy_PIDs_unchanged": [
+        51886,
+        51897
+      ],
+      "legacy_runtime_upgraded": false
+    },
+    "remaining": [
+      "Genuine seek still retires generation-scoped renderer/decoder/cache and restarts one child; cold frame observations roughly0.8s include resource creation and are not pure decode.",
+      "No full94s playback/export/PCM rerun: unchanged native rendering and source/export algorithms retain original evidence scope.",
+      "4K realtime, historical rare stall, export throughput, full network attribution, human/physical A/V and crossplatform delivery remain open.",
+      "This does not measure every React commit or prove all refresh overhead eliminated."
+    ]
   }
 }

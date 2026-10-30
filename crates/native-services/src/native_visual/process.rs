@@ -162,6 +162,57 @@ impl NativeProcess {
         }
         Ok(())
     }
+    /// Revalidate the complete runtime before a live preview's next scope.
+    /// No frame or callback from the previous scope survives this handshake.
+    pub(super) fn revalidate(
+        &mut self,
+        checkpoint: &mut dyn FnMut() -> Result<(), EditorError>,
+    ) -> Result<(), EditorError> {
+        self.check()?;
+        let expected = serde_json::to_value(
+            &self
+                .runtime
+                .as_ref()
+                .ok_or_else(|| invalid("Missing visual runtime"))?
+                .identity,
+        )
+        .map_err(|_| wire::error("Invalid native runtime identity"))?;
+        self.worker
+            .monitor
+            .frame(Some(Instant::now() + self.config.deadline));
+        let result = (|| {
+            checkpoint()?;
+            self.worker.unchanged()?;
+            self.send(json!({"type":"revalidate","frames":self.next}), &[])?;
+            let packet = loop {
+                checkpoint()?;
+                if let Some(packet) = self.receive()? {
+                    break packet;
+                }
+            };
+            reject_failure(&packet)?;
+            if wire::text(&packet.meta, "type")? != "revalidated"
+                || wire::integer(&packet.meta, "frames")? != self.next
+                || !packet.data.is_empty()
+            {
+                return Err(wire::error("Invalid native scope handoff"));
+            }
+            if packet.meta["identity"] != expected {
+                return Err(EditorError::new(
+                    "VISUAL_ENGINE_CHANGED",
+                    "Native runtime changed before scope handoff",
+                ));
+            }
+            self.worker.unchanged()?;
+            checkpoint()
+        })();
+        if result.is_err() {
+            self.retire();
+        } else {
+            self.worker.monitor.frame(None);
+        }
+        result
+    }
     pub(super) fn quota(&self) -> VisualQuotaReceipt {
         self.worker.quota().into()
     }

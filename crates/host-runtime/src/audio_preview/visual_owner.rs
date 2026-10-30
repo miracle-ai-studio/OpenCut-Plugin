@@ -14,6 +14,30 @@ pub(super) struct VisualOwner {
     pub source_resources: crate::source_preview_runtime::SourceCache,
 }
 
+/// The Entry fixes project/revision. Only scratch from this exact live owner
+/// and lease may cross a generation; prepared pixels retain their full scope.
+pub(super) fn same_lease(
+    previous: &AudioPreviewStream,
+    principal: &str,
+    next: &AudioPreviewStream,
+    caller: &str,
+) -> bool {
+    principal == caller
+        && previous.owner_id == principal
+        && next.owner_id == caller
+        && previous.session_id == next.session_id
+        && previous.lease_id == next.lease_id
+}
+fn scope(view: &AudioPreviewSession) -> AudioPreviewStream {
+    AudioPreviewStream {
+        session_id: view.session_id.clone(),
+        generation: view.generation.clone(),
+        overlay_epoch: view.overlay_epoch.clone(),
+        owner_id: view.owner_id.clone(),
+        lease_id: view.lease_id.clone(),
+    }
+}
+
 /// Allow one request to wait for an in-flight picture or retiring generation.
 /// The waiter owns no pixels, CAS handles or extra renderer. Do not hold the
 /// sound-state mutex while waiting; the supplied checkpoint briefly reacquires
@@ -61,8 +85,9 @@ pub(super) fn acquire<'a, T>(
     }
 }
 
-/// Maintenance owns a weak session reference. Retiring a stopped, superseded,
-/// revoked or idle worker never waits while holding the sound-state mutex.
+/// Maintenance owns a weak session reference. A generation change retires old
+/// pixels/readers; worker scratch stays bounded by the same live owner/lease.
+/// No process retirement waits while holding the sound-state mutex.
 pub(super) fn maintain(entry: &Arc<Entry>) -> Result<(), EditorError> {
     let weak: Weak<Entry> = Arc::downgrade(entry);
     let database = entry.database.clone();
@@ -95,20 +120,34 @@ pub(super) fn maintain(entry: &Arc<Entry>) -> Result<(), EditorError> {
                     });
                 let authority = entry.checkpoint(&application).is_ok();
                 if let Ok(mut owner) = entry.visual.try_lock() {
+                    let current = owner.as_ref().and_then(|owner| {
+                        let state = lock(&entry.state).ok()?;
+                        let current = scope(&state.machine.snapshot(now()));
+                        (same_lease(&owner.scope, &owner.principal, &current, &owner.principal)
+                            && state
+                                .machine
+                                .verify_visual_frame(&current, &owner.principal, now())
+                                .is_ok())
+                        .then_some(current)
+                    });
                     let retire = terminal
                         || !authority
                         || owner.as_ref().is_some_and(|owner| {
                             owner.renderer.idle_expired()
                                 || owner.renderer.check().is_err()
-                                || lock(&entry.state).map_or(true, |state| {
-                                    state
-                                        .machine
-                                        .verify_visual_frame(&owner.scope, &owner.principal, now())
-                                        .is_err()
-                                })
+                                || current.is_none()
                         });
                     if retire {
                         owner.take();
+                        entry.pixels.clear();
+                        entry.readers.clear();
+                    } else if owner
+                        .as_ref()
+                        .zip(current.as_ref())
+                        .is_some_and(|(owner, current)| owner.scope != *current)
+                    {
+                        // These artifacts grant presentation, unlike source
+                        // descriptors/decoders which reauthorize every use.
                         entry.pixels.clear();
                         entry.readers.clear();
                     }
@@ -130,6 +169,32 @@ pub(super) fn maintain(entry: &Arc<Entry>) -> Result<(), EditorError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn scratch_reuse_is_limited_to_one_principal_session_and_lease() {
+        let previous = AudioPreviewStream {
+            session_id: "session".into(),
+            generation: "2".into(),
+            overlay_epoch: "0".into(),
+            owner_id: "owner".into(),
+            lease_id: "lease".into(),
+        };
+        let mut next = previous.clone();
+        next.generation = "3".into();
+        next.overlay_epoch = "1".into();
+        assert!(same_lease(&previous, "owner", &next, "owner"));
+        for field in ["session", "lease", "owner"] {
+            let mut other = next.clone();
+            match field {
+                "session" => other.session_id = "other".into(),
+                "lease" => other.lease_id = "other".into(),
+                _ => other.owner_id = "other".into(),
+            }
+            assert!(!same_lease(&previous, "owner", &other, "owner"));
+        }
+        assert!(!same_lease(&previous, "owner", &next, "other"));
+        assert!(!same_lease(&previous, "other", &next, "owner"));
+    }
 
     #[test]
     fn retiring_picture_hands_off_to_one_waiter_without_an_extra_owner() {

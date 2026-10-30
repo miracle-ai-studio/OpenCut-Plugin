@@ -222,8 +222,12 @@ fn scene_picture_inner(
     e.pixels.clear();
     let reservation = e.pixels.reserve(length, picture_capacity)?;
     if owner.as_ref().is_some_and(|owner| {
-        owner.scope != input.session
-            || owner.policy != policy
+        !super::visual_owner::same_lease(
+            &owner.scope,
+            &owner.principal,
+            &input.session,
+            host.caller.principal_id(),
+        ) || owner.policy != policy
             || owner.renderer.idle_expired()
             || owner.renderer.check().is_err()
     }) {
@@ -243,6 +247,23 @@ fn scene_picture_inner(
             resources: VideoResourceCache::default(),
             source_resources: crate::source_preview_runtime::SourceCache::default(),
         });
+    }
+    if owner
+        .as_ref()
+        .is_some_and(|owner| owner.scope != input.session)
+    {
+        e.readers.clear();
+        let current = owner.as_mut().expect("admitted native picture owner");
+        let handoff = current
+            .renderer
+            .revalidate(&mut checkpoint)
+            .and_then(|()| checkpoint());
+        if let Err(error) = handoff {
+            owner.take();
+            e.pixels.clear();
+            return Err(error);
+        }
+        current.scope = input.session.clone();
     }
     let current = owner.as_mut().expect("admitted native picture owner");
     let resources = VerifiedClassicTextResources::new_scene_frame_cached(

@@ -1,4 +1,4 @@
-//! One serial lifecycle check using only owned native worker processes.
+//! Serial lifecycle checks using only owned native worker processes.
 use super::{monitor::Monitor, process::NativeProcess};
 use crate::classic_visual::ClassicVisualProcessConfig;
 use opencut_contracts::EditorError;
@@ -82,6 +82,68 @@ fn cancellation_revocation_deadline_and_rss_reap_the_owned_worker() {
             std::thread::sleep(Duration::from_millis(10));
         }
         monitor.stop();
+        gone(pid);
+    }
+}
+
+#[test]
+#[cfg(unix)]
+#[ignore = "Requires OPENCUT_RENDER_WORKER; run serially with native pixel acceptance"]
+fn scope_handoff_keeps_the_runtime_and_reaps_on_a_fence_failure() {
+    let worker = std::env::var_os("OPENCUT_RENDER_WORKER").expect("Integrated native worker");
+    let policy = LocalVisualExecutionPolicy {
+        max_frame_pixels: 1024,
+        max_decoded_pixels: 1024,
+        max_gpu_bytes: 32 * 1024 * 1024,
+        max_rgba_bytes: 32 * 1024 * 1024,
+        max_encoded_bytes: 1024 * 1024,
+        max_output_bytes: 1024 * 1024,
+        max_rss_bytes: 2 * 1024 * 1024 * 1024,
+        deadline_ms: 30_000,
+    };
+    let start = || {
+        NativeProcess::start(
+            ClassicVisualProcessConfig {
+                worker: worker.clone().into(),
+                deadline: Duration::from_secs(30),
+                policy: policy.clone(),
+                strict_cgroup: None,
+            },
+            Duration::from_secs(30),
+            None,
+            &mut || Ok(()),
+        )
+        .unwrap()
+    };
+    let mut process = start();
+    let pid = process.runtime().worker_pid;
+    let identity = process.runtime().identity.clone();
+    for _ in 0..3 {
+        process.revalidate(&mut || Ok(())).unwrap();
+        assert_eq!(process.runtime().worker_pid, pid);
+        assert_eq!(process.runtime().identity, identity);
+    }
+    process.finish(&mut || Ok(())).unwrap();
+    gone(pid);
+    for code in [
+        "JOB_CANCELLED",
+        "NOT_AUTHORIZED",
+        "PREVIEW_GENERATION_CONFLICT",
+    ] {
+        let mut process = start();
+        let pid = process.runtime().worker_pid;
+        let mut calls = 0;
+        let error = process
+            .revalidate(&mut || {
+                calls += 1;
+                if calls >= 2 {
+                    Err(EditorError::new(code, "Changed live scope during handoff"))
+                } else {
+                    Ok(())
+                }
+            })
+            .unwrap_err();
+        assert_eq!(error.code, code);
         gone(pid);
     }
 }

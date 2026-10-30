@@ -1,6 +1,7 @@
 //! A live preview owns the same process/session implementation as export.
-//! Its host supplies current-generation authority on every frame and drops
-//! this owner on generation change, shutdown, or bounded idle retirement.
+//! Its host supplies current-generation authority on every frame. The same
+//! fixed session/owner/lease may revalidate a new generation; shutdown, lease
+//! changes, execution errors and bounded idle retirement still drop the owner.
 use super::{process::NativeProcess, *};
 use crate::classic_visual::{ClassicVisualProcessConfig, validate_quota};
 use opencut_editor_application::{
@@ -62,6 +63,20 @@ impl NativeScenePreview {
     }
     pub fn check(&self) -> Result<(), EditorError> {
         self.process.check()
+    }
+    /// Retain bounded decode/GPU storage, never an old frame's authorization.
+    /// The host serializes handoff with rendering and supplies the new scope's
+    /// live checkpoint before, during and after full runtime revalidation.
+    pub fn revalidate(
+        &mut self,
+        checkpoint: &mut dyn FnMut() -> Result<(), EditorError>,
+    ) -> Result<(), EditorError> {
+        self.process.revalidate(checkpoint)?;
+        *self
+            .activity
+            .lock()
+            .map_err(|_| invalid("Native preview clock is unavailable"))? = Instant::now();
+        Ok(())
     }
     pub fn render(
         &mut self,

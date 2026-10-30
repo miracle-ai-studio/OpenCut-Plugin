@@ -290,6 +290,30 @@ fn run(channel: &Rc<RefCell<Channel>>) -> Result<(), EditorError> {
             return Err(wire::error("Unexpected native command bytes"));
         }
         match wire::text(&packet.meta, "type")? {
+            "revalidate" => {
+                if purpose != "visual" || wire::integer(&packet.meta, "frames")? != next {
+                    return Err(wire::error("Native handoff changed the frame sequence"));
+                }
+                let observed = identity::observe(
+                    engine
+                        .as_ref()
+                        .ok_or_else(|| wire::error("Missing visual engine"))?
+                        .identity(),
+                )?;
+                let observed = serde_json::to_value(observed)
+                    .map_err(|_| wire::error("Invalid native handoff identity"))?;
+                if observed != identity {
+                    return Err(EditorError::new(
+                        "VISUAL_ENGINE_CHANGED",
+                        "Native runtime changed before scope handoff",
+                    ));
+                }
+                wire::send(
+                    &mut channel.borrow_mut().output,
+                    json!({"type":"revalidated","frames":next,"identity":observed}),
+                    &[],
+                )?;
+            }
             "frame" => {
                 if wire::integer(&packet.meta, "frame")? != next {
                     return Err(wire::error("Native frame order changed"));

@@ -2,7 +2,7 @@
   "format": "opencut.delivery-status.v1",
   "delivery_ready": false,
   "in_progress": {
-    "candidate_cli_sha256": "98c185e2c706161182f65b27550ba470e0325137242edcf60a8a55edac995a2b",
+    "candidate_cli_sha256": "d0c49ea88d00c81ae42d3e1aba3fe44525b17665ec6800fc798175d56baccc4c",
     "candidate_worker_sha256": "779cc996aa07dfb709c41ea03623eeffbd9cdfa6a5c8d28d1e5395e06731bb62",
     "candidate_web_source_digest": "4132c3b2688a1beb7669c0600d029967dc39d061a34b799245c21f95883ef2db",
     "execution_scope_optimization": "Native10b27506 retains one bounded visual owner within the same fixed session/principal/owner/lease and identical policy. Full runtime/counter revalidation per generation/overlay handoff;old pixels/readers invalidated and fresh per-frame authority/admission/publication fences preserved. Handoff errors retire without silent retry. Existing paused heartbeat/same-position dedupe from unchanged Webe3953742 retained.",
@@ -957,8 +957,9 @@
       "native_runtime": "Retained original CLI2e2c682bc729/worker6dc2eaedf9f7 only;not rerun with current CLIc96/worker779. New bounded preview acceptance is seek_owner_implementation."
     },
     "candidate_native_source_commit": "10b2750671e1606683e00f7d847226435e487541",
-    "installed_cli_sha256": "e95986528305b0bcabdfc71d1fe4044c6e7937716f4c91cc23bafb938b8fda37",
-    "current_slice": "Source task identity lookup before capture installed;bounded real UI functional passed but large proxy rehash on resume remains. Older playback/export records retain their named producer scope."
+    "installed_cli_sha256": "34df340dfcee5cada73d6e6ad4003123cde1dda58ba7fbf6699490616aff9008",
+    "current_slice": "Source lookup before capture and bounded exact proxy verification facts installed; repeated open/resume measured separately from first cold verification. Whole-product and strict4K realtime remain open.",
+    "installed_worker_sha256": "ed7a1cab49ec3c81b9921c1b6828f51ab2ae325d4d87d5873c28592537b489c2"
   },
   "scope": "Local CLI/HTTP/MCP/SDK service and Web editor; GPUI shell is not an integrated editor.",
   "public_contract": {
@@ -6414,13 +6415,13 @@
     }
   },
   "local_service_upgrade": {
-    "state": "source_reuse_installed_proxy_reverification_remaining",
+    "state": "proxy_verification_reuse_installed",
     "assembly_commits": [
       "3136836a",
       "161cd597"
     ],
     "native_source_commit": "10b27506",
-    "installed_cli_sha256": "e95986528305b0bcabdfc71d1fe4044c6e7937716f4c91cc23bafb938b8fda37",
+    "installed_cli_sha256": "34df340dfcee5cada73d6e6ad4003123cde1dda58ba7fbf6699490616aff9008",
     "installed_worker_sha256": "ed7a1cab49ec3c81b9921c1b6828f51ab2ae325d4d87d5873c28592537b489c2",
     "services_switched": 2,
     "web_assets_verified_per_service": 285,
@@ -6474,16 +6475,89 @@
     "checkpoint_files": 151,
     "manual_acceptance": false,
     "delivery_ready": false,
-    "prior_installed_cli_sha256": "106307ddb5ac2645838c1db49356754bbfb594a04cd6a3dec40771bbf6eb9dff"
+    "prior_installed_cli_sha256": "106307ddb5ac2645838c1db49356754bbfb594a04cd6a3dec40771bbf6eb9dff",
+    "installed_source_commit": "149b4b559ef0d06953605fec79c8c4db9f346742",
+    "retained_first_stage_evidence_producer": {
+      "cli": "106307ddb5ac2645838c1db49356754bbfb594a04cd6a3dec40771bbf6eb9dff",
+      "worker": "ed7a1cab49ec3c81b9921c1b6828f51ab2ae325d4d87d5873c28592537b489c2",
+      "Web": "e39537420edee9c062574e1adc8cb206663c7bb2",
+      "scope": "actual_4K_fixture,source_4K_export,real_projects and discovery_ABBA fields are historical first-stage evidence,not rerun by final candidate."
+    }
   },
   "proxy_verification_reuse": {
     "implemented": true,
-    "build_accepted": false,
-    "scoped_behavior_accepted": false,
-    "local_service_updated": false,
+    "build_accepted": true,
+    "scoped_behavior_accepted": true,
+    "local_service_updated": true,
     "baseline_commit": "c010b5b4",
     "bounded_facts": 128,
-    "scope": "Exact artifact and opened-file metadata facts only; fresh path/lease/authority/publication/read checks retained. Unseen or changed files require full SHA256. No public DTO, registry, host dispatch, dependency or generated consumer change.",
-    "delivery_ready": false
+    "scope": "Bounded verification facts only; no cached authority/handles. Cold unverified artifact still hashes fully. Functional browser cold/warm pause/resume checks on two projects; no new full94s or export/PCM claims.",
+    "delivery_ready": false,
+    "source_commit": "149b4b559ef0d06953605fec79c8c4db9f346742",
+    "raw_cli": {
+      "path": "/private/tmp/opencut-local-upgrade-20261031/proxy-facts/candidate/d0c49ea88d00c81ae42d3e1aba3fe44525b17665ec6800fc798175d56baccc4c/opencut",
+      "sha256": "d0c49ea88d00c81ae42d3e1aba3fe44525b17665ec6800fc798175d56baccc4c"
+    },
+    "installed_runtime": {
+      "opencut": {
+        "path": "/Users/vincent/.opencut/runtime/native-local-proxy-facts-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+        "sha256": "34df340dfcee5cada73d6e6ad4003123cde1dda58ba7fbf6699490616aff9008"
+      },
+      "opencut-render-worker": {
+        "path": "/Users/vincent/.opencut/runtime/native-local-proxy-facts-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+        "sha256": "ed7a1cab49ec3c81b9921c1b6828f51ab2ae325d4d87d5873c28592537b489c2"
+      }
+    },
+    "build_seconds": 333.34484590310603,
+    "test_build_and_run_seconds": 639.3784147989936,
+    "file_integrity_tests": 5,
+    "architecture_tests": 14,
+    "independent_frames": 7,
+    "rejection_checks": 9,
+    "performance": {
+      "warm_start_gate_seconds": 5,
+      "resume_gate_seconds": 5,
+      "cold_start_accepted_as_realtime": false,
+      "rows": [
+        {
+          "name": "landscape",
+          "pass": "cold",
+          "passed": true,
+          "start_seconds": 12.699195905,
+          "resume_seconds": 5.246336922000002,
+          "resume_under_5s": false
+        },
+        {
+          "name": "landscape",
+          "pass": "warm",
+          "passed": true,
+          "start_seconds": 8.347207388,
+          "resume_seconds": 5.267734650999999,
+          "resume_under_5s": false
+        },
+        {
+          "name": "workbench",
+          "pass": "cold",
+          "passed": true,
+          "start_seconds": 9.421978315,
+          "resume_seconds": 3.269557946000001,
+          "resume_under_5s": true
+        },
+        {
+          "name": "workbench",
+          "pass": "warm",
+          "passed": true,
+          "start_seconds": 9.030397829000002,
+          "resume_seconds": 4.2863642970000075,
+          "resume_under_5s": true
+        }
+      ],
+      "warm_start_and_resume_passed": false
+    },
+    "projects_preserved": 4,
+    "prior_jobs_preserved": 442,
+    "new_source_jobs": 11,
+    "checkpoint": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261031/proxy-facts/checkpoint.json",
+    "checkpoint_sha256": "72c4a4276accc7fb039a1cdedd4e196ca64c366ca134b0814d2fd5299db0cead"
   }
 }

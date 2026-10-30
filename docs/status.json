@@ -5992,5 +5992,15 @@
     "new_candidate_switched_into_old_service": false,
     "pre_build_repo_dist_independently_captured": false,
     "manual_user_project_acceptance": false
+  },
+  "preview_refresh_audit": {
+    "source_commit": "d4124f56",
+    "baseline_checkpoint_sha256": "822816f3dec6151122e7cc7dfc118c9c7443417dd874c7ab580979f700ecd48f",
+    "full4K_unconsumed_background_frames_observed": 7,
+    "source_jobs_created": 0,
+    "prior_jobs_unchanged": 92,
+    "prior_projects_unchanged": 4,
+    "repair_implemented": false,
+    "delivery_ready": false
   }
 }

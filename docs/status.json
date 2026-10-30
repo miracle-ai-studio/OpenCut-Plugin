@@ -6714,5 +6714,26 @@
       "next_investigation": "Attribute native worker/frame preparation and transfer portions,including text/multitrack cost,before selecting a renderer throughput change. Do not lower540p or weaken byte/authority checks.",
       "no_more_candidate_rebuild_for_this_measurement": true
     }
+  },
+  "proxy_slice_decode": {
+    "implemented": true,
+    "build_accepted": false,
+    "behavior_accepted": false,
+    "local_service_updated": false,
+    "baseline_commit": "0325d8c9",
+    "hypothesis": "960x540 falls below the old frame-thread pixel threshold; FFV1 proxies decode serially despite four encoded slices. Use bounded slice workers within unchanged residency limits.",
+    "component_evidence": "/private/tmp/opencut-local-upgrade-20261031/frame-attribution/decode-thread-component.json",
+    "serial_350_frames_ms": [
+      8122.344,
+      8477.355
+    ],
+    "slice4_350_frames_ms": [
+      2538.859,
+      2699.968
+    ],
+    "identical_decoded_hash": "8f80367026e34bb143f22aa90983cdab9a2e8257c53ad02e993476b761c0187d",
+    "scope": "Same installed libav component only, not end-to-end or Rust acceptance; frame-thread timings excluded due to overlap with hashing.",
+    "validation_plan": "Build CLI and worker together once; media tests and retained proxy sequential/seek/pixel/authority checks; exact contracts; independent preview/export then service deployment and serial actual UI. Existing Web reused.",
+    "delivery_ready": false
   }
 }

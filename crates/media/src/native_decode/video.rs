@@ -212,7 +212,7 @@ impl NativeVideoDecoder {
             decode_threads(&context, reference_frames, limits).min(max_decode_threads);
         context.set_threading(av::codec::threading::Config {
             count: decode_threads,
-            kind: if decode_threads > 1 {
+            kind: if decode_threads > 1 && !slice_threaded_codec(&context) {
                 av::codec::threading::Type::Frame
             } else {
                 av::codec::threading::Type::Slice
@@ -543,7 +543,11 @@ impl NativeVideoDecoder {
             av::codec::Context::from_parameters(stream.parameters()).map_err(failed)?;
         context.set_threading(av::codec::threading::Config {
             count: threads,
-            kind: av::codec::threading::Type::Frame,
+            kind: if slice_threaded_codec(&context) {
+                av::codec::threading::Type::Slice
+            } else {
+                av::codec::threading::Type::Frame
+            },
             ..Default::default()
         });
         // No decoded surfaces are allocated until packets enter this context.
@@ -850,11 +854,18 @@ fn decode_thread_reserve(surface: u64, threads: usize) -> u64 {
     (surface * 2 + 2 * 1024 * 1024) * (threads.saturating_sub(1) as u64)
 }
 
+// FFV1 proxies contain independent slices. Slice workers finish the current
+// frame without frame-thread lookahead; other codecs keep their existing mode.
+fn slice_threaded_codec(context: &av::codec::Context) -> bool {
+    context.id() == av::codec::Id::FFV1
+}
+
 fn decode_threads(context: &av::codec::Context, references: u64, limits: DecodeLimits) -> usize {
     // SAFETY: context is owned and unopened. This only reads codec parameters
     // and the static decoder descriptor; no custom AVIO callback runs here or
     // on codec workers. Demuxing remains on the authorized calling thread.
-    let (width, height, surface, frame_threading) = unsafe {
+    let slice = slice_threaded_codec(context);
+    let (width, height, surface, parallel) = unsafe {
         let c = &*context.as_ptr();
         let codec = ffi::avcodec_find_decoder(c.codec_id);
         if codec.is_null()
@@ -870,11 +881,17 @@ fn decode_threads(context: &av::codec::Context, references: u64, limits: DecodeL
             c.width as u64,
             c.height as u64,
             ffi::av_image_get_buffer_size(c.pix_fmt, c.width, c.height, 64),
-            (*codec).capabilities & ffi::AV_CODEC_CAP_FRAME_THREADS as i32 != 0,
+            (*codec).capabilities
+                & if slice {
+                    ffi::AV_CODEC_CAP_SLICE_THREADS
+                } else {
+                    ffi::AV_CODEC_CAP_FRAME_THREADS
+                } as i32
+                != 0,
         )
     };
     let pixels = width * height;
-    if !frame_threading || surface <= 0 || pixels > limits.max_pixels {
+    if !parallel || surface <= 0 || pixels > limits.max_pixels {
         return 1;
     }
     admitted_decode_threads(
@@ -882,14 +899,27 @@ fn decode_threads(context: &av::codec::Context, references: u64, limits: DecodeL
         surface as u64,
         references,
         limits.max_resident_bytes,
+        slice,
     )
 }
 
-fn admitted_decode_threads(pixels: u64, surface: u64, references: u64, limit: u64) -> usize {
+fn admitted_decode_threads(
+    pixels: u64,
+    surface: u64,
+    references: u64,
+    limit: u64,
+    slice: bool,
+) -> usize {
     // Use the codec's conservative reference maximum. Unknown metadata starts
     // serially and is resolved once after the first admitted decoded frame.
     let resident = surface * (references + 2) + pixels * 4;
-    let desired = (pixels / (512 * 512)).clamp(1, 4);
+    // Keep tiny sources serial. A 960x540 proxy must not fall just below
+    // the old 512x512-per-worker boundary and lose all slice parallelism.
+    let desired = if slice {
+        pixels.div_ceil(256 * 256).clamp(1, 4)
+    } else {
+        (pixels / (512 * 512)).clamp(1, 4)
+    };
     desired.min(1 + limit.saturating_sub(resident) / decode_thread_reserve(surface, 2)) as usize
 }
 
@@ -1064,24 +1094,92 @@ mod tests {
         let surface = pixels * 3 / 2;
         let base = surface * 18 + pixels * 4;
         let extra = decode_thread_reserve(surface, 2);
-        assert_eq!(admitted_decode_threads(pixels, surface, 16, base), 1);
+        assert_eq!(admitted_decode_threads(pixels, surface, 16, base, false), 1);
         assert_eq!(
-            admitted_decode_threads(pixels, surface, 16, base + extra - 1),
+            admitted_decode_threads(pixels, surface, 16, base + extra - 1, false),
             1
         );
         assert_eq!(
-            admitted_decode_threads(pixels, surface, 16, base + extra),
+            admitted_decode_threads(pixels, surface, 16, base + extra, false),
             2
         );
         assert_eq!(
-            admitted_decode_threads(pixels, surface, 16, base + 3 * extra),
+            admitted_decode_threads(pixels, surface, 16, base + 3 * extra, false),
             4
         );
-        assert_eq!(admitted_decode_threads(pixels, surface, 16, u64::MAX), 4);
         assert_eq!(
-            admitted_decode_threads(320 * 180, 320 * 180 * 3 / 2, 16, u64::MAX),
+            admitted_decode_threads(pixels, surface, 16, u64::MAX, false),
+            4
+        );
+        assert_eq!(
+            admitted_decode_threads(320 * 180, 320 * 180 * 3 / 2, 16, u64::MAX, false),
             1
         );
+    }
+
+    #[test]
+    fn proxy_slice_workers_keep_the_same_memory_envelope() {
+        let pixels = 960 * 540;
+        let surface = pixels * 4;
+        let base = surface * 18 + pixels * 4;
+        let extra = decode_thread_reserve(surface, 2);
+        for (spare, expected) in [(0, 1), (extra - 1, 1), (extra, 2), (extra * 3, 4)] {
+            assert_eq!(
+                admitted_decode_threads(pixels, surface, 16, base + spare, true),
+                expected
+            );
+        }
+        assert_eq!(
+            admitted_decode_threads(pixels, surface, 16, u64::MAX, false),
+            1
+        );
+        assert_eq!(
+            admitted_decode_threads(320 * 180, 320 * 180 * 4, 16, u64::MAX, true),
+            1
+        );
+    }
+
+    #[test]
+    #[ignore = "Requires retained OPENCUT_NATIVE_PROXY_SOURCE FFV1 path; no media generation"]
+    fn proxy_slice_threading_preserves_pixels_seek_eof_and_authority() {
+        let mut source = Source {
+            bytes: std::fs::read(std::env::var("OPENCUT_NATIVE_PROXY_SOURCE").unwrap()).unwrap(),
+            revoked: false,
+        };
+        let limits = DecodeLimits {
+            max_pixels: 960 * 540,
+            max_resident_bytes: 128 * 1024 * 1024,
+            max_io_bytes_per_operation: 512 * 1024 * 1024,
+            max_packets_per_operation: 100_000,
+        };
+        let deadline = Instant::now() + std::time::Duration::from_secs(120);
+        let mut serial =
+            NativeVideoDecoder::open_with_threads(&mut source, None, limits, deadline, 1).unwrap();
+        let mut parallel = NativeVideoDecoder::open(&mut source, None, limits, deadline).unwrap();
+        for ticks in [0, 1, 2, 10, 100, 200, 1, 2, 3, 9999, 0, 1] {
+            compare_samples(
+                &mut serial,
+                &mut parallel,
+                &mut source,
+                MediaTime {
+                    ticks,
+                    timebase: 25,
+                },
+                deadline,
+            );
+            assert_eq!(parallel.decode_threads, 4);
+            assert_eq!(
+                parallel.decoder.threading().kind,
+                av::codec::threading::Type::Slice
+            );
+        }
+        let read = parallel.encoded_bytes_read();
+        source.revoked = true;
+        assert!(
+            matches!(parallel.sample(&mut source, MediaTime {ticks: 1, timebase: 25}, deadline),
+            Err(MediaError::Admission {code, ..}) if code == "NOT_AUTHORIZED")
+        );
+        assert_eq!(parallel.encoded_bytes_read(), read);
     }
 
     #[test]

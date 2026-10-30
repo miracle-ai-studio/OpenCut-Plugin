@@ -18,6 +18,9 @@
     "contracts:check": "node scripts/generate.mjs --check",
     "prepack": "npm run build"
   },
+  "dependencies": {
+    "hash-wasm": "4.12.0"
+  },
   "devDependencies": {
     "json-schema-to-typescript": "15.0.4",
     "typescript": "6.0.2"

@@ -46,7 +46,7 @@ CLI 通用入口为 `call <operation> --input <request.json>` 和 `domain <domai
 
 质量检查通过公开 artifact identity 选择已发布的配置化整段/范围视频产物。服务端按原始存储类型还原准备与证明，公开任务名称用于对外分类；检查继续核验原修订、产物权限和当前发布状态，不重写原执行证明。
 
-当前工作区的画面预览请求只提供播放会话、精确时间、分辨率、准备意图及可选点击点；解码、文字/图形栅格和命中观察由原生执行返回。完成帧给出像素长度、尺寸、SHA-256 及一次性 `picture_id`。`/api/preview/picture/prepare` 接受 Rust 声明的 `scene` 或 `edit_draft`，调用原帧用例并在响应前领取像素；响应为 `application/vnd.opencut.picture`：12 字节前缀依次为 ASCII `OCVP`、u32 little-endian JSON 长度和 RGBA 长度，随后是最多 2 MiB 的生成帧头和最多 64 MiB 的 straight RGBA8。头信息及像素每个 64 KiB 块重新检查授权、owner、lease、generation 和 overlay。SDK 在验证帧头后返回已领取事实，像素另以 Promise 返回，完整长度和 SHA-256 校验前不可呈现。既有工具结果仍可通过 `/api/preview/picture/stream` 单独领取；两个传输共用同一读取者和业务用例。新帧意图废止尚未读取的旧描述符；已开始读取的内存继续计费到读取者释放。当前候选已通过限定的原生 HTTP 和编辑器动线，完整范围及候选身份以[状态记录](status.md)为准。
+当前工作区的画面预览请求只提供播放会话、精确时间、分辨率、准备意图及可选点击点；解码、文字/图形栅格和命中观察由原生执行返回。完成帧给出像素长度、尺寸、显式 BLAKE3 的 `content_digest` 及一次性 `picture_id`。`/api/preview/picture/prepare` 接受 Rust 声明的 `scene` 或 `edit_draft`，调用原帧用例并在响应前领取像素；响应为 `application/vnd.opencut.picture`：12 字节前缀依次为 ASCII `OCVP`、u32 little-endian JSON 长度和 RGBA 长度，随后是最多 2 MiB 的生成帧头和最多 64 MiB 的 straight RGBA8。头信息及像素每个 64 KiB 块重新检查授权、owner、lease、generation 和 overlay。SDK 在验证帧头后返回已领取事实，像素另以 Promise 返回，完整长度和 BLAKE3 校验前不可呈现。既有工具结果仍可通过 `/api/preview/picture/stream` 单独领取；两个传输共用同一读取者和业务用例。新帧意图废止尚未读取的旧描述符；已开始读取的内存继续计费到读取者释放。当前候选已通过限定的原生 HTTP 和编辑器动线，完整范围及候选身份以[状态记录](status.md)为准。
 
 文字画布计划返回原生完成的布局和 CPU 测量身份。普通字幕、严格 ASS 和 Classic ASS 规划由 Rust 在同一请求内完成固定字体测量及编辑计划，公开请求不接受客户端 `observations`。缺少字体仍返回原有字体需求与警告；应用编辑继续使用既有固定修订、幂等的普通原子提交入口。
 

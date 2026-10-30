@@ -1,10 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createHash } from "node:crypto";
 import { OpenCutClient } from "../dist/index.js";
 const session = { session_id: "session", generation: "3", overlay_epoch: "0", owner_id: "owner", lease_id: "lease" };
 const bytes = new Uint8Array([255, 0, 0, 255, 0, 0, 255, 128]);
-const picture = { picture_id: "a".repeat(32), width: 2, height: 1, byte_length: 8, content_hash: createHash("sha256").update(bytes).digest("hex") };
+const picture = { picture_id: "a".repeat(32), width: 2, height: 1, byte_length: 8, content_digest: { algorithm: "blake3", value: "ca11f55b29f153340105820d5bc7fa0417bf8697604c94465a029b9b76451da2" } };
 function fixture(response) {
   const calls = [];
   const client = new OpenCutClient({ baseUrl: "http://localhost:8788", token: "private", fetch: async (url, init) => {
@@ -27,7 +26,11 @@ test("native picture consumes scoped bounded chunks and verifies length/hash bef
 });
 test("invalid picture geometry, hash and admission are rejected before transport", async () => {
   const f = fixture(() => { throw Error("Must not fetch"); });
-  for (const change of [{ width: 0 }, { width: 1.5 }, { height: 16385 }, { byte_length: 7 }, { byte_length: 64 * 1024 * 1024 + 4 }, { content_hash: "bad" }])
+  for (const change of [{ width: 0 }, { width: 1.5 }, { height: 16385 }, { byte_length: 7 }, { byte_length: 64 * 1024 * 1024 + 4 },
+    { content_digest: { algorithm: "blake3", value: "bad" } },
+    { content_digest: { algorithm: "sha256", value: picture.content_digest.value } },
+    { content_digest: { value: picture.content_digest.value } },
+    { content_digest: undefined, content_hash: picture.content_digest.value }])
     await assert.rejects(f.client.readVisualPreviewPicture(session, { ...picture, ...change }), /descriptor/);
   assert.equal(f.calls.length, 0);
 });

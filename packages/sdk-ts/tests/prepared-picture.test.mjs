@@ -1,11 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createHash } from "node:crypto";
 import { OpenCutClient, OpenCutApiError, picturePreparationTransport as transport } from "../dist/index.js";
 
 const bytes = Uint8Array.of(255, 0, 0, 255, 0, 0, 255, 128);
 const picture = { picture_id: "a".repeat(32), width: 2, height: 1, byte_length: bytes.length,
-  content_hash: createHash("sha256").update(bytes).digest("hex") };
+  content_digest: { algorithm: "blake3", value: "ca11f55b29f153340105820d5bc7fa0417bf8697604c94465a029b9b76451da2" } };
 const frame = { picture, plan: { identity: { width: 2, height: 1 } } };
 const header = { kind: "scene", frame };
 const input = { kind: "scene", frame: { session: { session_id: "s", owner_id: "o", lease_id: "l", generation: "3", overlay_epoch: "0" } } };
@@ -82,7 +81,9 @@ test("malformed magic and length bounds are rejected from the prefix before allo
 test("wrong kind, missing picture and changed descriptor never expose prepared metadata", async () => {
   for (const value of [{ kind: "edit_draft", draft: { frame } }, { kind: "scene", frame: {} },
     { kind: "scene", frame: { picture: { ...picture, width: 3 } } },
-    { kind: "scene", frame: { picture: { ...picture, content_hash: "bad" } } }]) {
+    { kind: "scene", frame: { picture: { ...picture, content_digest: { algorithm: "blake3", value: "bad" } } } },
+    { kind: "scene", frame: { picture: { ...picture, content_digest: { algorithm: "sha256", value: picture.content_digest.value } } } },
+    { kind: "scene", frame: { picture: { ...picture, content_digest: null, content_hash: picture.content_digest.value } } }]) {
     const wire = encode(value), f = fixture(() => response(wire, wire.length));
     await assert.rejects(f.client.prepareVisualPreviewPicture(input), /kind|header|descriptor/);
   }

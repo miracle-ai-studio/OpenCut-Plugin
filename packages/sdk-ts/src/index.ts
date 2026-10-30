@@ -2,6 +2,7 @@ export { requestEnvelope, OpenCutApiError, OpenCutProtocolError, OpenCutTranspor
 import { requestEnvelope, OpenCutApiError, OpenCutProtocolError, OpenCutTransportError, type Envelope } from "./transport.js";
 export * from "./contracts.generated.js";
 import { toolNames, domainNames, domainActions, picturePreparationTransport, type ToolMap, type DomainMap, type JobResultMap, type AudioPreviewPcm, type AudioPreviewTransport, type VisualPreviewTransport, type VisualPreviewPreparation, type VisualPreviewPrepared } from "./contracts.generated.js";
+import { blake3 } from "hash-wasm";
 
 export type AudioPreviewPcmHeader = AudioPreviewPcm.AudioPreviewPcmHeader;
 export type AudioPreviewStreamInput = AudioPreviewTransport.AudioPreviewStream;
@@ -74,16 +75,18 @@ function object(value: unknown): value is Record<string, unknown> {
 
 function validateNativePicture(picture: unknown) {
   if (!object(picture)) throw new TypeError("Invalid native picture descriptor");
-  const { byte_length: length, width, height, content_hash: hash } = picture;
+  const { byte_length: length, width, height, content_digest: digest } = picture;
   if (typeof length !== "number" || !Number.isInteger(length) || length < 4 || length > 64 * 1024 * 1024 ||
       typeof width !== "number" || !Number.isInteger(width) || width < 1 || width > 16384 ||
       typeof height !== "number" || !Number.isInteger(height) || height < 1 || height > 16384 ||
-      length !== width * height * 4 || typeof hash !== "string" || !/^[0-9a-f]{64}$/.test(hash))
+      length !== width * height * 4 || !object(digest) || digest.algorithm !== "blake3" ||
+      typeof digest.value !== "string" || !/^[0-9a-f]{64}$/.test(digest.value))
     throw new TypeError("Invalid native picture descriptor");
-  return { byte_length: length, width, height, content_hash: hash };
+  return { byte_length: length, width, height, content_digest: { algorithm: "blake3", value: digest.value } };
 }
 async function verifyNativePicture(bytes: Uint8ClampedArray<ArrayBuffer>, hash: string, signal?: AbortSignal) {
-  const actual = Array.from(new Uint8Array(await globalThis.crypto.subtle.digest("SHA-256", bytes.buffer)), b => b.toString(16).padStart(2, "0")).join("");
+  signal?.throwIfAborted();
+  const actual = await blake3(bytes);
   signal?.throwIfAborted();
   if (actual !== hash) throw new TypeError("Native picture changed its content hash");
   return bytes;
@@ -288,7 +291,7 @@ export class OpenCutClient {
      * This permits the next native intent, not presentation of unverified bytes. */
     onClaimed?: () => void;
   } = {}): Promise<Uint8ClampedArray<ArrayBuffer>> {
-    const length = validateNativePicture(picture).byte_length;
+    const descriptor = validateNativePicture(picture), length = descriptor.byte_length;
     const input: VisualPreviewTransport.VisualPreviewPictureRead = { session, picture_id: picture.picture_id };
     const response = await this.#downloadBytes(`${this.baseUrl}/api/preview/picture/stream`, "native preview picture", options, JSON.stringify(input));
     if (response.headers.get("content-type") !== "application/vnd.opencut.rgba" || response.headers.get("content-length") !== String(length)) {
@@ -308,7 +311,7 @@ export class OpenCutClient {
         bytes.set(chunk.value, offset); offset += chunk.value.length;
       }
       if (offset !== length) throw new TypeError("Native picture changed length");
-      return await verifyNativePicture(bytes, picture.content_hash, options.signal);
+      return await verifyNativePicture(bytes, descriptor.content_digest.value, options.signal);
     } finally { await reader.cancel().catch(() => {}); reader.releaseLock(); }
   }
   /** Execute the existing scene/draft frame use case and claim its pixels in one request.
@@ -387,7 +390,7 @@ export class OpenCutClient {
             if (tail.done) break;
             if (tail.value.length) throw new TypeError("Native picture exceeded its byte bound");
           }
-          return await verifyNativePicture(bytes, picture.content_hash, signal);
+          return await verifyNativePicture(bytes, picture.content_digest.value, signal);
         } finally { await cleanup(); }
       })();
       void pixels.catch(() => {});

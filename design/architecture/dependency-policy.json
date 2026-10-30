@@ -468,7 +468,7 @@
           "opencut-sqlite-store",
           "opencut-storage-budget",
           "opencut-time",
-          "ring",
+          "blake3",
           "serde",
           "serde_json",
           "sha2",

@@ -5580,5 +5580,15 @@
     "preview_digest_cost_checkpoint_sha256": "be3dc49ffeb30590464c352f714bccf14e7f9d690a38ebb7d3c22cc438d349cc",
     "next_slice": "Explicit BLAKE3 digest for ephemeral native preview RGBA only;stored SHA256 identities unchanged",
     "delivery_ready": false
+  },
+  "preview_digest_implementation": {
+    "scope": "Ephemeral native-preview RGBA transport only",
+    "implemented": true,
+    "built": false,
+    "scoped_behavior_accepted": false,
+    "manual_acceptance": false,
+    "delivery_ready": false,
+    "public_contract": "content_digest:{algorithm:blake3,value:hex};no legacy hash fallback",
+    "preserved": "stored SHA256 identities,540p floor,original export/720p/1080p/1440p/2160p/default1080p,current authority and publication fences"
   }
 }

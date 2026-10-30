@@ -2,7 +2,6 @@
 //! residency ledger; claiming a ticket must not make its bytes unaccounted.
 use super::*;
 use opencut_api_contracts::visual_preview::VisualPreviewPictureRead;
-use ring::digest::{SHA256, digest};
 use std::{collections::VecDeque, sync::Weak, time::Duration};
 
 const CHUNK: usize = opencut_api_contracts::visual_preview::PICTURE_CHUNK_BYTES;
@@ -94,21 +93,15 @@ pub(super) struct PixelReservation {
 pub(super) struct PixelTicket {
     pub id: String,
     pub length: u32,
-    pub hash: String,
+    pub digest: String,
 }
 pub(super) struct PreparedPixels {
     reservation: PixelReservation,
     ticket: PixelTicket,
     bytes: Arc<Vec<u8>>,
 }
-fn content_hash(bytes: &[u8]) -> String {
-    const HEX: &[u8; 16] = b"0123456789abcdef";
-    digest(&SHA256, bytes)
-        .as_ref()
-        .iter()
-        .flat_map(|byte| [HEX[(byte >> 4) as usize], HEX[(byte & 15) as usize]])
-        .map(char::from)
-        .collect()
+fn content_digest(bytes: &[u8]) -> String {
+    blake3::hash(bytes).to_hex().to_string()
 }
 impl FramePixels {
     pub fn reserve(
@@ -181,7 +174,7 @@ impl PixelReservation {
         let ticket = PixelTicket {
             id: new_identity().replace('-', ""),
             length: bytes.len() as u32,
-            hash: content_hash(&bytes),
+            digest: content_digest(&bytes),
         };
         Ok(PreparedPixels {
             reservation: self,
@@ -403,21 +396,21 @@ mod tests {
     }
 
     #[test]
-    fn picture_hash_preserves_independent_sha256_vectors() {
+    fn picture_digest_matches_independent_blake3_vectors() {
         assert_eq!(
-            content_hash(b""),
-            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            content_digest(b""),
+            "af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262"
         );
         assert_eq!(
-            content_hash(b"abc"),
-            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+            content_digest(b"abc"),
+            "6437b3ac38465133ffb63b75273a8db548c558465d79db03fd359c6cd5bd9d85"
         );
-        // Independent Python hashlib reference, retained native 960x540 RGBA
-        // digest study. This is the full payload, not a fitted frame sample.
+        // Independent Noble BLAKE3 reference, retained digest study. Exercise
+        // multiple BLAKE3 tree levels over a complete 960x540 payload.
         let bytes: Vec<_> = (0..2_073_600).map(|n| (n * 37 % 251) as u8).collect();
         assert_eq!(
-            content_hash(&bytes),
-            "01c18a29fde359d29dd17364b1f99d0955048b93f2e26368deaeb055be75ca4c"
+            content_digest(&bytes),
+            "a0df3135546b83ed5aead8ecf34b17987adb6029f66861adcc460e93fa344ce1"
         );
     }
 

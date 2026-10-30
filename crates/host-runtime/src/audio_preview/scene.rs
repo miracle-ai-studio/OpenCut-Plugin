@@ -345,7 +345,9 @@ fn scene_picture_inner(
         width,
         height,
         byte_length: ticket.length,
-        content_hash: ticket.hash,
+        content_digest: VisualPreviewDigest::Blake3 {
+            value: ticket.digest,
+        },
         max_retained_bytes: picture_capacity,
         renderer: execution.runtime.identity,
         peak_worker_rss_bytes: execution.quota.observed_peak_rss_bytes,

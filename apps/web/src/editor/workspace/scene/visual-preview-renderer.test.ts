@@ -21,7 +21,7 @@ function fixture() {
   const frame = {
     plan: { identity }, prepare_ahead: false,
     bound: {}, bound_media: {}, bound_execution: {}, bound_graphic: {}, bound_blend: {},
-    picture: { picture_id: "ticket", width: 2, height: 2, byte_length: 16, content_hash: "a".repeat(64), max_retained_bytes: 1024,
+    picture: { picture_id: "ticket", width: 2, height: 2, byte_length: 16, content_digest: { algorithm: "blake3", value: "a".repeat(64) }, max_retained_bytes: 1024,
       renderer: { renderer_sha256: "b".repeat(64), gpu_backend: "metal", gpu_device: "native-device" }, peak_worker_rss_bytes: "123" },
     hit_test: null as null | { identity: typeof identity; point: { x: number; y: number }; hits: { element_id: string; alpha: number }[] },
   };

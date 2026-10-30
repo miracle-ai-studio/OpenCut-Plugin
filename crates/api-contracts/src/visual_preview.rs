@@ -126,6 +126,14 @@ pub struct VisualPreviewHitTest {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(tag = "algorithm", rename_all = "snake_case", deny_unknown_fields)]
+pub enum VisualPreviewDigest {
+    /// Digest of the complete ephemeral straight RGBA8 payload. Stored asset,
+    /// runtime and artifact SHA-256 identities are independent of this transport.
+    Blake3 { value: String },
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct VisualPreviewPicture {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -134,7 +142,7 @@ pub struct VisualPreviewPicture {
     pub width: u32,
     pub height: u32,
     pub byte_length: u32,
-    pub content_hash: String,
+    pub content_digest: VisualPreviewDigest,
     pub max_retained_bytes: u32,
     pub renderer: opencut_contracts::renderer_identity::NativeVisualIdentity,
     pub peak_worker_rss_bytes: String,
@@ -209,6 +217,25 @@ pub const PICTURE_PREPARE_MAGIC: &[u8; 4] = b"OCVP";
 pub const PICTURE_PREPARE_PREFIX_BYTES: usize = 12;
 pub const PICTURE_PREPARE_MAX_HEADER_BYTES: usize = 2_097_152;
 pub const PICTURE_CHUNK_BYTES: usize = 65_536;
+
+#[cfg(test)]
+mod picture_digest_tests {
+    use super::VisualPreviewDigest;
+
+    #[test]
+    fn ephemeral_digest_requires_its_explicit_algorithm_without_sha256_fallback() {
+        let digest = serde_json::json!({"algorithm":"blake3","value":"a".repeat(64)});
+        let parsed: VisualPreviewDigest = serde_json::from_value(digest.clone()).unwrap();
+        assert_eq!(serde_json::to_value(parsed).unwrap(), digest);
+        for invalid in [
+            serde_json::json!({"algorithm":"sha256","value":"a".repeat(64)}),
+            serde_json::json!({"value":"a".repeat(64)}),
+            serde_json::json!({"algorithm":"blake3","value":"a".repeat(64),"extra":0}),
+        ] {
+            assert!(serde_json::from_value::<VisualPreviewDigest>(invalid).is_err());
+        }
+    }
+}
 
 pub fn picture_stream_schemas() -> serde_json::Value {
     serde_json::json!({

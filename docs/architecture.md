@@ -92,3 +92,7 @@ HTTP 画面传输保持两个 64 KiB 槽和原一秒背压期限，等待队列�
 本地原生服务启动装配通过 `scripts/distribution/start-native-service.py` 复用既有 `server start` 生命周期入口：先按显式固定的安装清单摘要校验完整文件、原生依赖闭包及辅助运行时，再提供同一安装内的显式工具路径。预览帧不再为 FFmpeg/ffprobe 定位重复遍历整个辅助目录；宿主仍执行原工具、解码器及来源身份观察和全部权限/会话围栏。辅助启动器不增加业务操作、渲染实现、公开 DTO、Rust 模块或依赖边，缺失或损坏的安装直接失败，不使用浏览器或 PATH 回退；已有自动发现入口的完整性语义不变。
 
 来源预览准备按固定素材版本、物理视频流、540p 栅格、政策、实际运行身份和调用者先执行当前授权的幂等任务查询。仅缺失任务的素材进入原捕获端口，全部缺失素材完成字节核验后才接受新任务；混合请求仍按原顺序返回，保留原生产修订。复用仅返回已有任务，不授予原片或代理读取权限，实际执行及读取继续核验当前授权、原片/代理完整性、任务输入/结果和发布围栏。此调整复用既有应用端口和 SQLite 幂等入口，没有新增合同、依赖或替代写路径；避免进入编辑器或恢复播放时为已存在代理任务重新扫描整场原片。
+
+### Preview artifact verification observations
+
+The host keeps at most 128 process-local verification facts for completed source preview artifacts. Each fact binds the artifact root, job, attempt, exact descriptor and the opened file device/inode/size/mtime/ctime (including nanoseconds). It retains no file handle, authorization or renderer. Every open still validates the current publication and acquires the attempt lease through the native artifact port; every read retains fresh authority/publication checks and file identity checks. An unrecognized or changed file must pass full SHA-256 verification before a fact is recorded. Renderer retirement does not invalidate unchanged byte facts; process restart, eviction or file/publication changes require verification again. This is host-local lifecycle assembly using existing ports and dependencies, not a new business operation or public contract.

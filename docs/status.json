@@ -6475,5 +6475,15 @@
     "manual_acceptance": false,
     "delivery_ready": false,
     "prior_installed_cli_sha256": "106307ddb5ac2645838c1db49356754bbfb594a04cd6a3dec40771bbf6eb9dff"
+  },
+  "proxy_verification_reuse": {
+    "implemented": true,
+    "build_accepted": false,
+    "scoped_behavior_accepted": false,
+    "local_service_updated": false,
+    "baseline_commit": "c010b5b4",
+    "bounded_facts": 128,
+    "scope": "Exact artifact and opened-file metadata facts only; fresh path/lease/authority/publication/read checks retained. Unseen or changed files require full SHA256. No public DTO, registry, host dispatch, dependency or generated consumer change.",
+    "delivery_ready": false
   }
 }

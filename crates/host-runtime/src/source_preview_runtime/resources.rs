@@ -9,7 +9,7 @@ use opencut_editor_application::{
 use opencut_native_services::{artifacts::ArtifactSource, source_preview::SourcePreviewIndex};
 use opencut_sqlite_store::{EditorApplication, JobState};
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, VecDeque},
     fs::Metadata,
     io::{self, Read, Seek, SeekFrom},
 };
@@ -48,6 +48,38 @@ fn integrity() -> EditorError {
         "Prepared source artifact changed or is unavailable",
     )
 }
+// Only immutable verification facts are shared, never authorization, handles,
+// pixels or a renderer. Opening still acquires the current attempt lease and
+// validates the published path. Each read checks the opened inode again.
+#[derive(Clone, PartialEq, Eq)]
+struct VerifiedFile {
+    root: PathBuf,
+    job: String,
+    attempt: u32,
+    descriptor: ArtifactDescriptor,
+    identity: FileIdentity,
+}
+const MAX_VERIFIED_FILES: usize = 128;
+#[derive(Default)]
+struct ArtifactVerificationCache(VecDeque<VerifiedFile>);
+impl ArtifactVerificationCache {
+    fn contains(&mut self, file: &VerifiedFile) -> bool {
+        let Some(index) = self.0.iter().position(|entry| entry == file) else {
+            return false;
+        };
+        let entry = self.0.remove(index).expect("located verification fact");
+        self.0.push_back(entry);
+        true
+    }
+    fn remember(&mut self, file: VerifiedFile) {
+        if !self.contains(&file) {
+            if self.0.len() >= MAX_VERIFIED_FILES {
+                self.0.pop_front();
+            }
+            self.0.push_back(file);
+        }
+    }
+}
 struct VerifiedArtifact {
     file: ArtifactSource,
     identity: FileIdentity,
@@ -61,6 +93,24 @@ impl VerifiedArtifact {
         descriptor: &ArtifactDescriptor,
         checkpoint: &mut dyn FnMut() -> Result<(), EditorError>,
     ) -> Result<Self, EditorError> {
+        static VERIFIED: OnceLock<Mutex<ArtifactVerificationCache>> = OnceLock::new();
+        Self::open_with_cache(
+            root,
+            job,
+            attempt,
+            descriptor,
+            checkpoint,
+            VERIFIED.get_or_init(Mutex::default),
+        )
+    }
+    fn open_with_cache(
+        root: &Path,
+        job: &str,
+        attempt: u32,
+        descriptor: &ArtifactDescriptor,
+        checkpoint: &mut dyn FnMut() -> Result<(), EditorError>,
+        cache: &Mutex<ArtifactVerificationCache>,
+    ) -> Result<Self, EditorError> {
         checkpoint()?;
         let file = ArtifactSource::open(root, job, attempt, Path::new(&descriptor.path))?;
         let metadata = file.metadata().map_err(|_| integrity())?;
@@ -72,6 +122,22 @@ impl VerifiedArtifact {
             file,
             size: descriptor.size,
         };
+        let observation = VerifiedFile {
+            root: root.to_path_buf(),
+            job: job.into(),
+            attempt,
+            descriptor: descriptor.clone(),
+            identity: verified.identity.clone(),
+        };
+        let known = cache
+            .lock()
+            .map_err(|_| integrity())?
+            .contains(&observation);
+        if known {
+            verified.check()?;
+            checkpoint()?;
+            return Ok(verified);
+        }
         let mut digest = Sha256::new();
         let mut bytes = [0; 65536];
         loop {
@@ -88,6 +154,7 @@ impl VerifiedArtifact {
         }
         verified.seek(SeekFrom::Start(0)).map_err(|_| integrity())?;
         checkpoint()?;
+        cache.lock().map_err(|_| integrity())?.remember(observation);
         Ok(verified)
     }
     fn check(&self) -> Result<(), EditorError> {
@@ -339,5 +406,208 @@ impl<R: ClassicTextFrameResources> ClassicTextFrameResources for PreviewResource
         handle: &str,
     ) -> Result<(String, u64), EditorError> {
         self.inner.resolve_font(font, handle)
+    }
+}
+
+#[cfg(all(test, unix))]
+mod verification_tests {
+    use super::*;
+    use std::fs;
+
+    struct Fixture {
+        _directory: tempfile::TempDir,
+        root: PathBuf,
+        descriptor: ArtifactDescriptor,
+    }
+    impl Fixture {
+        fn new() -> Self {
+            let directory = tempfile::tempdir().unwrap();
+            let root = fs::canonicalize(directory.path()).unwrap();
+            fs::create_dir_all(root.join("job_test/attempt-1")).unwrap();
+            let path = root.join("job_test/attempt-1/source.mkv");
+            let bytes = vec![17; 131_072];
+            fs::write(&path, &bytes).unwrap();
+            Self {
+                _directory: directory,
+                root,
+                descriptor: ArtifactDescriptor {
+                    path: path.to_str().unwrap().into(),
+                    mime_type: "video/x-matroska".into(),
+                    size: bytes.len() as u64,
+                    content_hash: format!("{:x}", Sha256::digest(&bytes)),
+                },
+            }
+        }
+        fn open(&self, cache: &Mutex<ArtifactVerificationCache>) -> (VerifiedArtifact, usize) {
+            let mut checks = 0;
+            let file = VerifiedArtifact::open_with_cache(
+                &self.root,
+                "job_test",
+                1,
+                &self.descriptor,
+                &mut || {
+                    checks += 1;
+                    Ok(())
+                },
+                cache,
+            )
+            .unwrap();
+            (file, checks)
+        }
+    }
+
+    #[test]
+    fn verified_bytes_survive_handle_retirement_but_authority_is_never_cached() {
+        let fixture = Fixture::new();
+        let cache = Mutex::new(ArtifactVerificationCache::default());
+        let (file, full_checks) = fixture.open(&cache);
+        assert!(full_checks > 2);
+        drop(file);
+        let (mut reopened, reused_checks) = fixture.open(&cache);
+        assert_eq!(reused_checks, 2);
+        assert_eq!(reopened.read_range(65_536, 8).unwrap().0, vec![17; 8]);
+        drop(reopened);
+        for deny_at in [1, 2] {
+            let mut checks = 0;
+            let error = VerifiedArtifact::open_with_cache(
+                &fixture.root,
+                "job_test",
+                1,
+                &fixture.descriptor,
+                &mut || {
+                    checks += 1;
+                    if checks == deny_at {
+                        Err(EditorError::new("FORBIDDEN", "revoked"))
+                    } else {
+                        Ok(())
+                    }
+                },
+                &cache,
+            )
+            .err()
+            .unwrap();
+            assert_eq!(error.code, "FORBIDDEN");
+        }
+    }
+
+    #[test]
+    fn same_length_mutation_with_restored_mtime_invalidates_verification() {
+        let fixture = Fixture::new();
+        let cache = Mutex::new(ArtifactVerificationCache::default());
+        drop(fixture.open(&cache).0);
+        let before = fs::metadata(&fixture.descriptor.path)
+            .unwrap()
+            .modified()
+            .unwrap();
+        fs::write(&fixture.descriptor.path, vec![18; 131_072]).unwrap();
+        fs::OpenOptions::new()
+            .write(true)
+            .open(&fixture.descriptor.path)
+            .unwrap()
+            .set_times(fs::FileTimes::new().set_modified(before))
+            .unwrap();
+        let error = VerifiedArtifact::open_with_cache(
+            &fixture.root,
+            "job_test",
+            1,
+            &fixture.descriptor,
+            &mut || Ok(()),
+            &cache,
+        )
+        .err()
+        .unwrap();
+        assert_eq!(error.code, "ARTIFACT_VERIFICATION_FAILED");
+        fs::write(&fixture.descriptor.path, vec![17; 131_072]).unwrap();
+        let (file, checks) = fixture.open(&cache);
+        assert!(checks > 2);
+        drop(file);
+        assert_eq!(fixture.open(&cache).1, 2);
+    }
+
+    #[test]
+    fn replacement_symlink_and_missing_artifacts_cannot_use_cached_facts() {
+        let fixture = Fixture::new();
+        let cache = Mutex::new(ArtifactVerificationCache::default());
+        drop(fixture.open(&cache).0);
+        let path = Path::new(&fixture.descriptor.path);
+        let original = path.with_extension("old");
+        fs::rename(path, &original).unwrap();
+        fs::write(path, vec![18; 131_072]).unwrap();
+        for mode in ["replacement", "symlink", "missing"] {
+            if mode != "replacement" {
+                fs::remove_file(path).unwrap();
+                if mode == "symlink" {
+                    std::os::unix::fs::symlink(&original, path).unwrap();
+                }
+            }
+            assert_eq!(
+                VerifiedArtifact::open_with_cache(
+                    &fixture.root,
+                    "job_test",
+                    1,
+                    &fixture.descriptor,
+                    &mut || Ok(()),
+                    &cache,
+                )
+                .err()
+                .unwrap()
+                .code,
+                "ARTIFACT_VERIFICATION_FAILED"
+            );
+        }
+    }
+
+    #[test]
+    fn changed_publication_digest_and_mutation_after_open_are_rejected() {
+        let fixture = Fixture::new();
+        let cache = Mutex::new(ArtifactVerificationCache::default());
+        drop(fixture.open(&cache).0);
+        let mut other = fixture.descriptor.clone();
+        other.content_hash = "0".repeat(64);
+        assert!(
+            VerifiedArtifact::open_with_cache(
+                &fixture.root,
+                "job_test",
+                1,
+                &other,
+                &mut || Ok(()),
+                &cache,
+            )
+            .is_err()
+        );
+        let (mut file, checks) = fixture.open(&cache);
+        assert_eq!(checks, 2);
+        fs::write(&fixture.descriptor.path, vec![18; 131_072]).unwrap();
+        assert!(file.read_range(0, 8).is_err());
+    }
+
+    #[test]
+    fn verification_facts_are_bounded_and_evicted_files_are_reverified() {
+        let fixture = Fixture::new();
+        let cache = Mutex::new(ArtifactVerificationCache::default());
+        drop(fixture.open(&cache).0);
+        for index in 0..MAX_VERIFIED_FILES {
+            let mut descriptor = fixture.descriptor.clone();
+            descriptor.path = fixture
+                .root
+                .join(format!("job_test/attempt-1/{index}.mkv"))
+                .to_str()
+                .unwrap()
+                .into();
+            fs::write(&descriptor.path, vec![17; 131_072]).unwrap();
+            drop(
+                VerifiedArtifact::open_with_cache(
+                    &fixture.root,
+                    "job_test",
+                    1,
+                    &descriptor,
+                    &mut || Ok(()),
+                    &cache,
+                )
+                .unwrap(),
+            );
+        }
+        assert_eq!(cache.lock().unwrap().0.len(), MAX_VERIFIED_FILES);
+        assert!(fixture.open(&cache).1 > 2);
     }
 }

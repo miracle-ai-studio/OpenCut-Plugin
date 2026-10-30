@@ -146,6 +146,28 @@ class PackageContentsTest(unittest.TestCase):
             with self.subTest(name=name), self.assertRaises(ValueError):
                 package.validate_npm_files([{"path":name}])
 
+    def test_web_delivery_license_requires_exact_reviewed_bytes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / 'build'
+            name = Path('assets/licenses/hash-wasm.txt')
+            original = root / 'apps/web/public' / name
+            original.parent.mkdir(parents=True)
+            original.write_text('reviewed license fixture')
+            (source / name).parent.mkdir(parents=True)
+            (source / 'index.html').write_text('<title>Editor</title>')
+            (source / name).write_bytes(original.read_bytes())
+            with patch.object(package, 'ROOT', root):
+                package.copy_web_build(source, root / 'accepted')
+                self.assertEqual((root / 'accepted' / name).read_bytes(), original.read_bytes())
+                (source / name).write_text('altered license')
+                with self.assertRaisesRegex(ValueError, 'bytes differ'):
+                    package.copy_web_build(source, root / 'altered')
+                (source / name).write_bytes(original.read_bytes())
+                (source / name.parent / 'private.txt').write_text('private')
+                with self.assertRaisesRegex(ValueError, 'Unreviewed Web'):
+                    package.copy_web_build(source, root / 'extra')
+
     def test_web_delivery_keeps_public_assets_and_rejects_private_residue(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

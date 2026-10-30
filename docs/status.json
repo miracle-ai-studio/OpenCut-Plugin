@@ -6096,5 +6096,21 @@
       "4K realtime, historical rare stall, export throughput, full network attribution, human/physical A/V and crossplatform delivery remain open.",
       "This does not measure every React commit or prove all refresh overhead eliminated."
     ]
+  },
+  "seek_owner_diagnosis": {
+    "checkpoint": "/Users/vincent/Movies/OpenCut-native-rendering/4k/seek-owner-causal/checkpoint.json",
+    "checkpoint_sha256": "2d99edd5b107501b228c705d9b5112d9cd901df1c982bd4d383e1de54e6f01db",
+    "no_media_visual_spawn_to_ready_median_ms": 205.93495049979538,
+    "spawn_only_median_ms": 4.109628964215517,
+    "proxy_complete_verification_sha256_sha2_ABBA_ms": [
+      127.6338775,
+      137.885811
+    ],
+    "scope": "Existing exact binaries;8initialize/finish(0)workers,no media/frame/job/build. Not pureGPU or whole seek timing.",
+    "planned_slice": "Keep bounded owner across same fixed session/principal/lease and identical policy;full runtime revalidation on generation/overlay handoff,exact old-scope rejection and all current authority/lifecycle fences.",
+    "implemented": false,
+    "built": false,
+    "scoped_behavior_accepted": false,
+    "delivery_ready": false
   }
 }

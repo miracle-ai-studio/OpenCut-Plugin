@@ -2,12 +2,12 @@
   "format": "opencut.delivery-status.v1",
   "delivery_ready": false,
   "in_progress": {
-    "candidate_cli_sha256": "d0c49ea88d00c81ae42d3e1aba3fe44525b17665ec6800fc798175d56baccc4c",
+    "candidate_cli_sha256": "893f480cc77861a2d274d408c7f049e1e920a64d4e9a710f8090d808f85f1388",
     "candidate_worker_sha256": "779cc996aa07dfb709c41ea03623eeffbd9cdfa6a5c8d28d1e5395e06731bb62",
     "candidate_web_source_digest": "4132c3b2688a1beb7669c0600d029967dc39d061a34b799245c21f95883ef2db",
     "execution_scope_optimization": "Native10b27506 retains one bounded visual owner within the same fixed session/principal/owner/lease and identical policy. Full runtime/counter revalidation per generation/overlay handoff;old pixels/readers invalidated and fresh per-frame authority/admission/publication fences preserved. Handoff errors retire without silent retry. Existing paused heartbeat/same-position dedupe from unchanged Webe3953742 retained.",
     "preview_resolution": "Actual preview540 output960x540 for4K source;smallsource320x180 retained,no further reduction.",
-    "export_resolution": "Original-source exports keep720/1080/1440/2160and Webdefault1080. No export/PCM rerun inthisslice;preceding6c615de9/555/5d producerproof retains original scope.",
+    "export_resolution": "Original-source720/1080/1440/2160;Webdefault1080. Current6s4K export and PCM check recorded under shared_media_verification_reuse.",
     "bottleneck_attribution": "Comparable actual browser6s/30s native prepare observations865.7/840.2ms to371.9/328.0ms with exact same Web. Same child PID sets across pause/seek/resume/active42sseek. One observation,not stablebenchmark or puredecode. Full runtime checks remain;new lease,idle or execution faults may cold-start. No full94s/export replay. Prior4K107.0135s result belongs to CLI2e/worker6dc/Web324,not current candidate.",
     "runtime_acceptance": {
       "small_source": {
@@ -957,8 +957,8 @@
       "native_runtime": "Retained original CLI2e2c682bc729/worker6dc2eaedf9f7 only;not rerun with current CLIc96/worker779. New bounded preview acceptance is seek_owner_implementation."
     },
     "candidate_native_source_commit": "10b2750671e1606683e00f7d847226435e487541",
-    "installed_cli_sha256": "34df340dfcee5cada73d6e6ad4003123cde1dda58ba7fbf6699490616aff9008",
-    "current_slice": "Source lookup before capture and bounded exact proxy verification facts installed; repeated open/resume measured separately from first cold verification. Whole-product and strict4K realtime remain open.",
+    "installed_cli_sha256": "07bacf05bd400bddb7be7b78b8c64504b3dfd98ddc5cc938f51ad6d4a1a127a8",
+    "current_slice": "Shared exact CAS/proxy verification facts deployed after bounded original-source4K/PCM,independent preview and cold/warm real-project checks. Full94s,strict realtime and whole-product acceptance retain separate scope.",
     "installed_worker_sha256": "ed7a1cab49ec3c81b9921c1b6828f51ab2ae325d4d87d5873c28592537b489c2"
   },
   "scope": "Local CLI/HTTP/MCP/SDK service and Web editor; GPUI shell is not an integrated editor.",
@@ -6415,13 +6415,13 @@
     }
   },
   "local_service_upgrade": {
-    "state": "proxy_verification_reuse_installed",
+    "state": "shared_media_verification_installed_scoped_acceptance",
     "assembly_commits": [
       "3136836a",
       "161cd597"
     ],
     "native_source_commit": "10b27506",
-    "installed_cli_sha256": "34df340dfcee5cada73d6e6ad4003123cde1dda58ba7fbf6699490616aff9008",
+    "installed_cli_sha256": "07bacf05bd400bddb7be7b78b8c64504b3dfd98ddc5cc938f51ad6d4a1a127a8",
     "installed_worker_sha256": "ed7a1cab49ec3c81b9921c1b6828f51ab2ae325d4d87d5873c28592537b489c2",
     "services_switched": 2,
     "web_assets_verified_per_service": 285,
@@ -6476,13 +6476,14 @@
     "manual_acceptance": false,
     "delivery_ready": false,
     "prior_installed_cli_sha256": "106307ddb5ac2645838c1db49356754bbfb594a04cd6a3dec40771bbf6eb9dff",
-    "installed_source_commit": "149b4b559ef0d06953605fec79c8c4db9f346742",
+    "installed_source_commit": "6acb1b0956300f6899fd71b41f514432bacf1285",
     "retained_first_stage_evidence_producer": {
       "cli": "106307ddb5ac2645838c1db49356754bbfb594a04cd6a3dec40771bbf6eb9dff",
       "worker": "ed7a1cab49ec3c81b9921c1b6828f51ab2ae325d4d87d5873c28592537b489c2",
       "Web": "e39537420edee9c062574e1adc8cb206663c7bb2",
       "scope": "actual_4K_fixture,source_4K_export,real_projects and discovery_ABBA fields are historical first-stage evidence,not rerun by final candidate."
-    }
+    },
+    "current_scoped_evidence": "shared_media_verification_reuse"
   },
   "proxy_verification_reuse": {
     "implemented": true,
@@ -6562,13 +6563,156 @@
   },
   "shared_media_verification_reuse": {
     "implemented": true,
-    "build_accepted": false,
-    "scoped_behavior_accepted": false,
-    "local_service_updated": false,
+    "build_accepted": true,
+    "scoped_behavior_accepted": true,
+    "local_service_updated": true,
     "baseline_commit": "6881d7db",
     "cause": "Remaining warm startup/resume repeatedly hashes CAS video and audio through VerifiedResourceFile;454 visual samples and148audio samples in a bounded startup profile.",
     "change": "One bounded file-fact implementation for original CAS and proxy reads; fresh authorization/path/gate/lease checks and exact dev/inode/size/mtime/ctime/link identity. Native range readers keep the identity verified with the bytes, not a later recapture.",
     "validation_plan": "One integrated CLI build,one combined test compilation for asset/native/host libraries,affected tests,exact contracts,pixels,original4K export/PCM,then local switch and serial cold/warm UI. Worker/Web unchanged.",
-    "delivery_ready": false
+    "delivery_ready": false,
+    "source_commit": "6acb1b0956300f6899fd71b41f514432bacf1285",
+    "raw_cli": {
+      "path": "/private/tmp/opencut-local-upgrade-20261031/shared-media/candidate/893f480cc77861a2d274d408c7f049e1e920a64d4e9a710f8090d808f85f1388/opencut",
+      "sha256": "893f480cc77861a2d274d408c7f049e1e920a64d4e9a710f8090d808f85f1388"
+    },
+    "installed_runtime": {
+      "opencut": {
+        "path": "/Users/vincent/.opencut/runtime/native-local-shared-media-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+        "sha256": "07bacf05bd400bddb7be7b78b8c64504b3dfd98ddc5cc938f51ad6d4a1a127a8"
+      },
+      "opencut-render-worker": {
+        "path": "/Users/vincent/.opencut/runtime/native-local-shared-media-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+        "sha256": "ed7a1cab49ec3c81b9921c1b6828f51ab2ae325d4d87d5873c28592537b489c2"
+      }
+    },
+    "build_seconds": 580.8452155108098,
+    "test_build_seconds": 579.4272908770945,
+    "tests": [
+      {
+        "suite": "opencut_asset_store",
+        "exit_code": 0,
+        "seconds": 3.253725321032107,
+        "passed": 14
+      },
+      {
+        "suite": "opencut_native_services",
+        "exit_code": 0,
+        "seconds": 2.9831196200102568,
+        "passed": 6
+      },
+      {
+        "suite": "opencut_host_runtime",
+        "exit_code": 0,
+        "seconds": 3.3065803868230432,
+        "passed": 5
+      }
+    ],
+    "performance": {
+      "warm_start_gate_seconds": 5,
+      "resume_gate_seconds": 5,
+      "cold_start_accepted_as_realtime": false,
+      "rows": [
+        {
+          "name": "landscape",
+          "pass": "cold",
+          "passed": true,
+          "start_seconds": 9.022930505,
+          "resume_seconds": 2.7148132640000004,
+          "resume_under_5s": true
+        },
+        {
+          "name": "landscape",
+          "pass": "warm",
+          "passed": true,
+          "start_seconds": 5.065714158000002,
+          "resume_seconds": 3.726483605000001,
+          "resume_under_5s": true
+        },
+        {
+          "name": "workbench",
+          "pass": "cold",
+          "passed": true,
+          "start_seconds": 9.93614844,
+          "resume_seconds": 4.300621458000001,
+          "resume_under_5s": true
+        },
+        {
+          "name": "workbench",
+          "pass": "warm",
+          "passed": true,
+          "start_seconds": 10.054625119000004,
+          "resume_seconds": 4.288382676000001,
+          "resume_under_5s": true
+        }
+      ],
+      "warm_start_and_resume_passed": false,
+      "actual_first_frames": [
+        {
+          "name": "landscape",
+          "pass": "cold",
+          "actual_click_to_first_frame_seconds": 5.109,
+          "first_frame_under_5s": false,
+          "first_frame_clock": "same browser monotonic actual click to first presented native frame"
+        },
+        {
+          "name": "landscape",
+          "pass": "warm",
+          "actual_click_to_first_frame_seconds": 1.0287000000476838,
+          "first_frame_under_5s": true,
+          "first_frame_clock": "same browser monotonic actual click to first presented native frame"
+        },
+        {
+          "name": "workbench",
+          "pass": "cold",
+          "actual_click_to_first_frame_seconds": 3.6825,
+          "first_frame_under_5s": true,
+          "first_frame_clock": "same browser monotonic actual click to first presented native frame"
+        },
+        {
+          "name": "workbench",
+          "pass": "warm",
+          "actual_click_to_first_frame_seconds": 1.9133999998569489,
+          "first_frame_under_5s": true,
+          "first_frame_clock": "same browser monotonic actual click to first presented native frame"
+        }
+      ],
+      "warm_actual_first_frame_gate_passed": true
+    },
+    "source_preparation_repeat_seconds": {
+      "landscape": 0.010241552954539657,
+      "workbench": 0.04571410408243537
+    },
+    "independent_preview_frames": 7,
+    "rejection_checks": 9,
+    "original_4K_export": {
+      "job_id": "job_f0166ed69219414ba3a9a8c89191dd04",
+      "duration_seconds": 6,
+      "job_seconds": 45.641572288936004,
+      "whole_mp4_sha256": "da10feb14158c09d4c0464abb1b6605d78b328ba4ab7b3702184f3c450ace172",
+      "independent_complete_mp4_matches": true,
+      "new_preencode_pcm_max_error": 0.0
+    },
+    "projects_preserved": 4,
+    "prior_jobs_preserved": 453,
+    "new_successful_source_jobs": 11,
+    "checkpoint": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261031/shared-media/checkpoint.json",
+    "checkpoint_sha256": "322aeb686b75fa7b6b4a0c09ebe3de47a68b38f3c0e7a12716b0147830f856cb",
+    "manual_physical_AV_accepted": false,
+    "complete_delivery_accepted": false,
+    "remaining_throughput": {
+      "status": "remaining_not_accepted",
+      "scope": "One bounded diagnostic of the actual warm multitrack workbench after successful fixed-candidate verification. Not a benchmark or pure decoder/GPU timing.",
+      "picture_requests": 78,
+      "picture_header_latency_median_ms": 59.934887000000344,
+      "picture_header_latency_max_ms": 1717.9213879999998,
+      "project_fps": 25,
+      "per_frame_budget_ms": 40,
+      "sampled_original_full_hash_calls": 0,
+      "sample_note": "No copy_hash_checked frame observed in this finite host sample;does not prove no integrity hash ever runs.",
+      "conclusion": "Repeated full-file verification fixes are validated. The current per-picture preparation/processing/transport path still exceeds the25fps frame budget. Warm first-frame responsiveness passes,but advance timing and full realtime are not accepted. No evidence establishes an unfixable hardware limit.",
+      "next_investigation": "Attribute native worker/frame preparation and transfer portions,including text/multitrack cost,before selecting a renderer throughput change. Do not lower540p or weaken byte/authority checks.",
+      "no_more_candidate_rebuild_for_this_measurement": true
+    }
   }
 }

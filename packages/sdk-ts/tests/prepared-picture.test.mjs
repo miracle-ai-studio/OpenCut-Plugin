@@ -126,3 +126,45 @@ test("authorization errors preserve the common API error and one-shot transport 
   await assert.rejects(f.client.prepareVisualPreviewPicture(input), error => error instanceof OpenCutApiError && error.code === "AUTHORIZATION_DENIED");
   assert.equal(f.calls.length, 1);
 });
+
+test("stalled prefix, pixels and EOF retire once even when underlying cancellation never settles", async t => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  for (const stage of ["prefix", "pixels", "eof"]) {
+    const wire = encode(); let cancellations = 0, body;
+    const f = fixture(() => response(body = new ReadableStream({ start(c) {
+      if (stage === "pixels") c.enqueue(wire.slice(0, -bytes.length));
+      if (stage === "eof") c.enqueue(wire);
+    }, cancel() { cancellations++; return new Promise(() => {}); } }), wire.length));
+    const prepared = f.client.prepareVisualPreviewPicture(input);
+    const pending = stage === "prefix" ? prepared : (await prepared).pixels;
+    let settled = false;
+    const failed = assert.rejects(pending, e => e.code === "PREVIEW_PICTURE_TRANSPORT_STALLED").then(() => { settled = true; });
+    await new Promise(setImmediate);
+    t.mock.timers.tick(4_999); await new Promise(setImmediate); assert.equal(settled, false);
+    t.mock.timers.tick(1); await failed;
+    assert.equal(cancellations, 1); assert.equal(body.locked, false); assert.equal(f.calls.length, 1);
+    t.mock.timers.tick(10_000); assert.equal(cancellations, 1);
+  }
+});
+test("received bytes renew the transfer deadline; a completed body releases without cancellation", async t => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const wire = encode(); let stream, cancellations = 0;
+  const f = fixture(() => response(new ReadableStream({ start(c) {
+    stream = c; c.enqueue(wire.slice(0, -bytes.length));
+  }, cancel() { cancellations++; } }), wire.length));
+  const result = await f.client.prepareVisualPreviewPicture(input);
+  t.mock.timers.tick(4_000); stream.enqueue(bytes.slice(0, 4)); await new Promise(setImmediate);
+  t.mock.timers.tick(4_000); stream.enqueue(bytes.slice(4)); stream.close();
+  assert.deepEqual([...(await result.pixels)], [...bytes]);
+  t.mock.timers.tick(10_000); assert.equal(cancellations, 0); assert.equal(f.calls[0].init.signal.aborted, false);
+});
+test("explicit retirement does not wait for a stuck underlying cancellation promise", async () => {
+  const wire = encode(); let cancellations = 0, body;
+  const f = fixture(() => response(body = new ReadableStream({ start(c) {
+    c.enqueue(wire.slice(0, -bytes.length));
+  }, cancel() { cancellations++; return new Promise(() => {}); } }), wire.length));
+  const result = await f.client.prepareVisualPreviewPicture(input);
+  const failed = assert.rejects(result.pixels, /Owner retired/);
+  result.cancel(Error("Owner retired")); await failed;
+  assert.equal(cancellations, 1); assert.equal(body.locked, false); assert.equal(f.calls.length, 1);
+});

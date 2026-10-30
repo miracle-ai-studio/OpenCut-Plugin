@@ -328,20 +328,53 @@ export class OpenCutClient {
     if (response.headers.get("content-type") !== picturePreparationTransport.content_type ||
         !declared || !/^[1-9][0-9]*$/.test(declared) || !Number.isSafeInteger(length) || length < picturePreparationTransport.prefix_bytes + 5 ||
         length > picturePreparationTransport.prefix_bytes + picturePreparationTransport.max_header_bytes + 64 * 1024 * 1024) {
-      await response.body?.cancel(); throw new TypeError("Invalid native picture preparation transport");
+      void response.body?.cancel().catch(() => {}); throw new TypeError("Invalid native picture preparation transport");
     }
     const reader = response.body?.getReader();
     if (!reader) throw new TypeError("Native picture bytes unavailable");
-    const abort = () => { void reader.cancel(signal.reason).catch(() => {}); };
-    signal.addEventListener("abort", abort, { once: true });
-    if (signal.aborted) abort();
     let chunk: Uint8Array = new Uint8Array(0), position = 0, received = 0;
+    let ended = false, cancelled = false;
+    let idle: ReturnType<typeof setTimeout> | undefined;
+    const cancel = () => {
+      if (cancelled || ended) return;
+      cancelled = true;
+      // Cancellation closes the reader synchronously, but an underlying source
+      // may never settle its cleanup promise. It cannot hold up retirement.
+      void reader.cancel(signal.reason).catch(() => {});
+    };
+    const progress = () => {
+      clearTimeout(idle);
+      idle = setTimeout(() => local.abort(Object.assign(
+        new Error(`Native picture transfer made no progress for 5 seconds (${received}/${length} bytes)`),
+        { code: "PREVIEW_PICTURE_TRANSPORT_STALLED" },
+      )), 5_000);
+    };
+    const read = async () => {
+      signal.throwIfAborted();
+      let interrupted!: () => void;
+      const stopped = new Promise<never>((_resolve, reject) => {
+        interrupted = () => reject(signal.reason);
+        signal.addEventListener("abort", interrupted, { once: true });
+      });
+      try {
+        const item = await Promise.race([reader.read(), stopped]);
+        signal.throwIfAborted();
+        if (item.done) { ended = true; clearTimeout(idle); }
+        else if (item.value.length) progress();
+        return item;
+      } finally { signal.removeEventListener("abort", interrupted); }
+    };
+    signal.addEventListener("abort", cancel, { once: true });
+    if (signal.aborted) cancel();
+    // Native preparation has its own deadline. This bounds only an already
+    // accepted response, and advances only when body bytes actually arrive.
+    progress();
     const fill = async (target: Uint8Array<ArrayBuffer> | Uint8ClampedArray<ArrayBuffer>) => {
       let offset = 0;
       while (offset < target.length) {
         signal.throwIfAborted();
         if (position === chunk.length) {
-          const next = await reader.read();
+          const next = await read();
           signal.throwIfAborted();
           if (next.done) throw new TypeError("Native picture changed length");
           if (next.value.length > length - received) throw new TypeError("Native picture exceeded its byte bound");
@@ -353,9 +386,11 @@ export class OpenCutClient {
         position += count; offset += count;
       }
     };
-    const cleanup = async () => {
-      signal.removeEventListener("abort", abort);
-      try { await reader.cancel().catch(() => {}); } finally { reader.releaseLock(); }
+    const cleanup = () => {
+      clearTimeout(idle);
+      signal.removeEventListener("abort", cancel);
+      cancel();
+      reader.releaseLock();
     };
     try {
       const prefix = new Uint8Array(picturePreparationTransport.prefix_bytes);
@@ -385,18 +420,18 @@ export class OpenCutClient {
           if (position !== chunk.length) throw new TypeError("Native picture exceeded its byte bound");
           chunk = new Uint8Array(0);
           for (;;) {
-            const tail = await reader.read();
+            const tail = await read();
             signal.throwIfAborted();
             if (tail.done) break;
             if (tail.value.length) throw new TypeError("Native picture exceeded its byte bound");
           }
           return await verifyNativePicture(bytes, picture.content_digest.value, signal);
-        } finally { await cleanup(); }
+        } finally { cleanup(); }
       })();
       void pixels.catch(() => {});
       return { header: value as PreparedVisualPicture["header"], pixels, cancel: reason => local.abort(reason) };
     } catch (error) {
-      await cleanup(); throw error;
+      cleanup(); throw error;
     }
   }
   /** Download a locked font authorized by the current preview owner and generation. */

@@ -104,3 +104,7 @@ The asset-store verification module owns one bounded fact-cache implementation a
 原生 FFV1 解码在已声明 slice 能力且既有驻留预算足够时使用最多四个分片工作线程；小来源保持串行，其他编码器保持原帧线程策略。采用原每个额外工作线程的双表面及 2 MiB 保守预留，不增大上限，不改变像素、时间、授权字节端口或输出尺寸。未知像素格式仍在首个已准入解码帧后一次确定并重开；定位、EOF、取消与 RSS 监测沿用原实现。此修改不新增模块、依赖或公共合同；组件对照不代替原生和编辑器验收。
 
 原生音频预览内部回调保留共享 Rust 编译块声明作为小型 JSON 头，逐采样位置与增益以固定 little-endian 整数和 Float64 位模式传输。只替换私有宿主/worker 传输投影，不改变来源绑定摘要、编译时钟、混音、公共 DTO 或持久化证明；无新模块、依赖或审核基线变化。原 16 MiB 总包、64 KiB 分块、回调序号、期限及逐块授权继续执行，密集采样按原 4096 帧、32 声部、65536 次采样工作限额验证后分配，接收器继续核验固定身份、顺序和实际 PCM 读取范围。组件收益及独立 PCM/实际播放验收单独记录。
+
+### Bounded picture response consumption
+
+The SDK keeps the existing one-request native picture preparation protocol, early claimed metadata, length limits and complete BLAKE3 verification. Once HTTP headers have been accepted, a five-second period without body bytes retires the local request; native frame preparation remains subject to its existing host deadline. Only nonempty reads renew this idle limit, including while awaiting the final EOF. Cancellation and error retirement release the reader without waiting for an underlying source's cleanup promise. Completed streams are released without a redundant cancel. This bounds a stalled transport; it does not retry a claimed frame, skip pixels, grant presentation credit, change a public DTO, or establish the root cause of an intermittent browser transport stall.

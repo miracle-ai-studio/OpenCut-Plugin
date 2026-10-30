@@ -6908,7 +6908,7 @@
     "complete_delivery_accepted": false
   },
   "preview_audio_fact_transport": {
-    "state": "implemented_pending_build_and_behavior",
+    "state": "native_verified_picture_idle_guard_pending_web_and_install",
     "baseline_commit": "0898bcbc",
     "scope": "Private preview sample transport only; original JSON binding digest and public contracts unchanged.",
     "diagnostic": "/private/tmp/opencut-local-upgrade-20261031/post-slice-attribution/attribution-summary.json",
@@ -6918,6 +6918,25 @@
     "maximum_voice_count": 32,
     "maximum_sample_work": 65536,
     "installed": false,
-    "delivery_ready": false
+    "delivery_ready": false,
+    "implementation_commit": "da668781624f76ead7961a3db195279266ac2937",
+    "build_passed": true,
+    "native_worker_checks_passed": 6,
+    "independent_pcm_max_error": 3.5762786865234375e-07,
+    "preview_pixel_frames_passed": 7,
+    "scope_rejections_passed": 9,
+    "original_4k_export_seconds": 43.10744704,
+    "initial_long_ui_passed": false,
+    "initial_stall_seconds": 79.96666666666667,
+    "diagnostic_long_ui_passed": true,
+    "diagnostic_long_ui_seconds": 115.775393404,
+    "intermittent_stall_root_cause_closed": false,
+    "picture_idle_guard": {
+      "implemented": true,
+      "idle_seconds": 5,
+      "sdk_checks_passed": 22,
+      "web_build_passed": false,
+      "scope": "Bound accepted response consumption and cancellation; do not claim intermittent underlying stall repaired."
+    }
   }
 }

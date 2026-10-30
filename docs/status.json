@@ -2,12 +2,12 @@
   "format": "opencut.delivery-status.v1",
   "delivery_ready": false,
   "in_progress": {
-    "candidate_cli_sha256": "893f480cc77861a2d274d408c7f049e1e920a64d4e9a710f8090d808f85f1388",
-    "candidate_worker_sha256": "779cc996aa07dfb709c41ea03623eeffbd9cdfa6a5c8d28d1e5395e06731bb62",
+    "candidate_cli_sha256": "a2472d1bef079d3ee2a539e541cf36e3114092088487da001360a7f26112a5a3",
+    "candidate_worker_sha256": "5d6ed551941117c9ca9580d3e3bb5060525f298e69d4db1c9b3bd89e18ee8a94",
     "candidate_web_source_digest": "4132c3b2688a1beb7669c0600d029967dc39d061a34b799245c21f95883ef2db",
     "execution_scope_optimization": "Native10b27506 retains one bounded visual owner within the same fixed session/principal/owner/lease and identical policy. Full runtime/counter revalidation per generation/overlay handoff;old pixels/readers invalidated and fresh per-frame authority/admission/publication fences preserved. Handoff errors retire without silent retry. Existing paused heartbeat/same-position dedupe from unchanged Webe3953742 retained.",
     "preview_resolution": "Actual preview540 output960x540 for4K source;smallsource320x180 retained,no further reduction.",
-    "export_resolution": "Original-source720/1080/1440/2160;Webdefault1080. Current6s4K export and PCM check recorded under shared_media_verification_reuse.",
+    "export_resolution": "Original-source720/1080/1440/2160;Webdefault1080. Current6s4K export and PCM under proxy_slice_decode.",
     "bottleneck_attribution": "Comparable actual browser6s/30s native prepare observations865.7/840.2ms to371.9/328.0ms with exact same Web. Same child PID sets across pause/seek/resume/active42sseek. One observation,not stablebenchmark or puredecode. Full runtime checks remain;new lease,idle or execution faults may cold-start. No full94s/export replay. Prior4K107.0135s result belongs to CLI2e/worker6dc/Web324,not current candidate.",
     "runtime_acceptance": {
       "small_source": {
@@ -956,10 +956,10 @@
       "web_source_digest": "5cfed08f1bdfa63fd8645eae2123ef0118d2badcfe5c7e6b2333ebb456d98826",
       "native_runtime": "Retained original CLI2e2c682bc729/worker6dc2eaedf9f7 only;not rerun with current CLIc96/worker779. New bounded preview acceptance is seek_owner_implementation."
     },
-    "candidate_native_source_commit": "10b2750671e1606683e00f7d847226435e487541",
-    "installed_cli_sha256": "07bacf05bd400bddb7be7b78b8c64504b3dfd98ddc5cc938f51ad6d4a1a127a8",
-    "current_slice": "Shared exact CAS/proxy verification facts deployed after bounded original-source4K/PCM,independent preview and cold/warm real-project checks. Full94s,strict realtime and whole-product acceptance retain separate scope.",
-    "installed_worker_sha256": "ed7a1cab49ec3c81b9921c1b6828f51ab2ae325d4d87d5873c28592537b489c2"
+    "candidate_native_source_commit": "e041b2ccf30eed948b7c3e85463cc46b91545a5c",
+    "installed_cli_sha256": "36517a02f71a75baf110378bfefbdb19a3885e9919b388ba430cceab4b936a49",
+    "current_slice": "Bounded FFV1 slice decoding installed after native correctness, independent pixels, original4K/PCM and actual editor checks; full94s functional flow passed but strict realtime remains unaccepted.",
+    "installed_worker_sha256": "0606e80020970ff861844839a423da3499ecca8b5ffc241d9782aba70c091de2"
   },
   "scope": "Local CLI/HTTP/MCP/SDK service and Web editor; GPUI shell is not an integrated editor.",
   "public_contract": {
@@ -6415,14 +6415,14 @@
     }
   },
   "local_service_upgrade": {
-    "state": "shared_media_verification_installed_scoped_acceptance",
+    "state": "proxy_slice_decode_installed_scoped_acceptance",
     "assembly_commits": [
       "3136836a",
       "161cd597"
     ],
-    "native_source_commit": "10b27506",
-    "installed_cli_sha256": "07bacf05bd400bddb7be7b78b8c64504b3dfd98ddc5cc938f51ad6d4a1a127a8",
-    "installed_worker_sha256": "ed7a1cab49ec3c81b9921c1b6828f51ab2ae325d4d87d5873c28592537b489c2",
+    "native_source_commit": "e041b2ccf30eed948b7c3e85463cc46b91545a5c",
+    "installed_cli_sha256": "36517a02f71a75baf110378bfefbdb19a3885e9919b388ba430cceab4b936a49",
+    "installed_worker_sha256": "0606e80020970ff861844839a423da3499ecca8b5ffc241d9782aba70c091de2",
     "services_switched": 2,
     "web_assets_verified_per_service": 285,
     "projects_unchanged": 4,
@@ -6476,14 +6476,15 @@
     "manual_acceptance": false,
     "delivery_ready": false,
     "prior_installed_cli_sha256": "106307ddb5ac2645838c1db49356754bbfb594a04cd6a3dec40771bbf6eb9dff",
-    "installed_source_commit": "6acb1b0956300f6899fd71b41f514432bacf1285",
+    "installed_source_commit": "e041b2ccf30eed948b7c3e85463cc46b91545a5c",
     "retained_first_stage_evidence_producer": {
       "cli": "106307ddb5ac2645838c1db49356754bbfb594a04cd6a3dec40771bbf6eb9dff",
       "worker": "ed7a1cab49ec3c81b9921c1b6828f51ab2ae325d4d87d5873c28592537b489c2",
       "Web": "e39537420edee9c062574e1adc8cb206663c7bb2",
       "scope": "actual_4K_fixture,source_4K_export,real_projects and discovery_ABBA fields are historical first-stage evidence,not rerun by final candidate."
     },
-    "current_scoped_evidence": "shared_media_verification_reuse"
+    "current_scoped_evidence": "proxy_slice_decode",
+    "initial_native_source_commit": "10b27506"
   },
   "proxy_verification_reuse": {
     "implemented": true,
@@ -6717,23 +6718,193 @@
   },
   "proxy_slice_decode": {
     "implemented": true,
-    "build_accepted": false,
-    "behavior_accepted": false,
-    "local_service_updated": false,
+    "build_accepted": true,
+    "behavior_accepted": true,
+    "local_service_updated": true,
     "baseline_commit": "0325d8c9",
     "hypothesis": "960x540 falls below the old frame-thread pixel threshold; FFV1 proxies decode serially despite four encoded slices. Use bounded slice workers within unchanged residency limits.",
-    "component_evidence": "/private/tmp/opencut-local-upgrade-20261031/frame-attribution/decode-thread-component.json",
+    "component_evidence": "/private/tmp/opencut-local-upgrade-20261031/frame-attribution/decode-thread-exact-component.json",
     "serial_350_frames_ms": [
-      8122.344,
-      8477.355
+      8469.883,
+      8609.98
     ],
     "slice4_350_frames_ms": [
-      2538.859,
-      2699.968
+      2858.273,
+      2855.639
     ],
     "identical_decoded_hash": "8f80367026e34bb143f22aa90983cdab9a2e8257c53ad02e993476b761c0187d",
-    "scope": "Same installed libav component only, not end-to-end or Rust acceptance; frame-thread timings excluded due to overlap with hashing.",
+    "scope": "Exact installed libav; serial/slice API decode timing excludes synchronous hashing. Not host/GPU/UI or original-source export acceptance.",
     "validation_plan": "Build CLI and worker together once; media tests and retained proxy sequential/seek/pixel/authority checks; exact contracts; independent preview/export then service deployment and serial actual UI. Existing Web reused.",
-    "delivery_ready": false
+    "delivery_ready": false,
+    "installed_component_identity_accepted": true,
+    "exploratory_component_evidence": "/private/tmp/opencut-local-upgrade-20261031/frame-attribution/decode-thread-component.json",
+    "component_linkage_audit": "First -l search selected system FFmpeg despite -L path because installed directory has only versioned dylib names. Replaced probe link inputs with exact installed files and audited load commands; old exploratory result retained and excluded.",
+    "source_commit": "e041b2ccf30eed948b7c3e85463cc46b91545a5c",
+    "raw_cli": {
+      "path": "/private/tmp/opencut-local-upgrade-20261031/proxy-slices/candidate/a2472d1bef079d3ee2a539e541cf36e3114092088487da001360a7f26112a5a3/opencut",
+      "sha256": "a2472d1bef079d3ee2a539e541cf36e3114092088487da001360a7f26112a5a3"
+    },
+    "raw_worker": {
+      "path": "/private/tmp/opencut-local-upgrade-20261031/proxy-slices/candidate/5d6ed551941117c9ca9580d3e3bb5060525f298e69d4db1c9b3bd89e18ee8a94/opencut-render-worker",
+      "sha256": "5d6ed551941117c9ca9580d3e3bb5060525f298e69d4db1c9b3bd89e18ee8a94"
+    },
+    "installed_runtime": {
+      "opencut": {
+        "path": "/Users/vincent/.opencut/runtime/native-local-proxy-slices-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+        "sha256": "36517a02f71a75baf110378bfefbdb19a3885e9919b388ba430cceab4b936a49"
+      },
+      "opencut-render-worker": {
+        "path": "/Users/vincent/.opencut/runtime/native-local-proxy-slices-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+        "sha256": "0606e80020970ff861844839a423da3499ecca8b5ffc241d9782aba70c091de2"
+      }
+    },
+    "build_seconds": 533.28467232408,
+    "test_build_seconds": 15.779213539790362,
+    "tests": [
+      {
+        "suite": "native-decode",
+        "exit_code": 0,
+        "seconds": 0.8558261669240892,
+        "passed": 6
+      },
+      {
+        "suite": "proxy-slice-real",
+        "exit_code": 0,
+        "seconds": 1.1717930298764259,
+        "passed": 1
+      },
+      {
+        "suite": "proxy-sequential-real",
+        "exit_code": 0,
+        "seconds": 20.062021809862927,
+        "passed": 1
+      }
+    ],
+    "performance": {
+      "warm_start_gate_seconds": 5,
+      "resume_gate_seconds": 5,
+      "cold_start_accepted_as_realtime": false,
+      "rows": [
+        {
+          "name": "landscape",
+          "pass": "cold",
+          "passed": true,
+          "start_seconds": 9.966778478,
+          "resume_seconds": 3.738343373999998,
+          "resume_under_5s": true
+        },
+        {
+          "name": "landscape",
+          "pass": "warm",
+          "passed": true,
+          "start_seconds": 5.276559592000002,
+          "resume_seconds": 3.7674155229999995,
+          "resume_under_5s": true
+        },
+        {
+          "name": "workbench",
+          "pass": "cold",
+          "passed": true,
+          "start_seconds": 12.136315978999999,
+          "resume_seconds": 4.320054028999999,
+          "resume_under_5s": true
+        },
+        {
+          "name": "workbench",
+          "pass": "warm",
+          "passed": true,
+          "start_seconds": 9.570406413999997,
+          "resume_seconds": 4.3284210259999965,
+          "resume_under_5s": true
+        }
+      ],
+      "warm_start_and_resume_passed": false,
+      "actual_first_frames": [
+        {
+          "name": "landscape",
+          "pass": "cold",
+          "actual_click_to_first_frame_seconds": 5.605900000095367,
+          "first_frame_under_5s": false,
+          "first_frame_clock": "same browser monotonic actual click to first presented native frame"
+        },
+        {
+          "name": "landscape",
+          "pass": "warm",
+          "actual_click_to_first_frame_seconds": 1.1944000000953674,
+          "first_frame_under_5s": true,
+          "first_frame_clock": "same browser monotonic actual click to first presented native frame"
+        },
+        {
+          "name": "workbench",
+          "pass": "cold",
+          "actual_click_to_first_frame_seconds": 4.139200000047683,
+          "first_frame_under_5s": true,
+          "first_frame_clock": "same browser monotonic actual click to first presented native frame"
+        },
+        {
+          "name": "workbench",
+          "pass": "warm",
+          "actual_click_to_first_frame_seconds": 2.9255,
+          "first_frame_under_5s": true,
+          "first_frame_clock": "same browser monotonic actual click to first presented native frame"
+        }
+      ],
+      "warm_actual_first_frame_gate_passed": true
+    },
+    "picture_latency": [
+      {
+        "name": "landscape",
+        "pass": "cold",
+        "requests": 103,
+        "median_header_ms": 40.50389299999915,
+        "scope": "Response-header latency includes native prepare and HTTP; not pure decode time or actual FPS."
+      },
+      {
+        "name": "landscape",
+        "pass": "warm",
+        "requests": 89,
+        "median_header_ms": 43.70000000000073,
+        "scope": "Response-header latency includes native prepare and HTTP; not pure decode time or actual FPS."
+      },
+      {
+        "name": "workbench",
+        "pass": "cold",
+        "requests": 87,
+        "median_header_ms": 55.65722900000401,
+        "scope": "Response-header latency includes native prepare and HTTP; not pure decode time or actual FPS."
+      },
+      {
+        "name": "workbench",
+        "pass": "warm",
+        "requests": 81,
+        "median_header_ms": 57.24826499999472,
+        "scope": "Response-header latency includes native prepare and HTTP; not pure decode time or actual FPS."
+      }
+    ],
+    "independent_preview_frames": 7,
+    "rejection_checks": 9,
+    "original_4K_export": {
+      "job_id": "job_08e4d868863741389cd09c780b2ce83d",
+      "duration_seconds": 6,
+      "job_seconds": 44.34323990903795,
+      "whole_mp4_sha256": "da10feb14158c09d4c0464abb1b6605d78b328ba4ab7b3702184f3c450ace172",
+      "preencode_pcm_max_error": 0.0
+    },
+    "long_ui": {
+      "passed": true,
+      "first_frame_seconds": 2.523899999856949,
+      "continuous_action_seconds": 125.58429597599999,
+      "project_unchanged": true,
+      "network_failure_records": 455,
+      "strict_realtime_accepted": false,
+      "scope": "Unchanged5s first-frame/150s completion functional gates do not establish strict realtime; finite original94s observation; network aborts not all attributed."
+    },
+    "projects_preserved": 4,
+    "prior_jobs_preserved": 464,
+    "new_successful_source_jobs": 11,
+    "checkpoint": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261031/proxy-slices/checkpoint.json",
+    "checkpoint_sha256": "f35e1c5fde025dd6e12b0df2f908af404b7072ed3ce152876dd836dd2e610558",
+    "manual_physical_AV_accepted": false,
+    "complete_delivery_accepted": false
   }
 }

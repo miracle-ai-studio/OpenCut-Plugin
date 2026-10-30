@@ -13127,6 +13127,10 @@ export namespace OpencutVisualPreviewFrameOutput {
       element_id: string;
       kind: 'effect';
     };
+  export type VisualPreviewDigest = {
+  algorithm: 'blake3';
+  value: string;
+};
   export type NativeGraphicsApi = 'metal' | 'vulkan' | 'direct_x';
   export type SourcePreviewUse =
   | {
@@ -13575,7 +13579,7 @@ export namespace OpencutVisualPreviewFrameOutput {
 }
   export interface VisualPreviewPicture {
   byte_length: number;
-  content_hash: string;
+  content_digest: VisualPreviewDigest;
   height: number;
   max_retained_bytes: number;
   peak_worker_rss_bytes: string;
@@ -63221,6 +63225,10 @@ export namespace OpencutVisualPreviewEditDraftFrameOutput {
       element_id: string;
       kind: 'effect';
     };
+  export type VisualPreviewDigest = {
+  algorithm: 'blake3';
+  value: string;
+};
   export type NativeGraphicsApi = 'metal' | 'vulkan' | 'direct_x';
   export type SourcePreviewUse =
   | {
@@ -63674,7 +63682,7 @@ export namespace OpencutVisualPreviewEditDraftFrameOutput {
 }
   export interface VisualPreviewPicture {
   byte_length: number;
-  content_hash: string;
+  content_digest: VisualPreviewDigest;
   height: number;
   max_retained_bytes: number;
   peak_worker_rss_bytes: string;
@@ -71171,6 +71179,10 @@ export namespace VisualPreviewTransport {
 }
 
 export namespace VisualPreviewPixels {
+  export type VisualPreviewDigest = {
+  algorithm: 'blake3';
+  value: string;
+};
   export type NativeGraphicsApi = 'metal' | 'vulkan' | 'direct_x';
   export type SourcePreviewUse =
   | {
@@ -71197,7 +71209,7 @@ export namespace VisualPreviewPixels {
 
   export interface VisualPreviewPicture {
   byte_length: number;
-  content_hash: string;
+  content_digest: VisualPreviewDigest;
   height: number;
   max_retained_bytes: number;
   peak_worker_rss_bytes: string;
@@ -72426,6 +72438,10 @@ export namespace VisualPreviewPrepared {
       element_id: string;
       kind: 'effect';
     };
+  export type VisualPreviewDigest = {
+  algorithm: 'blake3';
+  value: string;
+};
   export type NativeGraphicsApi = 'metal' | 'vulkan' | 'direct_x';
   export type SourcePreviewUse =
   | {
@@ -72867,7 +72883,7 @@ export namespace VisualPreviewPrepared {
 }
   export interface VisualPreviewPicture {
   byte_length: number;
-  content_hash: string;
+  content_digest: VisualPreviewDigest;
   height: number;
   max_retained_bytes: number;
   peak_worker_rss_bytes: string;

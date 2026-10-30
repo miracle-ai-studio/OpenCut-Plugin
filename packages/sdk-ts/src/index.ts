@@ -86,7 +86,7 @@ function validateNativePicture(picture: unknown) {
 }
 async function verifyNativePicture(bytes: Uint8ClampedArray<ArrayBuffer>, hash: string, signal?: AbortSignal) {
   signal?.throwIfAborted();
-  const actual = await blake3(bytes);
+  const actual = await blake3(new Uint8Array(bytes.buffer, bytes.byteOffset, bytes.byteLength));
   signal?.throwIfAborted();
   if (actual !== hash) throw new TypeError("Native picture changed its content hash");
   return bytes;

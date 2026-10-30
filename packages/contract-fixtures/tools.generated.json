@@ -53604,6 +53604,28 @@
           ],
           "type": "object"
         },
+        "VisualPreviewDigest": {
+          "oneOf": [
+            {
+              "additionalProperties": false,
+              "description": "Digest of the complete ephemeral straight RGBA8 payload. Stored asset,\nruntime and artifact SHA-256 identities are independent of this transport.",
+              "properties": {
+                "algorithm": {
+                  "const": "blake3",
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "algorithm",
+                "value"
+              ],
+              "type": "object"
+            }
+          ]
+        },
         "VisualPreviewFrameResult": {
           "additionalProperties": false,
           "properties": {
@@ -53786,8 +53808,8 @@
               "minimum": 0,
               "type": "integer"
             },
-            "content_hash": {
-              "type": "string"
+            "content_digest": {
+              "$ref": "#/$defs/VisualPreviewDigest"
             },
             "height": {
               "format": "uint32",
@@ -53825,7 +53847,7 @@
             "width",
             "height",
             "byte_length",
-            "content_hash",
+            "content_digest",
             "max_retained_bytes",
             "renderer",
             "peak_worker_rss_bytes"
@@ -250881,6 +250903,28 @@
           ],
           "type": "object"
         },
+        "VisualPreviewDigest": {
+          "oneOf": [
+            {
+              "additionalProperties": false,
+              "description": "Digest of the complete ephemeral straight RGBA8 payload. Stored asset,\nruntime and artifact SHA-256 identities are independent of this transport.",
+              "properties": {
+                "algorithm": {
+                  "const": "blake3",
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "algorithm",
+                "value"
+              ],
+              "type": "object"
+            }
+          ]
+        },
         "VisualPreviewFrameResult": {
           "additionalProperties": false,
           "properties": {
@@ -251063,8 +251107,8 @@
               "minimum": 0,
               "type": "integer"
             },
-            "content_hash": {
-              "type": "string"
+            "content_digest": {
+              "$ref": "#/$defs/VisualPreviewDigest"
             },
             "height": {
               "format": "uint32",
@@ -251102,7 +251146,7 @@
             "width",
             "height",
             "byte_length",
-            "content_hash",
+            "content_digest",
             "max_retained_bytes",
             "renderer",
             "peak_worker_rss_bytes"

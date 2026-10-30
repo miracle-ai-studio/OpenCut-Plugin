@@ -5584,11 +5584,24 @@
   "preview_digest_implementation": {
     "scope": "Ephemeral native-preview RGBA transport only",
     "implemented": true,
-    "built": false,
+    "built": true,
     "scoped_behavior_accepted": false,
     "manual_acceptance": false,
     "delivery_ready": false,
     "public_contract": "content_digest:{algorithm:blake3,value:hex};no legacy hash fallback",
-    "preserved": "stored SHA256 identities,540p floor,original export/720p/1080p/1440p/2160p/default1080p,current authority and publication fences"
+    "preserved": "stored SHA256 identities,540p floor,original export/720p/1080p/1440p/2160p/default1080p,current authority and publication fences",
+    "native_source_commit": "53ffb058e413fad432a870c9f68ca49a0c61baad",
+    "runtime": {
+      "opencut": {
+        "path": "/Users/vincent/Movies/OpenCut-native-rendering/candidates/2e2c682bc72903d7e7a3661b46fc0c4a5cc5c91a1ed60f97188118f90f875f72/opencut",
+        "sha256": "2e2c682bc72903d7e7a3661b46fc0c4a5cc5c91a1ed60f97188118f90f875f72"
+      },
+      "opencut-render-worker": {
+        "path": "/Users/vincent/Movies/OpenCut-native-rendering/candidates/6dc2eaedf9f795ba536ff3b104d639d574de29f4083f8039607f88659d18de61/opencut-render-worker",
+        "sha256": "6dc2eaedf9f795ba536ff3b104d639d574de29f4083f8039607f88659d18de61"
+      }
+    },
+    "contracts": "GeneratedandcheckedagainstexactCLI;canonicalcontractpassed",
+    "client_tests": "60SDKandaffectedWebtests passed;typesonlyrecovery,noRustrebuild"
   }
 }

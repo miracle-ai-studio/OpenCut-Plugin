@@ -4,14 +4,17 @@ pub mod catalog;
 pub mod font_import;
 pub mod gate;
 pub mod uploads;
+pub mod verification;
 use opencut_contracts::{Asset, AssetVersion, EditorError, ProjectSnapshot};
 use sha2::{Digest, Sha256};
+use std::sync::{Mutex, OnceLock};
 use std::{
     collections::BTreeSet,
     fs::{self, File, OpenOptions},
     io::{Read, Seek, SeekFrom, Write},
     path::{Path, PathBuf},
 };
+use verification::{FileIdentity, VerificationFacts};
 
 pub use opencut_contracts::{AssetLockManifest, LockedAsset};
 
@@ -263,6 +266,17 @@ impl AssetStore {
         version: &AssetVersion,
         checkpoint: &mut impl FnMut() -> Result<(), EditorError>,
     ) -> Result<(File, u64, std::time::SystemTime), EditorError> {
+        let (file, size, identity) = self.open_version_with_identity(version, checkpoint)?;
+        Ok((file, size, identity.modified()))
+    }
+
+    /// Return the identity observed during verification, not a later observation
+    /// that could accidentally bind changed bytes to the earlier content hash.
+    pub fn open_version_with_identity(
+        &self,
+        version: &AssetVersion,
+        checkpoint: &mut impl FnMut() -> Result<(), EditorError>,
+    ) -> Result<(File, u64, FileIdentity), EditorError> {
         checkpoint()?;
         if version.id != format!("av_{}", version.content_hash) {
             return Err(error(
@@ -289,6 +303,31 @@ impl AssetStore {
                 "Project media length does not match the fixed version",
             ));
         }
+        let identity = FileIdentity::of(before.clone())?;
+        static VERIFIED: OnceLock<Mutex<VerificationFacts<(PathBuf, AssetVersion)>>> =
+            OnceLock::new();
+        let verified = VERIFIED.get_or_init(Mutex::default);
+        let key = (self.root.clone(), version.clone());
+        let known = verified
+            .lock()
+            .map_err(|_| error("ASSET_INTEGRITY_ERROR", "Verification facts unavailable"))?
+            .contains(&key, &identity);
+        if known {
+            if FileIdentity::of(file.metadata().map_err(io_error)?)? != identity {
+                return Err(error(
+                    "ASSET_INTEGRITY_ERROR",
+                    "Project media changed during verification",
+                ));
+            }
+            checkpoint()?;
+            if FileIdentity::of(file.metadata().map_err(io_error)?)? != identity {
+                return Err(error(
+                    "ASSET_INTEGRITY_ERROR",
+                    "Project media changed during admission",
+                ));
+            }
+            return Ok((file, version.size, identity));
+        }
         // A changing file cannot turn verification into an endless read. This
         // is the exact declared identity plus one sentinel byte,not a media cap.
         let (hash, size) = {
@@ -300,7 +339,7 @@ impl AssetStore {
             copy_hash_checked(&mut bounded, &mut std::io::sink(), checkpoint, None)?
         };
         let after = file.metadata().map_err(io_error)?;
-        if before.len() != after.len() || before.modified().ok() != after.modified().ok() {
+        if FileIdentity::of(after.clone())? != identity {
             return Err(error(
                 "ASSET_INTEGRITY_ERROR",
                 "Project media changed during verification",
@@ -314,7 +353,17 @@ impl AssetStore {
             ));
         }
         file.seek(SeekFrom::Start(0)).map_err(io_error)?;
-        Ok((file, size, after.modified().map_err(io_error)?))
+        if FileIdentity::of(file.metadata().map_err(io_error)?)? != identity {
+            return Err(error(
+                "ASSET_INTEGRITY_ERROR",
+                "Project media changed during admission",
+            ));
+        }
+        verified
+            .lock()
+            .map_err(|_| error("ASSET_INTEGRITY_ERROR", "Verification facts unavailable"))?
+            .remember(key, identity.clone());
+        Ok((file, size, identity))
     }
 
     /// Copy and verify immutable inputs into an attempt-private directory. Never
@@ -847,5 +896,136 @@ mod tests {
         assert!(regular_file(temp.path()).is_err());
         #[cfg(unix)]
         assert!(regular_file(Path::new("/dev/null")).is_err());
+    }
+    #[cfg(unix)]
+    fn verification_fixture() -> (tempfile::TempDir, AssetStore, AssetVersion, PathBuf) {
+        let temp = tempfile::tempdir().unwrap();
+        let source = temp.path().join("source.bin");
+        fs::write(&source, vec![17; 131_072]).unwrap();
+        let store = AssetStore::open(temp.path().join("cas")).unwrap();
+        let version = store
+            .pin_asset(&snapshot(&source).project.assets[0])
+            .unwrap()
+            .version
+            .unwrap();
+        let path = store.object_path(&version.content_hash).unwrap();
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o600)).unwrap();
+        (temp, store, version, path)
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn verification_reuses_bytes_across_open_but_never_authority() {
+        let (_temp, store, version, _) = verification_fixture();
+        let mut first = 0;
+        drop(
+            store
+                .open_version_checked(&version, &mut || {
+                    first += 1;
+                    Ok(())
+                })
+                .unwrap(),
+        );
+        assert!(first > 2);
+        let mut second = 0;
+        let (mut file, size, _) = store
+            .open_version_checked(&version, &mut || {
+                second += 1;
+                Ok(())
+            })
+            .unwrap();
+        assert_eq!(second, 2);
+        assert_eq!(size, 131_072);
+        let mut bytes = [0; 8];
+        file.read_exact(&mut bytes).unwrap();
+        assert_eq!(bytes, [17; 8]);
+        for deny_at in [1, 2] {
+            let mut checks = 0;
+            let error = store
+                .open_version_checked(&version, &mut || {
+                    checks += 1;
+                    if checks == deny_at {
+                        Err(error("NOT_AUTHORIZED", "revoked"))
+                    } else {
+                        Ok(())
+                    }
+                })
+                .err()
+                .unwrap();
+            assert_eq!(error.code, "NOT_AUTHORIZED");
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn verification_detects_same_size_rewrite_even_with_restored_modified_time() {
+        let (_temp, store, version, path) = verification_fixture();
+        drop(store.open_version_verified(&version).unwrap());
+        let modified = fs::metadata(&path).unwrap().modified().unwrap();
+        fs::write(&path, vec![18; 131_072]).unwrap();
+        File::options()
+            .write(true)
+            .open(&path)
+            .unwrap()
+            .set_times(fs::FileTimes::new().set_modified(modified))
+            .unwrap();
+        assert_eq!(
+            store.open_version_verified(&version).err().unwrap().code,
+            "ASSET_INTEGRITY_ERROR"
+        );
+        fs::write(&path, vec![17; 131_072]).unwrap();
+        let mut checks = 0;
+        drop(
+            store
+                .open_version_checked(&version, &mut || {
+                    checks += 1;
+                    Ok(())
+                })
+                .unwrap(),
+        );
+        assert!(checks > 2);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn verification_rejects_replaced_symlink_and_missing_objects() {
+        let (_temp, store, version, path) = verification_fixture();
+        drop(store.open_version_verified(&version).unwrap());
+        let original = path.with_extension("original");
+        fs::rename(&path, &original).unwrap();
+        fs::write(&path, vec![18; 131_072]).unwrap();
+        assert_eq!(
+            store.open_version_verified(&version).err().unwrap().code,
+            "ASSET_INTEGRITY_ERROR"
+        );
+        fs::remove_file(&path).unwrap();
+        std::os::unix::fs::symlink(&original, &path).unwrap();
+        assert_eq!(
+            store.open_version_verified(&version).err().unwrap().code,
+            "ASSET_UNAVAILABLE"
+        );
+        fs::remove_file(&path).unwrap();
+        assert!(store.open_version_verified(&version).is_err());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn verification_rechecks_identity_after_final_admission_callback() {
+        let (_temp, store, version, path) = verification_fixture();
+        drop(store.open_version_verified(&version).unwrap());
+        let mut checks = 0;
+        let result = store.open_version_with_identity(&version, &mut || {
+            checks += 1;
+            if checks == 2 {
+                fs::write(&path, vec![18; 131_072]).unwrap();
+            }
+            Ok(())
+        });
+        assert_eq!(result.err().unwrap().code, "ASSET_INTEGRITY_ERROR");
+        assert_eq!(
+            store.open_version_verified(&version).err().unwrap().code,
+            "ASSET_INTEGRITY_ERROR"
+        );
     }
 }

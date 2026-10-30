@@ -6559,5 +6559,16 @@
     "new_source_jobs": 11,
     "checkpoint": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261031/proxy-facts/checkpoint.json",
     "checkpoint_sha256": "72c4a4276accc7fb039a1cdedd4e196ca64c366ca134b0814d2fd5299db0cead"
+  },
+  "shared_media_verification_reuse": {
+    "implemented": true,
+    "build_accepted": false,
+    "scoped_behavior_accepted": false,
+    "local_service_updated": false,
+    "baseline_commit": "6881d7db",
+    "cause": "Remaining warm startup/resume repeatedly hashes CAS video and audio through VerifiedResourceFile;454 visual samples and148audio samples in a bounded startup profile.",
+    "change": "One bounded file-fact implementation for original CAS and proxy reads; fresh authorization/path/gate/lease checks and exact dev/inode/size/mtime/ctime/link identity. Native range readers keep the identity verified with the bytes, not a later recapture.",
+    "validation_plan": "One integrated CLI build,one combined test compilation for asset/native/host libraries,affected tests,exact contracts,pixels,original4K export/PCM,then local switch and serial cold/warm UI. Worker/Web unchanged.",
+    "delivery_ready": false
   }
 }

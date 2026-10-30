@@ -9,32 +9,22 @@ use opencut_editor_application::{
 use opencut_native_services::{artifacts::ArtifactSource, source_preview::SourcePreviewIndex};
 use opencut_sqlite_store::{EditorApplication, JobState};
 use std::{
-    collections::{BTreeMap, VecDeque},
+    collections::BTreeMap,
     fs::Metadata,
     io::{self, Read, Seek, SeekFrom},
 };
 
-#[derive(Clone, PartialEq, Eq)]
-struct FileIdentity(Vec<i128>);
+#[cfg(test)]
+use opencut_asset_store::verification::MAX_VERIFICATION_FACTS as MAX_VERIFIED_FILES;
+use opencut_asset_store::verification::{FileIdentity, VerificationFacts};
 fn file_identity(metadata: Metadata) -> Result<FileIdentity, EditorError> {
-    if !metadata.is_file() {
-        return Err(integrity());
-    }
     #[cfg(unix)]
     {
         use std::os::unix::fs::MetadataExt;
         if metadata.nlink() != 1 {
             return Err(integrity());
         }
-        Ok(FileIdentity(vec![
-            metadata.dev() as i128,
-            metadata.ino() as i128,
-            metadata.len() as i128,
-            metadata.mtime() as i128,
-            metadata.mtime_nsec() as i128,
-            metadata.ctime() as i128,
-            metadata.ctime_nsec() as i128,
-        ]))
+        FileIdentity::of(metadata).map_err(|_| integrity())
     }
     #[cfg(not(unix))]
     {
@@ -57,29 +47,8 @@ struct VerifiedFile {
     job: String,
     attempt: u32,
     descriptor: ArtifactDescriptor,
-    identity: FileIdentity,
 }
-const MAX_VERIFIED_FILES: usize = 128;
-#[derive(Default)]
-struct ArtifactVerificationCache(VecDeque<VerifiedFile>);
-impl ArtifactVerificationCache {
-    fn contains(&mut self, file: &VerifiedFile) -> bool {
-        let Some(index) = self.0.iter().position(|entry| entry == file) else {
-            return false;
-        };
-        let entry = self.0.remove(index).expect("located verification fact");
-        self.0.push_back(entry);
-        true
-    }
-    fn remember(&mut self, file: VerifiedFile) {
-        if !self.contains(&file) {
-            if self.0.len() >= MAX_VERIFIED_FILES {
-                self.0.pop_front();
-            }
-            self.0.push_back(file);
-        }
-    }
-}
+type ArtifactVerificationCache = VerificationFacts<VerifiedFile>;
 struct VerifiedArtifact {
     file: ArtifactSource,
     identity: FileIdentity,
@@ -127,12 +96,11 @@ impl VerifiedArtifact {
             job: job.into(),
             attempt,
             descriptor: descriptor.clone(),
-            identity: verified.identity.clone(),
         };
         let known = cache
             .lock()
             .map_err(|_| integrity())?
-            .contains(&observation);
+            .contains(&observation, &verified.identity);
         if known {
             verified.check()?;
             checkpoint()?;
@@ -154,7 +122,10 @@ impl VerifiedArtifact {
         }
         verified.seek(SeekFrom::Start(0)).map_err(|_| integrity())?;
         checkpoint()?;
-        cache.lock().map_err(|_| integrity())?.remember(observation);
+        cache
+            .lock()
+            .map_err(|_| integrity())?
+            .remember(observation, verified.identity.clone());
         Ok(verified)
     }
     fn check(&self) -> Result<(), EditorError> {
@@ -607,7 +578,7 @@ mod verification_tests {
                 .unwrap(),
             );
         }
-        assert_eq!(cache.lock().unwrap().0.len(), MAX_VERIFIED_FILES);
+        assert_eq!(cache.lock().unwrap().len(), MAX_VERIFIED_FILES);
         assert!(fixture.open(&cache).1 > 2);
     }
 }

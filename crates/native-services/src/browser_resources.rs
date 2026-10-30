@@ -1,5 +1,5 @@
 //! Fixed verified CAS descriptors shared by isolated audio and visual adapters.
-use opencut_asset_store::AssetStore;
+use opencut_asset_store::{AssetStore, verification::FileIdentity};
 use opencut_composition::scene::CasResource;
 use opencut_contracts::{AssetVersion, EditorError};
 use std::{
@@ -8,14 +8,14 @@ use std::{
     io::{Read, Seek, SeekFrom},
     path::Path,
     sync::{Arc, Mutex},
-    time::{Duration, Instant, SystemTime},
+    time::{Duration, Instant},
 };
 /// An already verified CAS descriptor. It owns no grant and never reopens a
 /// mutable path for range reads; the host checks its live scope around each read.
 pub struct VerifiedResourceFile {
     file: File,
     size: u64,
-    modified: SystemTime,
+    identity: FileIdentity,
 }
 
 #[cfg(test)]
@@ -250,6 +250,30 @@ mod tests {
         assert!(later.release(&old).is_err());
         assert_eq!(later.read(&current, 0, 3).unwrap().0, b"new");
     }
+    #[cfg(unix)]
+    #[test]
+    fn restored_mtime_cannot_hide_mutation_from_an_open_media_descriptor() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().join("cas");
+        let version = pin(&root, "media", b"original source");
+        let path = root
+            .join(&version.content_hash[..2])
+            .join(&version.content_hash);
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600)).unwrap();
+        drop(VerifiedResourceFile::open(&root, &version, &mut || Ok(())).unwrap());
+        let mut file = VerifiedResourceFile::open(&root, &version, &mut || Ok(())).unwrap();
+        let modified = std::fs::metadata(&path).unwrap().modified().unwrap();
+        std::fs::write(&path, b"modified source").unwrap();
+        File::options()
+            .write(true)
+            .open(&path)
+            .unwrap()
+            .set_times(std::fs::FileTimes::new().set_modified(modified))
+            .unwrap();
+        assert_eq!(file.read(0, 8).unwrap_err().code, "ASSET_INTEGRITY_ERROR");
+        assert!(VerifiedResourceFile::open(&root, &version, &mut || Ok(())).is_err());
+    }
 }
 impl VerifiedResourceFile {
     pub fn open(
@@ -261,8 +285,8 @@ impl VerifiedResourceFile {
         let mut last_check = Instant::now();
         // Hashing is bounded I/O, not thousands of workspace reopen/SQL checks.
         // Cancellation/authority is checked during a long hash and at both ends.
-        let (file, size, modified) =
-            AssetStore::read_only(root)?.open_version_checked(version, &mut || {
+        let (file, size, identity) =
+            AssetStore::read_only(root)?.open_version_with_identity(version, &mut || {
                 if last_check.elapsed() >= Duration::from_millis(50) {
                     checkpoint()?;
                     last_check = Instant::now();
@@ -273,7 +297,7 @@ impl VerifiedResourceFile {
         let verified = Self {
             file,
             size,
-            modified,
+            identity,
         };
         verified.check()?;
         Ok(verified)
@@ -287,9 +311,7 @@ impl VerifiedResourceFile {
     }
     fn check(&self) -> Result<(), EditorError> {
         let metadata = self.file.metadata().map_err(|_| Self::changed())?;
-        if metadata.len() != self.size
-            || metadata.modified().map_err(|_| Self::changed())? != self.modified
-        {
+        if FileIdentity::of(metadata)? != self.identity {
             return Err(Self::changed());
         }
         Ok(())

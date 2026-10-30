@@ -6354,5 +6354,16 @@
       "Export/PCM and broader source codec/alpha proofs retain their original producers;not rerun for this preview-only lifecycle slice.",
       "Existing user runtime is not upgraded;new candidate remains in owned external workspace."
     ]
+  },
+  "source_preview_reuse_implementation": {
+    "implemented": true,
+    "build_accepted": false,
+    "scoped_behavior_accepted": false,
+    "local_service_updated_for_this_slice": false,
+    "baseline_commit": "161cd597",
+    "cause": "Actual installed landscape startup stack spends781samples in source preview preparation capture,749inSHA256;already accepted tasks are looked up only after all participating original videos are rehashed. The three originals total865983147bytes.",
+    "change": "Authorized identity lookup before capture;only missing task assets captured and checked before acceptance. Runtime/authority partitions,original producer revision,source/proxy integrity and publication fences preserved.",
+    "validation_plan": "One integrated CLI build with unchanged native worker;affected source queue tests,exact CLI contracts,independent pixels plus actual prepared landscape pause/resume. No replay of passed export algorithm or whole synthetic94s unless new evidence warrants.",
+    "delivery_ready": false
   }
 }

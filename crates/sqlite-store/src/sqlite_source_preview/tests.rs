@@ -212,6 +212,70 @@ impl Fixture {
     }
 }
 #[test]
+fn existing_source_task_skips_recapture_but_new_identity_still_verifies_bytes() {
+    use opencut_editor_application::media_frame_jobs::MediaFrameAssetCapture;
+    use std::cell::Cell;
+    struct Capture {
+        inner: sqlite_media_frame_jobs::Assets,
+        calls: Cell<usize>,
+        corrupt: Cell<bool>,
+    }
+    impl MediaFrameAssetCapture for Capture {
+        fn capture(
+            &self,
+            snapshot: &EditorSnapshot,
+            sequence: &str,
+            ids: &[String],
+        ) -> Result<opencut_contracts::AssetLockManifest, EditorError> {
+            self.calls.set(self.calls.get() + 1);
+            let mut lock = self.inner.capture(snapshot, sequence, ids)?;
+            if self.corrupt.get() {
+                lock.assets[0].size += 1;
+            }
+            Ok(lock)
+        }
+    }
+    let mut fixture = Fixture::new();
+    let capture = Capture {
+        inner: sqlite_media_frame_jobs::Assets(
+            opencut_asset_store::AssetStore::read_only(fixture.app.asset_store_root()).unwrap(),
+        ),
+        calls: Cell::new(0),
+        corrupt: Cell::new(false),
+    };
+    let input = SourcePreviewPrepare {
+        project_id: "source-project".into(),
+        revision: fixture.revision.clone(),
+        sequence_id: "scene".into(),
+        asset_id: Some("video".into()),
+        selected_video_stream: Some(1),
+    };
+    let fingerprint = source::runtime_fingerprint(&fixture.runtime).unwrap();
+    let original =
+        source::prepare(&mut fixture.app, &capture, input.clone(), &fingerprint).unwrap();
+    assert_eq!(capture.calls.get(), 1);
+    capture.corrupt.set(true);
+    let reused = source::prepare(&mut fixture.app, &capture, input.clone(), &fingerprint).unwrap();
+    assert_eq!(reused[0].job_id, original[0].job_id);
+    assert_eq!(
+        capture.calls.get(),
+        1,
+        "Idempotent lookup must not reread the whole source"
+    );
+    let changed_runtime = "9".repeat(64);
+    assert!(source::prepare(&mut fixture.app, &capture, input.clone(), &changed_runtime).is_err());
+    assert_eq!(capture.calls.get(), 2);
+    capture.corrupt.set(false);
+    let new = source::prepare(&mut fixture.app, &capture, input, &changed_runtime).unwrap();
+    assert_ne!(new[0].job_id, original[0].job_id);
+    assert_eq!(
+        capture.calls.get(),
+        3,
+        "Rejected capture must not publish a reusable task"
+    );
+}
+
+#[test]
 fn same_source_reuses_original_producer_across_edits_and_partitions_callers() {
     let mut fixture = Fixture::new();
     let original = fixture.prepare();

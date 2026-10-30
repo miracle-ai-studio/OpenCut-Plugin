@@ -415,21 +415,7 @@ fn prepare_validated(
             .map_err(|e| EditorError::new(e.code, e.message))?;
     let raster = opencut_composition::scene::preview_canvas(format.canvas_size);
     let targets = source_targets(&fixed.snapshot, &input)?;
-    let ids: Vec<_> = targets
-        .iter()
-        .map(|(id, _)| id.clone())
-        .collect::<BTreeSet<_>>()
-        .into_iter()
-        .collect();
-    // The native capture owner holds its collection gate through acceptance.
-    let lock = assets.capture(&fixed.snapshot, &input.sequence_id, &ids)?;
-    if lock.revision != fixed.snapshot.revision
-        || lock.sequence_id != input.sequence_id
-        || lock.assets.len() != ids.len()
-    {
-        return Err(invalid("Source capture changed fixed participating assets"));
-    }
-    let mut jobs = Vec::with_capacity(targets.len());
+    let mut candidates = Vec::with_capacity(targets.len());
     for (asset_id, selected_video_stream) in targets {
         let asset = fixed
             .snapshot
@@ -438,16 +424,6 @@ fn prepare_validated(
             .iter()
             .find(|a| a.id == asset_id)
             .ok_or_else(|| invalid("Source preparation asset is missing"))?;
-        let captured = lock
-            .assets
-            .iter()
-            .find(|a| a.asset_id == asset_id)
-            .ok_or_else(|| invalid("Source capture omitted fixed bytes"))?;
-        if captured.content_hash != asset.version.content_hash
-            || captured.size != asset.version.size
-        {
-            return Err(invalid("Source capture changed original bytes"));
-        }
         let prepared = PreparedSourcePreview {
             snapshot: fixed.snapshot.clone(),
             sequence_id: input.sequence_id.clone(),
@@ -467,13 +443,56 @@ fn prepare_validated(
             processing_policy: fixed.processing_policy.clone(),
         };
         let request = request_for(&prepared)?;
-        let job = match store.find_source_preview(&request)? {
-            Some(job) => job,
-            None => store.accept_source_preview(request, prepared)?,
-        };
-        jobs.push(job);
+        let existing = store.find_source_preview(&request)?;
+        candidates.push((prepared, request, existing));
     }
-    Ok(jobs)
+    // An authorized idempotent lookup returns a task, not permission to read
+    // original/proxy bytes. Capture only sources needed for a new acceptance;
+    // execution and published reads retain their independent integrity fences.
+    let ids: Vec<_> = candidates
+        .iter()
+        .filter(|(_, _, existing)| existing.is_none())
+        .map(|(prepared, _, _)| prepared.identity.asset_id.clone())
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .collect();
+    let lock = if ids.is_empty() {
+        None
+    } else {
+        Some(assets.capture(&fixed.snapshot, &input.sequence_id, &ids)?)
+    };
+    if let Some(lock) = &lock {
+        if lock.revision != fixed.snapshot.revision
+            || lock.sequence_id != input.sequence_id
+            || lock.assets.len() != ids.len()
+        {
+            return Err(invalid("Source capture changed fixed participating assets"));
+        }
+        for (prepared, _, _) in candidates
+            .iter()
+            .filter(|(_, _, existing)| existing.is_none())
+        {
+            let captured = lock
+                .assets
+                .iter()
+                .find(|asset| asset.asset_id == prepared.identity.asset_id)
+                .ok_or_else(|| invalid("Source capture omitted fixed bytes"))?;
+            if captured.content_hash != prepared.identity.source_version.content_hash
+                || captured.size != prepared.identity.source_version.size
+            {
+                return Err(invalid("Source capture changed original bytes"));
+            }
+        }
+    }
+    // The native capture owner still holds its collection gate through all
+    // new acceptances, which recheck the fixed snapshot and current authority.
+    candidates
+        .into_iter()
+        .map(|(prepared, request, existing)| match existing {
+            Some(job) => Ok(job),
+            None => store.accept_source_preview(request, prepared),
+        })
+        .collect()
 }
 pub fn source_targets(
     snapshot: &EditorSnapshot,

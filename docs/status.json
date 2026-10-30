@@ -5571,5 +5571,14 @@
         "files": 107
       }
     }
+  },
+  "preview_digest_diagnosis": {
+    "product_source_commit": "c72ff7d9889994317d41304accb629d0dfd1474e",
+    "product_changed": false,
+    "component_probe_passed": true,
+    "preview_checkpoint_cost_checkpoint_sha256": "bd8d42fece758afcd21557c70dc5db6523083436852b6c246f981d324e98e226",
+    "preview_digest_cost_checkpoint_sha256": "be3dc49ffeb30590464c352f714bccf14e7f9d690a38ebb7d3c22cc438d349cc",
+    "next_slice": "Explicit BLAKE3 digest for ephemeral native preview RGBA only;stored SHA256 identities unchanged",
+    "delivery_ready": false
   }
 }

@@ -568,11 +568,14 @@ export class VisualPreview {
 
   start(): PicturePresentation {
     this.stillSerial++;
-    // Retire the static owner at Play intent, while sound output initializes.
-    // Admission still awaits the original fence, including any failure.
-    const retiring=this.still.close();
-    void retiring.catch(()=>{});
-    const beforeCreate=()=>retiring;
+    // A fully observed paused owner can move directly into playback. Pending
+    // static work still retires at Play intent, before sound initialization.
+    const state=this.host.state();
+    const transferable=!!state&&this.view.phase==="ready"&&!this.transformDraftId&&!this.editRestoration&&
+      this.still.canTransfer(state.playhead)&&this.currentToken===token(this.still.currentPaused(state.playhead)!);
+    let retiring=transferable?null:this.still.close();
+    void retiring?.catch(()=>{});
+    const beforeCreate=()=>retiring??=this.still.close();
     const paused = this.host.state()?.audioPreview;
     const reuse =
       paused?.phase === "paused" &&
@@ -591,6 +594,7 @@ export class VisualPreview {
       if(now-this.surfaceTimestampAt>=50){this.surfaceTimestampAt=now;this.renderer?.surfaceTimestamp?.(value);}
     };
     return {
+      takePaused:(api,request)=>transferable&&valid()?this.still.takePaused(api,request):null,
       beforeCreate,
       timestamp,
       prepare: async (session, signal, pictureReady,clockSource) => {

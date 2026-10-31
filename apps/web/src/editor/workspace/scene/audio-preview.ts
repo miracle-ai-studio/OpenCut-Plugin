@@ -18,6 +18,7 @@ import { PreviewConsumptionPump } from "./audio-preview/pump";
 import type { PreviewPump } from "./audio-preview/pump";
 import { checkPreviewSession } from "./audio-preview/session-identity";
 import { PreviewRecovery } from "./audio-preview/recovery";
+import type { PreparedPreviewOwner } from "./still-preview";
 import {compareTime} from "../../model/time";
 import {sequenceContentEnd} from "./sequence-navigation";
 
@@ -42,6 +43,7 @@ type OutputFactory = (
   primeBlocks: number,
 ) => Output;
 export type PicturePresentation = {
+  takePaused?(api:EditorApi,request:AudioPreviewCreate):PreparedPreviewOwner|null;
   beforeCreate?():Promise<void>;
   hasPausedPicture?(session: AudioPreviewSession): boolean;
   prepare(session: AudioPreviewSession, signal: AbortSignal, pictureReady?: (time: Time) => void,clockSource?:PresentationClockSource): Promise<void>;
@@ -52,6 +54,7 @@ export type PicturePresentation = {
   close(): void;
 };
 type Active = {
+  recovery: PreviewRecovery;
   picture?: PicturePresentation;
   api: EditorApi;
   epoch: number;
@@ -88,6 +91,7 @@ export class AudioPreview {
   private active: Active | null = null;
   private pausedHeartbeat: ReturnType<typeof setInterval> | null = null;
   private pending: {
+    recovery: PreviewRecovery;
     api: EditorApi;
     request: AudioPreviewCreate;
     control: AudioPreviewControl | null;
@@ -317,6 +321,7 @@ export class AudioPreview {
         null,
         paused.session,
         picture ?? paused.picture,
+        paused.recovery,
       );
     const sequence=snapshot.project.sequences.find(sequence=>sequence.id===state.sequenceId);
     if(!sequence)return Promise.reject(Error("Preview scene is unavailable"));
@@ -360,6 +365,7 @@ export class AudioPreview {
       pending.control,
       pending.session,
       pending.picture,
+      pending.recovery,
     );
   }
   private begin(
@@ -368,6 +374,7 @@ export class AudioPreview {
     originalControl: AudioPreviewControl | null = null,
     preparedSession: AudioPreviewSession | null = null,
     picture?: PicturePresentation,
+    recovery: PreviewRecovery = this.recovery,
   ) {
     this.stopPausedHeartbeat();
     const epoch = this.epoch;
@@ -395,7 +402,16 @@ export class AudioPreview {
       });
       return Promise.reject(error);
     }
+    // AudioContext construction still occurs in the user gesture. Transfer
+    // only after it succeeds, so a failed output cannot orphan the still owner.
+    const adopted = !preparedSession && !originalControl ? picture?.takePaused?.(api, request) : null;
+    if (adopted) {
+      request = adopted.request;
+      preparedSession = adopted.session;
+      recovery = adopted.recovery;
+    }
     a = {
+      recovery,
       picture,
       api,
       epoch,
@@ -440,7 +456,7 @@ export class AudioPreview {
         await (a.picture?.beforeCreate??this.beforeCreate)();
         if(!this.same(a))return;
         dispatched = true;
-        session = await this.recovery.create(
+        session = await a.recovery.create(
           a.api,
           a.request,
           a.controls.signal,
@@ -456,7 +472,7 @@ export class AudioPreview {
       // A replayed session may have advanced: never play stale producer state.
       if (originalControl) {
         dispatched = true;
-        const result = await this.recovery.control(
+        const result = await a.recovery.control(
           a.api,
           a.request,
           originalControl,
@@ -474,7 +490,7 @@ export class AudioPreview {
       if (!originalControl) {
         control = this.command(a, { kind: "play" });
         dispatched = true;
-        a.session = await this.recovery.control(
+        a.session = await a.recovery.control(
           a.api,
           a.request,
           control,
@@ -523,6 +539,7 @@ export class AudioPreview {
         !!originalControl || (dispatched && !(e instanceof OpenCutApiError));
       this.pending = unknown
         ? {
+            recovery: a.recovery,
             api: a.api,
             request: a.request,
             control,
@@ -641,7 +658,7 @@ export class AudioPreview {
     ) {
       const request = this.command(a, { kind: "stop" });
       a.stopRequest = request;
-      const retired=this.recovery
+      const retired=a.recovery
         .stop(a.api, a.request, request, a.documentDeparted)
         .catch(() => {});
       this.retirements.add(retired);void retired.finally(()=>this.retirements.delete(retired));
@@ -740,7 +757,7 @@ export class AudioPreview {
       a.controls.abort();
       void a.output.stop().catch(() => {});
       this.stopRemote(a);
-      void this.recovery
+      void a.recovery
         .retire(a.api, a.request, documentDeparted)
         .catch(() => {});
     }
@@ -889,7 +906,7 @@ export class AudioPreview {
         }
         const request = this.command(a, command);
         unconfirmed = { request, previous };
-        const result = await this.recovery.control(
+        const result = await a.recovery.control(
           a.api,
           a.request,
           request,

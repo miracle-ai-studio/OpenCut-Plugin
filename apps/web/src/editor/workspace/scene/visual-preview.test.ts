@@ -137,12 +137,43 @@ async function fixture(bitmaps = false, manualScreen = false) {
     paint,
     frames,
     api: f.api,
+    audio: f.preview,
+    cleanup: f.cleanup,
     replaceApi: (next: typeof f.api) => {
       activeApi = next;
     },
     state: () => state,
   };
 }
+
+it("plays an already displayed static session without recreating its native owner", async () => {
+  const f = await fixture();
+  let playing: Promise<void> | undefined;
+  try {
+    const shown = f.visual.showStill();
+    await flush();
+    f.calls[0].resolve(0);
+    await shown;
+    const original = f.calls[0].session as AudioPreviewSession;
+    playing = f.audio.play(48000, f.visual.start());
+    void playing.catch(() => {});
+    await flush();
+    expect(f.api.scene.audioPreviewCreate).toHaveBeenCalledOnce();
+    expect(vi.mocked(f.api.scene.audioPreviewControl).mock.calls.filter(([r]) => r.command.kind === "stop")).toHaveLength(0);
+    expect((f.calls[1].session as AudioPreviewSession).session_id).toBe(original.session_id);
+    f.calls[1].resolve(0);
+    await flush();
+    f.calls[2].resolve(1 / 30);
+    await flush();
+    f.calls[3].resolve(2 / 30);
+    await playing;
+  } finally {
+    for (const call of f.calls) call.resolve(0);
+    f.cleanup();
+    f.visual.dispose();
+    await playing?.catch(() => {});
+  }
+});
 
 it("retires an in-flight static owner at Play intent before sound initialization", async () => {
   const f = await fixture(), create = vi.mocked(f.api.scene.audioPreviewCreate);
@@ -175,6 +206,19 @@ it("retires an in-flight static owner at Play intent before sound initialization
     await f.visual.retireStill();
     f.visual.dispose();
   }
+});
+
+it("retires a paused owner whose first picture is still rendering instead of transferring it",async()=>{
+  const f=await fixture();const shown=f.visual.showStill();
+  try {
+    await flush();expect(f.calls).toHaveLength(1);
+    const port=f.visual.start();
+    expect(f.calls[0].signal.aborted).toBe(true);
+    const request=vi.mocked(f.api.scene.audioPreviewCreate).mock.calls[0][0];
+    expect(port.takePaused?.(f.api,request)).toBeNull();
+    f.calls[0].resolve(0);await shown;await port.beforeCreate!();
+    expect(vi.mocked(f.api.scene.audioPreviewControl).mock.calls.filter(([r])=>r.command.kind==="stop")).toHaveLength(1);
+  } finally {f.calls[0]?.resolve(0);await shown;f.cleanup();f.visual.dispose();}
 });
 
 it("keeps early static retirement failure on the sound admission fence", async () => {

@@ -1,8 +1,70 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { OpenCutApiError } from "../../../lib/editor-sdk";
 import { setupAudioPreview } from "./audio-preview-fixture";
-import { AudioPreview } from "./audio-preview";
+import { AudioPreview, type PicturePresentation } from "./audio-preview";
+import { StillPreview } from "./still-preview";
 import type { SessionHost } from "./session";
+
+it("keeps the transferred recovery owner through an unknown Play reply and explicit retry",async()=>{
+  const f=await setupAudioPreview();
+  const still=new StillPreview({api:()=>f.api,state:f.state,generation:()=>1,viewGeneration:()=>0} as SessionHost);
+  try {
+    const original=await still.read(f.state().playhead);
+    const control=f.control.getMockImplementation()!;
+    f.control.mockImplementationOnce(async request=>{await control(request);throw Error("Lost Play reply");});
+    const transferred:{owner:ReturnType<StillPreview["takePaused"]>}={owner:null};
+    const picture:PicturePresentation={takePaused:(api,request)=>{transferred.owner=still.takePaused(api,request);return transferred.owner;},
+      beforeCreate:()=>still.close(),prepare:async()=>{},observe:()=>{},suspend:()=>{},close:()=>{}};
+    await expect(f.preview.play(48000,picture)).rejects.toThrow("Lost Play reply");
+    const adopted=transferred.owner!;
+    expect(adopted).not.toBeNull();
+    const continued=vi.spyOn(adopted.recovery,"control");
+    await f.preview.retry();
+    expect(f.create).toHaveBeenCalledOnce();
+    expect(f.state().audioPreview.session?.session_id).toBe(original.session_id);
+    expect(continued).toHaveBeenCalled();
+    const plays=f.controls.filter(r=>r.command.kind==="play");
+    expect(plays).toHaveLength(2);expect(plays[1]).toEqual(plays[0]);
+    await f.preview.pause();
+    await f.preview.play(48000,picture);
+    expect(f.create).toHaveBeenCalledOnce();
+    expect(continued.mock.calls.filter(([, , r])=>r.command.kind==="play")).toHaveLength(2);
+    const retired=vi.spyOn(adopted.recovery,"stop");
+    f.preview.invalidate();await f.preview.settled();
+    expect(retired).toHaveBeenCalledOnce();
+    await still.close();expect(retired).toHaveBeenCalledOnce();
+  } finally {f.cleanup();await still.close();}
+});
+
+it("retains the static owner when sound construction fails before transfer",async()=>{
+  const f=await setupAudioPreview();
+  const host={api:()=>f.api,state:f.state,generation:()=>1,viewGeneration:()=>0,publish:f.update} as unknown as SessionHost;
+  const still=new StillPreview(host),take=vi.fn<NonNullable<PicturePresentation["takePaused"]>>((api,request)=>still.takePaused(api,request));
+  const audio=new AudioPreview(host,()=>{},()=>{throw Error("Sound construction failed");});
+  try {
+    await still.read(f.state().playhead);
+    await expect(audio.play(48000,{takePaused:take,beforeCreate:()=>still.close(),
+      prepare:async()=>{},observe:()=>{},suspend:()=>{},close:()=>{}})).rejects.toThrow("Sound construction failed");
+    expect(take).not.toHaveBeenCalled();
+    expect(still.currentPaused(f.state().playhead)).not.toBeNull();
+  } finally {audio.invalidate();await still.close();f.cleanup();}
+  expect(f.controls.filter(r=>r.command.kind==="stop")).toHaveLength(1);
+});
+
+it("retires an adopted session when sound output fails before Play dispatch",async()=>{
+  const f=await setupAudioPreview();
+  const still=new StillPreview({api:()=>f.api,state:f.state,generation:()=>1,viewGeneration:()=>0} as SessionHost);
+  try {
+    await still.read(f.state().playhead);
+    const playing=f.preview.play(48000,{takePaused:(api,request)=>still.takePaused(api,request),
+      beforeCreate:()=>still.close(),prepare:async()=>{},observe:()=>{},suspend:()=>{},close:()=>{}});
+    f.outputs[0].failure(Error("Output unavailable"));
+    await playing;await f.preview.settled();
+    expect(f.create).toHaveBeenCalledOnce();
+    expect(f.controls.filter(r=>r.command.kind==="stop")).toHaveLength(1);
+    expect(f.controls.filter(r=>r.command.kind==="play")).toHaveLength(0);
+  } finally {f.cleanup();await still.close();}
+});
 
 it("calibrates pictures during priming without inventing output or advancing the playhead", async () => {
   const f=await setupAudioPreview(),timestamp=vi.fn(),consume=vi.fn();

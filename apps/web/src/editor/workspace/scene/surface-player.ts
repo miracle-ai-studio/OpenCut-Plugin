@@ -14,6 +14,12 @@ async function waitPicture(picture:CachedPicture,signal:AbortSignal){
   finally {signal.removeEventListener("abort",abort);}
 }
 export type SurfacePainter={draw(bitmap:ImageBitmap):void;clear():void};
+/** Native frames are complete compositions; replace rather than blend them. */
+export function createSurfacePainter(canvas:OffscreenCanvas):SurfacePainter {
+  const context=canvas.getContext("bitmaprenderer");
+  if(!context)throw Error("Preview display is unavailable");
+  return {draw:bitmap=>context.transferFromImageBitmap(bitmap),clear:()=>context.transferFromImageBitmap(null)};
+}
 export type PreparedSurfacePicture={
   frame:CachedPicture["frame"];
   claimed:Promise<void>;
@@ -80,13 +86,7 @@ export class SurfacePlayer {
       throw Error("Presentation cache differs from its fixed session");
     this.clock=new PreviewOutputClock(binding.sampleRate,binding.graphLatencySeconds);
     if(canvas.width!==plan.width)canvas.width=plan.width;if(canvas.height!==plan.height)canvas.height=plan.height;
-    const owned=cache.createPainter?.(canvas);
-    if(owned)this.painter=owned;
-    else {
-      const context=canvas.getContext("2d",{desynchronized:true});
-      if(!context)throw Error("Cached presentation canvas is unavailable");
-      this.painter={draw:bitmap=>context.drawImage(bitmap,0,0),clear:()=>context.clearRect(0,0,canvas.width,canvas.height)};
-    }
+    this.painter=cache.createPainter?.(canvas)??createSurfacePainter(canvas);
     port.onmessage=({data}:MessageEvent<DeviceReceipt|{kind:"stopped";token:string;consumedFrames:string}>)=>{
       if(this.closed||data.token!==binding.token)return;
       try {if(data.kind==="progress")this.clock.observe(data);}

@@ -24,7 +24,11 @@ function fixture(preparationFrames=8) {
   const frame=vi.fn(async(time:{ticks:string;timebase:number})=>picture(time));
   const hasFrame=vi.fn(()=>true);
   const cache={descriptor:()=>plan,frame,hasFrame,preparationFrames} as unknown as PictureCache;
-  const drawImage=vi.fn(),clearRect=vi.fn(),canvas={width:960,height:540,getContext:()=>({drawImage,clearRect})} as unknown as OffscreenCanvas;
+  const presentBitmap=vi.fn(),clearPicture=vi.fn();
+  const getContext=vi.fn(()=>({transferFromImageBitmap:(bitmap:{width:number;height:number}|null)=>{
+    if(bitmap){presentBitmap(bitmap);bitmap.width=0;bitmap.height=0;}else clearPicture();
+  }}));
+  const canvas={width:960,height:540,getContext} as unknown as OffscreenCanvas;
   const port={onmessage:null as ((event:{data:DeviceReceipt})=>void)|null,start:vi.fn(),close:vi.fn(),postMessage:vi.fn()};
   let now=1000,id=0;const callbacks=new Map<number,FrameRequestCallback>();
   const screen:SurfaceScheduler={request:callback=>{callbacks.set(++id,callback);return id;},cancel:key=>{callbacks.delete(key);},now:()=>now,timeOrigin:100000};
@@ -36,7 +40,7 @@ function fixture(preparationFrames=8) {
     renderFrame:start+through-first-128,quantumFrames:128,phase:"playing"}});
   const tick=async(delta=20)=>{now+=delta;const batch=[...callbacks.values()];callbacks.clear();for(const callback of batch)callback(now);await flush();};
   const timestamp=()=>player.timestamp({contextTime:1,performanceTime:1000,timeOrigin:100000});
-  return {player,binding,session,plan,frame,hasFrame,picture,bitmaps,drawImage,clearRect,port,callbacks,reports,failed,receipt,tick,timestamp};
+  return {player,binding,session,plan,frame,hasFrame,picture,bitmaps,presentBitmap,clearPicture,getContext,port,callbacks,reports,failed,receipt,tick,timestamp};
 }
 it("presents exact native frames while the UI sends no new timestamp, bounded by actual copied audio",async()=>{
   const f=fixture();await f.player.start(new AbortController().signal);
@@ -45,7 +49,8 @@ it("presents exact native frames while the UI sends no new timestamp, bounded by
   const result=f.player.snapshot();
   expect(result.time).toBe(.48);expect(result.presentedFrames).toBe(13);
   expect(JSON.parse(result.statistics)).toMatchObject({missedCachedFrames:0,presentationThread:"worker"});
-  expect(f.drawImage.mock.calls.map(([bitmap])=>(bitmap as {at:number}).at)).toEqual(Array.from({length:13},(_,n)=>n/25));
+  expect(f.getContext).toHaveBeenCalledExactlyOnceWith("bitmaprenderer");
+  expect(f.presentBitmap.mock.calls.map(([bitmap])=>(bitmap as {at:number}).at)).toEqual(Array.from({length:13},(_,n)=>n/25));
   expect(f.failed).not.toHaveBeenCalled();await f.player.stop(true);
   expect(f.port.close).toHaveBeenCalledOnce();expect(f.callbacks.size).toBe(0);
   expect(f.bitmaps.every(bitmap=>bitmap.close.mock.calls.length===1)).toBe(true);
@@ -70,7 +75,7 @@ it("cancels preparation and closes a late bitmap without starting its display lo
   const starting=f.player.start(abort.signal);await flush();abort.abort();
   const late=f.picture({ticks:"1",timebase:25});resolve(late);
   await expect(starting).rejects.toMatchObject({name:"AbortError"});
-  expect(late.pixels.close).toHaveBeenCalledOnce();expect(f.clearRect).toHaveBeenCalledOnce();
+  expect(late.pixels.close).toHaveBeenCalledOnce();expect(f.clearPicture).toHaveBeenCalledOnce();
   expect(f.callbacks.size).toBe(0);expect(f.port.close).toHaveBeenCalledOnce();
 });
 
@@ -120,7 +125,7 @@ it("reports the actual first picture before lookahead completes without starting
  f.frame.mockImplementation((...args)=>args[0].ticks==="1"
   ?new Promise<CachedPicture>(resolve=>{release=resolve;}) :base(...args));
  let started=false;const starting=f.player.start(new AbortController().signal).then(()=>{started=true;});await flush();
- expect(started).toBe(false);expect(f.drawImage).toHaveBeenCalledOnce();
+ expect(started).toBe(false);expect(f.presentBitmap).toHaveBeenCalledOnce();
  expect(f.reports[0]).toMatchObject({presentedFrames:1,time:0,readyThrough:{ticks:"1",timebase:25}});
  expect(f.port.postMessage).toHaveBeenLastCalledWith({kind:"picture-limit",token:"device",frames:"6720"});
  expect(f.callbacks.size).toBe(0);
@@ -142,12 +147,12 @@ it("pipelines at most four GPU validations and credits only their contiguous suc
  expect(f.frame).toHaveBeenCalledTimes(5);expect(f.player.snapshot().readyThrough).toEqual({ticks:"1",timebase:25});
  gates[3].resolve();await flush();expect(f.player.snapshot().readyThrough).toEqual({ticks:"1",timebase:25});
  expect(f.port.postMessage).toHaveBeenLastCalledWith({kind:"picture-limit",token:"device",frames:"6720"});
- expect(f.drawImage).toHaveBeenCalledTimes(1);
+ expect(f.presentBitmap).toHaveBeenCalledTimes(1);
  gates[0].resolve();gates[1].resolve();gates[2].resolve();await start;expect(f.player.snapshot().readyThrough).toEqual({ticks:"5",timebase:25});
  expect(f.port.postMessage).toHaveBeenLastCalledWith({kind:"picture-limit",token:"device",frames:"14400"});
  await f.tick();expect(f.frame).toHaveBeenCalledTimes(9);
  gates[4].reject(Error("GPU validation failed"));await flush();
  expect(f.failed).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({message:"GPU validation failed"}));
- expect(f.drawImage).toHaveBeenCalledTimes(1);expect(f.callbacks.size).toBe(0);
+ expect(f.presentBitmap).toHaveBeenCalledTimes(1);expect(f.callbacks.size).toBe(0);
  for(const gate of gates.slice(5))gate.resolve();await flush();expect(f.bitmaps.every(b=>b.close.mock.calls.length===1)).toBe(true);
 });

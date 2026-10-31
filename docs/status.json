@@ -192,7 +192,7 @@
       },
       "qualification": "Scopedcurrentcandidate only;4K nonrealtime,old incompleteheadstallopen,networkeventsnotfullycorrelated,manual/physicalA/V/crossplatform/full deliveryopen. No installedpackage promotion."
     },
-    "next_candidate": "Attribute retained long-run slow frame preparations and end-of-playback static refresh ownership before one bounded diagnostic. Do not repeat successful94s or assume hardware limits.",
+    "next_candidate": "Build Web once,verify shared presenter and native identity,then serial affected playback and independent pixel checks before service replacement. Keep GPU-thread profiling and harness failures separate from performance acceptance.",
     "decoder_regression_failures": "Initial test required optional stream duration, then assumed previous frame existed before nonzero firstPTS; preserved both failures. It also exposed production metadata selection staying serial. Integrated repair uses first admitted frame; all25 affected checks now pass.",
     "decoder_candidate_evidence": {
       "source_commit": "cbe924e9fffdb16d42b4636b86fcc732417945e2",
@@ -958,7 +958,7 @@
     },
     "candidate_native_source_commit": "0bb34837b56f96bef3f5f4642d5d57ebca72425b",
     "installed_cli_sha256": "73eaa55dbc7f4c359ab3b9801f55971f21ea986816c2ded845893a8a229dfd9f",
-    "current_slice": "Completion-gap reports deployed;202 scoped checks,one Web build,94s/seek/pause/resume,three independent pixel samples and actual editors passed. Strict realtime remains open.",
+    "current_slice": "Complete-bitmap display implemented;known transparent-frame accumulation reproduced and fixed in component/temporary diagnostic;255 scoped checks passed. Build and deployment pending.",
     "installed_worker_sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6",
     "latest_scoped_acceptance": "audio_report_cadence.completion_gap_candidate",
     "previous_recorded_candidate_before_wave_seek": {
@@ -10420,5 +10420,22 @@
       "files": 85
     },
     "status": "deployed_scope_accepted_remaining_performance_open"
+  },
+  "native_bitmap_presentation": {
+    "implemented": true,
+    "built": false,
+    "installed": false,
+    "baseline_commit": "a9ced809",
+    "component_evidence": "/private/tmp/opencut-local-upgrade-20261101/bitmap-presentation/component.json",
+    "comparison_evidence": "/private/tmp/opencut-local-upgrade-20261101/bitmap-presentation/comparison-summary.json",
+    "scope": "Replace fully composed frames with one shared bitmaprenderer presenter. Independent transparent-pixel reproduction exposes source-over accumulation; transfer replacement and clear are correct. No source decoding, export,public DTO,or native change.",
+    "web_tests": 255,
+    "web_boundary_files": 261,
+    "performance_verdict": "Small median changes in A/B/A do not close long-frame spikes or prove strict realtime.",
+    "standard": "https://html.spec.whatwg.org/multipage/canvas.html#the-imagebitmap-rendering-context",
+    "validation_remaining": "One integrated Web build,current-candidate playback/seek/pause/resume and installed actual editors.",
+    "strict_realtime_accepted": false,
+    "manual_acceptance": false,
+    "delivery_ready": false
   }
 }

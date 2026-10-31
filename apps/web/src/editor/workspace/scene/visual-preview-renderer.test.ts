@@ -115,12 +115,17 @@ it("retries only native busy errors within a fixed bound and cancels the retry d
   await vi.advanceTimersByTimeAsync(0); abort.abort(); await cancelled;
   await vi.runAllTimersAsync(); expect(f.call).toHaveBeenCalledTimes(8);
 });
-it("uses only a display context for presentation", () => {
-  const f = fixture(), drawImage = vi.fn(), clearRect = vi.fn(), getContext = vi.fn(() => ({ drawImage, clearRect }));
+it("transfers completed pictures without a second composition and clears the retained picture", () => {
+  const f = fixture(), transferFromImageBitmap = vi.fn(), getContext = vi.fn(() => ({ transferFromImageBitmap }));
   const painter = f.renderer.surfacePresenter({ width: 2, height: 2, getContext } as unknown as OffscreenCanvas);
   painter.draw(bitmap as unknown as ImageBitmap); painter.clear();
-  expect(getContext).toHaveBeenCalledExactlyOnceWith("2d", { desynchronized: true });
-  expect(drawImage).toHaveBeenCalledWith(bitmap, 0, 0); expect(clearRect).toHaveBeenCalledWith(0, 0, 2, 2);
+  expect(getContext).toHaveBeenCalledExactlyOnceWith("bitmaprenderer");
+  expect(transferFromImageBitmap.mock.calls).toEqual([[bitmap], [null]]);
+});
+it("fails when complete-bitmap presentation is unavailable without opening a different context", () => {
+  const f = fixture(), getContext = vi.fn(() => null);
+  expect(() => f.renderer.surfacePresenter({ getContext } as unknown as OffscreenCanvas)).toThrow("Preview display is unavailable");
+  expect(getContext).toHaveBeenCalledExactlyOnceWith("bitmaprenderer");
 });
 it("releases the next preparation after claimed metadata while verified pixels are pending", async () => {
   const f = fixture(); let bytes!: (value: Uint8ClampedArray) => void;

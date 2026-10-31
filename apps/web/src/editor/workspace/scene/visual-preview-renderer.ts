@@ -1,6 +1,7 @@
 import { PreviewSegmentDecoder } from "../../../../../../packages/classic-visual-renderer/src/preview-segment.mjs";
 import type { EditorApi } from "../api";
 import { OpenCutApiError, type ToolInput, type ToolOutput } from "../../../lib/editor-sdk";
+import { createSurfacePainter } from "./surface-player";
 
 export { PreviewSegmentDecoder };
 type Input = ToolInput<"opencut_visual_preview_frame">;
@@ -121,9 +122,7 @@ export class VisualPreviewRenderer {
     return { frame: completedFrame, claimed: Promise.resolve(), complete };
   }
   surfacePresenter(canvas: OffscreenCanvas) {
-    const context = canvas.getContext("2d", { desynchronized: true });
-    if (!context) throw Error("Native picture presentation is unavailable");
-    return { draw: (bitmap: ImageBitmap) => context.drawImage(bitmap, 0, 0), clear: () => context.clearRect(0, 0, canvas.width, canvas.height) };
+    return createSurfacePainter(canvas);
   }
   async surfaceBitmap(pixels: ImageBitmap) { return pixels; }
   close() { this.abort.abort(new DOMException("Native picture presentation closed", "AbortError")); }

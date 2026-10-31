@@ -4,7 +4,7 @@
   "in_progress": {
     "candidate_cli_sha256": "ce5c5a88a98aed2048a771e9f75e346ce72f03d5967ed1659f176b80460e4645",
     "candidate_worker_sha256": "8cbdb06c5543b87337113d190930fb9b118489cd2395e202937110328cda768b",
-    "candidate_web_source_digest": "f0f4318cf5f136f1104c2a9a860233e81199a8c345fab00b068f5e201b6c8e48",
+    "candidate_web_source_digest": "9745bb7ca2148408967a1d0fea880c5759d6cf8883c645fb17da546736904f98",
     "execution_scope_optimization": "Native10b27506 retains one bounded visual owner within the same fixed session/principal/owner/lease and identical policy. Full runtime/counter revalidation per generation/overlay handoff;old pixels/readers invalidated and fresh per-frame authority/admission/publication fences preserved. Handoff errors retire without silent retry. Existing paused heartbeat/same-position dedupe from unchanged Webe3953742 retained.",
     "preview_resolution": "Actual preview540 output960x540 for4K source;smallsource320x180 retained,no further reduction.",
     "export_resolution": "Original-source720/1080/1440/2160;Web default1080. Current6s4K export and PCM evidence under wave_seek_probe.",
@@ -950,7 +950,7 @@
       "qualification": "Current working candidate only,no install/package promotion.Process RSS samples exclude GPU/driver allocation;agent screenshots are not physical/human acceptance."
     },
     "web_build_policy": "Build Web into an owned external candidate outDir; do not overwrite retained apps/web/dist. Current services use the installed package Web1dc8c1b8 with285 identical verified assets. Historical old-service preservation proof remains under live_web_preservation.",
-    "candidate_web_source_commit": "f801c4126eb61efa74b83843cfdac2dd3b948bac",
+    "candidate_web_source_commit": "c93a264610bf68ca1c012dd0f8331f74621f8a18",
     "runtime_acceptance_original_producer_scope": {
       "web_source_commit": "32421ea267cedd33cf451f87d7a1709624c76eb1",
       "web_source_digest": "5cfed08f1bdfa63fd8645eae2123ef0118d2badcfe5c7e6b2333ebb456d98826",
@@ -958,9 +958,9 @@
     },
     "candidate_native_source_commit": "853e3ab590a9f05a9fd4b14e4020a6028d42995c",
     "installed_cli_sha256": "2b6bd348a880d6d5c4e7ff0da98bf2e7941f1a2832396a8746b845b26820ee4d",
-    "current_slice": "Full BLAKE3 SIMD verification deployed; native runtime unchanged; strict realtime, original warm advance gate and intermittent stall root cause remain open",
+    "current_slice": "Audio report cadence repair deployed with scoped acceptance; strict realtime, cold startup, intermittent stall cause and whole delivery remain open",
     "installed_worker_sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6",
-    "latest_scoped_acceptance": "simd_picture_digest",
+    "latest_scoped_acceptance": "audio_report_cadence",
     "previous_recorded_candidate_before_wave_seek": {
       "candidate_cli_sha256": "a2472d1bef079d3ee2a539e541cf36e3114092088487da001360a7f26112a5a3",
       "candidate_worker_sha256": "5d6ed551941117c9ca9580d3e3bb5060525f298e69d4db1c9b3bd89e18ee8a94",
@@ -4526,24 +4526,24 @@
     },
     "current_runtime_delivery": {
       "rust_source_commit": "853e3ab590a9f05a9fd4b14e4020a6028d42995c",
-      "web_source_commit": "f801c4126eb61efa74b83843cfdac2dd3b948bac",
-      "web_source_digest": "f0f4318cf5f136f1104c2a9a860233e81199a8c345fab00b068f5e201b6c8e48",
+      "web_source_commit": "c93a264610bf68ca1c012dd0f8331f74621f8a18",
+      "web_source_digest": "9745bb7ca2148408967a1d0fea880c5759d6cf8883c645fb17da546736904f98",
       "binaries": {
         "opencut": {
-          "path": "/Users/vincent/.opencut/runtime/native-local-simd-digest-final-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+          "path": "/Users/vincent/.opencut/runtime/native-local-audio-report-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
           "sha256": "2b6bd348a880d6d5c4e7ff0da98bf2e7941f1a2832396a8746b845b26820ee4d"
         },
         "opencut-render-worker": {
-          "path": "/Users/vincent/.opencut/runtime/native-local-simd-digest-final-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+          "path": "/Users/vincent/.opencut/runtime/native-local-audio-report-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
           "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
         }
       },
       "checkpoint": {
-        "path": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261031/simd-digest-final/checkpoint.json",
-        "sha256": "f46001a95a8da218fb774e1c105bf286149bc201654deaa1a521020d675ef8cf",
-        "files": 72
+        "path": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261031/audio-report-cadence/checkpoint.json",
+        "sha256": "48013d1bf4e7159b0642b687480c1bfdeba2f6fd1182e76277bbf505b73995b9",
+        "files": 61
       },
-      "scope": "Installed SIMD SDK/Web with identical native WAV-seek runtime; current fullUI and fault checks; native independent fidelity reused by exact identity.",
+      "scope": "Installed Web audio report cadence repair; unchanged native WAV-seek runtime and SIMD SDK guards. Current full editor and actual service acceptance; independent native fidelity explicitly reused.",
       "delivery_ready": false
     },
     "previous_runtime_delivery": {
@@ -4557,24 +4557,24 @@
     },
     "current_working_candidate": {
       "rust_source_commit": "853e3ab590a9f05a9fd4b14e4020a6028d42995c",
-      "web_source_commit": "f801c4126eb61efa74b83843cfdac2dd3b948bac",
-      "web_source_digest": "f0f4318cf5f136f1104c2a9a860233e81199a8c345fab00b068f5e201b6c8e48",
+      "web_source_commit": "c93a264610bf68ca1c012dd0f8331f74621f8a18",
+      "web_source_digest": "9745bb7ca2148408967a1d0fea880c5759d6cf8883c645fb17da546736904f98",
       "binaries": {
         "opencut": {
-          "path": "/Users/vincent/.opencut/runtime/native-local-simd-digest-final-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+          "path": "/Users/vincent/.opencut/runtime/native-local-audio-report-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
           "sha256": "2b6bd348a880d6d5c4e7ff0da98bf2e7941f1a2832396a8746b845b26820ee4d"
         },
         "opencut-render-worker": {
-          "path": "/Users/vincent/.opencut/runtime/native-local-simd-digest-final-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+          "path": "/Users/vincent/.opencut/runtime/native-local-audio-report-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
           "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
         }
       },
       "checkpoint": {
-        "path": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261031/simd-digest-final/checkpoint.json",
-        "sha256": "f46001a95a8da218fb774e1c105bf286149bc201654deaa1a521020d675ef8cf",
-        "files": 72
+        "path": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261031/audio-report-cadence/checkpoint.json",
+        "sha256": "48013d1bf4e7159b0642b687480c1bfdeba2f6fd1182e76277bbf505b73995b9",
+        "files": 61
       },
-      "scope": "Installed SIMD SDK/Web with identical native WAV-seek runtime; current fullUI and fault checks; native independent fidelity reused by exact identity.",
+      "scope": "Installed Web audio report cadence repair; unchanged native WAV-seek runtime and SIMD SDK guards. Current full editor and actual service acceptance; independent native fidelity explicitly reused.",
       "delivery_ready": false
     },
     "previous_working_candidate": {
@@ -4926,42 +4926,42 @@
     },
     "current_runtime": {
       "rust_source_commit": "853e3ab590a9f05a9fd4b14e4020a6028d42995c",
-      "web_source_commit": "f801c4126eb61efa74b83843cfdac2dd3b948bac",
-      "web_source_digest": "f0f4318cf5f136f1104c2a9a860233e81199a8c345fab00b068f5e201b6c8e48",
+      "web_source_commit": "c93a264610bf68ca1c012dd0f8331f74621f8a18",
+      "web_source_digest": "9745bb7ca2148408967a1d0fea880c5759d6cf8883c645fb17da546736904f98",
       "binaries": {
         "opencut": {
-          "path": "/Users/vincent/.opencut/runtime/native-local-simd-digest-final-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+          "path": "/Users/vincent/.opencut/runtime/native-local-audio-report-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
           "sha256": "2b6bd348a880d6d5c4e7ff0da98bf2e7941f1a2832396a8746b845b26820ee4d"
         },
         "opencut-render-worker": {
-          "path": "/Users/vincent/.opencut/runtime/native-local-simd-digest-final-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+          "path": "/Users/vincent/.opencut/runtime/native-local-audio-report-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
           "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
         }
       },
       "checkpoint": {
-        "path": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261031/simd-digest-final/checkpoint.json",
-        "sha256": "f46001a95a8da218fb774e1c105bf286149bc201654deaa1a521020d675ef8cf",
-        "files": 72
+        "path": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261031/audio-report-cadence/checkpoint.json",
+        "sha256": "48013d1bf4e7159b0642b687480c1bfdeba2f6fd1182e76277bbf505b73995b9",
+        "files": 61
       },
-      "scope": "Installed SIMD SDK/Web with identical native WAV-seek runtime; current fullUI and fault checks; native independent fidelity reused by exact identity.",
+      "scope": "Installed Web audio report cadence repair; unchanged native WAV-seek runtime and SIMD SDK guards. Current full editor and actual service acceptance; independent native fidelity explicitly reused.",
       "delivery_ready": false,
-      "service_state_scope": "Both user services verified ready with285assets each; owned synthetic service stopped",
+      "service_state_scope": "Both user services ready with285assets each; owned synthetic service stopped",
       "services": [
         {
           "name": "landscape",
-          "pid": 47276,
+          "pid": 48540,
           "endpoint": "http://127.0.0.1:8791",
           "runtime": {
             "opencut": {
-              "path": "/Users/vincent/.opencut/runtime/native-local-simd-digest-final-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+              "path": "/Users/vincent/.opencut/runtime/native-local-audio-report-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
               "sha256": "2b6bd348a880d6d5c4e7ff0da98bf2e7941f1a2832396a8746b845b26820ee4d"
             },
             "opencut-render-worker": {
-              "path": "/Users/vincent/.opencut/runtime/native-local-simd-digest-final-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+              "path": "/Users/vincent/.opencut/runtime/native-local-audio-report-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
               "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
             }
           },
-          "web_root": "/Users/vincent/.opencut/runtime/native-local-simd-digest-final-20261031/opencut-0.1.0-x86_64-apple-darwin/web",
+          "web_root": "/Users/vincent/.opencut/runtime/native-local-audio-report-20261031/opencut-0.1.0-x86_64-apple-darwin/web",
           "projects_unchanged": 2,
           "jobs_unchanged": 33,
           "assets_verified": 285,
@@ -4969,19 +4969,19 @@
         },
         {
           "name": "workbench",
-          "pid": 47300,
+          "pid": 48550,
           "endpoint": "http://127.0.0.1:59790",
           "runtime": {
             "opencut": {
-              "path": "/Users/vincent/.opencut/runtime/native-local-simd-digest-final-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+              "path": "/Users/vincent/.opencut/runtime/native-local-audio-report-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
               "sha256": "2b6bd348a880d6d5c4e7ff0da98bf2e7941f1a2832396a8746b845b26820ee4d"
             },
             "opencut-render-worker": {
-              "path": "/Users/vincent/.opencut/runtime/native-local-simd-digest-final-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+              "path": "/Users/vincent/.opencut/runtime/native-local-audio-report-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
               "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
             }
           },
-          "web_root": "/Users/vincent/.opencut/runtime/native-local-simd-digest-final-20261031/opencut-0.1.0-x86_64-apple-darwin/web",
+          "web_root": "/Users/vincent/.opencut/runtime/native-local-audio-report-20261031/opencut-0.1.0-x86_64-apple-darwin/web",
           "projects_unchanged": 2,
           "jobs_unchanged": 464,
           "assets_verified": 285,
@@ -6028,7 +6028,7 @@
         "files": 107
       }
     },
-    "latest_scoped_evidence": "simd_picture_digest",
+    "latest_scoped_evidence": "audio_report_cadence",
     "historical_before_simd_digest": {
       "current_runtime": {
         "rust_source_commit": "6c615de9d5b7c87f5534f2864f8b2ffdd2d49dfc",
@@ -6070,6 +6070,117 @@
         "web_rebuilt": false,
         "scope": "Opaqueinput4Rust/14architecture,boundaries,integratedbuild/exactCLIcontracts;actual6soriginal4K49.115s encoderRSS1588028KiB,identicalcompleteMP4/newPCMexact;8alphaRGBA+2artifacts and7HTTPframes/7guards pass.4K/small94sflows2820frames/4512000deviceframes,seek/pause/resume. Actualclickstart4.246/4.070spasses5s,legacyaction5.642/5.160sfailuresretained.4K126.216s action-to-end nonrealtime;no package promotion.",
         "qualification": "scoped_native_fidelity_and_actual_interaction_gates_passed_realtime_open",
+        "delivery_ready": false
+      }
+    },
+    "historical_before_audio_report_cadence": {
+      "current_runtime": {
+        "rust_source_commit": "853e3ab590a9f05a9fd4b14e4020a6028d42995c",
+        "web_source_commit": "f801c4126eb61efa74b83843cfdac2dd3b948bac",
+        "web_source_digest": "f0f4318cf5f136f1104c2a9a860233e81199a8c345fab00b068f5e201b6c8e48",
+        "binaries": {
+          "opencut": {
+            "path": "/Users/vincent/.opencut/runtime/native-local-simd-digest-final-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+            "sha256": "2b6bd348a880d6d5c4e7ff0da98bf2e7941f1a2832396a8746b845b26820ee4d"
+          },
+          "opencut-render-worker": {
+            "path": "/Users/vincent/.opencut/runtime/native-local-simd-digest-final-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+            "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
+          }
+        },
+        "checkpoint": {
+          "path": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261031/simd-digest-final/checkpoint.json",
+          "sha256": "f46001a95a8da218fb774e1c105bf286149bc201654deaa1a521020d675ef8cf",
+          "files": 72
+        },
+        "scope": "Installed SIMD SDK/Web with identical native WAV-seek runtime; current fullUI and fault checks; native independent fidelity reused by exact identity.",
+        "delivery_ready": false,
+        "service_state_scope": "Both user services verified ready with285assets each; owned synthetic service stopped",
+        "services": [
+          {
+            "name": "landscape",
+            "pid": 47276,
+            "endpoint": "http://127.0.0.1:8791",
+            "runtime": {
+              "opencut": {
+                "path": "/Users/vincent/.opencut/runtime/native-local-simd-digest-final-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+                "sha256": "2b6bd348a880d6d5c4e7ff0da98bf2e7941f1a2832396a8746b845b26820ee4d"
+              },
+              "opencut-render-worker": {
+                "path": "/Users/vincent/.opencut/runtime/native-local-simd-digest-final-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+                "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
+              }
+            },
+            "web_root": "/Users/vincent/.opencut/runtime/native-local-simd-digest-final-20261031/opencut-0.1.0-x86_64-apple-darwin/web",
+            "projects_unchanged": 2,
+            "jobs_unchanged": 33,
+            "assets_verified": 285,
+            "ready": true
+          },
+          {
+            "name": "workbench",
+            "pid": 47300,
+            "endpoint": "http://127.0.0.1:59790",
+            "runtime": {
+              "opencut": {
+                "path": "/Users/vincent/.opencut/runtime/native-local-simd-digest-final-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+                "sha256": "2b6bd348a880d6d5c4e7ff0da98bf2e7941f1a2832396a8746b845b26820ee4d"
+              },
+              "opencut-render-worker": {
+                "path": "/Users/vincent/.opencut/runtime/native-local-simd-digest-final-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+                "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
+              }
+            },
+            "web_root": "/Users/vincent/.opencut/runtime/native-local-simd-digest-final-20261031/opencut-0.1.0-x86_64-apple-darwin/web",
+            "projects_unchanged": 2,
+            "jobs_unchanged": 464,
+            "assets_verified": 285,
+            "ready": true
+          }
+        ]
+      },
+      "current_runtime_delivery": {
+        "rust_source_commit": "853e3ab590a9f05a9fd4b14e4020a6028d42995c",
+        "web_source_commit": "f801c4126eb61efa74b83843cfdac2dd3b948bac",
+        "web_source_digest": "f0f4318cf5f136f1104c2a9a860233e81199a8c345fab00b068f5e201b6c8e48",
+        "binaries": {
+          "opencut": {
+            "path": "/Users/vincent/.opencut/runtime/native-local-simd-digest-final-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+            "sha256": "2b6bd348a880d6d5c4e7ff0da98bf2e7941f1a2832396a8746b845b26820ee4d"
+          },
+          "opencut-render-worker": {
+            "path": "/Users/vincent/.opencut/runtime/native-local-simd-digest-final-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+            "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
+          }
+        },
+        "checkpoint": {
+          "path": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261031/simd-digest-final/checkpoint.json",
+          "sha256": "f46001a95a8da218fb774e1c105bf286149bc201654deaa1a521020d675ef8cf",
+          "files": 72
+        },
+        "scope": "Installed SIMD SDK/Web with identical native WAV-seek runtime; current fullUI and fault checks; native independent fidelity reused by exact identity.",
+        "delivery_ready": false
+      },
+      "current_working_candidate": {
+        "rust_source_commit": "853e3ab590a9f05a9fd4b14e4020a6028d42995c",
+        "web_source_commit": "f801c4126eb61efa74b83843cfdac2dd3b948bac",
+        "web_source_digest": "f0f4318cf5f136f1104c2a9a860233e81199a8c345fab00b068f5e201b6c8e48",
+        "binaries": {
+          "opencut": {
+            "path": "/Users/vincent/.opencut/runtime/native-local-simd-digest-final-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+            "sha256": "2b6bd348a880d6d5c4e7ff0da98bf2e7941f1a2832396a8746b845b26820ee4d"
+          },
+          "opencut-render-worker": {
+            "path": "/Users/vincent/.opencut/runtime/native-local-simd-digest-final-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+            "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
+          }
+        },
+        "checkpoint": {
+          "path": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261031/simd-digest-final/checkpoint.json",
+          "sha256": "f46001a95a8da218fb774e1c105bf286149bc201654deaa1a521020d675ef8cf",
+          "files": 72
+        },
+        "scope": "Installed SIMD SDK/Web with identical native WAV-seek runtime; current fullUI and fault checks; native independent fidelity reused by exact identity.",
         "delivery_ready": false
       }
     }
@@ -6785,43 +6896,43 @@
       "Web": "e39537420edee9c062574e1adc8cb206663c7bb2",
       "scope": "actual_4K_fixture,source_4K_export,real_projects,discovery_ABBA,installation_doctor_checks and packaging_tests retain historical first-stage evidence. Current scoped checks and producer are recorded under wave_seek_probe."
     },
-    "current_scoped_evidence": "simd_picture_digest",
+    "current_scoped_evidence": "audio_report_cadence",
     "initial_native_source_commit": "10b27506",
-    "previous_scoped_evidence": "wave_seek_probe",
+    "previous_scoped_evidence": "simd_picture_digest",
     "endpoints": [
       "http://127.0.0.1:8791",
       "http://127.0.0.1:59790"
     ],
     "current_installation": {
       "native_source_commit": "853e3ab590a9f05a9fd4b14e4020a6028d42995c",
-      "web_source_commit": "f801c4126eb61efa74b83843cfdac2dd3b948bac",
-      "web_source_digest": "f0f4318cf5f136f1104c2a9a860233e81199a8c345fab00b068f5e201b6c8e48",
+      "web_source_commit": "c93a264610bf68ca1c012dd0f8331f74621f8a18",
+      "web_source_digest": "9745bb7ca2148408967a1d0fea880c5759d6cf8883c645fb17da546736904f98",
       "runtime": {
         "opencut": {
-          "path": "/Users/vincent/.opencut/runtime/native-local-simd-digest-final-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+          "path": "/Users/vincent/.opencut/runtime/native-local-audio-report-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
           "sha256": "2b6bd348a880d6d5c4e7ff0da98bf2e7941f1a2832396a8746b845b26820ee4d"
         },
         "opencut-render-worker": {
-          "path": "/Users/vincent/.opencut/runtime/native-local-simd-digest-final-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+          "path": "/Users/vincent/.opencut/runtime/native-local-audio-report-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
           "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
         }
       },
       "services": [
         {
           "name": "landscape",
-          "pid": 47276,
+          "pid": 48540,
           "endpoint": "http://127.0.0.1:8791",
           "runtime": {
             "opencut": {
-              "path": "/Users/vincent/.opencut/runtime/native-local-simd-digest-final-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+              "path": "/Users/vincent/.opencut/runtime/native-local-audio-report-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
               "sha256": "2b6bd348a880d6d5c4e7ff0da98bf2e7941f1a2832396a8746b845b26820ee4d"
             },
             "opencut-render-worker": {
-              "path": "/Users/vincent/.opencut/runtime/native-local-simd-digest-final-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+              "path": "/Users/vincent/.opencut/runtime/native-local-audio-report-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
               "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
             }
           },
-          "web_root": "/Users/vincent/.opencut/runtime/native-local-simd-digest-final-20261031/opencut-0.1.0-x86_64-apple-darwin/web",
+          "web_root": "/Users/vincent/.opencut/runtime/native-local-audio-report-20261031/opencut-0.1.0-x86_64-apple-darwin/web",
           "projects_unchanged": 2,
           "jobs_unchanged": 33,
           "assets_verified": 285,
@@ -6829,19 +6940,19 @@
         },
         {
           "name": "workbench",
-          "pid": 47300,
+          "pid": 48550,
           "endpoint": "http://127.0.0.1:59790",
           "runtime": {
             "opencut": {
-              "path": "/Users/vincent/.opencut/runtime/native-local-simd-digest-final-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+              "path": "/Users/vincent/.opencut/runtime/native-local-audio-report-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
               "sha256": "2b6bd348a880d6d5c4e7ff0da98bf2e7941f1a2832396a8746b845b26820ee4d"
             },
             "opencut-render-worker": {
-              "path": "/Users/vincent/.opencut/runtime/native-local-simd-digest-final-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+              "path": "/Users/vincent/.opencut/runtime/native-local-audio-report-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
               "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
             }
           },
-          "web_root": "/Users/vincent/.opencut/runtime/native-local-simd-digest-final-20261031/opencut-0.1.0-x86_64-apple-darwin/web",
+          "web_root": "/Users/vincent/.opencut/runtime/native-local-audio-report-20261031/opencut-0.1.0-x86_64-apple-darwin/web",
           "projects_unchanged": 2,
           "jobs_unchanged": 464,
           "assets_verified": 285,
@@ -6849,9 +6960,9 @@
         }
       ],
       "checkpoint": {
-        "path": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261031/simd-digest-final/checkpoint.json",
-        "sha256": "f46001a95a8da218fb774e1c105bf286149bc201654deaa1a521020d675ef8cf",
-        "files": 72
+        "path": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261031/audio-report-cadence/checkpoint.json",
+        "sha256": "48013d1bf4e7159b0642b687480c1bfdeba2f6fd1182e76277bbf505b73995b9",
+        "files": 61
       }
     }
   },
@@ -7851,6 +7962,153 @@
       "source_commit": "f801c4126eb61efa74b83843cfdac2dd3b948bac",
       "source_digest": "f0f4318cf5f136f1104c2a9a860233e81199a8c345fab00b068f5e201b6c8e48",
       "asset_digest": "6aafa4088f30ab0775ea1119eb0c81b78a13ff6ca811b533b0bcf8d0cb4bda80",
+      "assets": 285
+    }
+  },
+  "audio_report_cadence": {
+    "native_source_commit": "853e3ab590a9f05a9fd4b14e4020a6028d42995c",
+    "web_source_commit": "c93a264610bf68ca1c012dd0f8331f74621f8a18",
+    "runtime": {
+      "opencut": {
+        "path": "/Users/vincent/.opencut/runtime/native-local-audio-report-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+        "sha256": "2b6bd348a880d6d5c4e7ff0da98bf2e7941f1a2832396a8746b845b26820ee4d"
+      },
+      "opencut-render-worker": {
+        "path": "/Users/vincent/.opencut/runtime/native-local-audio-report-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+        "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
+      }
+    },
+    "native_reuse": {
+      "all_native_files_identical": true,
+      "files": 2208,
+      "old_package": "/Users/vincent/.opencut/runtime/native-local-wave-seek-20261031/opencut-0.1.0-x86_64-apple-darwin",
+      "package": "/Users/vincent/.opencut/runtime/native-local-audio-report-20261031/opencut-0.1.0-x86_64-apple-darwin"
+    },
+    "native_reference": {
+      "checkpoint": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261031/wave-seek/checkpoint.json",
+      "sha256": "ad33b959edc79b1c60841bd312a014b74e834ac5ec8450be232ed5e39f9f7a9e",
+      "exact_runtime_matches": true,
+      "scope": "Independent native pixels, PCM and original-source4K export reused only for identical native runtime; new Web is tested separately."
+    },
+    "unchanged_guard_proof": {
+      "checkpoint": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261031/simd-digest-final/checkpoint.json",
+      "sha256": "f46001a95a8da218fb774e1c105bf286149bc201654deaa1a521020d675ef8cf",
+      "scope": "Unchanged SDK digest, fault-retirement, native runtime/pixels/PCM/export and packaging behavior. Native build.json is the retained 853e native build record, not a new build."
+    },
+    "scope": "Reanchor periodic audio reports after immediate completion reports; preserve immediate completions, latest cursor, 50ms periodic schedule, in-flight serialization, final stop and lease renewal.",
+    "Web_checks": 128,
+    "native_rebuilt": false,
+    "web_builds": 1,
+    "web_build_seconds": 19.24272258998826,
+    "full_ui_passed": true,
+    "first_frame_seconds": 3.9713999998569487,
+    "whole94_action_seconds": 107.127149651,
+    "control_reports": {
+      "previous": {
+        "count": 3216,
+        "interval_median_ms": 36.94376600001124,
+        "interval_under20ms": 759,
+        "interval_under10ms": 308,
+        "scope": "All report_consumed requests in the same full94s plus seek/pause/resume script; observed counts, not a controlled throughput comparison."
+      },
+      "current": {
+        "count": 2457,
+        "interval_median_ms": 49.298626999998305,
+        "interval_under20ms": 125,
+        "interval_under10ms": 86,
+        "scope": "All report_consumed requests in the same full94s plus seek/pause/resume script; observed counts, not a controlled throughput comparison."
+      }
+    },
+    "services": [
+      {
+        "name": "landscape",
+        "pid": 48540,
+        "endpoint": "http://127.0.0.1:8791",
+        "runtime": {
+          "opencut": {
+            "path": "/Users/vincent/.opencut/runtime/native-local-audio-report-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+            "sha256": "2b6bd348a880d6d5c4e7ff0da98bf2e7941f1a2832396a8746b845b26820ee4d"
+          },
+          "opencut-render-worker": {
+            "path": "/Users/vincent/.opencut/runtime/native-local-audio-report-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+            "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
+          }
+        },
+        "web_root": "/Users/vincent/.opencut/runtime/native-local-audio-report-20261031/opencut-0.1.0-x86_64-apple-darwin/web",
+        "projects_unchanged": 2,
+        "jobs_unchanged": 33,
+        "assets_verified": 285,
+        "ready": true
+      },
+      {
+        "name": "workbench",
+        "pid": 48550,
+        "endpoint": "http://127.0.0.1:59790",
+        "runtime": {
+          "opencut": {
+            "path": "/Users/vincent/.opencut/runtime/native-local-audio-report-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+            "sha256": "2b6bd348a880d6d5c4e7ff0da98bf2e7941f1a2832396a8746b845b26820ee4d"
+          },
+          "opencut-render-worker": {
+            "path": "/Users/vincent/.opencut/runtime/native-local-audio-report-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+            "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
+          }
+        },
+        "web_root": "/Users/vincent/.opencut/runtime/native-local-audio-report-20261031/opencut-0.1.0-x86_64-apple-darwin/web",
+        "projects_unchanged": 2,
+        "jobs_unchanged": 464,
+        "assets_verified": 285,
+        "ready": true
+      }
+    ],
+    "live_observations": [
+      {
+        "name": "landscape",
+        "pass": "cold",
+        "actual_click_to_first_frame_seconds": 8.817299999952317,
+        "start_seconds": 11.821385796000001,
+        "resume_seconds": 1.7081654690000014,
+        "resume_under_5s": true
+      },
+      {
+        "name": "landscape",
+        "pass": "warm",
+        "actual_click_to_first_frame_seconds": 0.9199000000953674,
+        "start_seconds": 3.9838704300000027,
+        "resume_seconds": 1.7126545009999972,
+        "resume_under_5s": true
+      },
+      {
+        "name": "workbench",
+        "pass": "cold",
+        "actual_click_to_first_frame_seconds": 3.4160999999046324,
+        "start_seconds": 6.324297169000001,
+        "resume_seconds": 2.7617279039999993,
+        "resume_under_5s": true
+      },
+      {
+        "name": "workbench",
+        "pass": "warm",
+        "actual_click_to_first_frame_seconds": 1.4842999999523163,
+        "start_seconds": 4.547981447999999,
+        "resume_seconds": 2.755251881999997,
+        "resume_under_5s": true
+      }
+    ],
+    "warm_original_advance_and_resume_5s_gate_passed": true,
+    "strict_realtime_accepted": false,
+    "human_physical_AV_accepted": false,
+    "intermittent_stall_root_cause_closed": false,
+    "delivery_ready": false,
+    "checkpoint": {
+      "path": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261031/audio-report-cadence/checkpoint.json",
+      "sha256": "48013d1bf4e7159b0642b687480c1bfdeba2f6fd1182e76277bbf505b73995b9",
+      "files": 61
+    },
+    "web": {
+      "source_commit": "c93a264610bf68ca1c012dd0f8331f74621f8a18",
+      "source_digest": "9745bb7ca2148408967a1d0fea880c5759d6cf8883c645fb17da546736904f98",
+      "asset_digest": "5de26bed80783e7077298fc76358e9204e4cbf365801d03584bad6f621eec097",
       "assets": 285
     }
   }

@@ -88,10 +88,14 @@ export class PreviewConsumptionPump implements PreviewPump {
     );
     if (!this.current()) throw new Error("Audio data pump has stopped.");
     this.session = session;
+    this.scheduleReport();
+    void this.read(session);
+  }
+  private scheduleReport() {
+    if (this.timer) clearInterval(this.timer);
     this.timer = setInterval(() => {
       void this.report().catch(() => {});
     }, 50);
-    void this.read(session);
   }
   private async read(session: AudioPreviewSession) {
     const signal = this.streamAbort.signal;
@@ -153,6 +157,11 @@ export class PreviewConsumptionPump implements PreviewPump {
       (this.draining && stopped === undefined)
     )
       return Promise.resolve(undefined);
+    // A block completion already reports the current device cursor. Start the
+    // periodic deadline from that report instead of sending another one on an
+    // unrelated timer phase. Completions and final stopped receipts stay
+    // immediate; a slow in-flight report still has periodic ticks pending.
+    if (!this.draining) this.scheduleReport();
     this.pendingCompletion = false;
     const previous = this.session;
     const command = (

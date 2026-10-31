@@ -437,3 +437,39 @@ it("wall-clock rollback cannot suppress a due heartbeat", async () => {
   ]);
   pump.abort();
 });
+
+it("reanchors periodic reports to immediate block completions without delaying the latest cursor", async () => {
+  const s = await session();
+  vi.useFakeTimers();
+  const control = vi.fn(async (input: AudioPreviewControl) => ({
+    ...s,
+    consumed_frames: input.command.kind === "report_consumed"
+      ? input.command.consumed_frames : s.consumed_frames,
+  }));
+  const failure = vi.fn();
+  const pump = new PreviewConsumptionPump({ open, control }, output(), () => true, vi.fn(), failure);
+  pump.start(s);
+  await vi.advanceTimersByTimeAsync(40);
+  pump.observe({ consumedFrames: "4096", stalled: false, contextTime: 0 });
+  pump.completed();
+  await flush();
+  expect(control).toHaveBeenCalledTimes(1);
+  await vi.advanceTimersByTimeAsync(10);
+  // The old timer phase must not duplicate the just-reported block.
+  expect(control).toHaveBeenCalledTimes(1);
+  pump.observe({ consumedFrames: "4608", stalled: false, contextTime: 0 });
+  await vi.advanceTimersByTimeAsync(40);
+  expect(control).toHaveBeenCalledTimes(2);
+  expect(control.mock.calls[1][0].command).toMatchObject({ consumed_frames: "4608" });
+  pump.observe({ consumedFrames: "8192", stalled: false, contextTime: 0 });
+  pump.completed();
+  await flush();
+  expect(control).toHaveBeenCalledTimes(3);
+  pump.freeze();
+  await pump.reportStopped("8256");
+  expect(control.mock.calls.at(-1)![0].command).toMatchObject({ consumed_frames: "8256", playing: false });
+  await vi.advanceTimersByTimeAsync(200);
+  expect(control).toHaveBeenCalledTimes(4);
+  expect(failure).not.toHaveBeenCalled();
+  pump.abort();
+});

@@ -4,7 +4,7 @@
   "in_progress": {
     "candidate_cli_sha256": "f3e59cda80eae9a78d9aff733bcef305a9efa315966860f893a87a8d0d0639d2",
     "candidate_worker_sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6",
-    "candidate_web_source_digest": "5b4809b408c59a5ab3c185b4c492f7d48c8bbe61ff4464507e7b0fee95d8add5",
+    "candidate_web_source_digest": "9d93dc82eac266a0da4b16e2c4f24d2fef9ce339a566d0f04e3455dc47b4ba6b",
     "execution_scope_optimization": "Native10b27506 retains one bounded visual owner within the same fixed session/principal/owner/lease and identical policy. Full runtime/counter revalidation per generation/overlay handoff;old pixels/readers invalidated and fresh per-frame authority/admission/publication fences preserved. Handoff errors retire without silent retry. Existing paused heartbeat/same-position dedupe from unchanged Webe3953742 retained.",
     "preview_resolution": "Actual preview540 output960x540 for4K source;smallsource320x180 retained,no further reduction.",
     "export_resolution": "Original-source720/1080/1440/2160;Web default1080. Current6s4K export and PCM evidence under wave_seek_probe.",
@@ -192,7 +192,7 @@
       },
       "qualification": "Scopedcurrentcandidate only;4K nonrealtime,old incompleteheadstallopen,networkeventsnotfullycorrelated,manual/physicalA/V/crossplatform/full deliveryopen. No installedpackage promotion."
     },
-    "next_candidate": "Build integrated Web once;verify same native runtime and exact diagnostic pump bytes;run affected94s/seek/pause/resume serially in retained synthetic workspace,then replace both local services and verify preservation. No Rust/SDK rebuild,source jobs,or video exports.",
+    "next_candidate": "Attribute retained long-run slow frame preparations and end-of-playback static refresh ownership before one bounded diagnostic. Do not repeat successful94s or assume hardware limits.",
     "decoder_regression_failures": "Initial test required optional stream duration, then assumed previous frame existed before nonzero firstPTS; preserved both failures. It also exposed production metadata selection staying serial. Integrated repair uses first admitted frame; all25 affected checks now pass.",
     "decoder_candidate_evidence": {
       "source_commit": "cbe924e9fffdb16d42b4636b86fcc732417945e2",
@@ -950,7 +950,7 @@
       "qualification": "Current working candidate only,no install/package promotion.Process RSS samples exclude GPU/driver allocation;agent screenshots are not physical/human acceptance."
     },
     "web_build_policy": "Build Web into an owned external candidate outDir; do not overwrite retained apps/web/dist. Current services use the installed package Web1dc8c1b8 with285 identical verified assets. Historical old-service preservation proof remains under live_web_preservation.",
-    "candidate_web_source_commit": "2e17571a4762948f7e8d34ad4e78e66cae485110",
+    "candidate_web_source_commit": "0476f942497abe7d8283c9dab9c9c6d511d7140f",
     "runtime_acceptance_original_producer_scope": {
       "web_source_commit": "32421ea267cedd33cf451f87d7a1709624c76eb1",
       "web_source_digest": "5cfed08f1bdfa63fd8645eae2123ef0118d2badcfe5c7e6b2333ebb456d98826",
@@ -958,9 +958,9 @@
     },
     "candidate_native_source_commit": "0bb34837b56f96bef3f5f4642d5d57ebca72425b",
     "installed_cli_sha256": "73eaa55dbc7f4c359ab3b9801f55971f21ea986816c2ded845893a8a229dfd9f",
-    "current_slice": "Completion-gap audio report cadence implemented after50/100/50 bounded diagnostic;202 scoped tests passed. One Web build and current-candidate long playback/deployment remain pending.",
+    "current_slice": "Completion-gap reports deployed;202 scoped checks,one Web build,94s/seek/pause/resume,three independent pixel samples and actual editors passed. Strict realtime remains open.",
     "installed_worker_sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6",
-    "latest_scoped_acceptance": "preview_frame_action",
+    "latest_scoped_acceptance": "audio_report_cadence.completion_gap_candidate",
     "previous_recorded_candidate_before_wave_seek": {
       "candidate_cli_sha256": "a2472d1bef079d3ee2a539e541cf36e3114092088487da001360a7f26112a5a3",
       "candidate_worker_sha256": "5d6ed551941117c9ca9580d3e3bb5060525f298e69d4db1c9b3bd89e18ee8a94",
@@ -3104,7 +3104,7 @@
     }
   },
   "known_limits": [
-    "Retained source-art/cancellation producer completes94s in100.201s action-to-end,with0.752s cumulative picture wait and no observed PCM starvation;strict realtime remains unaccepted. Current Web native-frame action and original-resolution snapshot are accepted in preview_frame_action. No new94s or video export for this Web-only slice;old producer proofs retain their identities. Initial5s cold static wait failed once;later bounded observations do not establish a hard cold-start guarantee.",
+    "Current completion-gap report candidate completes94s in100.042s action-to-end,with0.6923125s maximum observed device elapsed-minus-copied gap and no PCM starvation;strict realtime remains unaccepted. Prior0.7520208s includes an increase across end-of-stream(last preterminal0.6510208s),so no proved long-run wait improvement is claimed. Actual click first3.7927s passed5s;legacy action first5.1072s remained over5s. No new video export;native proofs retain exact producer identities.",
     "Historical scoped observation: Current single retained4K-source94s editor flow passes original startup/completion/seek/pause/resume gates,but119.15s click-to-ended is not real-time. Full94s4Kexport,unique long sources,broader performance and process/GPU/driver memory remain unqualified.",
     "Broader codec/container/color/orientation/default-track source-to-IR-to-backend fidelity remains open, including the unchanged untagged red export probe that observed RGB254/23/0 against green<15.",
     "The recorded asset-free four-second text resume stall near1.87seconds is not causally closed by later successful playback cases.",
@@ -4531,22 +4531,22 @@
       "rust_source_commit": "8ea7ae22a92ad1858f510803498cb5aff8524162",
       "host_source_commit": "8ea7ae22a92ad1858f510803498cb5aff8524162",
       "worker_source_commit": "853e3ab590a9f05a9fd4b14e4020a6028d42995c",
-      "web_source_commit": "a67fcfa88f08b3fb6f3b0fe707605402153f0050",
-      "web_source_digest": "195cc9d6ca71b41b76be7a6145c073097387e38e7b109a32fef3ec40af0c541a",
+      "web_source_commit": "0476f942497abe7d8283c9dab9c9c6d511d7140f",
+      "web_source_digest": "9d93dc82eac266a0da4b16e2c4f24d2fef9ce339a566d0f04e3455dc47b4ba6b",
       "checkpoint": {
-        "path": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/source-art/checkpoint.json",
-        "sha256": "ad2534427ee13bce2af8d066a0ba7aafc8d6b518e15dc0ec7805adbb26661425",
-        "files": 170
+        "path": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/picture-wait/checkpoint.json",
+        "sha256": "86aee5f5a1d9c84a1db60833d352dba7921435a6770c4721935fb3d9b934ea20",
+        "files": 61
       },
-      "scope": "Source-art observation cache and shared preview cancellation;new94s/actualeditor scoped validation;strict realtime and offline-frame button open.",
+      "scope": "Completion-gap reports deployed;202 scoped checks,one Web build,94s/seek/pause/resume,three independent pixel samples and actual editors passed. Strict realtime remains open.",
       "delivery_ready": false,
       "binaries": {
         "opencut": {
-          "path": "/Users/vincent/.opencut/runtime/native-local-preview-cleanup-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+          "path": "/Users/vincent/.opencut/runtime/native-local-report-cadence-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
           "sha256": "f3e59cda80eae9a78d9aff733bcef305a9efa315966860f893a87a8d0d0639d2"
         },
         "opencut-render-worker": {
-          "path": "/Users/vincent/.opencut/runtime/native-local-preview-cleanup-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+          "path": "/Users/vincent/.opencut/runtime/native-local-report-cadence-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
           "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
         }
       }
@@ -4564,22 +4564,22 @@
       "rust_source_commit": "8ea7ae22a92ad1858f510803498cb5aff8524162",
       "host_source_commit": "8ea7ae22a92ad1858f510803498cb5aff8524162",
       "worker_source_commit": "853e3ab590a9f05a9fd4b14e4020a6028d42995c",
-      "web_source_commit": "a67fcfa88f08b3fb6f3b0fe707605402153f0050",
-      "web_source_digest": "195cc9d6ca71b41b76be7a6145c073097387e38e7b109a32fef3ec40af0c541a",
+      "web_source_commit": "0476f942497abe7d8283c9dab9c9c6d511d7140f",
+      "web_source_digest": "9d93dc82eac266a0da4b16e2c4f24d2fef9ce339a566d0f04e3455dc47b4ba6b",
       "checkpoint": {
-        "path": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/source-art/checkpoint.json",
-        "sha256": "ad2534427ee13bce2af8d066a0ba7aafc8d6b518e15dc0ec7805adbb26661425",
-        "files": 170
+        "path": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/picture-wait/checkpoint.json",
+        "sha256": "86aee5f5a1d9c84a1db60833d352dba7921435a6770c4721935fb3d9b934ea20",
+        "files": 61
       },
-      "scope": "Source-art observation cache and shared preview cancellation;new94s/actualeditor scoped validation;strict realtime and offline-frame button open.",
+      "scope": "Completion-gap reports deployed;202 scoped checks,one Web build,94s/seek/pause/resume,three independent pixel samples and actual editors passed. Strict realtime remains open.",
       "delivery_ready": false,
       "binaries": {
         "opencut": {
-          "path": "/Users/vincent/.opencut/runtime/native-local-preview-cleanup-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+          "path": "/Users/vincent/.opencut/runtime/native-local-report-cadence-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
           "sha256": "f3e59cda80eae9a78d9aff733bcef305a9efa315966860f893a87a8d0d0639d2"
         },
         "opencut-render-worker": {
-          "path": "/Users/vincent/.opencut/runtime/native-local-preview-cleanup-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+          "path": "/Users/vincent/.opencut/runtime/native-local-report-cadence-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
           "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
         }
       }
@@ -4935,22 +4935,22 @@
       "rust_source_commit": "8ea7ae22a92ad1858f510803498cb5aff8524162",
       "host_source_commit": "8ea7ae22a92ad1858f510803498cb5aff8524162",
       "worker_source_commit": "853e3ab590a9f05a9fd4b14e4020a6028d42995c",
-      "web_source_commit": "a67fcfa88f08b3fb6f3b0fe707605402153f0050",
-      "web_source_digest": "195cc9d6ca71b41b76be7a6145c073097387e38e7b109a32fef3ec40af0c541a",
+      "web_source_commit": "0476f942497abe7d8283c9dab9c9c6d511d7140f",
+      "web_source_digest": "9d93dc82eac266a0da4b16e2c4f24d2fef9ce339a566d0f04e3455dc47b4ba6b",
       "checkpoint": {
-        "path": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/source-art/checkpoint.json",
-        "sha256": "ad2534427ee13bce2af8d066a0ba7aafc8d6b518e15dc0ec7805adbb26661425",
-        "files": 170
+        "path": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/picture-wait/checkpoint.json",
+        "sha256": "86aee5f5a1d9c84a1db60833d352dba7921435a6770c4721935fb3d9b934ea20",
+        "files": 61
       },
-      "scope": "Source-art observation cache and shared preview cancellation;new94s/actualeditor scoped validation;strict realtime and offline-frame button open.",
+      "scope": "Completion-gap reports deployed;202 scoped checks,one Web build,94s/seek/pause/resume,three independent pixel samples and actual editors passed. Strict realtime remains open.",
       "delivery_ready": false,
       "binaries": {
         "opencut": {
-          "path": "/Users/vincent/.opencut/runtime/native-local-preview-cleanup-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+          "path": "/Users/vincent/.opencut/runtime/native-local-report-cadence-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
           "sha256": "f3e59cda80eae9a78d9aff733bcef305a9efa315966860f893a87a8d0d0639d2"
         },
         "opencut-render-worker": {
-          "path": "/Users/vincent/.opencut/runtime/native-local-preview-cleanup-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+          "path": "/Users/vincent/.opencut/runtime/native-local-report-cadence-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
           "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
         }
       },
@@ -4958,43 +4958,44 @@
         {
           "name": "landscape",
           "endpoint": "http://127.0.0.1:8791",
-          "pid": 68068,
+          "pid": 71229,
           "database": "/Users/vincent/Desktop/海南/风光大片_20261027/workspace.sqlite",
           "runtime": {
             "opencut": {
-              "path": "/Users/vincent/.opencut/runtime/native-local-preview-cleanup-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+              "path": "/Users/vincent/.opencut/runtime/native-local-report-cadence-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
               "sha256": "f3e59cda80eae9a78d9aff733bcef305a9efa315966860f893a87a8d0d0639d2"
             },
             "opencut-render-worker": {
-              "path": "/Users/vincent/.opencut/runtime/native-local-preview-cleanup-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+              "path": "/Users/vincent/.opencut/runtime/native-local-report-cadence-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
               "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
             }
           },
-          "web_root": "/Users/vincent/.opencut/runtime/native-local-preview-cleanup-20261101/opencut-0.1.0-x86_64-apple-darwin/web",
-          "assets_verified": 285,
+          "web_root": "/Users/vincent/.opencut/runtime/native-local-report-cadence-20261101/opencut-0.1.0-x86_64-apple-darwin/web",
+          "assets_verified_at_switch": 285,
+          "assets_rechecked": 2,
           "ready": true
         },
         {
           "name": "workbench",
           "endpoint": "http://127.0.0.1:59790",
-          "pid": 68078,
+          "pid": 71234,
           "database": "/Users/vincent/.opencut/hainan/workspace.sqlite",
           "runtime": {
             "opencut": {
-              "path": "/Users/vincent/.opencut/runtime/native-local-preview-cleanup-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+              "path": "/Users/vincent/.opencut/runtime/native-local-report-cadence-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
               "sha256": "f3e59cda80eae9a78d9aff733bcef305a9efa315966860f893a87a8d0d0639d2"
             },
             "opencut-render-worker": {
-              "path": "/Users/vincent/.opencut/runtime/native-local-preview-cleanup-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+              "path": "/Users/vincent/.opencut/runtime/native-local-report-cadence-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
               "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
             }
           },
-          "web_root": "/Users/vincent/.opencut/runtime/native-local-preview-cleanup-20261101/opencut-0.1.0-x86_64-apple-darwin/web",
-          "assets_verified": 285,
+          "web_root": "/Users/vincent/.opencut/runtime/native-local-report-cadence-20261101/opencut-0.1.0-x86_64-apple-darwin/web",
+          "assets_verified_at_switch": 285,
+          "assets_rechecked": 2,
           "ready": true
         }
-      ],
-      "service_state_scope": "Both user services ready,285assets each; synthetic service stopped"
+      ]
     },
     "editor_head_integration": {
       "state": "integrated_scoped_run_failed_small_startup_realtime_open",
@@ -5344,26 +5345,33 @@
       }
     },
     "last_scoped_editor_candidate": {
-      "checkpoint": "/Users/vincent/Movies/OpenCut-native-rendering/4k/opaque-export-acceptance/editor-clock/checkpoint.json",
-      "checkpoint_sha256": "a2d834e012f2938ab8e1743d578f8d642a50077c5faa2c467fe92110e3885824",
-      "source_commit": "6c615de9d5b7c87f5534f2864f8b2ffdd2d49dfc",
-      "runtime": {
+      "rust_source_commit": "8ea7ae22a92ad1858f510803498cb5aff8524162",
+      "host_source_commit": "8ea7ae22a92ad1858f510803498cb5aff8524162",
+      "worker_source_commit": "853e3ab590a9f05a9fd4b14e4020a6028d42995c",
+      "web_source_commit": "0476f942497abe7d8283c9dab9c9c6d511d7140f",
+      "web_source_digest": "9d93dc82eac266a0da4b16e2c4f24d2fef9ce339a566d0f04e3455dc47b4ba6b",
+      "checkpoint": {
+        "path": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/picture-wait/checkpoint.json",
+        "sha256": "86aee5f5a1d9c84a1db60833d352dba7921435a6770c4721935fb3d9b934ea20",
+        "files": 61
+      },
+      "scope": "Completion-gap reports deployed;202 scoped checks,one Web build,94s/seek/pause/resume,three independent pixel samples and actual editors passed. Strict realtime remains open.",
+      "delivery_ready": false,
+      "binaries": {
         "opencut": {
-          "path": "/Users/vincent/Movies/OpenCut-native-rendering/candidates/555042d8b5138b6a73006bf440556e314dc48c28b1cc35cd9d3341f7a213f8f8/opencut",
-          "sha256": "555042d8b5138b6a73006bf440556e314dc48c28b1cc35cd9d3341f7a213f8f8"
+          "path": "/Users/vincent/.opencut/runtime/native-local-report-cadence-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+          "sha256": "f3e59cda80eae9a78d9aff733bcef305a9efa315966860f893a87a8d0d0639d2"
         },
         "opencut-render-worker": {
-          "path": "/Users/vincent/Movies/OpenCut-native-rendering/candidates/5d8adc3fc0d2e06007dd8da8c5cc86ed180b0a933876f29f264abe60f28792b3/opencut-render-worker",
-          "sha256": "5d8adc3fc0d2e06007dd8da8c5cc86ed180b0a933876f29f264abe60f28792b3"
+          "path": "/Users/vincent/.opencut/runtime/native-local-report-cadence-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+          "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
         }
       },
-      "web_source_commit": "989bf6637c1c08cffe664d25e3c44ed75476582a",
-      "interaction_clock": "Actual browser monotonicclick tovisible native frame;5s unchanged. Legacytimersandparentfailedreportretained.",
-      "overall_interaction_gates_passed": true,
-      "overall_legacy_action_gates_passed": false,
-      "realtime_complete": false,
-      "manual_acceptance": false,
-      "delivery_ready": false
+      "functional_passed": true,
+      "actual_click_first_5s_passed": true,
+      "legacy_action_first_5s_passed": false,
+      "strict_realtime_accepted": false,
+      "manual_acceptance": false
     },
     "opaque_video_input": {
       "state": "built_and_scoped_native_export_source_interaction_acceptance_passed_realtime_open",
@@ -6035,7 +6043,7 @@
         "files": 107
       }
     },
-    "latest_scoped_evidence": "source_art_runtime_observation",
+    "latest_scoped_evidence": "audio_report_cadence.completion_gap_candidate",
     "historical_before_simd_digest": {
       "current_runtime": {
         "rust_source_commit": "6c615de9d5b7c87f5534f2864f8b2ffdd2d49dfc",
@@ -7057,18 +7065,18 @@
     }
   },
   "local_service_upgrade": {
-    "state": "startup_priming_installed_scoped_acceptance",
+    "state": "completion_gap_reports_installed_scoped_acceptance",
     "assembly_commits": [
       "3136836a",
       "161cd597"
     ],
-    "native_source_commit": "0bb34837b56f96bef3f5f4642d5d57ebca72425b",
-    "installed_cli_sha256": "73eaa55dbc7f4c359ab3b9801f55971f21ea986816c2ded845893a8a229dfd9f",
+    "native_source_commit": "8ea7ae22a92ad1858f510803498cb5aff8524162",
+    "installed_cli_sha256": "f3e59cda80eae9a78d9aff733bcef305a9efa315966860f893a87a8d0d0639d2",
     "installed_worker_sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6",
     "services_switched": 2,
     "web_assets_verified_per_service": 285,
     "projects_unchanged": 4,
-    "old_jobs_unchanged": 508,
+    "old_jobs_unchanged": 519,
     "new_source_jobs": 0,
     "all_new_source_jobs_succeeded": true,
     "architecture_tests": 14,
@@ -7080,94 +7088,107 @@
       "p1440",
       "p2160"
     ],
-    "checkpoint_sha256": "4d32ef6be1a8e8da245a3c1a452ea7d522b51a6c9036ce4e6574e8b5d299d6f5",
-    "checkpoint_files": 72,
+    "checkpoint_sha256": "86aee5f5a1d9c84a1db60833d352dba7921435a6770c4721935fb3d9b934ea20",
+    "checkpoint_files": 61,
     "manual_acceptance": false,
     "delivery_ready": false,
     "prior_installed_cli_sha256": "73eaa55dbc7f4c359ab3b9801f55971f21ea986816c2ded845893a8a229dfd9f",
-    "installed_source_commit": "0bb34837b56f96bef3f5f4642d5d57ebca72425b",
+    "installed_source_commit": "8ea7ae22a92ad1858f510803498cb5aff8524162",
     "retained_first_stage_evidence_producer": {
       "cli": "106307ddb5ac2645838c1db49356754bbfb594a04cd6a3dec40771bbf6eb9dff",
       "worker": "ed7a1cab49ec3c81b9921c1b6828f51ab2ae325d4d87d5873c28592537b489c2",
       "Web": "e39537420edee9c062574e1adc8cb206663c7bb2",
       "scope": "actual_4K_fixture,source_4K_export,real_projects,discovery_ABBA,installation_doctor_checks and packaging_tests retain historical first-stage evidence. Current scoped checks and producer are recorded under wave_seek_probe."
     },
-    "current_scoped_evidence": "preview_frame_action",
+    "current_scoped_evidence": "audio_report_cadence.completion_gap_candidate",
     "initial_native_source_commit": "10b27506",
-    "previous_scoped_evidence": "source_art_runtime_observation",
+    "previous_scoped_evidence": "preview_frame_action",
     "endpoints": [
       "http://127.0.0.1:8791",
       "http://127.0.0.1:59790"
     ],
     "current_installation": {
+      "rust_source_commit": "8ea7ae22a92ad1858f510803498cb5aff8524162",
       "host_source_commit": "8ea7ae22a92ad1858f510803498cb5aff8524162",
       "worker_source_commit": "853e3ab590a9f05a9fd4b14e4020a6028d42995c",
-      "web_source_commit": "2e17571a4762948f7e8d34ad4e78e66cae485110",
-      "web_source_digest": "5b4809b408c59a5ab3c185b4c492f7d48c8bbe61ff4464507e7b0fee95d8add5",
-      "runtime": {
+      "web_source_commit": "0476f942497abe7d8283c9dab9c9c6d511d7140f",
+      "web_source_digest": "9d93dc82eac266a0da4b16e2c4f24d2fef9ce339a566d0f04e3455dc47b4ba6b",
+      "checkpoint": {
+        "path": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/picture-wait/checkpoint.json",
+        "sha256": "86aee5f5a1d9c84a1db60833d352dba7921435a6770c4721935fb3d9b934ea20",
+        "files": 61
+      },
+      "scope": "Completion-gap reports deployed;202 scoped checks,one Web build,94s/seek/pause/resume,three independent pixel samples and actual editors passed. Strict realtime remains open.",
+      "delivery_ready": false,
+      "binaries": {
         "opencut": {
-          "path": "/Users/vincent/.opencut/runtime/native-local-preview-action-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+          "path": "/Users/vincent/.opencut/runtime/native-local-report-cadence-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
           "sha256": "f3e59cda80eae9a78d9aff733bcef305a9efa315966860f893a87a8d0d0639d2"
         },
         "opencut-render-worker": {
-          "path": "/Users/vincent/.opencut/runtime/native-local-preview-action-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+          "path": "/Users/vincent/.opencut/runtime/native-local-report-cadence-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+          "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
+        }
+      },
+      "runtime": {
+        "opencut": {
+          "path": "/Users/vincent/.opencut/runtime/native-local-report-cadence-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+          "sha256": "f3e59cda80eae9a78d9aff733bcef305a9efa315966860f893a87a8d0d0639d2"
+        },
+        "opencut-render-worker": {
+          "path": "/Users/vincent/.opencut/runtime/native-local-report-cadence-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
           "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
         }
       },
       "web": {
-        "source_commit": "2e17571a4762948f7e8d34ad4e78e66cae485110",
-        "source_digest": "5b4809b408c59a5ab3c185b4c492f7d48c8bbe61ff4464507e7b0fee95d8add5",
-        "asset_digest": "93404beddbc7a31b250cf4732ecc1168da676d2dfb00bddb306f4a3f6bced2a5",
-        "web_root": "/Users/vincent/.opencut/runtime/native-local-preview-action-20261101/opencut-0.1.0-x86_64-apple-darwin/web",
-        "seconds": 18.280348773812875
+        "source_commit": "0476f942497abe7d8283c9dab9c9c6d511d7140f",
+        "source_digest": "9d93dc82eac266a0da4b16e2c4f24d2fef9ce339a566d0f04e3455dc47b4ba6b",
+        "asset_digest": "9d93a413a80774ea3f10533dac23ff0552ab7865908e54aed7e21c4dbd16964e",
+        "web_root": "/Users/vincent/.opencut/runtime/native-local-report-cadence-20261101/opencut-0.1.0-x86_64-apple-darwin/web",
+        "seconds": 18.492923204088584
       },
-      "checkpoint": {
-        "path": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/preview-action/checkpoint.json",
-        "sha256": "51583d2c07d6262591d6dcbd54f09e43234dfefe9ab61f502b7bd7108f62f426",
-        "files": 85
-      },
-      "scope": "Current-frame native preview action and paused-owner reuse, original-resolution explicit snapshot, actual-project refresh/resume; source-art and cancellation fixes remain in reused native/runtime Web ancestry.",
       "services": [
         {
           "name": "landscape",
           "endpoint": "http://127.0.0.1:8791",
-          "pid": 69599,
+          "pid": 71229,
           "database": "/Users/vincent/Desktop/海南/风光大片_20261027/workspace.sqlite",
           "runtime": {
             "opencut": {
-              "path": "/Users/vincent/.opencut/runtime/native-local-preview-action-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+              "path": "/Users/vincent/.opencut/runtime/native-local-report-cadence-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
               "sha256": "f3e59cda80eae9a78d9aff733bcef305a9efa315966860f893a87a8d0d0639d2"
             },
             "opencut-render-worker": {
-              "path": "/Users/vincent/.opencut/runtime/native-local-preview-action-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+              "path": "/Users/vincent/.opencut/runtime/native-local-report-cadence-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
               "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
             }
           },
-          "web_root": "/Users/vincent/.opencut/runtime/native-local-preview-action-20261101/opencut-0.1.0-x86_64-apple-darwin/web",
-          "assets_verified": 285,
+          "web_root": "/Users/vincent/.opencut/runtime/native-local-report-cadence-20261101/opencut-0.1.0-x86_64-apple-darwin/web",
+          "assets_verified_at_switch": 285,
+          "assets_rechecked": 2,
           "ready": true
         },
         {
           "name": "workbench",
           "endpoint": "http://127.0.0.1:59790",
-          "pid": 69607,
+          "pid": 71234,
           "database": "/Users/vincent/.opencut/hainan/workspace.sqlite",
           "runtime": {
             "opencut": {
-              "path": "/Users/vincent/.opencut/runtime/native-local-preview-action-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+              "path": "/Users/vincent/.opencut/runtime/native-local-report-cadence-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
               "sha256": "f3e59cda80eae9a78d9aff733bcef305a9efa315966860f893a87a8d0d0639d2"
             },
             "opencut-render-worker": {
-              "path": "/Users/vincent/.opencut/runtime/native-local-preview-action-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+              "path": "/Users/vincent/.opencut/runtime/native-local-report-cadence-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
               "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
             }
           },
-          "web_root": "/Users/vincent/.opencut/runtime/native-local-preview-action-20261101/opencut-0.1.0-x86_64-apple-darwin/web",
-          "assets_verified": 285,
+          "web_root": "/Users/vincent/.opencut/runtime/native-local-report-cadence-20261101/opencut-0.1.0-x86_64-apple-darwin/web",
+          "assets_verified_at_switch": 285,
+          "assets_rechecked": 2,
           "ready": true
         }
-      ],
-      "delivery_ready": false
+      ]
     },
     "historical_top_level_installation": {
       "state": "wave_seek_probe_installed_scoped_acceptance",
@@ -7228,11 +7249,11 @@
       {
         "name": "landscape",
         "passed": true,
-        "refresh_seconds": 0.4065846499999989,
-        "resume_seconds": 1.253445126999999,
-        "native_creates_before_refresh": 2,
-        "native_creates_after_refresh": 2,
-        "native_creates_after_resume": 2,
+        "refresh_seconds": 0.40979385,
+        "resume_seconds": 1.2392024380000002,
+        "native_creates_before_refresh": 1,
+        "native_creates_after_refresh": 1,
+        "native_creates_after_resume": 1,
         "export_jobs": 0,
         "export_default": "p1080",
         "export_options": [
@@ -7245,8 +7266,8 @@
       {
         "name": "workbench",
         "passed": true,
-        "refresh_seconds": 0.4106797960000004,
-        "resume_seconds": 1.7863502889999983,
+        "refresh_seconds": 0.4088710110000029,
+        "resume_seconds": 1.3033014289999991,
         "native_creates_before_refresh": 1,
         "native_creates_after_refresh": 1,
         "native_creates_after_resume": 1,
@@ -8407,47 +8428,542 @@
       "assets": 285
     },
     "completion_gap_candidate": {
+      "scope": "Completion-gap audio progress reports: causal50/100/50 diagnostic, integrated Web, retained94s functional flow, actual editors and local service replacement.",
+      "baseline_commit": "c538d0c4",
+      "source_commit": "0476f942497abe7d8283c9dab9c9c6d511d7140f",
+      "host_source_commit": "8ea7ae22a92ad1858f510803498cb5aff8524162",
+      "worker_source_commit": "853e3ab590a9f05a9fd4b14e4020a6028d42995c",
+      "runtime": {
+        "opencut": {
+          "path": "/Users/vincent/.opencut/runtime/native-local-report-cadence-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+          "sha256": "f3e59cda80eae9a78d9aff733bcef305a9efa315966860f893a87a8d0d0639d2"
+        },
+        "opencut-render-worker": {
+          "path": "/Users/vincent/.opencut/runtime/native-local-report-cadence-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+          "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
+        }
+      },
+      "web": {
+        "source_commit": "0476f942497abe7d8283c9dab9c9c6d511d7140f",
+        "source_digest": "9d93dc82eac266a0da4b16e2c4f24d2fef9ce339a566d0f04e3455dc47b4ba6b",
+        "asset_digest": "9d93a413a80774ea3f10533dac23ff0552ab7865908e54aed7e21c4dbd16964e",
+        "web_root": "/Users/vincent/.opencut/runtime/native-local-report-cadence-20261101/opencut-0.1.0-x86_64-apple-darwin/web",
+        "seconds": 18.492923204088584
+      },
       "implemented": true,
-      "deployed": false,
-      "diagnostic": "/private/tmp/opencut-local-upgrade-20261101/picture-wait/cadence-summary.json",
-      "baseline_web_source": "2e17571a4762948f7e8d34ad4e78e66cae485110",
-      "temporary_worker_intervals_ms": [
-        50,
-        100,
-        50
+      "built": true,
+      "scoped_behavior_accepted": true,
+      "installed": true,
+      "web_builds": 1,
+      "native_builds": 0,
+      "native_runtime_unchanged": {
+        "all_native_files_identical": true,
+        "files": 2208,
+        "all_non_web_files_identical": true,
+        "non_web_files": 2242,
+        "old_package": "/Users/vincent/.opencut/runtime/native-local-preview-action-20261101/opencut-0.1.0-x86_64-apple-darwin",
+        "package": "/Users/vincent/.opencut/runtime/native-local-report-cadence-20261101/opencut-0.1.0-x86_64-apple-darwin",
+        "assembly": "APFS clone of validated runtime, replace only new installation Web and regenerate manifest file inventory; no archive/recompile."
+      },
+      "pump_diagnostic_bytes_identical": {
+        "built_asset": "/private/tmp/opencut-local-upgrade-20261101/picture-wait/web-dist/assets/pump-worker-DGlb-N3O.js",
+        "sha256": "8ede460472a70244fc0a2795b1c64c05d59aebf0b8f06ce7f539d08dd1a3bac8",
+        "diagnostic_bytes_identical": true
+      },
+      "web_tests": {
+        "passed_unique": 202,
+        "initial_passed": 201,
+        "initial_failed": 1,
+        "corrected_seek_timing_test_passed": 1,
+        "passed_cases_not_repeated": true,
+        "failure_reason": "Seek endpoint-isolation test expected periodic report after50ms; updated its wait to100ms and ran only that case."
+      },
+      "web_boundaries": {
+        "status": "passed",
+        "files": 261,
+        "errors": []
+      },
+      "diagnostic": [
+        {
+          "case": "baseline-before",
+          "interval_ms": 50,
+          "measured_seconds": 5.977466263,
+          "picture_count": 180,
+          "control_count": 151,
+          "control_kinds": {
+            "report_consumed": 140,
+            "heartbeat": 11
+          },
+          "source_art_count": 24,
+          "picture_header_ms": {
+            "p50": 27.018,
+            "p95": 33.668
+          },
+          "sampled_native_frame_ms": {
+            "p50": 32.0,
+            "p95": 40.0
+          },
+          "sampled_picture_read_ms_p50": 11.1,
+          "sampled_queue": {
+            "min": 4,
+            "median": 5,
+            "max": 7
+          },
+          "device_wait_ms": {
+            "start": 2.6666666666666665,
+            "end": 2.6666666666666665
+          },
+          "underflow_events": "0",
+          "served_script_sha256": "232c58286f35f5a816e26180a7bac26d4de9248b4c58c850837408919b0951a0"
+        },
+        {
+          "case": "diagnostic",
+          "interval_ms": 100,
+          "measured_seconds": 5.983312618,
+          "picture_count": 184,
+          "control_count": 81,
+          "control_kinds": {
+            "report_consumed": 70,
+            "heartbeat": 11
+          },
+          "source_art_count": 24,
+          "picture_header_ms": {
+            "p50": 26.535,
+            "p95": 32.298
+          },
+          "sampled_native_frame_ms": {
+            "p50": 31.2,
+            "p95": 37.4
+          },
+          "sampled_picture_read_ms_p50": 11.0,
+          "sampled_queue": {
+            "min": 7,
+            "median": 9,
+            "max": 12
+          },
+          "device_wait_ms": {
+            "start": 0.0,
+            "end": 0.0
+          },
+          "underflow_events": "0",
+          "served_script_sha256": "8ede460472a70244fc0a2795b1c64c05d59aebf0b8f06ce7f539d08dd1a3bac8"
+        },
+        {
+          "case": "baseline-after",
+          "interval_ms": 50,
+          "measured_seconds": 5.970705105000001,
+          "picture_count": 178,
+          "control_count": 151,
+          "control_kinds": {
+            "report_consumed": 140,
+            "heartbeat": 11
+          },
+          "source_art_count": 24,
+          "picture_header_ms": {
+            "p50": 26.906,
+            "p95": 33.019
+          },
+          "sampled_native_frame_ms": {
+            "p50": 32.8,
+            "p95": 37.9
+          },
+          "sampled_picture_read_ms_p50": 11.4,
+          "sampled_queue": {
+            "min": 4,
+            "median": 6,
+            "max": 8
+          },
+          "device_wait_ms": {
+            "start": 0.0,
+            "end": 0.0
+          },
+          "underflow_events": "0",
+          "served_script_sha256": "232c58286f35f5a816e26180a7bac26d4de9248b4c58c850837408919b0951a0"
+        }
       ],
-      "measured_window_seconds": "approximately6 each; content62-68; fresh contexts, same fixed synthetic project",
-      "report_counts": [
-        140,
-        70,
-        140
+      "long_observation": {
+        "path": "/private/tmp/opencut-local-upgrade-20261101/picture-wait/native-long-ui-f3e59cda80ea-d1366df2e6a1.json",
+        "source_scope": "current Web0476",
+        "click_first_seconds": 3.7927000000476836,
+        "legacy_action_first_seconds": 5.107174519,
+        "action_end_seconds": 100.042013615,
+        "control_kinds": {
+          "report_consumed": 1168,
+          "heartbeat": 190
+        },
+        "max_observed_device_gap_seconds": 0.6923125,
+        "last_observed_preterminal_device_gap_seconds": 0.6923125,
+        "first_positive_gap_content_seconds": 14.6009375,
+        "underflow_events": 0,
+        "underflow_frames": 0,
+        "last_presentation_statistics": {
+          "observations": 4096,
+          "lagP95Ms": 91.22916666666667,
+          "lagP99Ms": 110.83333333333333,
+          "maxLagMs": 133.33333333333334,
+          "missedCachedFrames": 11,
+          "maxFrameGapMs": 73.79166666666667,
+          "maxWallFrameGapMs": 172.70000004768372,
+          "maxWallFrameGapAtSeconds": 83.46175,
+          "maxWallFrameGapBufferedFrames": 0,
+          "skippedIntervals": [
+            {
+              "from": 14.438270833333334,
+              "to": 14.489416666666667
+            },
+            {
+              "from": 83.46175,
+              "to": 83.56175
+            },
+            {
+              "from": 83.62841666666667,
+              "to": 83.680125
+            },
+            {
+              "from": 83.81345833333333,
+              "to": 83.87116666666667
+            },
+            {
+              "from": 84.05485416666667,
+              "to": 84.10752083333334
+            },
+            {
+              "from": 84.24085416666667,
+              "to": 84.30752083333333
+            },
+            {
+              "from": 85.07829166666667,
+              "to": 85.13489583333333
+            },
+            {
+              "from": 88.3324375,
+              "to": 88.38327083333333
+            },
+            {
+              "from": 89.6024375,
+              "to": 89.65966666666667
+            },
+            {
+              "from": 90.62902083333333,
+              "to": 90.68541666666667
+            }
+          ],
+          "presentationThread": "dedicated-worker",
+          "preparedFrames": 0,
+          "validatingFrames": 0,
+          "capacity": 18,
+          "readyThroughSeconds": 93.94647916666666,
+          "slowPreparations": [
+            {
+              "time": 1.9333333333333333,
+              "totalMs": 224.09999990463257
+            },
+            {
+              "time": 83.46175,
+              "totalMs": 202.59999990463257
+            },
+            {
+              "time": 38.76175,
+              "totalMs": 201.29999995231628
+            },
+            {
+              "time": 1.9,
+              "totalMs": 177.60000014305115
+            },
+            {
+              "time": 83.19508333333333,
+              "totalMs": 168.70000004768372
+            },
+            {
+              "time": 64.16175,
+              "totalMs": 165.70000004768372
+            },
+            {
+              "time": 83.22841666666666,
+              "totalMs": 160.59999990463257
+            },
+            {
+              "time": 66.92841666666666,
+              "totalMs": 149.89999985694885
+            },
+            {
+              "time": 64.12841666666667,
+              "totalMs": 139.79999995231628
+            },
+            {
+              "time": 19.8085625,
+              "totalMs": 134.20000004768372
+            },
+            {
+              "time": 19.841895833333332,
+              "totalMs": 129.10000014305115
+            },
+            {
+              "time": 83.62841666666667,
+              "totalMs": 119.20000004768372
+            },
+            {
+              "time": 13.833333333333334,
+              "totalMs": 105.70000004768372
+            },
+            {
+              "time": 83.56175,
+              "totalMs": 102
+            },
+            {
+              "time": 64.26175,
+              "totalMs": 100.79999995231628
+            },
+            {
+              "time": 83.59508333333333,
+              "totalMs": 93.29999995231628
+            }
+          ],
+          "submittedDeviceFrames": "4509233",
+          "projectedDeviceFrames": "4508232",
+          "pictureCreditFrames": "4511999",
+          "projectionAgeMs": 33.699951171875,
+          "nextPreparation": {
+            "ticks": "4509431",
+            "timebase": 48000
+          },
+          "firstQueued": null,
+          "lastQueued": null,
+          "filling": true,
+          "producerPreparedFrames": 0,
+          "producerNext": {
+            "ticks": "4511031",
+            "timebase": 48000
+          },
+          "producerFilling": true,
+          "producerServing": false,
+          "producerReadingFrames": 0,
+          "producerRetainedBytes": 6220800
+        },
+        "samples_by_content_10s": [
+          {
+            "start": 0,
+            "native_median_ms": 30.799999952316284,
+            "ready_median": 6.0,
+            "device_gap_max_seconds": 0.0
+          },
+          {
+            "start": 10,
+            "native_median_ms": 32.84999990463257,
+            "ready_median": 1.5,
+            "device_gap_max_seconds": 0.03233333333333333
+          },
+          {
+            "start": 20,
+            "native_median_ms": 30.84999990463257,
+            "ready_median": 5.5,
+            "device_gap_max_seconds": 0.035583333333333335
+          },
+          {
+            "start": 30,
+            "native_median_ms": 30.899999976158142,
+            "ready_median": 17.5,
+            "device_gap_max_seconds": 0.035583333333333335
+          },
+          {
+            "start": 40,
+            "native_median_ms": 31.00000011920929,
+            "ready_median": 18.0,
+            "device_gap_max_seconds": 0.035583333333333335
+          },
+          {
+            "start": 50,
+            "native_median_ms": 33.10000014305115,
+            "ready_median": 18,
+            "device_gap_max_seconds": 0.035583333333333335
+          },
+          {
+            "start": 60,
+            "native_median_ms": 32.69999980926514,
+            "ready_median": 16,
+            "device_gap_max_seconds": 0.035583333333333335
+          },
+          {
+            "start": 70,
+            "native_median_ms": 32.0,
+            "ready_median": 10.0,
+            "device_gap_max_seconds": 0.03825
+          },
+          {
+            "start": 80,
+            "native_median_ms": 33.30000019073486,
+            "ready_median": 0,
+            "device_gap_max_seconds": 0.6448333333333334
+          },
+          {
+            "start": 90,
+            "native_median_ms": 31.649999976158142,
+            "ready_median": 0,
+            "device_gap_max_seconds": 0.6923125
+          }
+        ]
+      },
+      "long_comparison_scope": "Descriptive observations,not a controlled repeated long-run speedup. Device gap is monotonic elapsed minus copied samples; the prior final increase crosses end-of-stream and cannot be assigned entirely to active picture wait.",
+      "independent_pixels": {
+        "passed": true,
+        "reference": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261031/realtime-catchup/catchup-pixels.json",
+        "reference_sha256": "69965a332ea1d8d725cd7793f168b5a1c455234d579bb81f095f19be0d6b3064",
+        "frames": [
+          {
+            "file": "sampled-picture-f3e59cda80ea-d1366df2e6a1-4.rgba",
+            "source_index": 120,
+            "actual_sha256": "22d27212b45183b12a918729cc515308abf5ddb3e59a909277f56e37390e859c",
+            "independent_reference_sha256": "22d27212b45183b12a918729cc515308abf5ddb3e59a909277f56e37390e859c",
+            "checked": true
+          },
+          {
+            "file": "sampled-picture-f3e59cda80ea-d1366df2e6a1-5.rgba",
+            "source_index": 150,
+            "actual_sha256": "e77cb84e7553db081126fac4b1c4d797e8b0d76042610cb93167c952db20ecf0",
+            "independent_reference_sha256": "e77cb84e7553db081126fac4b1c4d797e8b0d76042610cb93167c952db20ecf0",
+            "checked": true
+          },
+          {
+            "file": "sampled-picture-f3e59cda80ea-d1366df2e6a1-6.rgba",
+            "source_index": 180,
+            "actual_sha256": "48befdd6f5fd06975c8c2eeac36453bcc5cdba45d183a96c32b6e6793c4cdac6",
+            "independent_reference_sha256": "48befdd6f5fd06975c8c2eeac36453bcc5cdba45d183a96c32b6e6793c4cdac6",
+            "checked": true
+          }
+        ],
+        "capture_errors": []
+      },
+      "services": [
+        {
+          "name": "landscape",
+          "endpoint": "http://127.0.0.1:8791",
+          "pid": 71229,
+          "database": "/Users/vincent/Desktop/海南/风光大片_20261027/workspace.sqlite",
+          "runtime": {
+            "opencut": {
+              "path": "/Users/vincent/.opencut/runtime/native-local-report-cadence-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+              "sha256": "f3e59cda80eae9a78d9aff733bcef305a9efa315966860f893a87a8d0d0639d2"
+            },
+            "opencut-render-worker": {
+              "path": "/Users/vincent/.opencut/runtime/native-local-report-cadence-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+              "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
+            }
+          },
+          "web_root": "/Users/vincent/.opencut/runtime/native-local-report-cadence-20261101/opencut-0.1.0-x86_64-apple-darwin/web",
+          "assets_verified_at_switch": 285,
+          "assets_rechecked": 2,
+          "ready": true
+        },
+        {
+          "name": "workbench",
+          "endpoint": "http://127.0.0.1:59790",
+          "pid": 71234,
+          "database": "/Users/vincent/.opencut/hainan/workspace.sqlite",
+          "runtime": {
+            "opencut": {
+              "path": "/Users/vincent/.opencut/runtime/native-local-report-cadence-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+              "sha256": "f3e59cda80eae9a78d9aff733bcef305a9efa315966860f893a87a8d0d0639d2"
+            },
+            "opencut-render-worker": {
+              "path": "/Users/vincent/.opencut/runtime/native-local-report-cadence-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+              "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
+            }
+          },
+          "web_root": "/Users/vincent/.opencut/runtime/native-local-report-cadence-20261101/opencut-0.1.0-x86_64-apple-darwin/web",
+          "assets_verified_at_switch": 285,
+          "assets_rechecked": 2,
+          "ready": true
+        }
       ],
-      "heartbeat_counts": [
-        11,
-        11,
-        11
+      "live_ui": [
+        {
+          "name": "landscape",
+          "passed": true,
+          "refresh_seconds": 0.40979385,
+          "resume_seconds": 1.2392024380000002,
+          "native_creates_before_refresh": 1,
+          "native_creates_after_refresh": 1,
+          "native_creates_after_resume": 1,
+          "export_jobs": 0,
+          "export_default": "p1080",
+          "export_options": [
+            "p720",
+            "p1080",
+            "p1440",
+            "p2160"
+          ]
+        },
+        {
+          "name": "workbench",
+          "passed": true,
+          "refresh_seconds": 0.4088710110000029,
+          "resume_seconds": 1.3033014289999991,
+          "native_creates_before_refresh": 1,
+          "native_creates_after_refresh": 1,
+          "native_creates_after_resume": 1,
+          "export_jobs": 0,
+          "export_default": "p1080",
+          "export_options": [
+            "p720",
+            "p1080",
+            "p1440",
+            "p2160"
+          ]
+        }
       ],
-      "picture_header_median_ms": [
-        27.018,
-        26.535,
-        26.906
+      "user_preservation": [
+        {
+          "name": "landscape",
+          "projects_unchanged": true,
+          "project_count": 2,
+          "all_jobs_unchanged": true,
+          "job_count": 39,
+          "new_jobs": [],
+          "metadata_unchanged": true,
+          "integrity": "ok"
+        },
+        {
+          "name": "workbench",
+          "projects_unchanged": true,
+          "project_count": 2,
+          "all_jobs_unchanged": true,
+          "job_count": 480,
+          "new_jobs": [],
+          "metadata_unchanged": true,
+          "integrity": "ok"
+        }
       ],
-      "sampled_native_frame_median_ms": [
-        32,
-        31.2,
-        32.8
+      "synthetic_preservation": {
+        "exit_code": 0,
+        "all_projects_and_jobs_unchanged": true,
+        "jobs": 111,
+        "synthetic_stopped": true
+      },
+      "agent_visual_review": {
+        "passed": true,
+        "scope": "Two1440x1050 screenshots: coast preview,title,visible thumbnails and waveforms;no visible error placeholders. Not full-media or human physical A/V acceptance."
+      },
+      "preview_resolution": "preview540",
+      "export_default": "p1080",
+      "export_choices": [
+        "p720",
+        "p1080",
+        "p1440",
+        "p2160"
       ],
-      "sampled_ready_queue_median": [
-        5,
-        9,
-        6
-      ],
-      "all_underflow_events_zero": true,
-      "component_tests": "202 passed across initial201 and corrected1 seek timing expectation; retain original failure, no repeated passed cases",
-      "web_boundary_files": 261,
-      "build": "pending",
-      "long_playback": "pending",
-      "scope": "100ms gap timer; immediate block/final receipts, serialized controls, heartbeat and authorization remain unchanged. Short diagnostic is not long-playback or physical A/V acceptance."
+      "video_export_scope": "No new video export; complete2208-file native identity unchanged, retain prior independent original-source PCM/4K export proofs with their producer identities.",
+      "contract_checks": "Reuse exact unchanged f3 native binary and SDK checks from source-art checkpoint;doctor passed this assembled package.",
+      "manual_acceptance": false,
+      "strict_realtime_accepted": false,
+      "delivery_ready": false,
+      "next": "Attribute retained long-run slow frame preparations and end-of-playback static refresh ownership before one bounded diagnostic. Do not repeat successful94s or assume hardware limits.",
+      "checkpoint": {
+        "path": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/picture-wait/checkpoint.json",
+        "sha256": "86aee5f5a1d9c84a1db60833d352dba7921435a6770c4721935fb3d9b934ea20",
+        "files": 61
+      },
+      "deployed": true,
+      "status": "installed_scoped_acceptance"
     }
   },
   "realtime_picture_catchup": {

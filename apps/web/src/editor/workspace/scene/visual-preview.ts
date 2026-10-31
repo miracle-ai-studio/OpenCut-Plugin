@@ -216,7 +216,7 @@ export class VisualPreview {
   }
   showStill():Promise<void>{
     const state=this.host.state(),api=this.host.api(),snapshot=state&&(state.historical??state.head);
-    if(!state||!snapshot||!api)return Promise.resolve();
+    if(!state||!snapshot||!api||["loading","playing","stalled","unconfirmed"].includes(state.audioPreview.phase))return Promise.resolve();
     const sequence=snapshot.project.sequences.find(s=>s.id===state.sequenceId);if(!sequence)return Promise.resolve();
     let time=state.playhead;
     const end=sequenceContentEnd(sequence);
@@ -232,7 +232,18 @@ export class VisualPreview {
       if(signal.aborted||serial!==this.stillSerial||epoch!==this.epoch)return;
       await this.beforeStill();
       if(signal.aborted||serial!==this.stillSerial||epoch!==this.epoch)return;
-      const session=await this.still.read(time);
+      const current=this.host.state(),currentSnapshot=current&&(current.historical??current.head);
+      if(!current||this.host.api()!==api||currentSnapshot?.revision!==snapshot.revision||
+        current.sequenceId!==state.sequenceId||compareTime(current.playhead,state.playhead)!==0n||
+        ["loading","playing","stalled","unconfirmed"].includes(current.audioPreview.phase))return;
+      // A paused sound session already owns this native picture. Opening a
+      // separate still owner would duplicate resources and detach edit tools.
+      const paused=current.audioPreview.phase==="paused"?current.audioPreview.session:null;
+      if(paused&&(paused.state!=="paused"||paused.identity.project_id!==snapshot.project.id||
+        paused.identity.revision!==snapshot.revision||paused.identity.sequence_id!==state.sequenceId||
+        compareTime(paused.presentation_time,state.playhead)!==0n))
+        throw new Error("The paused preview no longer matches this frame.");
+      const session=paused??await this.still.read(time);
       if(signal.aborted||serial!==this.stillSerial||epoch!==this.epoch)return;
       this.currentToken=token(session);
       await this.render(session,signal,epoch);

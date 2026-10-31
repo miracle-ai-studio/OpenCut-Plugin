@@ -144,6 +144,43 @@ async function fixture(bitmaps = false, manualScreen = false) {
   };
 }
 
+it("refreshes the current paused sound owner without creating a second preview session", async () => {
+  const f = await fixture(true);
+  const session = { ...f.s, state: "paused" as const };
+  f.state().audioPreview = { ...f.state().audioPreview, phase: "paused", session };
+  try {
+    const shown = f.visual.showStill();
+    await flush();
+    expect(f.calls).toHaveLength(1);
+    f.calls[0].resolve(0);
+    await shown;
+    expect(f.api.scene.audioPreviewCreate).not.toHaveBeenCalled();
+    expect(f.api.scene.audioPreviewControl).not.toHaveBeenCalled();
+    expect(f.calls[0].session).toMatchObject({ session_id: session.session_id, lease_id: session.lease_id });
+    expect(f.visual.pausedEditSession()).toBe(session);
+  } finally { await f.visual.retireStill(); f.visual.dispose(); }
+});
+
+it.each(["loading","playing","stalled","unconfirmed"] as const)("does not interrupt %s playback with a static refresh", async phase => {
+  const f=await fixture();
+  f.state().audioPreview.phase=phase;
+  try {
+    await f.visual.showStill();
+    expect(f.calls).toHaveLength(0);
+    expect(f.api.scene.audioPreviewCreate).not.toHaveBeenCalled();
+  } finally {f.visual.dispose();}
+});
+
+it("rejects a paused owner from another revision instead of opening a replacement", async () => {
+  const f=await fixture();
+  f.state().audioPreview={...f.state().audioPreview,phase:"paused",session:{...f.s,state:"paused",identity:{...f.s.identity,revision:"retired"}}};
+  try {
+    await expect(f.visual.showStill()).rejects.toThrow("paused preview no longer matches");
+    expect(f.calls).toHaveLength(0);
+    expect(f.api.scene.audioPreviewCreate).not.toHaveBeenCalled();
+  } finally {f.visual.dispose();}
+});
+
 it("previews and restores static opacity on the existing stopped-picture owner without starting sound", async () => {
   const f=await fixture(true);
   try {

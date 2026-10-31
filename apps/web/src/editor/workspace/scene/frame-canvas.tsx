@@ -137,12 +137,17 @@ export function FrameCanvas({
     lastCanvasFrame.current?.target===target&&!!preparingTime&&
     Math.abs(lastCanvasFrame.current.time-Number(preparingTime.ticks)/preparingTime.timebase)<1e-9;
   const attempt = scene?.frame;
+  const stillTimer=useRef<ReturnType<typeof setTimeout>|null>(null);
   useEffect(()=>{
     if(!scene?.audioPreview.capability?.available||!scene.frameCapability?.frame.available)return;
     const audio=scene.audioPreview;
     if(!["idle","ended","paused"].includes(audio.phase)||(audio.phase==="paused"&&audio.session))return;
-    const timer=setTimeout(()=>{void controller.scene.visualPreview.showStill().catch(error=>controller.report(error));},60);
-    return ()=>clearTimeout(timer);
+    const timer=setTimeout(()=>{
+      stillTimer.current=null;
+      void controller.scene.visualPreview.showStill().catch(error=>controller.report(error));
+    },60);
+    stillTimer.current=timer;
+    return ()=>{clearTimeout(timer);if(stillTimer.current===timer)stillTimer.current=null;};
   },[controller,api,revision,scene?.sequenceId,scene?.playhead,scene?.audioPreview.phase,scene?.audioPreview.session,scene?.audioPreview.capability?.available,scene?.frameCapability?.frame.available]);
   useEffect(()=>{
     const leave=()=>visual.dispose();window.addEventListener("pagehide",leave);window.addEventListener("beforeunload",leave);
@@ -204,18 +209,21 @@ export function FrameCanvas({
   const working =
     !!attempt &&
     ["submitting", "accepted", "downloading"].includes(attempt.phase);
+  const previewBusy=["loading","playing","stalled","unconfirmed"].includes(scene.audioPreview.phase);
   const controls = (<>
       <div className="toolbar padded editor-frame-actions">
         <Button
           icon={<ImageIcon size={14} />}
           title={t("Render scene frame")}
           disabled={
-            pending || !!reason || working || attempt?.phase === "unconfirmed"
+            pending || !!reason || working || canvasEditing || previewBusy ||
+            live.phase === "loading" || !scene.audioPreview.capability?.available || attempt?.phase === "unconfirmed"
           }
           onClick={() => {
             epoch.current++;
             setImage(null);
-            void run(() => controller.scene.frame.start());
+            if(stillTimer.current!==null){clearTimeout(stillTimer.current);stillTimer.current=null;}
+            void run(() => controller.scene.visualPreview.showStill());
           }}
         >
           <span className="workbench-action-label">{t("Render scene frame")}</span>
@@ -224,7 +232,7 @@ export function FrameCanvas({
           prepareCapture={() => controller.scene.frame.prepareCapture()}
           name={(scene.historical ?? scene.head).project.name}
           disabled={pending || !!reason || working || canvasEditing ||
-            live.surfaceActive || live.phase === "loading" || scene?.audioPreview.phase === "loading" || attempt?.phase === "unconfirmed"}
+            previewBusy || live.phase === "loading" || attempt?.phase === "unconfirmed"}
           report={(error) => controller.report(error)}
           menu={menu}
           closeMenu={() => setMenu(null)}

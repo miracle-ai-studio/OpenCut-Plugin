@@ -9673,5 +9673,19 @@
       ],
       "scope": "Old host cached thumbnail profile; not a controlled overall cold-decode benchmark."
     }
+  },
+  "preview_frame_action": {
+    "implemented": true,
+    "built": false,
+    "scoped_behavior_accepted": false,
+    "installed": false,
+    "manual_acceptance": false,
+    "delivery_ready": false,
+    "baseline_commit": "b60f9435",
+    "native_runtime_unchanged": true,
+    "public_contracts_changed": false,
+    "web_tests": 201,
+    "regression": "Paused static refresh created a second native owner; now reuses the same fixed revision/time owner. Manual preview cancels its pending auto-preview timer and creates no export Job. Explicit snapshot remains original-resolution export.",
+    "validation_scope": "One Web build; reuse current native binary, synthetic workspace, source jobs and independent frame reference. Target actual preview action, paused owner reuse, original-resolution snapshot, then replace both local services. No new 94s run unless changed behavior or failure warrants."
   }
 }

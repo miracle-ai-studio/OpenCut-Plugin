@@ -11,14 +11,19 @@ import { afterEach, expect, it, vi } from "vitest";
 import { WorkspaceProvider } from "../context";
 import { Product } from "./product";
 import { setupFrame } from "./frame-fixture";
+import * as downloads from "../../shared/download";
 afterEach(() => {
   cleanup();
+  vi.useRealTimers();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
 
-it("renders the saved scene frame in the existing canvas, keeps notes as a separate HUD and removes stale pixels immediately on seek", async () => {
+it("saves the original scene frame, keeps notes as a separate HUD and removes stale pixels immediately on seek", async () => {
   const f = await setupFrame();
+  const save=vi.spyOn(downloads,"saveResponse").mockImplementation(async (_name,fetchResponse)=>{
+    expect((await fetchResponse()).headers.get("content-type")).toBe("image/png");
+  });
   const create = vi.fn(() => "blob:scene-frame"),
     revoke = vi.fn();
   Object.defineProperty(URL, "createObjectURL", {
@@ -45,7 +50,7 @@ it("renders the saved scene frame in the existing canvas, keeps notes as a separ
         <Product />
       </WorkspaceProvider>,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Preview current frame" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save snapshot" }));
     await waitFor(() => expect(f.requests).toHaveLength(1));
     await act(async () => {
       f.complete();
@@ -53,6 +58,7 @@ it("renders the saved scene frame in the existing canvas, keeps notes as a separ
     });
     const image = await screen.findByAltText("Rendered scene frame");
     expect(image.getAttribute("src")).toBe("blob:scene-frame");
+    expect(save).toHaveBeenCalledOnce();
     expect(
       screen.getByRole("region", { name: "Canvas notes" }).textContent,
     ).toContain("Editor-only note");
@@ -70,6 +76,29 @@ it("renders the saved scene frame in the existing canvas, keeps notes as a separ
     cleanup();
     f.controller.dispose();
   }
+});
+
+it("previews through the native owner once when the button beats automatic preview, without an export job", async () => {
+  const f=await setupFrame();
+  vi.spyOn(f.api.scene,"audioPreviewCapability").mockResolvedValue({
+    available:true,unavailable_reason:null,profile:"classic-realtime-v31",sample_rates:[44100,48000],
+    stream_path:"/api/preview/audio/stream",max_sessions_per_database:4,pcm_stage:"mastered",
+    max_block_frames:4096,max_buffered_frames:8192,owner_lease_ms:30000,
+    authorization_heartbeat_ms:1000,session_ttl_ms:120000,
+  });
+  await f.controller.scene.audioPreview.capability();
+  const shown=vi.spyOn(f.controller.scene.visualPreview,"showStill").mockResolvedValue(undefined);
+  vi.useFakeTimers();
+  try {
+    render(<WorkspaceProvider controller={f.controller}><Product /></WorkspaceProvider>);
+    const button=screen.getByRole("button",{name:"Preview current frame"}) as HTMLButtonElement;
+    expect(button.disabled).toBe(false);
+    await act(async()=>{fireEvent.click(button);});
+    expect(shown).toHaveBeenCalledOnce();
+    await act(async()=>{vi.advanceTimersByTime(61);});
+    expect(shown).toHaveBeenCalledOnce();
+    expect(f.requests).toHaveLength(0);
+  } finally {cleanup();f.controller.dispose();}
 });
 
 it("disables unavailable services with a clear capability reason while the rest of the editor stays usable", async () => {
@@ -169,14 +198,19 @@ it("hands presentation to the worker without covering it with retained paused pi
  const snapshot=vi.spyOn(visual,"snapshot").mockReturnValue(view),listeners=new Set<()=>void>();
  vi.spyOn(visual,"subscribe").mockImplementation(listener=>{listeners.add(listener);return()=>{listeners.delete(listener);};});
  try{
+  f.controller.getSnapshot().scene!.audioPreview.phase="paused";
   render(<WorkspaceProvider controller={f.controller}><Product/></WorkspaceProvider>);
   const paused=screen.getByRole("img",{name:"Live scene preview"});
   act(()=>{snapshot.mockReturnValue({...view,surfaceGeneration:1,surfaceActive:true});listeners.forEach(listener=>listener());});
   expect(screen.getByRole("img",{name:"Live scene preview"}).getAttribute("data-preview-surface")).toBe("worker");
   expect(paused.style.display).toBe("none");expect(paused.getAttribute("aria-hidden")).toBe("true");
   expect(bitmap.close).not.toHaveBeenCalled();
+  expect((screen.getByRole("button",{name:"Save snapshot"}) as HTMLButtonElement).disabled).toBe(false);
+  expect((screen.getByRole("button",{name:"Copy snapshot"}) as HTMLButtonElement).disabled).toBe(false);
+  f.controller.getSnapshot().scene!.audioPreview.phase="playing";
   act(()=>{snapshot.mockReturnValue({...view,surfaceGeneration:1,surfaceActive:false});listeners.forEach(listener=>listener());});
   expect(screen.getByRole("img",{name:"Live scene preview"})).toBe(paused);
   expect(paused.style.display).toBe("");expect(paused.getAttribute("aria-hidden")).toBeNull();
+  expect((screen.getByRole("button",{name:"Save snapshot"}) as HTMLButtonElement).disabled).toBe(true);
  }finally{cleanup();f.controller.dispose();}
 });

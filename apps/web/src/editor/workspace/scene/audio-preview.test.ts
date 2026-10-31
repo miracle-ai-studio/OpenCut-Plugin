@@ -797,7 +797,7 @@ it("ignores the replaced output's endpoint after a playing seek", async () => {
     expect(
       f.controls.filter((r) => r.command.kind === "report_consumed"),
     ).toHaveLength(reports);
-    await vi.advanceTimersByTimeAsync(50);
+    await vi.advanceTimersByTimeAsync(100);
     expect(f.controls.at(-1)).toMatchObject({
       generation: "2",
       command: { consumed_frames: "0", sequence: "1" },

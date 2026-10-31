@@ -192,7 +192,7 @@
       },
       "qualification": "Scopedcurrentcandidate only;4K nonrealtime,old incompleteheadstallopen,networkeventsnotfullycorrelated,manual/physicalA/V/crossplatform/full deliveryopen. No installedpackage promotion."
     },
-    "next_candidate": "Use retained94s observations to locate remaining picture-wait intervals and compare source boundaries, request timing and device credit. Form a causal hypothesis before a bounded diagnostic;do not repeat successful94s/media/export fixtures or assume a hardware limit.",
+    "next_candidate": "Build integrated Web once;verify same native runtime and exact diagnostic pump bytes;run affected94s/seek/pause/resume serially in retained synthetic workspace,then replace both local services and verify preservation. No Rust/SDK rebuild,source jobs,or video exports.",
     "decoder_regression_failures": "Initial test required optional stream duration, then assumed previous frame existed before nonzero firstPTS; preserved both failures. It also exposed production metadata selection staying serial. Integrated repair uses first admitted frame; all25 affected checks now pass.",
     "decoder_candidate_evidence": {
       "source_commit": "cbe924e9fffdb16d42b4636b86fcc732417945e2",
@@ -958,7 +958,7 @@
     },
     "candidate_native_source_commit": "0bb34837b56f96bef3f5f4642d5d57ebca72425b",
     "installed_cli_sha256": "73eaa55dbc7f4c359ab3b9801f55971f21ea986816c2ded845893a8a229dfd9f",
-    "current_slice": "Native current-frame action and paused-owner reuse deployed to both services;independent540p/4K PNG pixels and actual-editor refresh/resume passed. Strict realtime and cold-start variation remain open.",
+    "current_slice": "Completion-gap audio report cadence implemented after50/100/50 bounded diagnostic;202 scoped tests passed. One Web build and current-candidate long playback/deployment remain pending.",
     "installed_worker_sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6",
     "latest_scoped_acceptance": "preview_frame_action",
     "previous_recorded_candidate_before_wave_seek": {
@@ -8405,6 +8405,49 @@
       "source_digest": "9745bb7ca2148408967a1d0fea880c5759d6cf8883c645fb17da546736904f98",
       "asset_digest": "5de26bed80783e7077298fc76358e9204e4cbf365801d03584bad6f621eec097",
       "assets": 285
+    },
+    "completion_gap_candidate": {
+      "implemented": true,
+      "deployed": false,
+      "diagnostic": "/private/tmp/opencut-local-upgrade-20261101/picture-wait/cadence-summary.json",
+      "baseline_web_source": "2e17571a4762948f7e8d34ad4e78e66cae485110",
+      "temporary_worker_intervals_ms": [
+        50,
+        100,
+        50
+      ],
+      "measured_window_seconds": "approximately6 each; content62-68; fresh contexts, same fixed synthetic project",
+      "report_counts": [
+        140,
+        70,
+        140
+      ],
+      "heartbeat_counts": [
+        11,
+        11,
+        11
+      ],
+      "picture_header_median_ms": [
+        27.018,
+        26.535,
+        26.906
+      ],
+      "sampled_native_frame_median_ms": [
+        32,
+        31.2,
+        32.8
+      ],
+      "sampled_ready_queue_median": [
+        5,
+        9,
+        6
+      ],
+      "all_underflow_events_zero": true,
+      "component_tests": "202 passed across initial201 and corrected1 seek timing expectation; retain original failure, no repeated passed cases",
+      "web_boundary_files": 261,
+      "build": "pending",
+      "long_playback": "pending",
+      "scope": "100ms gap timer; immediate block/final receipts, serialized controls, heartbeat and authorization remain unchanged. Short diagnostic is not long-playback or physical A/V acceptance."
     }
   },
   "realtime_picture_catchup": {

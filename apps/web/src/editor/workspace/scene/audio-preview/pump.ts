@@ -93,9 +93,11 @@ export class PreviewConsumptionPump implements PreviewPump {
   }
   private scheduleReport() {
     if (this.timer) clearInterval(this.timer);
+    // Completed 4096-sample blocks already report every ~85–93 ms at
+    // 44.1/48 kHz. Only fill a gap when no completion arrives.
     this.timer = setInterval(() => {
       void this.report().catch(() => {});
-    }, 50);
+    }, 100);
   }
   private async read(session: AudioPreviewSession) {
     const signal = this.streamAbort.signal;

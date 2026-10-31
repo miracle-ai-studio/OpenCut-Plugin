@@ -449,7 +449,7 @@ it("reanchors periodic reports to immediate block completions without delaying t
   const failure = vi.fn();
   const pump = new PreviewConsumptionPump({ open, control }, output(), () => true, vi.fn(), failure);
   pump.start(s);
-  await vi.advanceTimersByTimeAsync(40);
+  await vi.advanceTimersByTimeAsync(90);
   pump.observe({ consumedFrames: "4096", stalled: false, contextTime: 0 });
   pump.completed();
   await flush();
@@ -458,7 +458,7 @@ it("reanchors periodic reports to immediate block completions without delaying t
   // The old timer phase must not duplicate the just-reported block.
   expect(control).toHaveBeenCalledTimes(1);
   pump.observe({ consumedFrames: "4608", stalled: false, contextTime: 0 });
-  await vi.advanceTimersByTimeAsync(40);
+  await vi.advanceTimersByTimeAsync(90);
   expect(control).toHaveBeenCalledTimes(2);
   expect(control.mock.calls[1][0].command).toMatchObject({ consumed_frames: "4608" });
   pump.observe({ consumedFrames: "8192", stalled: false, contextTime: 0 });
@@ -470,6 +470,37 @@ it("reanchors periodic reports to immediate block completions without delaying t
   expect(control.mock.calls.at(-1)![0].command).toMatchObject({ consumed_frames: "8256", playing: false });
   await vi.advanceTimersByTimeAsync(200);
   expect(control).toHaveBeenCalledTimes(4);
+  expect(failure).not.toHaveBeenCalled();
+  pump.abort();
+});
+
+it.each([86, 93])("does not add partial reports between %i ms block completions", async (blockMs) => {
+  const s = await session();
+  vi.useFakeTimers();
+  const failure = vi.fn();
+  const control = vi.fn(async (input: AudioPreviewControl) => ({
+    ...s,
+    consumed_frames: input.command.kind === "report_consumed"
+      ? input.command.consumed_frames : s.consumed_frames,
+  }));
+  const pump = new PreviewConsumptionPump({ open, control }, output(), () => true, vi.fn(), failure);
+  pump.start(s);
+  for (let block = 1; block <= 3; block++) {
+    await vi.advanceTimersByTimeAsync(50);
+    pump.observe({ consumedFrames: String((block - 1) * 4096 + 2048), stalled: false, contextTime: 0 });
+    await vi.advanceTimersByTimeAsync(blockMs - 50);
+    expect(control).toHaveBeenCalledTimes(block - 1);
+    pump.observe({ consumedFrames: String(block * 4096), stalled: false, contextTime: 0 });
+    pump.completed();
+    await flush();
+    expect(control).toHaveBeenCalledTimes(block);
+    expect(control.mock.calls.at(-1)![0].command).toMatchObject({ consumed_frames: String(block * 4096) });
+  }
+  // A stalled or partial final block still gets a periodic receipt.
+  pump.observe({ consumedFrames: "12352", stalled: true, contextTime: 0 });
+  await vi.advanceTimersByTimeAsync(100);
+  expect(control).toHaveBeenCalledTimes(4);
+  expect(control.mock.calls.at(-1)![0].command).toMatchObject({ consumed_frames: "12352", stalled: true });
   expect(failure).not.toHaveBeenCalled();
   pump.abort();
 });

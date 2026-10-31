@@ -141,6 +141,10 @@ export class PreviewRecovery {
   }
   private async ack(pending: Pending, retire: boolean, keepalive = false) {
     this.check(pending);
+    // Ordinary cancellation can race both owner cleanup and a late Stage
+    // response. Share the native retirement fence instead of restaging each.
+    if (retire && this.atomicRetirement.get(pending.api))
+      return this.retireOriginal(pending);
     if (!pending.record) {
       // A lost Stage response still has an exact original request in this
       // document. Stage it with the original key to recover its opaque slot.

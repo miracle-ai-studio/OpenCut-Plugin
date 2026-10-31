@@ -381,3 +381,34 @@ it('normal owner cleanup uses the native retirement fence after lease expiry and
  await expect(recovery.create(f.api,create,new AbortController().signal,()=>true)).rejects.toMatchObject({name:'AbortError'});
  expect(f.legacyControl).not.toHaveBeenCalled();
 });
+
+it("coalesces ordinary cancellation and a late Stage response into one original retirement", async () => {
+  const f = fixture(), recovery = new PreviewRecovery();
+  f.hostCapabilities.mockResolvedValue({ tools: [...names, "opencut_audio_preview_recovery_retire"] });
+  const normal = f.call.getMockImplementation()!;
+  let release!: (value: unknown) => void, entered!: () => void;
+  const staged = new Promise<void>(resolve => { entered = resolve; });
+  const response = new Promise<unknown>(resolve => { release = resolve; });
+  f.call.mockImplementation((tool, input) => {
+    if (tool.endsWith("_stage")) { entered(); return response; }
+    if (tool.endsWith("_retire")) return Promise.resolve({ recovery_id: record.recovery_id });
+    return normal(tool, input);
+  });
+  const creating = recovery.create(f.api, create, new AbortController().signal, () => true);
+  const cancelled = expect(creating).rejects.toMatchObject({ name: "AbortError" });
+  await staged;
+  const cleanup = Promise.all([recovery.retire(f.api, create), recovery.retire(f.api, create)]);
+  await vi.waitFor(() => expect(f.call.mock.calls.filter(([tool]) =>
+    tool.endsWith("_stage") || tool.endsWith("_retire"),
+  ).length).toBeGreaterThan(1));
+  release(record);
+  await Promise.all([cleanup, cancelled]);
+  const calls = f.call.mock.calls;
+  expect(calls.filter(([tool]) => tool.endsWith("_stage"))).toHaveLength(1);
+  expect(calls.filter(([tool]) => tool.endsWith("_retire"))).toEqual([
+    ["opencut_audio_preview_recovery_retire", { request: { kind: "create", request: create } }, { keepalive: true }],
+  ]);
+  expect(calls.some(([tool]) => tool.endsWith("_ack") || tool.endsWith("_dispatch"))).toBe(false);
+  await expect(recovery.create(f.api, create, new AbortController().signal, () => true))
+    .rejects.toMatchObject({ name: "AbortError" });
+});

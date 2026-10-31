@@ -9278,7 +9278,7 @@
     }
   },
   "source_art_runtime_observation": {
-    "status": "pending_integrated_validation",
+    "status": "host_verified_preview_startup_gate_failed_web_cleanup_pending",
     "deployed": false,
     "observation_complete_seconds": 5.330523397,
     "cached_thumbnail_after_idle_seconds": [
@@ -9286,7 +9286,24 @@
       0.014656484127044678,
       0.012448076158761978
     ],
-    "scope": "Host-only dependency observation; full capture on first/change, no periodic Unix recapture; full capture on platforms without change identity. Public operations, worker, Web and permission checks unchanged.",
-    "delivery_ready": false
+    "scope": "Host source-art identity reuse verified. Cold synthetic first-frame gate failed; existing Web ordinary cancellation redundantly restaged one pending preview. Reuse existing native retirement fence for ordinary cleanup and late Stage responses; integrated Web verification pending. No new public operation or native rebuild.",
+    "delivery_ready": false,
+    "host_source_commit": "8ea7ae22a92ad1858f510803498cb5aff8524162",
+    "host_sha256": "f3e59cda80eae9a78d9aff733bcef305a9efa315966860f893a87a8d0d0639d2",
+    "rust_tests": 19,
+    "after_idle_seconds": [
+      0.005809611175209284,
+      0.005608492065221071,
+      0.004783617798238993
+    ],
+    "startup_gate_passed": false,
+    "full_continuous_playback_completed": false,
+    "cancellation_reproduction": {
+      "stage_requests_before": 3,
+      "stage_requests_after": 1,
+      "shared_retirement_requests_after": 1,
+      "web_tests": 176,
+      "web_built": false
+    }
   }
 }

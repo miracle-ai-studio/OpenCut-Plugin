@@ -192,7 +192,7 @@
       },
       "qualification": "Scopedcurrentcandidate only;4K nonrealtime,old incompleteheadstallopen,networkeventsnotfullycorrelated,manual/physicalA/V/crossplatform/full deliveryopen. No installedpackage promotion."
     },
-    "next_candidate": "Use retained mid-play stage/GPU traces for one causal scheduling or transfer hypothesis. Metal microprobe does not support persistent queue-capacity cost or same-selected-GPU contention. No hardware-limit verdict and no full94s/export replay without a changed hypothesis.",
+    "next_candidate": "Investigate retained untagged-red original-source export discrepancy using existing source/IR/backend evidence. Separate metadata interpretation from encoding;do not rerun passed94s or regenerate existing media without a changed hypothesis.",
     "decoder_regression_failures": "Initial test required optional stream duration, then assumed previous frame existed before nonzero firstPTS; preserved both failures. It also exposed production metadata selection staying serial. Integrated repair uses first admitted frame; all25 affected checks now pass.",
     "decoder_candidate_evidence": {
       "source_commit": "cbe924e9fffdb16d42b4636b86fcc732417945e2",
@@ -958,9 +958,9 @@
     },
     "candidate_native_source_commit": "8ea7ae22a92ad1858f510803498cb5aff8524162",
     "installed_cli_sha256": "73eaa55dbc7f4c359ab3b9801f55971f21ea986816c2ded845893a8a229dfd9f",
-    "current_slice": "Ready static preview transfers its native owner and recovery journal into Play;implicit playback preserves the selected rate and defaults48000Hz. Final166 Web and14 architecture checks passed. Baseline recreated both workers;candidate retains both with zero new session. Two actual editors verify button/Space,pause,refresh,resume. Two Web builds(first never deployed),no Rust build. Strict realtime,cold-start variability and manual A/V remain open.",
+    "current_slice": "Installed Weba6c7b571 unchanged. Visible-window94s flow,90s seek,pause/resume and three independent RGBA comparisons passed. Actual first frame2.0372s,legacy2.4275s;max wall frame gap43ms,lag44.4167ms,no missed frames/PCM starvation. Device elapsed-minus-copied max0.0106667s. Headless presentation backpressure is environment-specific;no product cursor slowdown shipped. Broader fidelity/manual acceptance remains open.",
     "installed_worker_sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6",
-    "latest_scoped_acceptance": "static_play_handoff",
+    "latest_scoped_acceptance": "foreground_preview_validation",
     "previous_recorded_candidate_before_wave_seek": {
       "candidate_cli_sha256": "a2472d1bef079d3ee2a539e541cf36e3114092088487da001360a7f26112a5a3",
       "candidate_worker_sha256": "5d6ed551941117c9ca9580d3e3bb5060525f298e69d4db1c9b3bd89e18ee8a94",
@@ -3105,7 +3105,7 @@
     }
   },
   "known_limits": [
-    "Current completion-gap report candidate completes94s in100.042s action-to-end,with0.6923125s maximum observed device elapsed-minus-copied gap and no PCM starvation;strict realtime remains unaccepted. Prior0.7520208s includes an increase across end-of-stream(last preterminal0.6510208s),so no proved long-run wait improvement is claimed. Actual click first3.7927s passed5s;legacy action first5.1072s remained over5s. No new video export;native proofs retain exact producer identities.",
+    "Current visible-window94s observation on Weba6c7b571:action-to-end96.9367s includingstartup,actual first frame2.0372s,maximum device elapsed-minus-copied0.0106667s,max wall frame gap43ms,max lag44.4167ms,no missed cached frames or PCM starvation. This bounded repeated-source observation does not qualify physical output,all media or universal realtime. Historical headless0.528/0.692s waits retain original identities and are not representative foreground guarantees.",
     "Historical scoped observation: Current single retained4K-source94s editor flow passes original startup/completion/seek/pause/resume gates,but119.15s click-to-ended is not real-time. Full94s4Kexport,unique long sources,broader performance and process/GPU/driver memory remain unqualified.",
     "Broader codec/container/color/orientation/default-track source-to-IR-to-backend fidelity remains open, including the unchanged untagged red export probe that observed RGB254/23/0 against green<15.",
     "The recorded asset-free four-second text resume stall near1.87seconds is not causally closed by later successful playback cases.",
@@ -6056,7 +6056,7 @@
         "files": 107
       }
     },
-    "latest_scoped_evidence": "static_play_handoff",
+    "latest_scoped_evidence": "foreground_preview_validation",
     "historical_before_simd_digest": {
       "current_runtime": {
         "rust_source_commit": "6c615de9d5b7c87f5534f2864f8b2ffdd2d49dfc",
@@ -11789,5 +11789,82 @@
         "https://developer.apple.com/library/archive/documentation/3DDrawing/Conceptual/MTLBestPracticesGuide/PersistentObjects.html"
       ]
     }
+  },
+  "foreground_preview_validation": {
+    "scope": "Same installed Weba6c7b571 and native runtime;foreground94s functional/startup/pixel and device-continuity observation,not whole-product/manual physical A/V acceptance.",
+    "source_commit": "a6c7b5717177564ecd9ac7fc5a2603a08374831a",
+    "browser_mode": "visible window",
+    "browser_sha256": "b5626938028f718a6cdb0c8eff9d0346b186d68b4e04b43df4f9f579c81ecf28",
+    "runtime": {
+      "opencut": {
+        "path": "/Users/vincent/.opencut/runtime/native-local-static-play-handoff-final-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+        "sha256": "f3e59cda80eae9a78d9aff733bcef305a9efa315966860f893a87a8d0d0639d2"
+      },
+      "opencut-render-worker": {
+        "path": "/Users/vincent/.opencut/runtime/native-local-static-play-handoff-final-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+        "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
+      }
+    },
+    "startup_seconds": 2.0372000000476835,
+    "legacy_action_startup_seconds": 2.4274900280000002,
+    "startup_gate_seconds": 5,
+    "startup_gate_passed": true,
+    "legacy_action_gate_passed": true,
+    "action_to_end_seconds": 96.93667228300001,
+    "max_underflow_events": 0,
+    "max_underflow_frames": 0,
+    "max_device_elapsed_minus_copied_seconds": 0.010666666666666666,
+    "max_frame_lag_ms": 44.416666666666664,
+    "max_wall_frame_gap_ms": 43,
+    "missed_cached_frames": 0,
+    "functional_passed": true,
+    "independent_pixels": {
+      "passed": true,
+      "reference": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261031/realtime-catchup/catchup-pixels.json",
+      "reference_sha256": "69965a332ea1d8d725cd7793f168b5a1c455234d579bb81f095f19be0d6b3064",
+      "frames": [
+        {
+          "file": "sampled-picture-f3e59cda80ea-d1366df2e6a1-4.rgba",
+          "source_index": 120,
+          "actual_sha256": "22d27212b45183b12a918729cc515308abf5ddb3e59a909277f56e37390e859c",
+          "independent_reference_sha256": "22d27212b45183b12a918729cc515308abf5ddb3e59a909277f56e37390e859c",
+          "checked": true
+        },
+        {
+          "file": "sampled-picture-f3e59cda80ea-d1366df2e6a1-5.rgba",
+          "source_index": 150,
+          "actual_sha256": "e77cb84e7553db081126fac4b1c4d797e8b0d76042610cb93167c952db20ecf0",
+          "independent_reference_sha256": "e77cb84e7553db081126fac4b1c4d797e8b0d76042610cb93167c952db20ecf0",
+          "checked": true
+        },
+        {
+          "file": "sampled-picture-f3e59cda80ea-d1366df2e6a1-6.rgba",
+          "source_index": 180,
+          "actual_sha256": "48befdd6f5fd06975c8c2eeac36453bcc5cdba45d183a96c32b6e6793c4cdac6",
+          "independent_reference_sha256": "48befdd6f5fd06975c8c2eeac36453bcc5cdba45d183a96c32b6e6793c4cdac6",
+          "checked": true
+        }
+      ],
+      "capture_errors": []
+    },
+    "workspace_preservation": {
+      "exit_code": 0,
+      "all_projects_and_jobs_unchanged": true,
+      "jobs": 111,
+      "synthetic_stopped": true
+    },
+    "manual_acceptance": false,
+    "delivery_ready": false,
+    "checkpoint": {
+      "path": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/presentation-isolation/checkpoint.json",
+      "sha256": "3af99708393ab55e9fc69ff460f27f504690fed4fdc4c92fc87ab5d901d7fd26",
+      "files": 124
+    },
+    "product_changed": false,
+    "web_builds": 0,
+    "native_builds": 0,
+    "services_restarted": false,
+    "diagnosis": "Headless integrated CALayer Metal backpressure reached about89ms;visible-window A/B/A baseline maxima0.042/0.011ms. Reject30Hz cursor candidate because foreground benefit is unproven. ANGLE device metadata does not identify all Skia devices.",
+    "diagnostic_limits": "Sequential observations,not attribution of all historical delays to headless mode. No physical display/audibility or broader export/media qualification."
   }
 }

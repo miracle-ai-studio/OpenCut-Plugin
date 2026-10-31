@@ -25,3 +25,11 @@ const project = await client.inspectEditorProject({ project_id: "project-id", re
 `prepareVisualPreviewPicture` 在一次请求内准备并领取场景或草稿画面，返回已校验的 `header`、完整像素的 `pixels` Promise 和 `cancel`。收到帧头只允许准备下一帧，显示前必须等待像素完成长度及显式 BLAKE3 校验；中途取消不重试已经领取的帧。既有工具结果仍可用 `readVisualPreviewPicture` 单独领取，两个传输调用同一宿主用例。
 
 仓库开发与同二进制生成检查见根 README。发布包只包含 package metadata、README、JavaScript 与类型声明。
+
+Native preview pixels are verified with a bundled BLAKE3-256 WebAssembly SIMD
+module in both Node and browser workers. Complete pixel length and digest checks
+still precede presentation. Clients without WebAssembly SIMD receive
+`PREVIEW_DIGEST_UNAVAILABLE`; there is no alternate algorithm or unverified path.
+The module's source, pinned build recipe and provenance are in `preview-digest/`;
+ordinary SDK builds verify the checked-in artifact without compiling native code.
+Third-party notices are included in `LICENSE`.

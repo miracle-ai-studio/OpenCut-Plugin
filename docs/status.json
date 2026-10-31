@@ -1138,6 +1138,17 @@
       },
       "manual_acceptance": false,
       "strict_realtime_accepted": false
+    },
+    "simd_picture_digest": {
+      "stage": "source_and_scoped_checks_passed_web_build_pending",
+      "algorithm": "unchanged full BLAKE3-256",
+      "implementation": "blake3 1.8.7 wasm32_simd; private bounded SDK build adapter",
+      "native_binary_rebuild_required": false,
+      "sdk_tests_passed": 69,
+      "web_tests_passed": 34,
+      "architecture_unit_tests_passed": 14,
+      "package_tests_passed": 8,
+      "delivery_accepted": false
     }
   },
   "scope": "Local CLI/HTTP/MCP/SDK service and Web editor; GPUI shell is not an integrated editor.",

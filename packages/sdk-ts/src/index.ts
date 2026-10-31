@@ -2,7 +2,7 @@ export { requestEnvelope, OpenCutApiError, OpenCutProtocolError, OpenCutTranspor
 import { requestEnvelope, OpenCutApiError, OpenCutProtocolError, OpenCutTransportError, type Envelope } from "./transport.js";
 export * from "./contracts.generated.js";
 import { toolNames, domainNames, domainActions, picturePreparationTransport, type ToolMap, type DomainMap, type JobResultMap, type AudioPreviewPcm, type AudioPreviewTransport, type VisualPreviewTransport, type VisualPreviewPreparation, type VisualPreviewPrepared } from "./contracts.generated.js";
-import { blake3 } from "hash-wasm";
+import { hashPreviewPicture } from "./preview-digest.js";
 
 export type AudioPreviewPcmHeader = AudioPreviewPcm.AudioPreviewPcmHeader;
 export type AudioPreviewStreamInput = AudioPreviewTransport.AudioPreviewStream;
@@ -86,7 +86,7 @@ function validateNativePicture(picture: unknown) {
 }
 async function verifyNativePicture(bytes: Uint8ClampedArray<ArrayBuffer>, hash: string, signal?: AbortSignal) {
   signal?.throwIfAborted();
-  const actual = await blake3(new Uint8Array(bytes.buffer, bytes.byteOffset, bytes.byteLength));
+  const actual = await hashPreviewPicture(new Uint8Array(bytes.buffer, bytes.byteOffset, bytes.byteLength), signal);
   signal?.throwIfAborted();
   if (actual !== hash) throw new TypeError("Native picture changed its content hash");
   return bytes;

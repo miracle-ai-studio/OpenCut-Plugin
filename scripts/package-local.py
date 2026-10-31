@@ -111,7 +111,7 @@ def copy_web_build(source, destination):
             raise ValueError(f'Symlink in Web build: {relative}')
         if file.is_dir():
             continue
-        if relative.parent == atlas or relative == Path('assets/licenses/hash-wasm.txt'):
+        if relative.parent == atlas or relative == Path('assets/licenses/preview-digest.txt'):
             original = ROOT / 'apps/web/public' / relative
             if ((relative.parent == atlas and relative.name not in atlas_files) or not original.is_file()
                     or not original.resolve().is_relative_to(ROOT.resolve())

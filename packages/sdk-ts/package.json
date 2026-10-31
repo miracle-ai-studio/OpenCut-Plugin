@@ -4,11 +4,22 @@
   "description": "Typed client for the OpenCut automation API",
   "license": "MIT",
   "type": "module",
-  "engines": { "node": ">=22" },
-  "files": ["dist", "README.md"],
+  "engines": {
+    "node": ">=22"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "exports": {
-    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
-    "./contracts": { "types": "./dist/contracts.generated.d.ts", "import": "./dist/contracts.generated.js" }
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./contracts": {
+      "types": "./dist/contracts.generated.d.ts",
+      "import": "./dist/contracts.generated.js"
+    }
   },
   "scripts": {
     "build": "node scripts/build.mjs",
@@ -16,14 +27,14 @@
     "contracts:generate": "node scripts/generate.mjs",
     "boundaries:check": "node scripts/check-boundaries.mjs",
     "contracts:check": "node scripts/generate.mjs --check",
-    "prepack": "npm run build"
-  },
-  "dependencies": {
-    "hash-wasm": "4.12.0"
+    "prepack": "npm run build",
+    "digest:generate": "node scripts/generate-preview-digest.mjs",
+    "digest:check": "node scripts/generate-preview-digest.mjs --check"
   },
   "devDependencies": {
     "@types/node": "22.20.4",
     "json-schema-to-typescript": "15.0.4",
-    "typescript": "6.0.2"
+    "typescript": "6.0.2",
+    "hash-wasm": "4.12.0"
   }
 }

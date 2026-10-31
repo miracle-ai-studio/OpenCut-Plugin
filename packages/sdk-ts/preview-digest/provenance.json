@@ -1,0 +1,18 @@
+{
+  "algorithm": "BLAKE3-256",
+  "dependency": "blake3=1.8.7",
+  "target": "wasm32-unknown-unknown",
+  "rustflags": "-C target-feature=+simd128 -C link-arg=-zstack-size=65536 -C link-arg=--max-memory=262144",
+  "source_files": {
+    "rust-toolchain.toml": "3003a09987459e5921dcddde94f8ea929b2d5e66efbbc30160e9d78de7ff010a",
+    "packages/sdk-ts/preview-digest/Cargo.toml": "01f23b444fc6151eea43f1c6685123719b2d150cdc99a406d0a3b3c2661d6e90",
+    "packages/sdk-ts/preview-digest/Cargo.lock": "d3a438a0da5d152411ad6c631d01dd8327bc76fe3e6d0ec4e2d737b3549c7371",
+    "packages/sdk-ts/preview-digest/src/lib.rs": "44a410fd459866e09fb5a68f2ae0d60abd243cbbc93c72403a8c7d512429079c",
+    "packages/sdk-ts/scripts/generate-preview-digest.mjs": "24635900a268ce45a5b02ee26e4af571917b484cc78b23c790c45362e91f5372",
+    "packages/sdk-ts/LICENSE": "aca6fa03197e35de7ebedfa5b431ab22adb0c6a00e5704b8acdfb0da4e480995"
+  },
+  "wasm_sha256": "dad0d4eb469572f5eaf11a1c94dfbce8cdc11a3b35a9bef169a2804e6a898322",
+  "wasm_bytes": 30651,
+  "initial_memory_bytes": 196608,
+  "maximum_memory_bytes": 262144
+}

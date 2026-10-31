@@ -150,7 +150,7 @@ class PackageContentsTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             source = root / 'build'
-            name = Path('assets/licenses/hash-wasm.txt')
+            name = Path('assets/licenses/preview-digest.txt')
             original = root / 'apps/web/public' / name
             original.parent.mkdir(parents=True)
             original.write_text('reviewed license fixture')

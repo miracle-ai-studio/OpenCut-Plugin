@@ -958,7 +958,7 @@
     },
     "candidate_native_source_commit": "0bb34837b56f96bef3f5f4642d5d57ebca72425b",
     "installed_cli_sha256": "73eaa55dbc7f4c359ab3b9801f55971f21ea986816c2ded845893a8a229dfd9f",
-    "current_slice": "Complete-bitmap display deployed on8791/59790;255 checks,one Web build,compiled independent transparent pixels,94s functional flow,native pixel references and actual editors passed. Cold startup5.25s fails5s.",
+    "current_slice": "Immediate static-owner retirement implemented and192 related checks passed;single Web build and bounded startup verification pending. Services remain45460cab.",
     "installed_worker_sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6",
     "latest_scoped_acceptance": "audio_report_cadence.completion_gap_candidate",
     "previous_recorded_candidate_before_wave_seek": {
@@ -10673,5 +10673,21 @@
       "artifact": "browser-pixels.json"
     },
     "standard": "https://html.spec.whatwg.org/multipage/canvas.html#the-imagebitmaprenderingcontext-interface"
+  },
+  "preview_start_retirement": {
+    "implemented": true,
+    "built": false,
+    "installed": false,
+    "baseline_commit": "fd84f8b5",
+    "baseline_web_commit": "45460cab",
+    "diagnostic": "/private/tmp/opencut-local-upgrade-20261101/startup-attribution/stages.json",
+    "hypothesis": "Play invalidates visual work immediately but delays StillPreview.close until AudioContext and pump readiness. A pending static create can still stage during that gap.",
+    "reproduction": "Controlled pending static create remains un-aborted after Play intent on baseline;new regression fails at exactly that assertion.",
+    "fix": "Start static-owner retirement synchronously at Play intent;beforeCreate awaits the same unmodified retirement promise. Late owners drain and errors still block new sound admission.",
+    "web_tests": 192,
+    "web_boundary_files": 261,
+    "native_or_public_contract_changes": false,
+    "limits": "Native startup sampling also found AMD driver device/command-queue initialization;not attributed to decoding or eager business shader pipeline creation. Profiling is not performance acceptance.",
+    "delivery_ready": false
   }
 }

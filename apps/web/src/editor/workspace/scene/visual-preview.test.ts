@@ -144,6 +144,53 @@ async function fixture(bitmaps = false, manualScreen = false) {
   };
 }
 
+it("retires an in-flight static owner at Play intent before sound initialization", async () => {
+  const f = await fixture(), create = vi.mocked(f.api.scene.audioPreviewCreate);
+  const original = create.getMockImplementation()!;
+  let release!: () => void, signal: AbortSignal | undefined;
+  create.mockImplementationOnce(async (request, pendingSignal) => {
+    signal = pendingSignal;
+    await new Promise<void>(resolve => { release = resolve; });
+    return original(request, pendingSignal);
+  });
+  const shown = f.visual.showStill().catch(error => error);
+  try {
+    await flush();
+    expect(create).toHaveBeenCalledOnce();
+    expect(signal?.aborted).toBe(false);
+    const port = f.visual.start();
+    expect(signal?.aborted).toBe(true);
+    let admitted = false;
+    const ready = port.beforeCreate!().then(() => { admitted = true; });
+    await flush();
+    expect(admitted).toBe(false);
+    release();
+    await shown;
+    await ready;
+    expect(f.calls).toHaveLength(0);
+    expect(vi.mocked(f.api.scene.audioPreviewControl).mock.calls.filter(([request]) => request.command.kind === "stop")).toHaveLength(1);
+  } finally {
+    release?.();
+    await shown;
+    await f.visual.retireStill();
+    f.visual.dispose();
+  }
+});
+
+it("keeps early static retirement failure on the sound admission fence", async () => {
+  const f = await fixture();
+  try {
+    const shown = f.visual.showStill();
+    await flush();
+    f.calls[0].resolve(0);
+    await shown;
+    vi.mocked(f.api.scene.audioPreviewControl).mockRejectedValueOnce(Error("Static retirement failed"));
+    const port = f.visual.start();
+    await expect(port.beforeCreate!()).rejects.toThrow("Static retirement failed");
+    expect(f.api.scene.audioPreviewCreate).toHaveBeenCalledOnce();
+  } finally { await f.visual.retireStill(); f.visual.dispose(); }
+});
+
 it("refreshes the current paused sound owner without creating a second preview session", async () => {
   const f = await fixture(true);
   const session = { ...f.s, state: "paused" as const };

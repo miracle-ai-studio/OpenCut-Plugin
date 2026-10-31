@@ -568,7 +568,11 @@ export class VisualPreview {
 
   start(): PicturePresentation {
     this.stillSerial++;
-    const beforeCreate=()=>this.still.close();
+    // Retire the static owner at Play intent, while sound output initializes.
+    // Admission still awaits the original fence, including any failure.
+    const retiring=this.still.close();
+    void retiring.catch(()=>{});
+    const beforeCreate=()=>retiring;
     const paused = this.host.state()?.audioPreview;
     const reuse =
       paused?.phase === "paused" &&

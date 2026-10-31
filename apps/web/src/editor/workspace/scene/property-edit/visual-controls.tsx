@@ -1,3 +1,4 @@
+import { editorHostCapabilities } from "../../../../lib/editor-sdk";
 import { useEffect, useId, useRef, useState } from "react";
 import { useEditingWorkspace } from "../../context";
 import { t, useLocale } from "../../../shared/locale";
@@ -51,7 +52,7 @@ function VisualForm({ elementIds }: { elementIds: readonly string[] }) {
   const adopt = (next: typeof baseline) => { base.current = next; setBaseline(next); };
   useEffect(() => {
     alive.current = true;
-    api?.sdk.hostCapabilities().then(c => { if (alive.current) setTools(c.tools); })
+    if (api) editorHostCapabilities(api).then(c => { if (alive.current) setTools(c.tools); })
       .catch(failure => { if (alive.current) { setError(failure); if (localSessionExpired(failure)) controller.report(failure); } });
     return () => { alive.current = false; abort.current?.abort(); };
   }, [api, controller]);

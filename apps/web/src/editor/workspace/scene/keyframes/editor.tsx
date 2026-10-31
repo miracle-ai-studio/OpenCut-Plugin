@@ -1,3 +1,4 @@
+import { editorHostCapabilities } from "../../../../lib/editor-sdk";
 import { ErrorNotice } from "../../../shared/error-notice";
 import { Select } from "../../../shared/controls";
 import { useEffect, useRef, useState } from "react";
@@ -173,8 +174,7 @@ export function KeyframeEditor({
     let live = true;
     setAvailable(false);
     if (api)
-      void api.sdk
-        .hostCapabilities()
+      void editorHostCapabilities(api)
         .then((c) => {
           if (live) setAvailable(c.tools.includes("opencut_keyframe_plan"));
         })

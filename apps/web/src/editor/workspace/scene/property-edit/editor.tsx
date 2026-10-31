@@ -1,3 +1,4 @@
+import { editorHostCapabilities } from "../../../../lib/editor-sdk";
 import { usePropertyDraft } from "./use-property-draft";
 import { convertGainUnit } from "./volume";
 import { RateInput } from "../../../shared/rate-input";
@@ -126,8 +127,7 @@ function PropertiesForm({
     alive.current = true;
     let live = true;
     if (api)
-      void api.sdk
-        .hostCapabilities()
+      void editorHostCapabilities(api)
         .then((c) => {
           if (live)
             setAvailable(

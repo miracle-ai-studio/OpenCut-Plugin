@@ -1,3 +1,4 @@
+import { editorHostCapabilities } from "../../../../lib/editor-sdk";
 import { useEffect, useRef, useState } from "react";
 import type { ToolInput, ToolOutput } from "../../../../lib/editor-sdk";
 import { useWorkspace } from "../../context";
@@ -69,8 +70,7 @@ export function LegacyKeyframeConversion({
     let active = true;
     setAvailable(false);
     if (api)
-      void api.sdk
-        .hostCapabilities()
+      void editorHostCapabilities(api)
         .then((c) => {
           if (active)
             setAvailable(

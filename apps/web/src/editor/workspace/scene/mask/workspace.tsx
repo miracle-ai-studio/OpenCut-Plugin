@@ -1,3 +1,4 @@
+import { editorHostCapabilities } from "../../../../lib/editor-sdk";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useEditingWorkspace as useWorkspace } from "../../context";
@@ -82,8 +83,7 @@ export function MaskAuthoringProvider({ children }: { children: ReactNode }) {
     let live = true;
     setAvailable(false);
     if (api)
-      void api.sdk
-        .hostCapabilities()
+      void editorHostCapabilities(api)
         .then((result) => {
           if (live)
             setAvailable(result.tools.includes("opencut_mask_geometry"));

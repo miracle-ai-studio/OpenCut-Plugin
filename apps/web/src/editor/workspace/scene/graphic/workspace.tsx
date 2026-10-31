@@ -1,3 +1,4 @@
+import { editorHostCapabilities } from "../../../../lib/editor-sdk";
 import { Select } from "../../../shared/controls";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { useWorkbenchView } from "../workbench/view";
@@ -78,8 +79,7 @@ export function GraphicAuthoringProvider({
     let live = true;
     setAvailable(false);
     if (api)
-      void api.sdk
-        .hostCapabilities()
+      void editorHostCapabilities(api)
         .then((value) => {
           if (live)
             setAvailable(value.tools.includes("opencut_graphic_plan"));

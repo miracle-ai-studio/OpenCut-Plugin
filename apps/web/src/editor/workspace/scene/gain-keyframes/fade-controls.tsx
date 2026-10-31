@@ -1,3 +1,4 @@
+import { editorHostCapabilities } from "../../../../lib/editor-sdk";
 import { usePropertyDraft } from "../property-edit/use-property-draft";
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { useEditingWorkspace as useWorkspace } from "../../context";
@@ -133,8 +134,7 @@ function FadeForm({
   };
   useEffect(() => {
     alive.current = true;
-    void captured.api?.sdk
-      .hostCapabilities()
+    if (captured.api) void editorHostCapabilities(captured.api)
       .then((c) => {
         if (alive.current)
           setAvailable(c.tools.includes("opencut_keyframe_plan"));

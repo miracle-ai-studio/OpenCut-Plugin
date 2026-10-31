@@ -1,3 +1,4 @@
+import { editorHostCapabilities } from "../../../../lib/editor-sdk";
 import type { EditorApi } from "../../api";
 import type { ToolInput, ToolOutput } from "../../../../lib/editor-sdk";
 import { OpenCutApiError } from "../../../../lib/editor-sdk";
@@ -56,8 +57,7 @@ export class PreviewRecovery {
   private enabled(api: EditorApi) {
     let value = this.capabilities.get(api);
     if (!value) {
-      value = api.sdk
-        .hostCapabilities()
+      value = editorHostCapabilities(api)
         .then((c) => {
           this.atomicRetirement.set(
             api,

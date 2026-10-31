@@ -1,3 +1,4 @@
+import { editorHostCapabilities } from "../../../../lib/editor-sdk";
 import { useEffect, useRef, useState } from "react";
 import type {
   PointerEvent as ReactPointerEvent,
@@ -298,7 +299,7 @@ export function CanvasTransformOverlay({
     setPending(true);
     void (async () => {
       try {
-        const capabilities = await api.sdk.hostCapabilities();
+        const capabilities = await editorHostCapabilities(api);
         if (controllerAbort.signal.aborted || !current(capture)) return;
         if (!capabilities.tools.includes("opencut_element_transform_sample") ||
             !capabilities.tools.includes("opencut_visual_preview_edit_draft_frame"))

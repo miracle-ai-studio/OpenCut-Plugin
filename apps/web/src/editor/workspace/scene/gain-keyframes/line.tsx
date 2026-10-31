@@ -1,3 +1,4 @@
+import { editorHostCapabilities } from "../../../../lib/editor-sdk";
 import { useEffect, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { useEditingWorkspace as useWorkspace } from "../../context";
@@ -170,7 +171,7 @@ export function GainKeyframeLine({
     setPending(true);
     void (async () => {
       try {
-        const capabilities = await api.sdk.hostCapabilities();
+        const capabilities = await editorHostCapabilities(api);
         if (
           !capabilities.tools.includes("opencut_keyframe_sample") ||
           !capabilities.tools.includes("opencut_keyframe_plan")

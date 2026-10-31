@@ -1,3 +1,4 @@
+import { editorHostCapabilities } from "../../../../lib/editor-sdk";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useEditingWorkspace } from "../../context";
 import { ErrorNotice, localSessionExpired } from "../../../shared/error-notice";
@@ -144,8 +145,7 @@ function VolumeForm({
   };
   useEffect(() => {
     alive.current = true;
-    void captured.api?.sdk
-      .hostCapabilities()
+    if (captured.api) void editorHostCapabilities(captured.api)
       .then((value) => {
         if (alive.current) setCapabilities(value.tools);
       })

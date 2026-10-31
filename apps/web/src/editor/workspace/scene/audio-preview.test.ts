@@ -5,6 +5,31 @@ import { AudioPreview, type PicturePresentation } from "./audio-preview";
 import { StillPreview } from "./still-preview";
 import type { SessionHost } from "./session";
 
+it.each([48000,44100])("keeps the selected %s Hz session when keyboard playback omits a rate",async rate=>{
+  const f=await setupAudioPreview();
+  try {
+    await f.preview.play(rate);await f.preview.pause();
+    await f.preview.play();
+    expect(f.create).toHaveBeenCalledOnce();
+    expect(f.state().audioPreview.session?.identity.sample_rate).toBe(rate);
+  } finally {f.cleanup();}
+});
+
+it("uses the same initial sample rate as the editor button and static preview",async()=>{
+  const f=await setupAudioPreview();
+  try {await f.preview.play();expect(f.requests[0].sample_rate).toBe(48000);}
+  finally {f.cleanup();}
+});
+
+it("uses an advertised 44100 Hz rate when the service does not support 48000 Hz",async()=>{
+  const f=await setupAudioPreview();
+  try {
+    const audioPreview=f.state().audioPreview;
+    f.update({audioPreview:{...audioPreview,capability:{...audioPreview.capability!,sample_rates:[44100]}}});
+    await f.preview.play();expect(f.requests[0].sample_rate).toBe(44100);
+  } finally {f.cleanup();}
+});
+
 it("keeps the transferred recovery owner through an unknown Play reply and explicit retry",async()=>{
   const f=await setupAudioPreview();
   const still=new StillPreview({api:()=>f.api,state:f.state,generation:()=>1,viewGeneration:()=>0} as SessionHost);
@@ -1788,7 +1813,7 @@ it("bounds audio lead behind native picture progress and advances its consumptio
  const f=await setupAudioPreview();
  try{
   let credit: ((time: {ticks:string;timebase:number})=>void)|undefined;
-  const playing=f.preview.play(undefined,{prepare:vi.fn(async(_s,_abort,ready)=>{credit=ready;ready?.({ticks:"12000",timebase:48000});}),observe:vi.fn(),suspend:vi.fn(),close:vi.fn()});
+  const playing=f.preview.play(44100,{prepare:vi.fn(async(_s,_abort,ready)=>{credit=ready;ready?.({ticks:"12000",timebase:48000});}),observe:vi.fn(),suspend:vi.fn(),close:vi.fn()});
   await playing;
   expect(f.outputs[0].pictureLimits).toEqual(["0","15435"]);
   credit?.({ticks:"6000",timebase:48000});

@@ -282,9 +282,12 @@ export class AudioPreview {
     )
       return Promise.resolve();
     const capability = state.audioPreview.capability;
+    const rememberedRate = state.audioPreview.request?.sample_rate;
     const rate =
       sampleRate ??
-      capability?.sample_rates.find((r) => r === 48000 || r === 44100);
+      (rememberedRate && capability?.sample_rates.includes(rememberedRate)
+        ? rememberedRate
+        : [48000, 44100].find(r => capability?.sample_rates.includes(r)));
     if (
       !capability?.available ||
 

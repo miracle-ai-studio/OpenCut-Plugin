@@ -958,7 +958,7 @@
     },
     "candidate_native_source_commit": "8ea7ae22a92ad1858f510803498cb5aff8524162",
     "installed_cli_sha256": "73eaa55dbc7f4c359ab3b9801f55971f21ea986816c2ded845893a8a229dfd9f",
-    "current_slice": "Installed Weba6c7b571 unchanged. Visible-window94s flow,90s seek,pause/resume and three independent RGBA comparisons passed. Actual first frame2.0372s,legacy2.4275s;max wall frame gap43ms,lag44.4167ms,no missed frames/PCM starvation. Device elapsed-minus-copied max0.0106667s. Headless presentation backpressure is environment-specific;no product cursor slowdown shipped. Broader fidelity/manual acceptance remains open.",
+    "current_slice": "Explicit and verified SDR video export matrix; baseline browser color failure reproduced before changes",
     "installed_worker_sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6",
     "latest_scoped_acceptance": "foreground_preview_validation",
     "previous_recorded_candidate_before_wave_seek": {
@@ -3107,7 +3107,7 @@
   "known_limits": [
     "Current visible-window94s observation on Weba6c7b571:action-to-end96.9367s includingstartup,actual first frame2.0372s,maximum device elapsed-minus-copied0.0106667s,max wall frame gap43ms,max lag44.4167ms,no missed cached frames or PCM starvation. This bounded repeated-source observation does not qualify physical output,all media or universal realtime. Historical headless0.528/0.692s waits retain original identities and are not representative foreground guarantees.",
     "Historical scoped observation: Current single retained4K-source94s editor flow passes original startup/completion/seek/pause/resume gates,but119.15s click-to-ended is not real-time. Full94s4Kexport,unique long sources,broader performance and process/GPU/driver memory remain unqualified.",
-    "Broader codec/container/color/orientation/default-track source-to-IR-to-backend fidelity remains open, including the unchanged untagged red export probe that observed RGB254/23/0 against green<15.",
+    "Broader codec/container/color/orientation/default-track fidelity remains open. Current untagged HD MP4 and WebM exports reproduce a matrix-interpretation error in visible Chromium: red green=25 against green<15; explicit output matrix conversion and metadata are pending.",
     "The recorded asset-free four-second text resume stall near1.87seconds is not causally closed by later successful playback cases.",
     "Native worker RSS and device-clock observations are scoped per candidate. Whole-product/browser and driver/GPU residency, physical display timing and audibility remain unqualified.",
     "Preview and export retain distinct original mastering rules and separate independent PCM oracles. Current zero-error scoped native references do not cover every rate/layout/effect/device.",
@@ -11866,5 +11866,65 @@
     "services_restarted": false,
     "diagnosis": "Headless integrated CALayer Metal backpressure reached about89ms;visible-window A/B/A baseline maxima0.042/0.011ms. Reject30Hz cursor candidate because foreground benefit is unproven. ANGLE device metadata does not identify all Skia devices.",
     "diagnostic_limits": "Sequential observations,not attribution of all historical delays to headless mode. No physical display/audibility or broader export/media qualification."
+  },
+  "native_export_color_validation": {
+    "phase": "reproduced_before_fix",
+    "evidence_root": "/private/tmp/opencut-local-upgrade-20261101/export-color",
+    "installed_host_source": "8ea7ae22a92ad1858f510803498cb5aff8524162",
+    "installed_cli_sha256": "f3e59cda80eae9a78d9aff733bcef305a9efa315966860f893a87a8d0d0639d2",
+    "worker_unchanged": true,
+    "source_yuv": [
+      81,
+      90,
+      240
+    ],
+    "native_png_rgb": [
+      [
+        252,
+        0,
+        0
+      ],
+      [
+        255,
+        23,
+        0
+      ]
+    ],
+    "independent_mp4_rgb": [
+      [
+        250,
+        0,
+        0
+      ],
+      [
+        253,
+        22,
+        0
+      ]
+    ],
+    "visible_browser_1080_mp4_and_webm_rgb": [
+      [
+        255,
+        25,
+        0
+      ],
+      [
+        255,
+        44,
+        0
+      ]
+    ],
+    "cause": "RGB is encoded using implicit BT.601 without matrix metadata; Chromium interprets untagged HD MP4 and WebM as BT.709. Original red green<15 gate fails in actual browser playback.",
+    "new_strict_channel_error_probe": {
+      "maximum": 4,
+      "limit": 3,
+      "passed": false,
+      "note": "Preserved failure; separate from the old red threshold."
+    },
+    "old_synthetic_projects_and_jobs_preserved": true,
+    "new_synthetic_projects": 1,
+    "new_synthetic_jobs": 7,
+    "product_fix_pending": true,
+    "deployment_changed": false
   }
 }

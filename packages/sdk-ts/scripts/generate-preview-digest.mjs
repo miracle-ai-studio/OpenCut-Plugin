@@ -1,6 +1,7 @@
 // A private SDK build artifact, not a renderer or public contract generator.
 import fs from "node:fs";
 import path from "node:path";
+import os from "node:os";
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 
@@ -14,7 +15,8 @@ const inputs = ["rust-toolchain.toml", ...[
   "scripts/generate-preview-digest.mjs", "LICENSE",
 ].map(name => `packages/sdk-ts/${name}`)];
 const sources = Object.fromEntries(inputs.map(name => [name, hash(fs.readFileSync(path.join(root, name)))]));
-const flags = "-C target-feature=+simd128 -C link-arg=-zstack-size=65536 -C link-arg=--max-memory=262144";
+const flags = ["-C", "target-feature=+simd128", "-C", "link-arg=-zstack-size=65536", "-C", "link-arg=--max-memory=262144",
+  "--remap-path-prefix=<repository>=opencut", "--remap-path-prefix=<cargo-home>=cargo"];
 const artifactOnly = process.argv.includes("--artifact-only");
 const check = artifactOnly || process.argv.includes("--check");
 let bytes;
@@ -25,9 +27,11 @@ if (artifactOnly) {
   const pinned = fs.readFileSync(path.join(root, "rust-toolchain.toml"), "utf8").match(/channel = "([^"]+)"/)[1];
   const compiler = execFileSync("rustc", ["--version"], { cwd: root, encoding: "utf8" });
   if (!compiler.startsWith(`rustc ${pinned} `)) throw Error("Digest requires the repository's pinned Rust compiler");
+  const cargoHome = path.resolve(process.env.CARGO_HOME ?? path.join(os.homedir(), ".cargo"));
+  const encodedFlags = flags.map(flag => flag.replace("<repository>", root).replace("<cargo-home>", cargoHome)).join("\x1f");
   execFileSync("cargo", ["build", "--manifest-path", path.join(sdk, "preview-digest/Cargo.toml"),
     "--target", "wasm32-unknown-unknown", "--target-dir", path.join(root, "target/browser-digest"),
-    "--release", "--locked", "--offline"], { cwd: root, env: { ...process.env, RUSTFLAGS: flags }, stdio: "inherit" });
+    "--release", "--locked", "--offline"], { cwd: root, env: { ...process.env, CARGO_ENCODED_RUSTFLAGS: encodedFlags }, stdio: "inherit" });
   bytes = fs.readFileSync(path.join(root, "target/browser-digest/wasm32-unknown-unknown/release/opencut_preview_digest.wasm"));
 }
 const module = new WebAssembly.Module(bytes);

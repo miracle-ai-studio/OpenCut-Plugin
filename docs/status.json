@@ -8915,5 +8915,13 @@
       "asset_digest": "fe2ca18408858e1263ff6cf0a7c513dd1faceffb8bc750d34061092be633d6b6",
       "assets": 285
     }
+  },
+  "startup_prime": {
+    "status": "pending_integrated_validation",
+    "device_buffer_blocks": 32,
+    "device_prime_blocks": 8,
+    "deployed": false,
+    "delivery_ready": false,
+    "scope": "Web PCM startup/recovery threshold only. Full capacity, picture fences, device clock and native PCM preserved. Baseline observer timestamps distinguish polling delay."
   }
 }

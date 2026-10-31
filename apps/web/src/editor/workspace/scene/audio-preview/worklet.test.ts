@@ -170,3 +170,52 @@ it('keeps every PCM sample in order while native pictures catch up under the bou
  expect(final.underflowEvents).toBe(0);send({kind:'stop'});
  expect(p.port.postMessage).toHaveBeenLastCalledWith({kind:'stopped',token:'run',consumedFrames:String(total)});
 });
+
+it.each([44100, 48000])("starts before filling the transport queue and retains exact PCM through a 500 ms producer gap at %i Hz", async rate => {
+  class Processor {
+    port = { onmessage: null as null | ((e: { data: Record<string, unknown> }) => void), postMessage: vi.fn() };
+    process(_inputs: Float32Array[][], _outputs: Float32Array[][]) { return true; }
+  }
+  let Current = Processor;
+  vi.stubGlobal("AudioWorkletProcessor", Processor);
+  vi.stubGlobal("registerProcessor", (_name: string, ctor: typeof Processor) => { Current = ctor; });
+  await import("./worklet");
+  const p = new Current(), send = (data: Record<string, unknown>) => p.port.onmessage!({ data });
+  let issued = 0, copied = 0, wall = 0;
+  const value = (n: number) => Math.fround((n % 251) / 251 - .5);
+  const block = () => {
+    const pcm = new Float32Array(8192);
+    for (let i = 0; i < 4096; i++) { pcm[i * 2] = value(issued + i); pcm[i * 2 + 1] = -value(issued + i); }
+    issued += 4096;
+    send({ kind: "block", token: "run", pcm: pcm.buffer });
+  };
+  const render = () => {
+    const left = new Float32Array(128), right = new Float32Array(128);
+    vi.stubGlobal("currentFrame", wall); wall += 128;
+    p.process([], [[left, right]]);
+    const receipt = p.port.postMessage.mock.calls.at(-1)![0];
+    for (let i = 0; i < 128; i++) {
+      const expected = i < receipt.copied ? value(copied + i) : 0;
+      expect(left[i]).toBe(expected); expect(right[i]).toBe(expected === 0 ? 0 : -expected);
+    }
+    copied = Number(receipt.consumedFrames);
+    return receipt;
+  };
+  send({ kind: "reset", token: "run" });
+  for (let i = 0; i < 7; i++) block();
+  expect(render().consumedFrames).toBe("0");
+  block();
+  expect(render().copied).toBe(128);
+  // An observed producer pause must consume existing samples without a gap.
+  for (let i = 0; i < Math.ceil(rate * .5 / 128); i++) expect(render().copied).toBe(128);
+  // Partial front blocks still occupy a slot: refill all 32 slots, not just 8.
+  const retainedBlocks = 8 - Math.floor(copied / 4096);
+  for (let i = retainedBlocks; i < 32; i++) block();
+  send({ kind: "end", token: "run" });
+  while (copied < issued) expect(render().copied).toBe(128);
+  const tail = render();
+  expect(tail.phase).toBe("ended"); expect(tail.underflowEvents).toBe(0); expect(tail.underflowFrames).toBe("0");
+  expect(copied).toBe(issued);
+  send({ kind: "stop" });
+  expect(p.port.postMessage).toHaveBeenLastCalledWith({ kind: "stopped", token: "run", consumedFrames: String(issued) });
+});

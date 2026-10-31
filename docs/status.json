@@ -968,6 +968,176 @@
       "installed_worker_sha256": "0606e80020970ff861844839a423da3499ecca8b5ffc241d9782aba70c091de2",
       "candidate_native_source_commit": "e041b2ccf30eed948b7c3e85463cc46b91545a5c",
       "current_slice": "Bounded FFV1 slice decoding installed after native correctness, independent pixels, original4K/PCM and actual editor checks; full94s functional flow passed but strict realtime remains unaccepted."
+    },
+    "frame_throughput_attribution": {
+      "checkpoint": {
+        "path": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261031/frame-throughput/checkpoint.json",
+        "sha256": "a60e0d7a92a4cf5dd14b99afb982bf34e18d6452980acab087c0ae22e99edd86",
+        "files": 84
+      },
+      "source_commit": "afc7ba09bdf72c274c9f882458b9ffd72a6c9545",
+      "runtime": {
+        "opencut": {
+          "path": "/Users/vincent/.opencut/runtime/native-local-wave-seek-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+          "sha256": "2b6bd348a880d6d5c4e7ff0da98bf2e7941f1a2832396a8746b845b26820ee4d"
+        },
+        "opencut-render-worker": {
+          "path": "/Users/vincent/.opencut/runtime/native-local-wave-seek-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+          "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
+        }
+      },
+      "summary": {
+        "implementation_changed": false,
+        "product_rebuilt": false,
+        "local_services_replaced_this_slice": false,
+        "runtime": {
+          "opencut": {
+            "path": "/Users/vincent/.opencut/runtime/native-local-wave-seek-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+            "sha256": "2b6bd348a880d6d5c4e7ff0da98bf2e7941f1a2832396a8746b845b26820ee4d"
+          },
+          "opencut-render-worker": {
+            "path": "/Users/vincent/.opencut/runtime/native-local-wave-seek-20261031/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+            "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
+          }
+        },
+        "browser_bitmap": {
+          "image-before": {
+            "headerMs": 21.899999976158142,
+            "pixelsMs": 11.050000071525574,
+            "bitmapMs": 1.5,
+            "totalMs": 33.90000009536743
+          },
+          "video-before": {
+            "headerMs": 21.949999928474426,
+            "pixelsMs": 10.399999976158142,
+            "bitmapMs": 36.40000009536743,
+            "totalMs": 69.50000011920929
+          },
+          "video-after": {
+            "headerMs": 21.700000047683716,
+            "pixelsMs": 10.0,
+            "bitmapMs": 28.600000023841858,
+            "totalMs": 59.89999997615814
+          },
+          "image-after": {
+            "headerMs": 21.199999928474426,
+            "pixelsMs": 9.450000047683716,
+            "bitmapMs": 1.4000000953674316,
+            "totalMs": 32.549999952316284
+          }
+        },
+        "browser_receive_hash": {
+          "image-before": {
+            "fillMs": 6.049999952316284,
+            "eofMs": 0.2999999523162842,
+            "hashMs": 4.700000047683716,
+            "headerMs": 22.299999833106995,
+            "pixelsMs": 11.25000011920929,
+            "bitmapMs": 1.5,
+            "totalMs": 34.90000009536743
+          },
+          "image-after": {
+            "fillMs": 5.8999998569488525,
+            "eofMs": 0.2999999523162842,
+            "hashMs": 4.600000023841858,
+            "headerMs": 22.200000047683716,
+            "pixelsMs": 11.0,
+            "bitmapMs": 1.5,
+            "totalMs": 34.450000047683716
+          }
+        },
+        "actual_540p_windows": {
+          "0": {
+            "headerMs": 35.742615815252066,
+            "bodyMs": 2.8207169380038977,
+            "totalMs": 38.51565788500011
+          },
+          "6": {
+            "headerMs": 36.15962900221348,
+            "bodyMs": 2.7697349432855844,
+            "totalMs": 39.25136709585786
+          },
+          "30": {
+            "headerMs": 33.66902098059654,
+            "bodyMs": 2.7424178551882505,
+            "totalMs": 36.999644013121724
+          }
+        },
+        "native_windows": {
+          "0": {
+            "prepare_header_ms": 24.069346953183413,
+            "body_after_header_ms": 3.1570768915116787,
+            "total_ms": 27.382449945434928
+          },
+          "1": {
+            "prepare_header_ms": 23.895174963399768,
+            "body_after_header_ms": 3.348626894876361,
+            "total_ms": 27.24380185827613
+          },
+          "2": {
+            "prepare_header_ms": 24.35458987019956,
+            "body_after_header_ms": 3.2358469907194376,
+            "total_ms": 27.63035916723311
+          },
+          "3": {
+            "prepare_header_ms": 24.33414082042873,
+            "body_after_header_ms": 3.257106989622116,
+            "total_ms": 27.725209947675467
+          },
+          "4": {
+            "prepare_header_ms": 24.0161360707134,
+            "body_after_header_ms": 3.2625070307403803,
+            "total_ms": 27.48869895003736
+          }
+        },
+        "pipeline_groups": [
+          {
+            "mode": "serial-before",
+            "elapsedMs": 2374.7000000476837
+          },
+          {
+            "mode": "pipeline-before",
+            "elapsedMs": 697.0999999046326
+          },
+          {
+            "mode": "pipeline-after",
+            "elapsedMs": 682.2999999523163
+          },
+          {
+            "mode": "serial-after",
+            "elapsedMs": 918.3000001907349
+          }
+        ],
+        "paint_groups": [
+          {
+            "mode": "2d-before",
+            "elapsedMs": 2096
+          },
+          {
+            "mode": "bitmap-before",
+            "elapsedMs": 694.6000001430511
+          },
+          {
+            "mode": "bitmap-after",
+            "elapsedMs": 699.8999998569489
+          },
+          {
+            "mode": "2d-after",
+            "elapsedMs": 718.6999998092651
+          }
+        ],
+        "decisions": [
+          "VideoFrame RGBA conversion rejected: bitmap creation28-36ms vs1.4-1.5ms existing ImageData.",
+          "Bitmaprenderer small component difference insufficient for production change; no rendering fidelity claim.",
+          "Native540p and browser pipeline support30fps in isolated windows; this does not establish complete editor realtime.",
+          "Actual workbench native37-39ms leaves little25fps headroom; browser/audio/contention cause not closed.",
+          "No full94s replay, export regeneration, product rebuild or speculative product change.",
+          "All diagnostic sessions stopped; owned synthetic service stopped; user services remain same verified installation."
+        ],
+        "delivery_ready": false
+      },
+      "manual_acceptance": false,
+      "strict_realtime_accepted": false
     }
   },
   "scope": "Local CLI/HTTP/MCP/SDK service and Web editor; GPUI shell is not an integrated editor.",

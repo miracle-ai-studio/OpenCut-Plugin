@@ -9276,5 +9276,17 @@
       "reference": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261031/realtime-catchup/catchup-pixels.json",
       "reference_sha256": "69965a332ea1d8d725cd7793f168b5a1c455234d579bb81f095f19be0d6b3064"
     }
+  },
+  "source_art_runtime_observation": {
+    "status": "pending_integrated_validation",
+    "deployed": false,
+    "observation_complete_seconds": 5.330523397,
+    "cached_thumbnail_after_idle_seconds": [
+      1.0526051439810544,
+      0.014656484127044678,
+      0.012448076158761978
+    ],
+    "scope": "Host-only dependency observation; full capture on first/change, no periodic Unix recapture; full capture on platforms without change identity. Public operations, worker, Web and permission checks unchanged.",
+    "delivery_ready": false
   }
 }

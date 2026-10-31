@@ -318,8 +318,9 @@ impl<F: FnMut(bool) -> Result<(), EditorError>> ClassicVideoEncoder<F> {
                     "+faststart",
                     "-f",
                     "mp4",
-                ])
-                .arg(&config.output);
+                ]);
+            crate::export_video::append_sdr_color_arguments(&mut command);
+            command.arg(&config.output);
         }
         command
             .stdin(Stdio::piped())
@@ -591,6 +592,7 @@ impl<F: FnMut(bool) -> Result<(), EditorError>> ClassicVideoEncoder<F> {
             .iter()
             .find(|s| s.get("codec_type").and_then(Value::as_str) == Some("audio"))
             .ok_or_else(|| err("Missing MP4 audio"))?;
+        crate::export_video::verify_sdr_color(video)?;
         let count = video
             .get("nb_read_frames")
             .and_then(Value::as_str)
@@ -774,6 +776,10 @@ fn read_probe_output_observed(
                     | "width"
                     | "height"
                     | "pix_fmt"
+                    | "color_range"
+                    | "color_space"
+                    | "color_primaries"
+                    | "color_transfer"
                     | "r_frame_rate"
                     | "avg_frame_rate"
                     | "sample_rate"
@@ -918,7 +924,7 @@ fn probe_observed(
     command.args([
         "-v", "error", "-protocol_whitelist", "file,pipe", "-count_frames",
         "-show_frames", "-show_streams", "-show_format", "-show_entries",
-        "frame=media_type,stream_index,pts,duration:stream=index,codec_type,codec_name,width,height,pix_fmt,r_frame_rate,avg_frame_rate,sample_rate,channels,nb_read_frames,duration,time_base:stream_tags=DURATION:format=format_name,duration",
+        "frame=media_type,stream_index,pts,duration:stream=index,codec_type,codec_name,width,height,pix_fmt,color_range,color_space,color_primaries,color_transfer,r_frame_rate,avg_frame_rate,sample_rate,channels,nb_read_frames,duration,time_base:stream_tags=DURATION:format=format_name,duration",
         "-of", "compact=p=1:nk=0",
     ]).arg(output).stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::piped());
     let mut process = admission.spawn(command, None).map_err(media)?;
@@ -1144,7 +1150,7 @@ mod tests {
             "frame|media_type=video|stream_index=0|side_data|side_data_type=fixture\n",
             "frame|stream_index=1|media_type=audio\n",
             "frame|stream_index=0|media_type=video\n",
-            "stream|index=0|codec_type=video|codec_name=vp9|width=2|height=2|pix_fmt=yuv420p|r_frame_rate=30/1|nb_read_frames=2|tag:DURATION=00:00:00.066666667\n",
+            "stream|index=0|codec_type=video|codec_name=vp9|width=2|height=2|pix_fmt=yuv420p|color_range=tv|color_space=bt709|color_primaries=bt709|color_transfer=bt709|r_frame_rate=30/1|nb_read_frames=2|tag:DURATION=00:00:00.066666667\n",
             "stream|index=1|codec_type=audio|codec_name=opus|sample_rate=48000|channels=2|nb_read_frames=1|tag:DURATION=00:00:00.066666667\n",
             "format|format_name=matroska,webm|duration=0.066667\n",
         );

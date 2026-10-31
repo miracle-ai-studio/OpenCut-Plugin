@@ -128,9 +128,41 @@ pub(crate) fn append_arguments(
     } else {
         command.arg("-an");
     }
+    append_sdr_color_arguments(command);
     command
         .args(["-f", options.format.extension()])
         .arg(&config.output);
+    Ok(())
+}
+
+/// Convert the rendered RGB values and describe that same matrix explicitly.
+/// Merely tagging the implicit BT.601 conversion as BT.709 changes the picture;
+/// leaving it untagged lets players infer different matrices by size/container.
+pub(crate) fn append_sdr_color_arguments(command: &mut Command) {
+    command.args([
+        "-vf",
+        "scale=out_color_matrix=bt709:out_range=tv",
+        "-color_range",
+        "tv",
+        "-colorspace",
+        "bt709",
+        "-color_primaries",
+        "bt709",
+        "-color_trc",
+        "bt709",
+    ]);
+}
+
+pub(crate) fn verify_sdr_color(video: &Value) -> Result<(), EditorError> {
+    if video["color_range"] != "tv"
+        || video["color_space"] != "bt709"
+        || video["color_primaries"] != "bt709"
+        || video["color_transfer"] != "bt709"
+    {
+        return Err(invalid(
+            "Observed SDR output color differs from encoder conversion",
+        ));
+    }
     Ok(())
 }
 pub(crate) struct ObservedExport {
@@ -203,6 +235,7 @@ pub(crate) fn verify_probe(
             "Observed container/video differs from fixed export configuration",
         ));
     }
+    verify_sdr_color(video)?;
     let audio_seconds = if options.include_audio {
         let audio = streams
             .iter()
@@ -319,10 +352,23 @@ mod tests {
             quality: ExportQuality::High,
             include_audio: false,
         };
-        let mut probe = serde_json::json!({"format":{"format_name":"matroska,webm"},"streams":[{"codec_type":"video","codec_name":"vp9","pix_fmt":"yuv420p","width":1920,"height":1080,"r_frame_rate":"30/1","nb_read_frames":"90","tags":{"DURATION":"00:00:03.000000000"}}]});
+        let mut probe = serde_json::json!({"format":{"format_name":"matroska,webm"},"streams":[{"codec_type":"video","codec_name":"vp9","pix_fmt":"yuv420p","width":1920,"height":1080,"r_frame_rate":"30/1","nb_read_frames":"90","color_range":"tv","color_space":"bt709","color_primaries":"bt709","color_transfer":"bt709","tags":{"DURATION":"00:00:03.000000000"}}]});
         let observed = verify_probe(&probe, &config(), &options).unwrap();
         assert_eq!(observed.video_seconds, 3.0);
         assert_eq!(observed.audio_seconds, None);
+        for field in [
+            "color_range",
+            "color_space",
+            "color_primaries",
+            "color_transfer",
+        ] {
+            let mut missing = probe.clone();
+            missing["streams"][0].as_object_mut().unwrap().remove(field);
+            assert!(verify_probe(&missing, &config(), &options).is_err());
+            let mut wrong = probe.clone();
+            wrong["streams"][0][field] = "unknown".into();
+            assert!(verify_probe(&wrong, &config(), &options).is_err());
+        }
         probe["streams"][0]["codec_name"] = "h264".into();
         assert!(verify_probe(&probe, &config(), &options).is_err());
         probe["streams"][0]["codec_name"] = "vp9".into();

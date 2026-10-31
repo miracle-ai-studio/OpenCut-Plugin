@@ -1,6 +1,7 @@
 import {PreviewOutputClock} from "./audio-preview/output-clock";
 import type {DeviceReceipt} from "./audio-preview/device-port";
 import type {DeviceTimestamp,PresentationClockBinding} from "./audio-preview/presentation-clock";
+import {pictureConsumptionLimit} from "./audio-preview/presentation-clock";
 import type {AudioPreviewSession} from "./types";
 import type {CachedPicture,PictureCachePlan} from "./picture-cache";
 
@@ -110,11 +111,11 @@ export class SurfacePlayer {
       if(this.closed||signal.aborted||this.abort.signal.aborted){first.pixels.close();throw new DOMException("Cached presentation replaced","AbortError");}
       this.next=first.frame.next_time;this.draw(first,this.session.presentation_time);
       // Present the completed first picture while startup lookahead is still
-      // preparing. Its report grants only this validated native interval.
+      // preparing. The completed native horizon bounds the short audio lead.
       this.publish(true);
       // A small validated prefix starts the native audio producer sooner.
       // The steady queue keeps its original capacity and refills while the
-      // first PCM arrives; picture credit still fences every consumed sample.
+      // first PCM arrives; the bounded picture limit fences consumption.
       await this.fill(false,Math.min(4,this.capacity));signal.throwIfAborted();this.abort.signal.throwIfAborted();
       await Promise.all(this.queue.map(picture=>waitPicture(picture,this.abort.signal)));
       if(this.closed)throw new DOMException("Cached presentation closed","AbortError");
@@ -219,8 +220,7 @@ export class SurfacePlayer {
   }
   private publish(force=false) {
     if(this.binding.directPictureCredit){
-      const time=this.readyThrough(),sample=BigInt(time.ticks)*BigInt(this.binding.sampleRate)/BigInt(time.timebase)-BigInt(this.session.actual_start_sample),total=BigInt(this.session.total_frames);
-      const frames=sample<0n?0n:sample>total?total:sample;
+      const frames=pictureConsumptionLimit(this.readyThrough(),this.session);
       if(frames>this.credited){this.credited=frames;this.port.postMessage({kind:'picture-limit',token:this.binding.token,frames:String(frames)});}
     }
     const now=this.screen.now();if(!force&&now-this.reportAt<100)return;this.reportAt=now;this.updated(this.snapshot());

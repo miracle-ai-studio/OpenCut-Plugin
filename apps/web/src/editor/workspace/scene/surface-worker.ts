@@ -1,7 +1,7 @@
 import {SurfacePlayer} from './surface-player';
 import type {SurfacePictureSource} from './surface-player';
 import type {CachedPicture} from './picture-cache';
-import {surfaceError,PRODUCER_AHEAD} from './surface-worker-protocol';
+import {surfaceError,PRODUCER_AHEAD,surfacePictureMatches} from './surface-worker-protocol';
 import type {SurfaceCommand,SurfaceEvent} from './surface-worker-protocol';
 const scope=self as unknown as {onmessage:((event:MessageEvent<SurfaceCommand>)=>void)|null;postMessage(event:SurfaceEvent):void;close():void};
 let canvas:OffscreenCanvas|null=null;
@@ -39,8 +39,8 @@ scope.onmessage=({data})=>{
  if(data.kind==='picture'||data.kind==='pictureError'){
   const pending=run.pending.get(data.id);if(!pending){if(data.kind==='picture')data.picture.pixels.close();return;}run.pending.delete(data.id);
   if(data.kind==='pictureError'){pending.reject(errorFrom(data.error));return;}
-  const p=data.picture,t=p.frame.plan.identity.time,next=p.frame.next_time,at=pending.time;
-  if(!(p.pixels instanceof ImageBitmap)||p.pixels.width!==canvas!.width||p.pixels.height!==canvas!.height||!p.frame.prepare_ahead||BigInt(t.ticks)*BigInt(at.timebase)>BigInt(at.ticks)*BigInt(t.timebase)||BigInt(next.ticks)*BigInt(at.timebase)<=BigInt(at.ticks)*BigInt(next.timebase)){
+  const p=data.picture,at=pending.time;
+  if(!(p.pixels instanceof ImageBitmap)||p.pixels.width!==canvas!.width||p.pixels.height!==canvas!.height||!surfacePictureMatches(p.frame,at)){
    p.pixels.close();pending.reject(Error('Transferred picture changed its requested interval or raster'));return;
   }pending.resolve(p);
  }

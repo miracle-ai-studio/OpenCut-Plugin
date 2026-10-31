@@ -4,6 +4,19 @@ import type {CachedPicture} from './picture-cache';
 import type {DeviceTimestamp,PresentationClockBinding} from './audio-preview/presentation-clock';
 export type SurfaceDescriptor=ReturnType<SurfacePictureSource['descriptor']>;
 export const PRODUCER_AHEAD=6;
+/** Native may move an obsolete preparation request to its confirmed consumer.
+ * Only that explicitly bound, short forward interval crosses the worker port. */
+export function surfacePictureMatches(frame:CachedPicture['frame'],requested:AudioPreviewSession['presentation_time']):boolean {
+ const at=frame.plan.identity.time,next=frame.next_time;
+ const compare=(a:typeof at,b:typeof at)=>BigInt(a.ticks)*BigInt(b.timebase)-BigInt(b.ticks)*BigInt(a.timebase);
+ if(!frame.prepare_ahead||compare(next,at)<=0n)return false;
+ if(compare(at,requested)<=0n&&compare(requested,next)<0n)return frame.catchUp===undefined;
+ const proof=frame.catchUp;
+ if(!proof||compare(at,requested)<=0n||compare(proof.requestedTime,requested)!==0n||
+   compare(at,requested)*1000n>150n*BigInt(at.timebase)*BigInt(requested.timebase))return false;
+ const seconds=Number(at.ticks)/at.timebase;
+ return Number.isFinite(proof.consumerSeconds)&&proof.consumerSeconds>=seconds&&proof.consumerSeconds-seconds<=.150000001;
+}
 export type SurfaceWorkerError={name:string;message:string;code?:string};
 export const surfaceError=(error:unknown):SurfaceWorkerError=>({name:error instanceof Error?error.name:'Error',message:error instanceof Error?error.message:String(error),...(error instanceof Error&&'code' in error?{code:String(error.code)}:{})});
 export type SurfaceCommand={token:string}&(

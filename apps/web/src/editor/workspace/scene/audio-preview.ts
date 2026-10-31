@@ -4,6 +4,7 @@ import type { EditorApi } from "../api";
 import type { Time } from "../../model/types";
 import type { SessionHost } from "./session";
 import type {DeviceTimestamp,PresentationClockSource} from "./audio-preview/presentation-clock";
+import {pictureConsumptionLimit} from "./audio-preview/presentation-clock";
 import type {
   AudioPreviewControl,
   AudioPreviewCreate,
@@ -167,14 +168,13 @@ export class AudioPreview {
     );
   }
   private pictureCredit(a: Active, session: AudioPreviewSession) {
-    // Release only decoded continuous pictures. A cold next window must hold
-    // the same device consumption clock instead of leaving audio far ahead.
+    // Validated native pictures allow at most 100ms of audio lead. A persistent
+    // picture stall still fences consumption; the final picture fences EOF.
     a.output.limitPicture?.("0");
     let through = 0n;
     return (time: Time) => {
       if (!this.same(a) || a.session?.generation !== session.generation) return;
-      const frame = BigInt(time.ticks) * BigInt(session.identity.sample_rate) / BigInt(time.timebase) - BigInt(session.actual_start_sample);
-      const end = frame < 0n ? 0n : frame > BigInt(session.total_frames) ? BigInt(session.total_frames) : frame;
+      const end = pictureConsumptionLimit(time,session);
       if (end > through) { through = end; a.output.limitPicture?.(String(end)); }
     };
   }

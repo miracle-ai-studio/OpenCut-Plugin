@@ -1722,17 +1722,17 @@ it("continues authorized PCM when a picture exceeds rendering admission, while r
   expect(f.controls.some(x=>x.command.kind==="pause"||x.command.kind==="stop")).toBe(false);
  }finally{f.cleanup();}
 });
-it("limits device consumption to continuous decoded pictures and advances credit monotonically",async()=>{
+it("bounds audio lead behind native picture progress and advances its consumption limit monotonically",async()=>{
  const f=await setupAudioPreview();
  try{
   let credit: ((time: {ticks:string;timebase:number})=>void)|undefined;
   const playing=f.preview.play(undefined,{prepare:vi.fn(async(_s,_abort,ready)=>{credit=ready;ready?.({ticks:"12000",timebase:48000});}),observe:vi.fn(),suspend:vi.fn(),close:vi.fn()});
   await playing;
-  expect(f.outputs[0].pictureLimits).toEqual(["0","11025"]);
+  expect(f.outputs[0].pictureLimits).toEqual(["0","15435"]);
   credit?.({ticks:"6000",timebase:48000});
   credit?.({ticks:"24000",timebase:48000});
   credit?.({ticks:"96000",timebase:48000});
-  expect(f.outputs[0].pictureLimits).toEqual(["0","11025","22050","48000"]);
+  expect(f.outputs[0].pictureLimits).toEqual(["0","15435","26460","48000"]);
  }finally{f.cleanup();}
 });
 

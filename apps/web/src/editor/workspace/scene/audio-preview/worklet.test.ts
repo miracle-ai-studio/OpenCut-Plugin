@@ -138,3 +138,35 @@ it('accepts contiguous picture credit on the presentation port and ignores delay
  credit(viewer,'first','4');credit(main,'first','3');vi.stubGlobal('currentFrame',132);p.process([],[[left,right]]);expect(left[0]).toBeCloseTo(.5);expect(left[1]).toBeCloseTo(.7);
  expect(p.port.postMessage).toHaveBeenLastCalledWith(expect.objectContaining({consumedFrames:'4',copied:2}));
 });
+
+it('keeps every PCM sample in order while native pictures catch up under the bounded presentation lead',async()=>{
+ const {pictureConsumptionLimit}=await import('./presentation-clock');
+ class Processor{port={onmessage:null as null|((e:{data:Record<string,unknown>})=>void),postMessage:vi.fn()};process(_i:Float32Array[][],_o:Float32Array[][]){return true;}}
+ let Current=Processor;vi.stubGlobal('AudioWorkletProcessor',Processor);vi.stubGlobal('currentFrame',0);vi.stubGlobal('registerProcessor',(_name:string,c:typeof Processor)=>{Current=c;});await import('./worklet');
+ const p=new Current(),gate={onmessage:null as null|((e:{data:unknown})=>void),start:vi.fn()};
+ const send=(data:Record<string,unknown>)=>p.port.onmessage!({data});
+ const rate=48000,total=rate*3,step=1600;
+ const session={identity:{sample_rate:rate},actual_start_sample:'0',total_frames:String(total)} as import('../types').AudioPreviewSession;
+ const credit=(through:number)=>gate.onmessage!({data:{kind:'picture-limit',token:'run',frames:String(pictureConsumptionLimit({ticks:String(through),timebase:rate},session))}});
+ send({kind:'prime',blocks:2});send({kind:'picture-port',token:'run',port:gate});credit(0);send({kind:'reset',token:'run'});
+ let sent=0,issued=0,completed=0,copied=0,reported=0,through=step*5,prepared=through,readyAt=1728,wall=0,ended=false,error=0,rendered=5;
+ const value=(n:number)=>Math.fround((n%127)/127-.5);
+ const left=new Float32Array(128),right=new Float32Array(128);
+ credit(through);
+ while(copied<total&&wall<total+rate){
+  while(sent-completed<32&&issued<total){const count=Math.min(4096,total-issued),pcm=new Float32Array(count*2);for(let i=0;i<count;i++){pcm[i*2]=value(issued+i);pcm[i*2+1]=-value(issued+i);}issued+=count;sent++;send({kind:'block',token:'run',pcm:pcm.buffer});}
+  if(issued===total&&!ended){send({kind:'end',token:'run'});ended=true;}
+  if(wall>=readyAt){through=prepared+step;credit(through);rendered++;prepared=Math.max(through,reported);readyAt=wall+1728;}
+  vi.stubGlobal('currentFrame',wall);p.process([],[[left,right]]);
+  const receipt=p.port.postMessage.mock.calls.at(-1)![0];completed=receipt.completedBlocks;
+  for(let i=0;i<128;i++){const expected=i<receipt.copied?value(copied+i):0;error=Math.max(error,Math.abs(left[i]-expected),Math.abs(right[i]+expected));}
+  copied=Number(receipt.consumedFrames);wall+=128;if(wall%2400<128)reported=copied;
+ }
+ const final=p.port.postMessage.mock.calls.at(-1)![0];
+ expect(copied).toBe(total);expect(error).toBe(0);expect(rendered).toBeLessThan(90);
+ // The final sample stays fenced until its native end picture completes.
+ // There is no accumulating picture-induced silence across the scene.
+ expect(Number(final.elapsedRenderFrames)-copied).toBeLessThan(2400);
+ expect(final.underflowEvents).toBe(0);send({kind:'stop'});
+ expect(p.port.postMessage).toHaveBeenLastCalledWith({kind:'stopped',token:'run',consumedFrames:String(total)});
+});

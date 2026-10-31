@@ -6,7 +6,7 @@ type Time=PictureCachePlan["duration"];
 type Segment=PictureCachePlan["segments"][number];
 type Session=ToolInput<"opencut_visual_preview_frame">["session"];
 type Entry={segment:Segment;blob?:Blob;size:number};
-export type CachedPicture={frame:{prepare_ahead:true;next_time:Time;plan:{identity:{time:Time}};time_seconds:number};pixels:ImageBitmap;runtime:Record<string,string>;ready?:Promise<void>};
+export type CachedPicture={frame:{prepare_ahead:true;next_time:Time;plan:{identity:{time:Time}};time_seconds:number;catchUp?:{requestedTime:Time;consumerSeconds:number}};pixels:ImageBitmap;runtime:Record<string,string>;ready?:Promise<void>};
 const compare=(a:Time,b:Time)=>BigInt(a.ticks)*BigInt(b.timebase)-BigInt(b.ticks)*BigInt(a.timebase);
 const windowKey=(s:Segment)=>`${s.start.ticks}/${s.start.timebase}:${s.end.ticks}/${s.end.timebase}`;
 const decoderKey=(s:Segment)=>`${windowKey(s)}:${s.job_id}`;

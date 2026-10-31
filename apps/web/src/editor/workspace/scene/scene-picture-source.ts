@@ -2,6 +2,7 @@ import type {AudioPreviewSession} from "./types";
 import type {CachedPicture,PictureCache} from "./picture-cache";
 import type {PreparedSurfacePicture,SurfacePictureSource} from "./surface-player";
 import type {VisualPreviewRenderer,VisualPreviewExecutionApi} from "./visual-preview-renderer";
+import {surfacePictureMatches} from "./surface-worker-protocol";
 
 type Time=AudioPreviewSession["presentation_time"];
 const compare=(a:Time,b:Time)=>BigInt(a.ticks)*BigInt(b.timebase)-BigInt(b.ticks)*BigInt(a.timebase);
@@ -61,10 +62,14 @@ export class ScenePictureSource implements SurfacePictureSource {
     const abort=new AbortController();
     const pending=await this.renderer.prepare(this.api,{session_id,generation,overlay_epoch,owner_id,lease_id},AbortSignal.any([signal,abort.signal]),undefined,undefined,{time,reservedBytes:retainedBytes,end:{ticks:this.session.total_frames,timebase:this.session.identity.sample_rate},captureSurface:true});
     const frame=pending.frame;
+    let surfaceFrame:CachedPicture['frame'];
     try {
       signal.throwIfAborted();
       const identity=frame.plan.identity;
-      if(!frame.prepare_ahead||!frame.next_time||compare(frame.next_time,identity.time)<=0n||compare(time,identity.time)<0n||compare(time,frame.next_time)>=0n||
+      const catchUp=this.plan&&compare(identity.time,time)>0n&&frame.max_lag_ms===150
+        ?{requestedTime:time,consumerSeconds:frame.consumer_time_seconds}:undefined;
+      surfaceFrame={prepare_ahead:true,next_time:frame.next_time,plan:{identity},time_seconds:frame.time_seconds,...(catchUp?{catchUp}: {})};
+      if(!frame.prepare_ahead||!surfacePictureMatches(surfaceFrame,time)||
         identity.projectId!==this.session.identity.project_id||identity.revision!==this.session.identity.revision||identity.sequenceId!==this.session.identity.sequence_id||
         (this.plan&&(frame.picture.width!==this.plan.width||frame.picture.height!==this.plan.height)))throw Error("Native scene picture changed its fixed session");
     }catch(error){abort.abort(error);void pending.complete.then(result=>result.pixels.close(),()=>{});throw error;}
@@ -72,11 +77,11 @@ export class ScenePictureSource implements SurfacePictureSource {
       try {
         signal.throwIfAborted();
         if(this.plan&&(result.pixels.width!==this.plan.width||result.pixels.height!==this.plan.height))throw Error("Native scene picture changed its fixed session");
-        return {...result,runtime:{...result.runtime,cacheState:this.cache?.state()??"disabled",cacheHits:String(this.hits)}} as CachedPicture;
+        return {...result,frame:surfaceFrame,runtime:{...result.runtime,cacheState:this.cache?.state()??"disabled",cacheHits:String(this.hits)}} as CachedPicture;
       }catch(error){result.pixels.close();throw error;}
     });
     void complete.catch(()=>{});
-    return {frame:{prepare_ahead:true,next_time:frame.next_time,plan:{identity:frame.plan.identity},time_seconds:frame.time_seconds},claimed:pending.claimed,complete};
+    return {frame:surfaceFrame,claimed:pending.claimed,complete};
   }
 }
 type ToolFrameIdentity=import("../../../lib/editor-sdk").ToolOutput<"opencut_visual_preview_frame">["plan"]["identity"];

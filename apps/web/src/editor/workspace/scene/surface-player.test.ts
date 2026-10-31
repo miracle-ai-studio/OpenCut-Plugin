@@ -106,7 +106,7 @@ it("starts with a validated prefix and refills its steady reserve without credit
  await f.player.start(new AbortController().signal);
  expect(f.frame).toHaveBeenCalledTimes(5);
  expect(f.player.snapshot().readyThrough).toEqual({ticks:"5",timebase:25});
- expect(f.port.postMessage).toHaveBeenLastCalledWith({kind:"picture-limit",token:"device",frames:"9600"});
+ expect(f.port.postMessage).toHaveBeenLastCalledWith({kind:"picture-limit",token:"device",frames:"14400"});
  await f.tick();expect(f.frame).toHaveBeenCalledTimes(6);
  expect(f.player.snapshot().readyThrough).toEqual({ticks:"5",timebase:25});
  const stopping=f.player.stop(true),late=f.picture({ticks:"5",timebase:25});release(late);await stopping;
@@ -122,7 +122,7 @@ it("reports the actual first picture before lookahead completes without starting
  let started=false;const starting=f.player.start(new AbortController().signal).then(()=>{started=true;});await flush();
  expect(started).toBe(false);expect(f.drawImage).toHaveBeenCalledOnce();
  expect(f.reports[0]).toMatchObject({presentedFrames:1,time:0,readyThrough:{ticks:"1",timebase:25}});
- expect(f.port.postMessage).toHaveBeenLastCalledWith({kind:"picture-limit",token:"device",frames:"1920"});
+ expect(f.port.postMessage).toHaveBeenLastCalledWith({kind:"picture-limit",token:"device",frames:"6720"});
  expect(f.callbacks.size).toBe(0);
  release(f.picture({ticks:"1",timebase:25}));await starting;
  expect(f.player.snapshot().readyThrough).toEqual({ticks:"5",timebase:25});
@@ -141,10 +141,10 @@ it("pipelines at most four GPU validations and credits only their contiguous suc
  const start=f.player.start(new AbortController().signal);await flush();
  expect(f.frame).toHaveBeenCalledTimes(5);expect(f.player.snapshot().readyThrough).toEqual({ticks:"1",timebase:25});
  gates[3].resolve();await flush();expect(f.player.snapshot().readyThrough).toEqual({ticks:"1",timebase:25});
- expect(f.port.postMessage).toHaveBeenLastCalledWith({kind:"picture-limit",token:"device",frames:"1920"});
+ expect(f.port.postMessage).toHaveBeenLastCalledWith({kind:"picture-limit",token:"device",frames:"6720"});
  expect(f.drawImage).toHaveBeenCalledTimes(1);
  gates[0].resolve();gates[1].resolve();gates[2].resolve();await start;expect(f.player.snapshot().readyThrough).toEqual({ticks:"5",timebase:25});
- expect(f.port.postMessage).toHaveBeenLastCalledWith({kind:"picture-limit",token:"device",frames:"9600"});
+ expect(f.port.postMessage).toHaveBeenLastCalledWith({kind:"picture-limit",token:"device",frames:"14400"});
  await f.tick();expect(f.frame).toHaveBeenCalledTimes(9);
  gates[4].reject(Error("GPU validation failed"));await flush();
  expect(f.failed).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({message:"GPU validation failed"}));

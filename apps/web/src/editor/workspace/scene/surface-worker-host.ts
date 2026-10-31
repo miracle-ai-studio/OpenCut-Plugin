@@ -2,7 +2,7 @@ import type {PreparedSurfacePicture,SurfacePictureSource,SurfaceReport} from './
 import type {CachedPicture} from './picture-cache';
 import type {AudioPreviewSession} from './types';
 import type {DeviceTimestamp,PresentationClockBinding} from './audio-preview/presentation-clock';
-import {surfaceError,PRODUCER_AHEAD} from './surface-worker-protocol';
+import {surfaceError,PRODUCER_AHEAD,surfacePictureMatches} from './surface-worker-protocol';
 import type {SurfaceCommand,SurfaceEvent} from './surface-worker-protocol';
 const isPressure=(error:unknown)=>error instanceof Error&&'code' in error&&['VISUAL_BUDGET_EXCEEDED','PREVIEW_FRAME_STALE'].includes(String(error.code));
 const compare=(a:{ticks:string;timebase:number},b:{ticks:string;timebase:number})=>BigInt(a.ticks)*BigInt(b.timebase)-BigInt(b.ticks)*BigInt(a.timebase);
@@ -125,12 +125,11 @@ export class SurfaceWorkerRun {
    // A ready head must not wait for unrelated later preparation or body reads.
    await this.head();this.refill();
    const stage=this.queue[0];if(!stage)throw Object.assign(Error('Presentation has no admitted next frame'),{code:'VISUAL_BUDGET_EXCEEDED'});
-   const at=stage.frame.plan.identity.time;
-   if(compare(request.time,at)<0n||compare(request.time,stage.frame.next_time)>=0n)throw Error('Presentation requested a discontinuous frame');
+   if(!surfacePictureMatches(stage.frame,request.time))throw Error('Presentation requested a discontinuous frame');
    await waitFor(Promise.all([stage.claimed,stage.ready]),this.abort.signal);this.abort.signal.throwIfAborted();
    const picture=stage.picture;if(!picture)throw Error('Presentation pixels did not complete');
    exported=picture.pixels;this.abort.signal.throwIfAborted();
-   const result:CachedPicture={pixels:exported,frame:{prepare_ahead:true,next_time:picture.frame.next_time,plan:{identity:{time:at}},time_seconds:picture.frame.time_seconds},runtime:picture.runtime};
+   const result:CachedPicture={pixels:exported,frame:{...stage.frame},runtime:picture.runtime};
    this.host.post({token:this.token,kind:'picture',id:request.id,picture:result},[exported]);exported=undefined;
    // Keep the transferred bitmap charged until the next worker credit report.
    const plan=this.source.descriptor();this.retained+=plan.width*plan.height*4;

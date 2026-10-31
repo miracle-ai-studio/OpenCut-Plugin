@@ -69,3 +69,18 @@ it("keeps prepared source facts separate from pixels and rejects late completion
  claim();await pending.claimed;abort.abort();finish();
  await expect(pending.complete).rejects.toBeDefined();expect(f.closed).toHaveBeenCalledOnce();
 });
+
+it('preserves the native consumer catch-up binding while rejecting arbitrary future frames',async()=>{
+ for(const valid of [true,false]){
+  const f=fixture(),signal=new AbortController().signal;
+  await f.source.initialize(signal);await f.source.frame(session.presentation_time,signal);
+  const original=f.render.getMockImplementation()!;
+  f.render.mockImplementationOnce(async(...args)=>{
+   const p=await original(...args);p.frame.plan.identity.time={ticks:'3',timebase:25};p.frame.next_time={ticks:'4',timebase:25};p.frame.time_seconds=.12;p.frame.consumer_time_seconds=valid?.13:.10;p.frame.max_lag_ms=150;return p;
+  });
+  const pending=f.source.frame({ticks:'1',timebase:25},signal);
+  if(valid){const p=await pending;expect(p.frame.catchUp).toEqual({requestedTime:{ticks:'1',timebase:25},consumerSeconds:.13});p.pixels.close();}
+  else await expect(pending).rejects.toThrow('fixed session');
+  expect(f.closed).toHaveBeenCalledOnce();
+ }
+});

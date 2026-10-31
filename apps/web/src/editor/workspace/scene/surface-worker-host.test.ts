@@ -140,3 +140,18 @@ it('charges an early transferred bitmap until the next presentation credit repor
  expect(f.raw.every(p=>p.close.mock.calls.length===1)).toBe(true);
  expect(f.bitmaps.every(p=>p.close.mock.calls.length===1)).toBe(true);
 });
+
+it('transfers a completed native catch-up interval with its original request binding',async()=>{
+ const f=fixture(),base=f.frame.getMockImplementation()!;
+ f.frame.mockImplementation(async(time,...args)=>{
+  if(time.ticks!=='1')return base(time,...args);
+  const p=await base({ticks:'3',timebase:25},...args);p.frame.catchUp={requestedTime:time,consumerSeconds:.13};return p;
+ });
+ const starting=f.run.start(new AbortController().signal);f.event({kind:'started',report:f.report});await starting;
+ try{
+  f.event({kind:'frame',id:1,time:{ticks:'0',timebase:25},retainedBytes:16} as never);await flush();
+  f.event({kind:'frame',id:2,time:{ticks:'1',timebase:25},retainedBytes:16} as never);await flush();
+  expect(f.worker.messages.filter(m=>m.kind==='picture').at(-1)).toMatchObject({id:2,picture:{frame:{plan:{identity:{time:{ticks:'3',timebase:25}}},catchUp:{requestedTime:{ticks:'1',timebase:25},consumerSeconds:.13}}}});
+  expect(f.failed).not.toHaveBeenCalled();
+ }finally{await f.finish();}
+});

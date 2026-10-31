@@ -106,7 +106,7 @@ impl VerifiedArtifact {
             checkpoint()?;
             return Ok(verified);
         }
-        let mut digest = Sha256::new();
+        let mut digest = ring::digest::Context::new(&ring::digest::SHA256);
         let mut bytes = [0; 65536];
         loop {
             checkpoint()?;
@@ -117,7 +117,13 @@ impl VerifiedArtifact {
             digest.update(&bytes[..count]);
             checkpoint()?;
         }
-        if format!("{:x}", digest.finalize()) != descriptor.content_hash {
+        let hash: String = digest
+            .finish()
+            .as_ref()
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect();
+        if hash != descriptor.content_hash {
             return Err(integrity());
         }
         verified.seek(SeekFrom::Start(0)).map_err(|_| integrity())?;
@@ -424,6 +430,34 @@ mod verification_tests {
             )
             .unwrap();
             (file, checks)
+        }
+    }
+
+    #[test]
+    fn cold_verification_revocation_never_records_a_fact() {
+        let fixture = Fixture::new();
+        let (_, full_checks) = fixture.open(&Mutex::default());
+        for deny_at in 1..=full_checks {
+            let cache = Mutex::default();
+            let mut checks = 0;
+            let result = VerifiedArtifact::open_with_cache(
+                &fixture.root,
+                "job_test",
+                1,
+                &fixture.descriptor,
+                &mut || {
+                    checks += 1;
+                    if checks == deny_at {
+                        Err(EditorError::new("FORBIDDEN", "revoked"))
+                    } else {
+                        Ok(())
+                    }
+                },
+                &cache,
+            );
+            assert_eq!(result.err().unwrap().code, "FORBIDDEN");
+            assert_eq!(cache.lock().unwrap().len(), 0);
+            assert_eq!(fixture.open(&cache).1, full_checks);
         }
     }
 

@@ -534,7 +534,7 @@ fn copy_hash_checked(
     checkpoint: &mut impl FnMut() -> Result<(), EditorError>,
     mut reservation: Option<&mut opencut_storage_budget::Reservation>,
 ) -> Result<(String, u64), EditorError> {
-    let mut digest = Sha256::new();
+    let mut digest = ring::digest::Context::new(&ring::digest::SHA256);
     let mut size = 0u64;
     let mut buffer = [0u8; 128 * 1024];
     loop {
@@ -555,7 +555,13 @@ fn copy_hash_checked(
             .checked_add(count as u64)
             .ok_or_else(|| error("ASSET_TOO_LARGE", "Asset length overflow"))?;
     }
-    Ok((format!("{:x}", digest.finalize()), size))
+    let hash = digest
+        .finish()
+        .as_ref()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
+    Ok((hash, size))
 }
 
 fn verify_file(path: &Path, locked: &LockedAsset) -> Result<(), EditorError> {
@@ -639,6 +645,32 @@ mod tests {
                     metadata: Default::default(),
                 }],
             },
+        }
+    }
+
+    #[test]
+    fn streaming_content_hash_matches_independent_digest_across_block_boundaries() {
+        struct ShortReads(std::io::Cursor<Vec<u8>>);
+        impl Read for ShortReads {
+            fn read(&mut self, bytes: &mut [u8]) -> std::io::Result<usize> {
+                let length = bytes.len().min(997);
+                self.0.read(&mut bytes[..length])
+            }
+        }
+        for length in [0, 1, 63, 64, 65, 65_535, 65_536, 65_537, 131_072, 131_073] {
+            let bytes: Vec<u8> = (0..length).map(|n| (n * 73 + 19) as u8).collect();
+            let expected = format!("{:x}", Sha256::digest(&bytes));
+            let mut output = Vec::new();
+            let (actual, size) = copy_hash_checked(
+                &mut ShortReads(std::io::Cursor::new(bytes.clone())),
+                &mut output,
+                &mut || Ok(()),
+                None,
+            )
+            .unwrap();
+            assert_eq!(actual, expected);
+            assert_eq!(size, length as u64);
+            assert_eq!(output, bytes);
         }
     }
 

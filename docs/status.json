@@ -8407,5 +8407,12 @@
       "asset_digest": "fe2ca18408858e1263ff6cf0a7c513dd1faceffb8bc750d34061092be633d6b6",
       "assets": 285
     }
+  },
+  "cold_verification": {
+    "implementation": "ring0.17.14 in existing CAS stream and source-proxy verification; full input and all checks retained",
+    "status": "pending_integrated_validation",
+    "build_passed": false,
+    "deployed": false,
+    "delivery_ready": false
   }
 }

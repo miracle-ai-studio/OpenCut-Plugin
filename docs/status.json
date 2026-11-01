@@ -12436,7 +12436,7 @@
     "delivery_ready": false
   },
   "export_probe_throughput": {
-    "phase": "diagnosed_before_implementation",
+    "phase": "implemented_pending_integrated_build",
     "runtime": {
       "opencut": {
         "path": "/Users/vincent/.opencut/runtime/native-local-export-color-final-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
@@ -12456,7 +12456,7 @@
     "per_stream_ordered_frames_and_metadata_identical": true,
     "proposed_fix": "Fixed four decoder threads in the existing bounded ffprobe invocation; preserve all decoded frames, exact single-stream observations, policy, lifetime, RSS, authorization and cancellation.",
     "evidence": "/private/tmp/opencut-local-upgrade-20261101/probe-throughput/comparison.json",
-    "implemented": false,
+    "implemented": true,
     "deployed": false,
     "delivery_ready": false
   }

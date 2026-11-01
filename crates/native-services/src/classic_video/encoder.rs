@@ -921,8 +921,10 @@ fn probe_observed(
 ) -> Result<Value, EditorError> {
     checkpoint(false)?;
     let mut command = Command::new(path);
+    // Decode every frame with bounded parallelism. Audio/video interleaving
+    // may change, but each stream's ordered observations remain exact.
     command.args([
-        "-v", "error", "-protocol_whitelist", "file,pipe", "-count_frames",
+        "-v", "error", "-threads", "4", "-protocol_whitelist", "file,pipe", "-count_frames",
         "-show_frames", "-show_streams", "-show_format", "-show_entries",
         "frame=media_type,stream_index,pts,duration:stream=index,codec_type,codec_name,width,height,pix_fmt,color_range,color_space,color_primaries,color_transfer,r_frame_rate,avg_frame_rate,sample_rate,channels,nb_read_frames,duration,time_base:stream_tags=DURATION:format=format_name,duration",
         "-of", "compact=p=1:nk=0",
@@ -1157,6 +1159,15 @@ mod tests {
         let (sender, receiver) = mpsc::sync_channel(4);
         let observed = read_probe_output(rows.as_bytes(), sender).unwrap();
         assert_eq!(receiver.into_iter().collect::<Vec<_>>(), [1, 2, 3]);
+        // Threaded decoders can publish another stream first. Preserve every
+        // within-stream frame and require the same final verification facts.
+        let mut interleaved = rows.lines().collect::<Vec<_>>();
+        interleaved.swap(0, 1);
+        let (sender, _receiver) = mpsc::sync_channel(4);
+        assert_eq!(
+            read_probe_output((interleaved.join("\n") + "\n").as_bytes(), sender).unwrap(),
+            observed,
+        );
         let config = ClassicVideoEncoderConfig {
             ffmpeg: "ffmpeg".into(),
             ffprobe: "ffprobe".into(),

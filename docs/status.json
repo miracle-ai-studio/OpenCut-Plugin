@@ -3108,7 +3108,7 @@
     "Current visible-window94s observation on Weba6c7b571:action-to-end96.9367s includingstartup,actual first frame2.0372s,maximum device elapsed-minus-copied0.0106667s,max wall frame gap43ms,max lag44.4167ms,no missed cached frames or PCM starvation. This bounded repeated-source observation does not qualify physical output,all media or universal realtime. Historical headless0.528/0.692s waits retain original identities and are not representative foreground guarantees.",
     "Retained full94s4K export from0d778351/33b2852c passed in458.624s(0.205x realtime),2820frames,seven whole-raster pixel probes and whole independent PCM/AAC. Current05074e85/0d6b4e80 changes only completion probing; new6s4K and source-preview tasks passed, but the full-duration task was not rerendered. The94s timeline repeats one12s source;unique long-source performance and driver/GPU residency remain unqualified.",
     "Broader codec/container/color/orientation/default-track fidelity remains open. The tested output matrix mismatch is fixed with explicit BT.709 conversion and frame/codec metadata. The strict limit-3 source-to-output channel probe still records maximum4/255; encoder-only same-raster experiments reproduce the cumulative8-bit lossy quantization.",
-    "The recorded asset-free four-second text resume stall near1.87seconds is not causally closed by later successful playback cases.",
+    "The historical asset-free four-second text stall near1.87s lacks device/picture/queue telemetry, so its unique cause cannot be recovered from that report. One current05074e85/0d6b4e80 foreground run completed pause/resume and2.5s seek to end, with exact192000/72000 device-frame totals and0underflow. This scoped pass does not establish historical causality or universal reliability.",
     "Native worker RSS and device-clock observations are scoped per candidate. Whole-product/browser and driver/GPU residency, physical display timing and audibility remain unqualified.",
     "Preview and export retain distinct original mastering rules and separate independent PCM oracles. Current zero-error scoped native references do not cover every rate/layout/effect/device.",
     "Per-font/platform/budget/FPS and optional sound-provider failure/cancellation qualification are incomplete.",
@@ -4552,6 +4552,14 @@
           "path": "/Users/vincent/.opencut/runtime/native-local-probe-throughput-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
           "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
         }
+      },
+      "additional_verification": {
+        "retained_text_resume": {
+          "path": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/resume-closure/checkpoint.json",
+          "sha256": "8fee1ab03de88f886a5f10c7463c4d41fca49792330d52b202077070d3440ed7",
+          "files": 18,
+          "bytes": 3877788
+        }
       }
     },
     "previous_runtime_delivery": {
@@ -4585,6 +4593,14 @@
         "opencut-render-worker": {
           "path": "/Users/vincent/.opencut/runtime/native-local-probe-throughput-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
           "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
+        }
+      },
+      "additional_verification": {
+        "retained_text_resume": {
+          "path": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/resume-closure/checkpoint.json",
+          "sha256": "8fee1ab03de88f886a5f10c7463c4d41fca49792330d52b202077070d3440ed7",
+          "files": 18,
+          "bytes": 3877788
         }
       }
     },
@@ -5053,7 +5069,15 @@
           "projects_and_metadata_unchanged": true,
           "integrity": "ok"
         }
-      ]
+      ],
+      "additional_verification": {
+        "retained_text_resume": {
+          "path": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/resume-closure/checkpoint.json",
+          "sha256": "8fee1ab03de88f886a5f10c7463c4d41fca49792330d52b202077070d3440ed7",
+          "files": 18,
+          "bytes": 3877788
+        }
+      }
     },
     "editor_head_integration": {
       "state": "integrated_scoped_run_failed_small_startup_realtime_open",
@@ -12557,5 +12581,57 @@
     "compatibility_scope": "H264/AAC,FFV1 and VP9 observations; VP9+Opus is a packet-copy/independent-audio probe fixture, not a new native Opus render or PCM qualification.",
     "physical_manual_acceptance": false,
     "implemented_fix": "Fixed four decoder threads in the existing bounded ffprobe invocation; preserve all decoded frames, exact single-stream observations, policy, lifetime, RSS, authorization and cancellation."
+  },
+  "native_resume_current_validation": {
+    "runtime": {
+      "opencut": {
+        "path": "/Users/vincent/.opencut/runtime/native-local-probe-throughput-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+        "sha256": "0d6b4e800029c4ed77a943dc25dc7389c5738e9d62be2b8c28033ba668d9945f"
+      },
+      "opencut-render-worker": {
+        "path": "/Users/vincent/.opencut/runtime/native-local-probe-throughput-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+        "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
+      }
+    },
+    "host_source_commit": "05074e85de5a40a74ea9a7f0b3537ffad53a32e6",
+    "worker_source_commit": "853e3ab590a9f05a9fd4b14e4020a6028d42995c",
+    "web_source_commit": "a6c7b5717177564ecd9ac7fc5a2603a08374831a",
+    "passed": true,
+    "runs": 1,
+    "builds": 0,
+    "scope": "Single retained asset-free4s text fixture: play,pause,resume to end,seek2.5s to end. Passive same-generation device/picture/host observations. No historical-cause closure from a success.",
+    "paused_display_time": 0.8333333333333334,
+    "resume_to_end_seconds": 4.865530002,
+    "resume_final_frame_seconds": 3.9583333333333335,
+    "seek_final_frame_seconds": 3.9583333333333335,
+    "worklet_receipts": 2143,
+    "dom_device_samples": 307,
+    "telemetry_limits": "Device receipts and DOM picture statistics retained with browser-monotonic timestamps, phase and tokens; API requests retain their separate Node-monotonic clock. No direct worklet FIFO occupancy or historical missing telemetry reconstructed. Raw SurfaceWorker report listener recorded0; DOM statistics are the picture observation source.",
+    "preservation": {
+      "projects": 10,
+      "jobs": 128,
+      "unchanged": true,
+      "synthetic_service_stopped": true,
+      "user_services_untouched": true
+    },
+    "historical": {
+      "report": "/Users/vincent/Movies/OpenCut-native-rendering/acceptance/native-audio-preview-ui-b9dc33c32b67-47eb11606035-after-build.json",
+      "sha256": "8dacccd0c33cef4e65d6d3eba17c1dc994606d3ec31298ecb2a3ba6ea97c3bf0",
+      "cause_closed": false,
+      "verdict": "Old failure lacks correlated device,picture-credit and queue observations. Current single successful flow does not establish its unique cause or universal reliability."
+    },
+    "terminal_static_preview": "After completion the editor creates a still owner for the final frame. This is a single-frame/editing-owner transition, not source-preview regeneration; no durable jobs added.",
+    "delivery_ready": false,
+    "checkpoint": {
+      "path": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/resume-closure/checkpoint.json",
+      "sha256": "8fee1ab03de88f886a5f10c7463c4d41fca49792330d52b202077070d3440ed7",
+      "files": 18,
+      "bytes": 3877788
+    },
+    "initial_consumed_frames": 42240,
+    "resumed_consumed_frames": 149760,
+    "seek_consumed_frames": 72000,
+    "sample_rate": 48000,
+    "maximum_underflow_events": 0
   }
 }

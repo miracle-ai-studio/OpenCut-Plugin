@@ -12434,5 +12434,30 @@
       "Broader codec/color/orientation/default-track and physical A/V manual acceptance remain incomplete."
     ],
     "delivery_ready": false
+  },
+  "export_probe_throughput": {
+    "phase": "diagnosed_before_implementation",
+    "runtime": {
+      "opencut": {
+        "path": "/Users/vincent/.opencut/runtime/native-local-export-color-final-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+        "sha256": "33b2852c0fa3b1d9d732fbee5c444791e8660076c79f11fc02a2b806c126dac1"
+      },
+      "opencut-render-worker": {
+        "path": "/Users/vincent/.opencut/runtime/native-local-export-color-final-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+        "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
+      }
+    },
+    "retained_artifact_sha256": "047ecd1ccfddbf3bcefcaa38fd0f655d7664a43557077eca9757e75f30401289",
+    "baseline_seconds": 56.46277637197636,
+    "four_decoder_threads_seconds": 17.86230439506471,
+    "baseline_cpu_user_seconds": 55.805955,
+    "four_threads_cpu_user_seconds": 67.13765500000001,
+    "raw_interleaving_identical": false,
+    "per_stream_ordered_frames_and_metadata_identical": true,
+    "proposed_fix": "Fixed four decoder threads in the existing bounded ffprobe invocation; preserve all decoded frames, exact single-stream observations, policy, lifetime, RSS, authorization and cancellation.",
+    "evidence": "/private/tmp/opencut-local-upgrade-20261101/probe-throughput/comparison.json",
+    "implemented": false,
+    "deployed": false,
+    "delivery_ready": false
   }
 }

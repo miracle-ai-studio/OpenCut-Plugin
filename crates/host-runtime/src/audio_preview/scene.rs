@@ -290,6 +290,9 @@ fn scene_picture_inner(
         &source_plan,
         &mut current.source_resources,
     );
+    resources.prepare_ready(
+        std::time::Instant::now() + Duration::from_millis(prepared.policy().deadline_ms),
+    )?;
     struct Pixels {
         bytes: Vec<u8>,
         length: usize,

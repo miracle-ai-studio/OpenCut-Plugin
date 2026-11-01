@@ -172,10 +172,111 @@ struct Cached {
     index: Option<SourcePreviewIndex<VerifiedArtifact>>,
     touched: u64,
 }
+impl Cached {
+    fn open_ready(
+        &mut self,
+        app: &EditorApplication,
+        root: &Path,
+        checkpoint: &mut dyn FnMut() -> Result<(), EditorError>,
+    ) -> Result<Option<SourcePreviewState>, EditorError> {
+        checkpoint()?;
+        let (state, attempt, cancelled) = app.source_preview_job_status(&mut self.captured)?;
+        if state != JobState::Succeeded {
+            return Ok(Some(if cancelled {
+                SourcePreviewState::Cancelled
+            } else {
+                match state {
+                    JobState::Queued => SourcePreviewState::Queued,
+                    JobState::Running => SourcePreviewState::Running,
+                    JobState::Failed => SourcePreviewState::Failed,
+                    JobState::Cancelled => SourcePreviewState::Cancelled,
+                    JobState::Succeeded => unreachable!(),
+                }
+            }));
+        }
+        app.require_source_preview_read(&self.captured)?;
+        let result = self.captured.result.as_ref().ok_or_else(integrity)?;
+        if self.video.is_none() || self.index.is_none() {
+            let mut authorized = || {
+                checkpoint()?;
+                app.require_source_preview_read(&self.captured)
+            };
+            let video = VerifiedArtifact::open(
+                root,
+                &self.captured.job_id,
+                attempt,
+                &result.artifact,
+                &mut authorized,
+            )?;
+            let index = VerifiedArtifact::open(
+                root,
+                &self.captured.job_id,
+                attempt,
+                &result.frame_index,
+                &mut authorized,
+            )?;
+            let count = result.public.frame_count.parse().map_err(|_| integrity())?;
+            self.index = Some(SourcePreviewIndex::new(
+                index,
+                count,
+                result.public.identity.raster_bound,
+            )?);
+            self.video = Some(video);
+        }
+        checkpoint()?;
+        Ok(None)
+    }
+}
+const MAX_SOURCE_FILES: usize = 32;
 #[derive(Default)]
 pub(crate) struct SourceCache {
     entries: BTreeMap<String, Cached>,
     touch: u64,
+    preflighted: bool,
+}
+impl SourceCache {
+    fn capture(
+        &mut self,
+        app: &EditorApplication,
+        job: &SourcePlanJob,
+    ) -> Result<&mut Cached, EditorError> {
+        self.touch = self.touch.checked_add(1).ok_or_else(|| {
+            EditorError::new(
+                "PREVIEW_RESOURCE_LIMIT",
+                "Source cache touch counter overflow",
+            )
+        })?;
+        if !self.entries.contains_key(&job.job_id) {
+            if self.entries.len() >= MAX_SOURCE_FILES {
+                let oldest = self
+                    .entries
+                    .iter()
+                    .min_by_key(|(_, entry)| entry.touched)
+                    .map(|(id, _)| id.clone())
+                    .ok_or_else(integrity)?;
+                self.entries.remove(&oldest);
+            }
+            let captured = app.capture_source_preview_job(&job.job_id)?;
+            if captured.prepared.identity != job.identity {
+                return Err(integrity());
+            }
+            self.entries.insert(
+                job.job_id.clone(),
+                Cached {
+                    captured,
+                    video: None,
+                    index: None,
+                    touched: self.touch,
+                },
+            );
+        }
+        let cached = self
+            .entries
+            .get_mut(&job.job_id)
+            .expect("captured source preview");
+        cached.touched = self.touch;
+        Ok(cached)
+    }
 }
 
 pub(crate) struct PreviewResources<'a, R> {
@@ -204,6 +305,34 @@ impl<'a, R> PreviewResources<'a, R> {
             transfers: BTreeMap::new(),
             next: 0,
         }
+    }
+}
+impl<R: ClassicVisualResources> PreviewResources<'_, R> {
+    /// Verify already published sources before the first picture starts the
+    /// device clock. This opens no decoder and produces no extra frames/jobs.
+    /// Retain at most the existing descriptor budget; later or still-running
+    /// preparations continue through the same authorized on-demand path.
+    pub fn prepare_ready(&mut self, deadline: std::time::Instant) -> Result<(), EditorError> {
+        if self.cache.preflighted {
+            return self.inner.checkpoint();
+        }
+        for job in self.plan.jobs.iter().take(MAX_SOURCE_FILES) {
+            let cached = self.cache.capture(self.app, job)?;
+            let mut checkpoint = || {
+                self.inner.checkpoint()?;
+                if std::time::Instant::now() >= deadline {
+                    return Err(EditorError::new(
+                        "VISUAL_TIME_LIMIT",
+                        "Prepared source verification exceeded its deadline",
+                    ));
+                }
+                Ok(())
+            };
+            cached.open_ready(self.app, &self.root, &mut checkpoint)?;
+        }
+        self.inner.checkpoint()?;
+        self.cache.preflighted = true;
+        Ok(())
     }
 }
 impl<R: ClassicVisualResources> ClassicVisualResources for PreviewResources<'_, R> {
@@ -235,57 +364,10 @@ impl<R: ClassicVisualResources> ClassicVisualResources for PreviewResources<'_, 
                 None,
             ));
         };
-        self.cache.touch = self.cache.touch.checked_add(1).ok_or_else(|| {
-            EditorError::new(
-                "PREVIEW_RESOURCE_LIMIT",
-                "Source cache touch counter overflow",
-            )
-        })?;
-        if !self.cache.entries.contains_key(&job.job_id) {
-            if self.cache.entries.len() >= 32 {
-                let oldest = self
-                    .cache
-                    .entries
-                    .iter()
-                    .min_by_key(|(_, entry)| entry.touched)
-                    .map(|(id, _)| id.clone())
-                    .ok_or_else(integrity)?;
-                self.cache.entries.remove(&oldest);
-            }
-            let captured = self.app.capture_source_preview_job(&job.job_id)?;
-            if captured.prepared.identity != job.identity {
-                return Err(integrity());
-            }
-            self.cache.entries.insert(
-                job.job_id.clone(),
-                Cached {
-                    captured,
-                    video: None,
-                    index: None,
-                    touched: self.cache.touch,
-                },
-            );
-        }
-        let cached = self
-            .cache
-            .entries
-            .get_mut(&job.job_id)
-            .expect("captured source preview");
-        cached.touched = self.cache.touch;
-        let (state, attempt, cancelled) =
-            self.app.source_preview_job_status(&mut cached.captured)?;
-        if state != JobState::Succeeded {
-            let state = if cancelled {
-                SourcePreviewState::Cancelled
-            } else {
-                match state {
-                    JobState::Queued => SourcePreviewState::Queued,
-                    JobState::Running => SourcePreviewState::Running,
-                    JobState::Failed => SourcePreviewState::Failed,
-                    JobState::Cancelled => SourcePreviewState::Cancelled,
-                    JobState::Succeeded => unreachable!(),
-                }
-            };
+        let cached = self.cache.capture(self.app, job)?;
+        if let Some(state) =
+            cached.open_ready(self.app, &self.root, &mut || self.inner.checkpoint())?
+        {
             self.inner.checkpoint()?;
             return Ok(VisualPreviewSourceResolution::original(
                 request,
@@ -293,32 +375,7 @@ impl<R: ClassicVisualResources> ClassicVisualResources for PreviewResources<'_, 
                 Some(job.job_id.clone()),
             ));
         }
-        self.app.require_source_preview_read(&cached.captured)?;
         let result = cached.captured.result.as_ref().ok_or_else(integrity)?;
-        if cached.video.is_none() || cached.index.is_none() {
-            let mut checkpoint = || {
-                self.inner.checkpoint()?;
-                self.app.require_source_preview_read(&cached.captured)
-            };
-            let video = VerifiedArtifact::open(
-                &self.root,
-                &job.job_id,
-                attempt,
-                &result.artifact,
-                &mut checkpoint,
-            )?;
-            let index = VerifiedArtifact::open(
-                &self.root,
-                &job.job_id,
-                attempt,
-                &result.frame_index,
-                &mut checkpoint,
-            )?;
-            let count = result.public.frame_count.parse().map_err(|_| integrity())?;
-            let index = SourcePreviewIndex::new(index, count, result.public.identity.raster_bound)?;
-            cached.video = Some(video);
-            cached.index = Some(index);
-        }
         let frame = source::select_frame(
             cached.index.as_mut().ok_or_else(integrity)?,
             &result.public,
@@ -390,6 +447,129 @@ impl<R: ClassicTextFrameResources> ClassicTextFrameResources for PreviewResource
 mod verification_tests {
     use super::*;
     use std::fs;
+
+    #[test]
+    #[ignore = "Requires an owned copied database and retained source artifacts; run in the integrated serial suite"]
+    fn ready_source_preflight_preserves_read_revocation_and_deadline() {
+        let database = PathBuf::from(std::env::var_os("OPENCUT_TEST_PREVIEW_DATABASE").unwrap());
+        // The harness backs up the synthetic database; this test revokes a
+        // copied publication and must never operate on a live workspace.
+        assert_eq!(database.file_name().unwrap(), "preflight-proof.sqlite");
+        let root = PathBuf::from(std::env::var_os("OPENCUT_TEST_PREVIEW_ARTIFACTS").unwrap());
+        let ids: Vec<String> =
+            serde_json::from_str(&std::env::var("OPENCUT_TEST_PREVIEW_JOBS").unwrap()).unwrap();
+        assert_eq!(ids.len(), 2);
+        let app = EditorApplication::open(&database).unwrap();
+        let jobs = ids
+            .iter()
+            .map(|id| {
+                let captured = app.capture_source_preview_job(id).unwrap();
+                SourcePlanJob {
+                    identity: captured.prepared.identity,
+                    authority: captured.prepared.authority,
+                    job_id: id.clone(),
+                }
+            })
+            .collect::<Vec<_>>();
+        let captured = app.capture_source_preview_job(&ids[0]).unwrap();
+        let identity = &jobs[0].identity;
+        let request = VisualPreviewSourceRequest {
+            project_id: identity.project_id.clone(),
+            revision: captured.prepared.snapshot.revision,
+            element_id: "preflight-proof".into(),
+            asset_id: identity.asset_id.clone(),
+            source_version: identity.source_version.clone(),
+            selected_video_stream: identity.selected_video_stream,
+            requested_time: opencut_contracts::Time {
+                ticks: "0".into(),
+                timebase: 25,
+            },
+            raster_bound: identity.raster_bound,
+        };
+        let plan = SourcePlan {
+            runtime_fingerprint: identity.runtime_fingerprint.clone(),
+            jobs,
+        };
+        struct Guard(bool);
+        impl ClassicVisualResources for Guard {
+            fn checkpoint(&mut self) -> Result<(), EditorError> {
+                if self.0 {
+                    Ok(())
+                } else {
+                    Err(EditorError::new("FORBIDDEN", "revoked fixture"))
+                }
+            }
+            fn resolve(
+                &mut self,
+                _: &VisualResource,
+                _: &str,
+            ) -> Result<(String, u64), EditorError> {
+                panic!("preflight must not decode original media")
+            }
+            fn read(&mut self, _: &str, _: u64, _: u32) -> Result<(Vec<u8>, bool), EditorError> {
+                panic!("preflight must not decode original media")
+            }
+            fn release(&mut self, _: &str) -> Result<(), EditorError> {
+                panic!("no original transfer")
+            }
+        }
+        let future = || std::time::Instant::now() + std::time::Duration::from_secs(30);
+        let mut cache = SourceCache::default();
+        let mut resources =
+            PreviewResources::new(Guard(true), &app, root.clone(), &plan, &mut cache);
+        resources.prepare_ready(future()).unwrap();
+        assert!(resources.cache.preflighted);
+        assert_eq!(resources.cache.entries.len(), 2);
+        assert!(
+            resources
+                .cache
+                .entries
+                .values()
+                .all(|entry| entry.video.is_some() && entry.index.is_some())
+        );
+        let resolution = resources.preview_source(&request).unwrap();
+        let transfer = resolution.transfer_id.unwrap();
+        assert_eq!(
+            resources.read(&transfer, 0, 4).unwrap().0,
+            [0x1a, 0x45, 0xdf, 0xa3]
+        );
+        rusqlite::Connection::open(&database)
+            .unwrap()
+            .execute(
+                "UPDATE jobs SET cancel_requested=1 WHERE job_id=?1",
+                [&ids[0]],
+            )
+            .unwrap();
+        assert_eq!(
+            resources.read(&transfer, 0, 4).unwrap_err().code,
+            "ARTIFACT_VERIFICATION_FAILED"
+        );
+        assert_eq!(
+            resources.preview_source(&request).unwrap_err().code,
+            "ARTIFACT_VERIFICATION_FAILED"
+        );
+        resources.inner.0 = false;
+        assert_eq!(
+            resources.prepare_ready(future()).unwrap_err().code,
+            "FORBIDDEN"
+        );
+        drop(resources);
+        let mut cache = SourceCache::default();
+        let mut resources =
+            PreviewResources::new(Guard(false), &app, root.clone(), &plan, &mut cache);
+        assert_eq!(
+            resources.prepare_ready(future()).unwrap_err().code,
+            "FORBIDDEN"
+        );
+        assert!(!resources.cache.preflighted);
+        resources.inner.0 = true;
+        let expired = std::time::Instant::now() - std::time::Duration::from_secs(1);
+        assert_eq!(
+            resources.prepare_ready(expired).unwrap_err().code,
+            "VISUAL_TIME_LIMIT"
+        );
+        assert!(!resources.cache.preflighted);
+    }
 
     struct Fixture {
         _directory: tempfile::TempDir,

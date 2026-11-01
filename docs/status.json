@@ -13093,11 +13093,110 @@
       }
     },
     "startup_reserve_repair": {
-      "status": "implemented_web_build_pending",
+      "status": "built_full_workbench_still_failed",
       "hypothesis": "Four-frame startup prefix leaves insufficient reserve for cold source entry; fill existing admitted queue before starting PCM, keep first picture visible and preserve memory, cold-window, GPU-validation and picture-credit bounds.",
       "native_binary_reused_from": "64a5d63ec5dc7ff76a533f8c3e29deed10d7ffb7",
       "web_tests_passed": 101,
-      "full_playback": "pending, previous candidate still has0.832s picture wait",
+      "full_playback": {
+        "passed": false,
+        "web_source_commit": "7fab7293fddc98b52103c0a26ebe1259653119ef",
+        "renderer_sha256": "b38e240fa8e3078475845cb70dd628d59e1d1ce4b644920beaefbf02476bca12",
+        "session_id": "a36d13fc-bdf5-4a97-8432-8803a711816d",
+        "duration_seconds": 42,
+        "presented_frames": 1040,
+        "discarded_frames": 0,
+        "missed_cached_frames": 4,
+        "max_wall_frame_gap_ms": 401.2000000476837,
+        "max_wall_frame_gap_at_seconds": 36.02,
+        "max_wall_frame_gap_buffered_frames": 0,
+        "lag_p95_ms": 104.47916666666667,
+        "lag_p99_ms": 140,
+        "capacity": 18,
+        "audio_copied_frames": 2016000,
+        "audio_elapsed_frames": 2076161,
+        "audio_picture_wait_events": 82,
+        "audio_picture_wait_frames": 60033,
+        "audio_picture_wait_seconds": 1.2506875,
+        "audio_picture_wait_max_frames": 14144,
+        "audio_underflow_frames": 0,
+        "audio_repeated_quanta": 1,
+        "errors": [],
+        "early_observation": {
+          "time": 9.28,
+          "audio_picture_wait_frames": 0,
+          "max_wall_frame_gap_ms": 109.29999995231628,
+          "max_wall_frame_gap_at_seconds": 6,
+          "prepared_frames": 12,
+          "ready_through_seconds": 9.8
+        },
+        "slow_preparations": [
+          {
+            "time": 36.02,
+            "total_ms": 1270.1000001430511
+          },
+          {
+            "time": 24,
+            "total_ms": 609.5999999046326
+          },
+          {
+            "time": 6,
+            "total_ms": 455.90000009536743
+          },
+          {
+            "time": 18,
+            "total_ms": 424.59999990463257
+          },
+          {
+            "time": 12,
+            "total_ms": 257.90000009536743
+          },
+          {
+            "time": 30,
+            "total_ms": 253.79999995231628
+          },
+          {
+            "time": 35.22,
+            "total_ms": 124.79999995231628
+          },
+          {
+            "time": 35.46,
+            "total_ms": 95.09999990463257
+          },
+          {
+            "time": 35.3,
+            "total_ms": 85.39999985694885
+          },
+          {
+            "time": 36.84,
+            "total_ms": 80.40000009536743
+          }
+        ],
+        "measurement": "Single full playback after fresh host restart, no prewarming C05 through SDK; preserved cold-artifact verification unlike previous64a UI measurement."
+      },
+      "deployment_changed": false,
+      "web_source_commit": "7fab7293fddc98b52103c0a26ebe1259653119ef",
+      "web_build_seconds": 18.226963395951316
+    },
+    "cold_preparation_repair": {
+      "status": "implemented_integrated_build_pending",
+      "causes": [
+        "Published prepared source video is first fully verified synchronously at its clip entry; faster prior64a UI had already warmed this immutable verification cache.",
+        "Blank text frames evict the admitted5,857,936-byte face; same face is then read and instantiated again for the next title."
+      ],
+      "evidence_directory": "/private/tmp/opencut-local-upgrade-20261101/startup-reserve/cold-entry",
+      "sample_qualification": "Three-second host/worker stack sampling identifies verification/publication checkpoints and font loading; sampled cold timings are perturbed and are not a benchmark. Unsampled startup-reserve UI firstC05 was1270ms; prior warm64a UI was311ms.",
+      "implementation": [
+        "Before first native picture, verify already completed source artifacts through the shared capture/open path, under current authority and deadline; retain at most existing32 source entries. No extra decode/frame/job.",
+        "Retain the last bounded font set across blank text frames; a different active set evicts unused fonts, all uses resolve current handles, errors still clear the cache."
+      ],
+      "limits": [
+        "Later-completing source jobs and entries beyond the existing32-slot preflight remain demand-verified.",
+        "Startup preparation may take longer; full playback and actual startup latency remain gates."
+      ],
+      "new_dependencies": false,
+      "public_contract_changed": false,
+      "boundary_validation": "Architecture tests and architecture checker passed; contract-boundary check recorded in private evidence.",
+      "web_reused_from": "7fab7293fddc98b52103c0a26ebe1259653119ef",
       "deployment_changed": false
     }
   }

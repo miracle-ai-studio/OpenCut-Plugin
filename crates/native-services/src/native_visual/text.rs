@@ -60,7 +60,12 @@ pub(super) fn authorize_fonts<R: ClassicVisualResources + ?Sized, S: VisualProce
         }
     }
     let active: BTreeSet<_> = fonts.values().map(|f| f.content_hash.clone()).collect();
-    rasterizer.retain(&active);
+    // Keep the last admitted face set across a gap between titles. Its byte
+    // and entry limits remain unchanged; a different active set evicts it.
+    // Every reuse still resolves the current font handle below.
+    if !active.is_empty() {
+        rasterizer.retain(&active);
+    }
     for font in fonts.values() {
         resources.checkpoint()?;
         let handle = handles

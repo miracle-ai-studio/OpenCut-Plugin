@@ -113,10 +113,11 @@ export class SurfacePlayer {
       // Present the completed first picture while startup lookahead is still
       // preparing. The completed native horizon bounds the short audio lead.
       this.publish(true);
-      // A small validated prefix starts the native audio producer sooner.
-      // The steady queue keeps its original capacity and refills while the
-      // first PCM arrives; the bounded picture limit fences consumption.
-      await this.fill(false,Math.min(4,this.capacity));signal.throwIfAborted();this.abort.signal.throwIfAborted();
+      // Establish the existing bounded reserve before the first PCM starts.
+      // Otherwise cold clip entry consumes a four-frame prefix before the
+      // producer can build its steady lookahead. Cold windows and pending GPU
+      // validation still fence preparation; no extra memory or audio lead.
+      await this.fill(false);signal.throwIfAborted();this.abort.signal.throwIfAborted();
       await Promise.all(this.queue.map(picture=>waitPicture(picture,this.abort.signal)));
       if(this.closed)throw new DOMException("Cached presentation closed","AbortError");
       this.publish(true);this.frame=this.screen.request(this.tick);
@@ -124,11 +125,11 @@ export class SurfacePlayer {
     } catch(error) {await this.stop(true);throw error;}
     finally {signal.removeEventListener("abort",abort);}
   }
-  private fill(waitForCold=true,limit=this.capacity) {
+  private fill(waitForCold=true) {
     if(this.filling)return this.filling;
     const task=(async()=>{
       const plan=this.cache.descriptor();
-      while(!this.closed&&!this.abort.signal.aborted&&this.queue.length<limit&&this.validating<4&&this.next&&compare(this.next,plan.duration)<0n) {
+      while(!this.closed&&!this.abort.signal.aborted&&this.queue.length<this.capacity&&this.validating<4&&this.next&&compare(this.next,plan.duration)<0n) {
         // Startup only credits decoded pictures from an already published
         // window. A cold reserve is filled asynchronously after audio starts.
         if(!waitForCold&&!this.cache.hasFrame(this.next))break;

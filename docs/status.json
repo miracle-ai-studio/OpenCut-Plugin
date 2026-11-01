@@ -13018,14 +13018,86 @@
       }
     },
     "decoder_reuse_repair": {
-      "status": "implemented_unbuilt",
+      "status": "built_scoped_pass_full_workbench_still_failed",
       "scope": [
         "Transfer only inactive decoder owners across same immutable source/stream splits",
         "Retain stricter pixel caps and prove held-frame/reference/worker residency before reducing byte admission",
         "Prepare indexed proxies for source trims beyond two seconds; original source remains authoritative for export"
       ],
       "boundary_checks": "14 architecture tests, architecture and contract boundary checks passed",
-      "behavior_validation": "pending integrated build; full UI still failing on previous candidate",
+      "behavior_validation": "10 scoped native tests, exact raw/packaged CLI canonical/generated checks and independent complete pixels passed; real42s playback remains failing",
+      "deployment_changed": false,
+      "source_commit": "64a5d63ec5dc7ff76a533f8c3e29deed10d7ffb7",
+      "build_directory": "/private/tmp/opencut-local-upgrade-20261101/decoder-reuse",
+      "boundary_verification": "/private/tmp/opencut-local-upgrade-20261101/decoder-reuse/boundary-verification/result.json",
+      "full_ui": {
+        "passed": false,
+        "source_commit": "64a5d63ec5dc7ff76a533f8c3e29deed10d7ffb7",
+        "renderer_sha256": "b38e240fa8e3078475845cb70dd628d59e1d1ce4b644920beaefbf02476bca12",
+        "url": "http://127.0.0.1:63515/editor/hainan-vlog-workbench-20261021?scene=hainan-main",
+        "session_id": "04872b32-45a3-4f40-b0eb-25ee579265ea",
+        "duration_seconds": 42,
+        "presented_frames": 1044,
+        "discarded_frames": 0,
+        "missed_cached_frames": 6,
+        "max_wall_frame_gap_ms": 434.59999990463257,
+        "max_wall_frame_gap_at_seconds": 6.010958333333333,
+        "max_wall_frame_gap_buffered_frames": 0,
+        "lag_p95_ms": 93.83333333333333,
+        "lag_p99_ms": 140,
+        "capacity": 18,
+        "audio_copied_frames": 2016000,
+        "audio_elapsed_frames": 2055937,
+        "audio_picture_wait_events": 22,
+        "audio_picture_wait_frames": 39937,
+        "audio_picture_wait_seconds": 0.8320208333333333,
+        "audio_picture_wait_max_frames": 18185,
+        "audio_underflow_frames": 0,
+        "audio_repeated_quanta": 0,
+        "errors": [],
+        "slow_preparations": [
+          {
+            "time": 24.030958333333334,
+            "total_ms": 624.2999999523163
+          },
+          {
+            "time": 6.010958333333333,
+            "total_ms": 445.69999980926514
+          },
+          {
+            "time": 18.030958333333334,
+            "total_ms": 427.39999985694885
+          },
+          {
+            "time": 36.0234375,
+            "total_ms": 311.39999985694885
+          },
+          {
+            "time": 30.0034375,
+            "total_ms": 250.60000014305115
+          },
+          {
+            "time": 12.030958333333333,
+            "total_ms": 215.40000009536743
+          },
+          {
+            "time": 5.419145833333333,
+            "total_ms": 85.10000014305115
+          },
+          {
+            "time": 29.8834375,
+            "total_ms": 84.59999990463257
+          }
+        ],
+        "measurement": "Read-only DOM telemetry after exactly one complete actual-workbench candidate UI playback; no compiler or export ran concurrently."
+      }
+    },
+    "startup_reserve_repair": {
+      "status": "implemented_web_build_pending",
+      "hypothesis": "Four-frame startup prefix leaves insufficient reserve for cold source entry; fill existing admitted queue before starting PCM, keep first picture visible and preserve memory, cold-window, GPU-validation and picture-credit bounds.",
+      "native_binary_reused_from": "64a5d63ec5dc7ff76a533f8c3e29deed10d7ffb7",
+      "web_tests_passed": 101,
+      "full_playback": "pending, previous candidate still has0.832s picture wait",
       "deployment_changed": false
     }
   }

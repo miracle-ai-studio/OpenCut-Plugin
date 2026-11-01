@@ -103,18 +103,18 @@ it("bounds live scene preparation to twenty-four native frames and accounts ever
  expect(f.bitmaps.every(b=>b.close.mock.calls.length===1)).toBe(true);
 });
 
-it("starts with a validated prefix and refills its steady reserve without crediting a blocked tail",async()=>{
- const f=fixture(24);f.binding.directPictureCredit=true;
+it("establishes its bounded startup reserve and does not credit a blocked later clip",async()=>{
+ const f=fixture(18);f.binding.directPictureCredit=true;
  const base=f.frame.getMockImplementation()!;let release!:(picture:CachedPicture)=>void;
- f.frame.mockImplementation((...args)=>args[0].ticks==="5"
+ f.frame.mockImplementation((...args)=>args[0].ticks==="19"
   ?new Promise<CachedPicture>(resolve=>{release=resolve;}) :base(...args));
  await f.player.start(new AbortController().signal);
- expect(f.frame).toHaveBeenCalledTimes(5);
- expect(f.player.snapshot().readyThrough).toEqual({ticks:"5",timebase:25});
- expect(f.port.postMessage).toHaveBeenLastCalledWith({kind:"picture-limit",token:"device",frames:"14400"});
- await f.tick();expect(f.frame).toHaveBeenCalledTimes(6);
- expect(f.player.snapshot().readyThrough).toEqual({ticks:"5",timebase:25});
- const stopping=f.player.stop(true),late=f.picture({ticks:"5",timebase:25});release(late);await stopping;
+ expect(f.frame).toHaveBeenCalledTimes(19);
+ expect(f.player.snapshot().readyThrough).toEqual({ticks:"19",timebase:25});
+ expect(f.port.postMessage).toHaveBeenLastCalledWith({kind:"picture-limit",token:"device",frames:"41280"});
+ f.receipt(4800);f.timestamp();await f.tick(40);expect(f.frame).toHaveBeenCalledTimes(20);
+ expect(f.player.snapshot().readyThrough).toEqual({ticks:"19",timebase:25});
+ const stopping=f.player.stop(true),late=f.picture({ticks:"19",timebase:25});release(late);await stopping;
  expect(late.pixels.close).toHaveBeenCalledOnce();expect(f.failed).not.toHaveBeenCalled();
  expect(f.callbacks.size).toBe(0);expect(f.bitmaps.every(b=>b.close.mock.calls.length===1)).toBe(true);
 });
@@ -130,7 +130,7 @@ it("reports the actual first picture before lookahead completes without starting
  expect(f.port.postMessage).toHaveBeenLastCalledWith({kind:"picture-limit",token:"device",frames:"6720"});
  expect(f.callbacks.size).toBe(0);
  release(f.picture({ticks:"1",timebase:25}));await starting;
- expect(f.player.snapshot().readyThrough).toEqual({ticks:"5",timebase:25});
+ expect(f.player.snapshot().readyThrough).toEqual({ticks:"25",timebase:25});
  await f.player.stop(true);expect(f.failed).not.toHaveBeenCalled();
  expect(f.bitmaps.every(b=>b.close.mock.calls.length===1)).toBe(true);
 });

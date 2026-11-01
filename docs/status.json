@@ -13178,7 +13178,7 @@
       "web_build_seconds": 18.226963395951316
     },
     "cold_preparation_repair": {
-      "status": "implemented_integrated_build_pending",
+      "status": "built_scoped_checks_passed_full_ui_failed",
       "causes": [
         "Published prepared source video is first fully verified synchronously at its clip entry; faster prior64a UI had already warmed this immutable verification cache.",
         "Blank text frames evict the admitted5,857,936-byte face; same face is then read and instantiated again for the next title."
@@ -13197,7 +13197,34 @@
       "public_contract_changed": false,
       "boundary_validation": "Architecture tests and architecture checker passed; contract-boundary check recorded in private evidence.",
       "web_reused_from": "7fab7293fddc98b52103c0a26ebe1259653119ef",
-      "deployment_changed": false
+      "deployment_changed": false,
+      "source_commit": "6f375b165f7f36f8180e8311c3a37ce2ea6d5d51",
+      "candidate_evidence_directory": "/private/tmp/opencut-local-upgrade-20261101/cold-preparation",
+      "validation": {
+        "rust_tests": 7,
+        "retained_source_preflight_tests": 1,
+        "same_binary_generated_and_canonical_contracts": "passed_raw_and_packaged",
+        "architecture_tests": 14,
+        "architecture_and_contract_boundaries": "passed",
+        "web": "reused_unchanged_7fab7293"
+      },
+      "full_ui": {
+        "passed": false,
+        "duration_seconds": 42,
+        "width": 960,
+        "height": 540,
+        "presented_frames": 1012,
+        "missed_frames": 29,
+        "max_wall_gap_ms": 355.3,
+        "picture_wait_events": 203,
+        "picture_wait_device_frames": 217345,
+        "picture_wait_seconds": 4.528020833333334,
+        "copied_device_frames": 2016000,
+        "pcm_underflow_frames": 0,
+        "repeated_device_quanta": 0,
+        "cold_static_picture_prepare_ms": 2826.3,
+        "qualification": "Fresh owned service and ordinary page load, ready source artifacts, no preceding SDK frame warmup; durable job count remained135, which does not exclude ephemeral thumbnail or waveform work."
+      }
     }
   }
 }

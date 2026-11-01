@@ -2,7 +2,7 @@
   "format": "opencut.delivery-status.v1",
   "delivery_ready": false,
   "in_progress": {
-    "candidate_cli_sha256": "f3e59cda80eae9a78d9aff733bcef305a9efa315966860f893a87a8d0d0639d2",
+    "candidate_cli_sha256": "33b2852c0fa3b1d9d732fbee5c444791e8660076c79f11fc02a2b806c126dac1",
     "candidate_worker_sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6",
     "candidate_web_source_digest": "8f7aa8fc060548099abeabae2a29f63cfd2cd015830fa5233093c698bc8247c8",
     "execution_scope_optimization": "Native10b27506 retains one bounded visual owner within the same fixed session/principal/owner/lease and identical policy. Full runtime/counter revalidation per generation/overlay handoff;old pixels/readers invalidated and fresh per-frame authority/admission/publication fences preserved. Handoff errors retire without silent retry. Existing paused heartbeat/same-position dedupe from unchanged Webe3953742 retained.",
@@ -192,7 +192,7 @@
       },
       "qualification": "Scopedcurrentcandidate only;4K nonrealtime,old incompleteheadstallopen,networkeventsnotfullycorrelated,manual/physicalA/V/crossplatform/full deliveryopen. No installedpackage promotion."
     },
-    "next_candidate": "Investigate retained untagged-red original-source export discrepancy using existing source/IR/backend evidence. Separate metadata interpretation from encoding;do not rerun passed94s or regenerate existing media without a changed hypothesis.",
+    "next_candidate": "Remaining acceptance: broader advertised codec/color/orientation/default-track cases and physical A/V. Cross-host proxy reuse needs explicit producer-policy compatibility; do not remove the current host fence or repeat passed cases without a changed hypothesis.",
     "decoder_regression_failures": "Initial test required optional stream duration, then assumed previous frame existed before nonzero firstPTS; preserved both failures. It also exposed production metadata selection staying serial. Integrated repair uses first admitted frame; all25 affected checks now pass.",
     "decoder_candidate_evidence": {
       "source_commit": "cbe924e9fffdb16d42b4636b86fcc732417945e2",
@@ -956,11 +956,11 @@
       "web_source_digest": "5cfed08f1bdfa63fd8645eae2123ef0118d2badcfe5c7e6b2333ebb456d98826",
       "native_runtime": "Retained original CLI2e2c682bc729/worker6dc2eaedf9f7 only;not rerun with current CLIc96/worker779. New bounded preview acceptance is seek_owner_implementation."
     },
-    "candidate_native_source_commit": "8ea7ae22a92ad1858f510803498cb5aff8524162",
-    "installed_cli_sha256": "73eaa55dbc7f4c359ab3b9801f55971f21ea986816c2ded845893a8a229dfd9f",
-    "current_slice": "Explicit and verified SDR video export matrix; baseline browser color failure reproduced before changes",
+    "candidate_native_source_commit": "0d77835160420229614dda8ccec05c711afc99db",
+    "installed_cli_sha256": "33b2852c0fa3b1d9d732fbee5c444791e8660076c79f11fc02a2b806c126dac1",
+    "current_slice": "Explicit SDR export conversion and frame/codec metadata deployed to both local services; scoped checks complete",
     "installed_worker_sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6",
-    "latest_scoped_acceptance": "foreground_preview_validation",
+    "latest_scoped_acceptance": "Three native outputs pass original red gate and explicit metadata; visible browser green25 becomes0. Both real editors pass Play/Pause/static refresh/resume. Four projects and519 historical jobs preserved;11 upgrade preview jobs completed, repeat opening adds0. Strict channel-error limit3 still fails at4, independently isolated as cumulative conversion/encoding quantization.",
     "previous_recorded_candidate_before_wave_seek": {
       "candidate_cli_sha256": "a2472d1bef079d3ee2a539e541cf36e3114092088487da001360a7f26112a5a3",
       "candidate_worker_sha256": "5d6ed551941117c9ca9580d3e3bb5060525f298e69d4db1c9b3bd89e18ee8a94",
@@ -1150,7 +1150,7 @@
       "full_ui_passed": true,
       "strict_realtime_accepted": false
     },
-    "candidate_host_source_commit": "8ea7ae22a92ad1858f510803498cb5aff8524162",
+    "candidate_host_source_commit": "0d77835160420229614dda8ccec05c711afc99db",
     "candidate_worker_source_commit": "853e3ab590a9f05a9fd4b14e4020a6028d42995c",
     "strict_realtime_accepted": false
   },
@@ -3107,7 +3107,7 @@
   "known_limits": [
     "Current visible-window94s observation on Weba6c7b571:action-to-end96.9367s includingstartup,actual first frame2.0372s,maximum device elapsed-minus-copied0.0106667s,max wall frame gap43ms,max lag44.4167ms,no missed cached frames or PCM starvation. This bounded repeated-source observation does not qualify physical output,all media or universal realtime. Historical headless0.528/0.692s waits retain original identities and are not representative foreground guarantees.",
     "Historical scoped observation: Current single retained4K-source94s editor flow passes original startup/completion/seek/pause/resume gates,but119.15s click-to-ended is not real-time. Full94s4Kexport,unique long sources,broader performance and process/GPU/driver memory remain unqualified.",
-    "Broader codec/container/color/orientation/default-track fidelity remains open. Current untagged HD MP4 and WebM exports reproduce a matrix-interpretation error in visible Chromium: red green=25 against green<15; explicit output matrix conversion and metadata are pending.",
+    "Broader codec/container/color/orientation/default-track fidelity remains open. The tested output matrix mismatch is fixed with explicit BT.709 conversion and frame/codec metadata. The strict limit-3 source-to-output channel probe still records maximum4/255; encoder-only same-raster experiments reproduce the cumulative8-bit lossy quantization.",
     "The recorded asset-free four-second text resume stall near1.87seconds is not causally closed by later successful playback cases.",
     "Native worker RSS and device-clock observations are scoped per candidate. Whole-product/browser and driver/GPU residency, physical display timing and audibility remain unqualified.",
     "Preview and export retain distinct original mastering rules and separate independent PCM oracles. Current zero-error scoped native references do not cover every rate/layout/effect/device.",
@@ -3117,7 +3117,8 @@
     "The retained plugin prerelease still names external Node/FFmpeg/Chromium and lacks real-client/clean-machine qualification. The newer standalone native candidate is a separate recorded artifact.",
     "Historical browser performance/SSIM/PCM failure reports are preserved as historical evidence. Native scoped passes do not reclassify those old jobs or prove broader fidelity.",
     "Cold picture/source-artwork preparation and per-frame metadata/authorized RGBA transfer retain costs. Current4K/540ppreview and6s4Kexport are scoped to one repeated12s synthetic source;larger unique media and real-time qualification remain open.",
-    "Historical scoped observation: Current6c encoderRSS failure repaired in scopedoriginal4Kexport without raising2GiB admission. Actualclick startup4.246/4.070s passes5s after verifierclock correction;legacy5.642/5.160s failures retained.4K94s content126.216s action-to-end remains nonrealtime;oldincomplete-headstall and broader/manual/whole delivery open."
+    "Historical scoped observation: Current6c encoderRSS failure repaired in scopedoriginal4Kexport without raising2GiB admission. Actualclick startup4.246/4.070s passes5s after verifierclock correction;legacy5.642/5.160s failures retained.4K94s content126.216s action-to-end remains nonrealtime;oldincomplete-headstall and broader/manual/whole delivery open.",
+    "Source-preview identity includes the full host SHA. This host upgrade generated11 completed preview jobs despite unchanged decoder/codec identities; repeat opening generated0. Narrower cross-host cache reuse requires proven producer-policy compatibility, not removing the provenance fence."
   ],
   "manual_acceptance": [
     "Finder and cross-app file transport",
@@ -4529,25 +4530,25 @@
       ]
     },
     "current_runtime_delivery": {
-      "rust_source_commit": "8ea7ae22a92ad1858f510803498cb5aff8524162",
-      "host_source_commit": "8ea7ae22a92ad1858f510803498cb5aff8524162",
+      "rust_source_commit": "0d77835160420229614dda8ccec05c711afc99db",
+      "host_source_commit": "0d77835160420229614dda8ccec05c711afc99db",
       "worker_source_commit": "853e3ab590a9f05a9fd4b14e4020a6028d42995c",
       "web_source_commit": "a6c7b5717177564ecd9ac7fc5a2603a08374831a",
       "web_source_digest": "8f7aa8fc060548099abeabae2a29f63cfd2cd015830fa5233093c698bc8247c8",
       "checkpoint": {
-        "path": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/static-play-handoff/checkpoint.json",
-        "sha256": "bdc3ae7b051d4b4723d5907e25aec93c44c006c114de8cf274b74cbdf808135d",
-        "files": 96
+        "path": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/export-color/checkpoint.json",
+        "sha256": "d793d74d1274e33ff69bf3f317ff3193f6e16d26e4229875a6fc55f8f1fca94f",
+        "files": 158
       },
-      "scope": "Ready static preview transfers its native owner and recovery journal into Play;implicit playback preserves the selected rate and defaults48000Hz. Final166 Web and14 architecture checks passed. Baseline recreated both workers;candidate retains both with zero new session. Two actual editors verify button/Space,pause,refresh,resume. Two Web builds(first never deployed),no Rust build. Strict realtime,cold-start variability and manual A/V remain open.",
+      "scope": "Explicit SDR export matrix and frame/codec metadata; two CLI candidates, first rejected before deployment, final7 affected Rust tests and14 architecture tests passed. Three native outputs and visible playback pass original color gate. Strict limit3 diagnostic remains failed at4. Both local editors pass controls;11 upgrade proxies completed and repeat opening creates0.",
       "delivery_ready": false,
       "binaries": {
         "opencut": {
-          "path": "/Users/vincent/.opencut/runtime/native-local-static-play-handoff-final-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
-          "sha256": "f3e59cda80eae9a78d9aff733bcef305a9efa315966860f893a87a8d0d0639d2"
+          "path": "/Users/vincent/.opencut/runtime/native-local-export-color-final-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+          "sha256": "33b2852c0fa3b1d9d732fbee5c444791e8660076c79f11fc02a2b806c126dac1"
         },
         "opencut-render-worker": {
-          "path": "/Users/vincent/.opencut/runtime/native-local-static-play-handoff-final-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+          "path": "/Users/vincent/.opencut/runtime/native-local-export-color-final-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
           "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
         }
       }
@@ -4562,25 +4563,25 @@
       "delivery_ready": false
     },
     "current_working_candidate": {
-      "rust_source_commit": "8ea7ae22a92ad1858f510803498cb5aff8524162",
-      "host_source_commit": "8ea7ae22a92ad1858f510803498cb5aff8524162",
+      "rust_source_commit": "0d77835160420229614dda8ccec05c711afc99db",
+      "host_source_commit": "0d77835160420229614dda8ccec05c711afc99db",
       "worker_source_commit": "853e3ab590a9f05a9fd4b14e4020a6028d42995c",
       "web_source_commit": "a6c7b5717177564ecd9ac7fc5a2603a08374831a",
       "web_source_digest": "8f7aa8fc060548099abeabae2a29f63cfd2cd015830fa5233093c698bc8247c8",
       "checkpoint": {
-        "path": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/static-play-handoff/checkpoint.json",
-        "sha256": "bdc3ae7b051d4b4723d5907e25aec93c44c006c114de8cf274b74cbdf808135d",
-        "files": 96
+        "path": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/export-color/checkpoint.json",
+        "sha256": "d793d74d1274e33ff69bf3f317ff3193f6e16d26e4229875a6fc55f8f1fca94f",
+        "files": 158
       },
-      "scope": "Ready static preview transfers its native owner and recovery journal into Play;implicit playback preserves the selected rate and defaults48000Hz. Final166 Web and14 architecture checks passed. Baseline recreated both workers;candidate retains both with zero new session. Two actual editors verify button/Space,pause,refresh,resume. Two Web builds(first never deployed),no Rust build. Strict realtime,cold-start variability and manual A/V remain open.",
+      "scope": "Explicit SDR export matrix and frame/codec metadata; two CLI candidates, first rejected before deployment, final7 affected Rust tests and14 architecture tests passed. Three native outputs and visible playback pass original color gate. Strict limit3 diagnostic remains failed at4. Both local editors pass controls;11 upgrade proxies completed and repeat opening creates0.",
       "delivery_ready": false,
       "binaries": {
         "opencut": {
-          "path": "/Users/vincent/.opencut/runtime/native-local-static-play-handoff-final-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
-          "sha256": "f3e59cda80eae9a78d9aff733bcef305a9efa315966860f893a87a8d0d0639d2"
+          "path": "/Users/vincent/.opencut/runtime/native-local-export-color-final-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+          "sha256": "33b2852c0fa3b1d9d732fbee5c444791e8660076c79f11fc02a2b806c126dac1"
         },
         "opencut-render-worker": {
-          "path": "/Users/vincent/.opencut/runtime/native-local-static-play-handoff-final-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+          "path": "/Users/vincent/.opencut/runtime/native-local-export-color-final-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
           "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
         }
       }
@@ -4933,35 +4934,35 @@
       }
     },
     "current_runtime": {
-      "rust_source_commit": "8ea7ae22a92ad1858f510803498cb5aff8524162",
-      "host_source_commit": "8ea7ae22a92ad1858f510803498cb5aff8524162",
+      "rust_source_commit": "0d77835160420229614dda8ccec05c711afc99db",
+      "host_source_commit": "0d77835160420229614dda8ccec05c711afc99db",
       "worker_source_commit": "853e3ab590a9f05a9fd4b14e4020a6028d42995c",
       "web_source_commit": "a6c7b5717177564ecd9ac7fc5a2603a08374831a",
       "web_source_digest": "8f7aa8fc060548099abeabae2a29f63cfd2cd015830fa5233093c698bc8247c8",
       "checkpoint": {
-        "path": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/static-play-handoff/checkpoint.json",
-        "sha256": "bdc3ae7b051d4b4723d5907e25aec93c44c006c114de8cf274b74cbdf808135d",
-        "files": 96
+        "path": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/export-color/checkpoint.json",
+        "sha256": "d793d74d1274e33ff69bf3f317ff3193f6e16d26e4229875a6fc55f8f1fca94f",
+        "files": 158
       },
-      "scope": "Ready static preview transfers its native owner and recovery journal into Play;implicit playback preserves the selected rate and defaults48000Hz. Final166 Web and14 architecture checks passed. Baseline recreated both workers;candidate retains both with zero new session. Two actual editors verify button/Space,pause,refresh,resume. Two Web builds(first never deployed),no Rust build. Strict realtime,cold-start variability and manual A/V remain open.",
+      "scope": "Explicit SDR export matrix and frame/codec metadata; two CLI candidates, first rejected before deployment, final7 affected Rust tests and14 architecture tests passed. Three native outputs and visible playback pass original color gate. Strict limit3 diagnostic remains failed at4. Both local editors pass controls;11 upgrade proxies completed and repeat opening creates0.",
       "delivery_ready": false,
       "binaries": {
         "opencut": {
-          "path": "/Users/vincent/.opencut/runtime/native-local-static-play-handoff-final-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
-          "sha256": "f3e59cda80eae9a78d9aff733bcef305a9efa315966860f893a87a8d0d0639d2"
+          "path": "/Users/vincent/.opencut/runtime/native-local-export-color-final-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+          "sha256": "33b2852c0fa3b1d9d732fbee5c444791e8660076c79f11fc02a2b806c126dac1"
         },
         "opencut-render-worker": {
-          "path": "/Users/vincent/.opencut/runtime/native-local-static-play-handoff-final-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+          "path": "/Users/vincent/.opencut/runtime/native-local-export-color-final-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
           "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
         }
       },
       "runtime": {
         "opencut": {
-          "path": "/Users/vincent/.opencut/runtime/native-local-static-play-handoff-final-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
-          "sha256": "f3e59cda80eae9a78d9aff733bcef305a9efa315966860f893a87a8d0d0639d2"
+          "path": "/Users/vincent/.opencut/runtime/native-local-export-color-final-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+          "sha256": "33b2852c0fa3b1d9d732fbee5c444791e8660076c79f11fc02a2b806c126dac1"
         },
         "opencut-render-worker": {
-          "path": "/Users/vincent/.opencut/runtime/native-local-static-play-handoff-final-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+          "path": "/Users/vincent/.opencut/runtime/native-local-export-color-final-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
           "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
         }
       },
@@ -4969,26 +4970,27 @@
         "source_commit": "a6c7b5717177564ecd9ac7fc5a2603a08374831a",
         "source_digest": "8f7aa8fc060548099abeabae2a29f63cfd2cd015830fa5233093c698bc8247c8",
         "asset_digest": "de2e85fadc72521404d4ea6b8d0298b9b4f49d991412bbae88d514a469ad3604",
-        "web_root": "/Users/vincent/.opencut/runtime/native-local-static-play-handoff-final-20261101/opencut-0.1.0-x86_64-apple-darwin/web",
-        "seconds": 18.213148361071944
+        "web_root": "/Users/vincent/.opencut/runtime/native-local-export-color-final-20261101/opencut-0.1.0-x86_64-apple-darwin/web",
+        "seconds": 18.213148361071944,
+        "reused_without_build": true
       },
       "services": [
         {
           "name": "landscape",
           "endpoint": "http://127.0.0.1:8791",
-          "pid": 77938,
+          "pid": 81990,
           "database": "/Users/vincent/Desktop/海南/风光大片_20261027/workspace.sqlite",
           "runtime": {
             "opencut": {
-              "path": "/Users/vincent/.opencut/runtime/native-local-static-play-handoff-final-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
-              "sha256": "f3e59cda80eae9a78d9aff733bcef305a9efa315966860f893a87a8d0d0639d2"
+              "path": "/Users/vincent/.opencut/runtime/native-local-export-color-final-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+              "sha256": "33b2852c0fa3b1d9d732fbee5c444791e8660076c79f11fc02a2b806c126dac1"
             },
             "opencut-render-worker": {
-              "path": "/Users/vincent/.opencut/runtime/native-local-static-play-handoff-final-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+              "path": "/Users/vincent/.opencut/runtime/native-local-export-color-final-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
               "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
             }
           },
-          "web_root": "/Users/vincent/.opencut/runtime/native-local-static-play-handoff-final-20261101/opencut-0.1.0-x86_64-apple-darwin/web",
+          "web_root": "/Users/vincent/.opencut/runtime/native-local-export-color-final-20261101/opencut-0.1.0-x86_64-apple-darwin/web",
           "assets_verified_at_switch": 285,
           "assets_rechecked": 3,
           "ready": true
@@ -4996,19 +4998,19 @@
         {
           "name": "workbench",
           "endpoint": "http://127.0.0.1:59790",
-          "pid": 77950,
+          "pid": 81996,
           "database": "/Users/vincent/.opencut/hainan/workspace.sqlite",
           "runtime": {
             "opencut": {
-              "path": "/Users/vincent/.opencut/runtime/native-local-static-play-handoff-final-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
-              "sha256": "f3e59cda80eae9a78d9aff733bcef305a9efa315966860f893a87a8d0d0639d2"
+              "path": "/Users/vincent/.opencut/runtime/native-local-export-color-final-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+              "sha256": "33b2852c0fa3b1d9d732fbee5c444791e8660076c79f11fc02a2b806c126dac1"
             },
             "opencut-render-worker": {
-              "path": "/Users/vincent/.opencut/runtime/native-local-static-play-handoff-final-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+              "path": "/Users/vincent/.opencut/runtime/native-local-export-color-final-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
               "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
             }
           },
-          "web_root": "/Users/vincent/.opencut/runtime/native-local-static-play-handoff-final-20261101/opencut-0.1.0-x86_64-apple-darwin/web",
+          "web_root": "/Users/vincent/.opencut/runtime/native-local-export-color-final-20261101/opencut-0.1.0-x86_64-apple-darwin/web",
           "assets_verified_at_switch": 285,
           "assets_rechecked": 3,
           "ready": true
@@ -6432,6 +6434,30 @@
         },
         "scope": "Installed bounded native picture catch-up Web; same native runtime and SDK. Current functional flow, four independent RGBA samples, fault retirement and actual services. First startup gate failure retained; strict realtime still open.",
         "delivery_ready": false
+      }
+    },
+    "runtime_delivery_before_export_color": {
+      "rust_source_commit": "8ea7ae22a92ad1858f510803498cb5aff8524162",
+      "host_source_commit": "8ea7ae22a92ad1858f510803498cb5aff8524162",
+      "worker_source_commit": "853e3ab590a9f05a9fd4b14e4020a6028d42995c",
+      "web_source_commit": "a6c7b5717177564ecd9ac7fc5a2603a08374831a",
+      "web_source_digest": "8f7aa8fc060548099abeabae2a29f63cfd2cd015830fa5233093c698bc8247c8",
+      "checkpoint": {
+        "path": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/static-play-handoff/checkpoint.json",
+        "sha256": "bdc3ae7b051d4b4723d5907e25aec93c44c006c114de8cf274b74cbdf808135d",
+        "files": 96
+      },
+      "scope": "Ready static preview transfers its native owner and recovery journal into Play;implicit playback preserves the selected rate and defaults48000Hz. Final166 Web and14 architecture checks passed. Baseline recreated both workers;candidate retains both with zero new session. Two actual editors verify button/Space,pause,refresh,resume. Two Web builds(first never deployed),no Rust build. Strict realtime,cold-start variability and manual A/V remain open.",
+      "delivery_ready": false,
+      "binaries": {
+        "opencut": {
+          "path": "/Users/vincent/.opencut/runtime/native-local-static-play-handoff-final-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+          "sha256": "f3e59cda80eae9a78d9aff733bcef305a9efa315966860f893a87a8d0d0639d2"
+        },
+        "opencut-render-worker": {
+          "path": "/Users/vincent/.opencut/runtime/native-local-static-play-handoff-final-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+          "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
+        }
       }
     }
   },
@@ -11868,7 +11894,7 @@
     "diagnostic_limits": "Sequential observations,not attribution of all historical delays to headless mode. No physical display/audibility or broader export/media qualification."
   },
   "native_export_color_validation": {
-    "phase": "frame_metadata_correction_pending_integrated_build",
+    "phase": "deployed_scoped_verified",
     "evidence_root": "/private/tmp/opencut-local-upgrade-20261101/export-color",
     "installed_host_source": "8ea7ae22a92ad1858f510803498cb5aff8524162",
     "installed_cli_sha256": "f3e59cda80eae9a78d9aff733bcef305a9efa315966860f893a87a8d0d0639d2",
@@ -11925,10 +11951,10 @@
     "new_synthetic_projects": 1,
     "new_synthetic_jobs": 7,
     "product_fix_pending": false,
-    "deployment_changed": false,
+    "deployment_changed": true,
     "implementation": "Shared explicit BT.709 limited-range conversion and metadata for fixed/configurable video encoders; bounded probe preserves and verifies four color facts; RGBA proxies unchanged.",
-    "build_passed": false,
-    "behavior_passed": false,
+    "build_passed": true,
+    "behavior_passed": true,
     "rejected_candidate": {
       "source_commit": "50d32dd1dfe05bad40177a9a498992f3bb1232b4",
       "cli_sha256": "235343fa5a9d794cc0ca13356f8ba3cdad69ebba1f77eb8edc858ded3e3d3522",
@@ -11975,6 +12001,216 @@
       "small_source_strict_probe_still_failed": true,
       "small_source_maximum_channel_error": 4,
       "explanation": "Source-to-RGB observation differs by 2; independently isolated encoder round trip differs by 2. Keep failed limit-3 diagnostic; do not claim lossless output."
-    }
+    },
+    "checkpoint": {
+      "path": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/export-color/checkpoint.json",
+      "sha256": "d793d74d1274e33ff69bf3f317ff3193f6e16d26e4229875a6fc55f8f1fca94f",
+      "files": 158
+    },
+    "host_source_commit": "0d77835160420229614dda8ccec05c711afc99db",
+    "runtime": {
+      "opencut": {
+        "path": "/Users/vincent/.opencut/runtime/native-local-export-color-final-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+        "sha256": "33b2852c0fa3b1d9d732fbee5c444791e8660076c79f11fc02a2b806c126dac1"
+      },
+      "opencut-render-worker": {
+        "path": "/Users/vincent/.opencut/runtime/native-local-export-color-final-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+        "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
+      }
+    },
+    "behavior_scope": "Original red gate, explicit BT.709 metadata, actual browser playback, same-session editor controls, and preservation. Strict limit-3 diagnostic remains failed.",
+    "final_validation": {
+      "host_source_commit": "0d77835160420229614dda8ccec05c711afc99db",
+      "runtime": {
+        "opencut": {
+          "path": "/Users/vincent/.opencut/runtime/native-local-export-color-final-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+          "sha256": "33b2852c0fa3b1d9d732fbee5c444791e8660076c79f11fc02a2b806c126dac1"
+        },
+        "opencut-render-worker": {
+          "path": "/Users/vincent/.opencut/runtime/native-local-export-color-final-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+          "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
+        }
+      },
+      "worker_source_commit": "853e3ab590a9f05a9fd4b14e4020a6028d42995c",
+      "web_source_commit": "a6c7b5717177564ecd9ac7fc5a2603a08374831a",
+      "implementation": "One SDR encoder policy uses BT.709 limited conversion, frame properties and codec metadata; completion verifies all four facts. RGBA source proxies retain their separate lossless encoding.",
+      "builds": {
+        "cli": 2,
+        "test_compilations": 2,
+        "worker": 0,
+        "web": 0,
+        "first_candidate_rejected_before_service_switch": true
+      },
+      "checks": {
+        "affected_rust_tests": 7,
+        "architecture_tests": 14,
+        "architecture_and_contract_boundaries": "passed",
+        "packaged_generated_and_canonical_contract": "passed",
+        "packaged_doctor": "passed"
+      },
+      "exports": {
+        "original_red_gate_passed": true,
+        "metadata_verified": true,
+        "native_outputs": 3,
+        "formats_and_rasters": [
+          "MP4 160x90",
+          "MP4 1920x1080",
+          "WebM 1920x1080"
+        ],
+        "browser_original_green_before": 25,
+        "browser_original_green_after": 0,
+        "strict_limit_3_probe_passed": false,
+        "maximum_channel_error": 4,
+        "encoder_only_full_raster_matches_native": true,
+        "quantization_classification": "Source-to-native RGB differs by 2; identical full-raster RGB independently encoded differs by 2. This bounded lossy quantization is retained, not declared a strict-limit-3 or lossless pass."
+      },
+      "editor_checks": [
+        {
+          "name": "landscape",
+          "passed": true,
+          "refresh_seconds": 0.4082952320000004,
+          "resume_seconds": 1.2575312219999997,
+          "export_default": "p1080",
+          "export_options": [
+            "p720",
+            "p1080",
+            "p1440",
+            "p2160"
+          ],
+          "export_jobs": 0,
+          "native_creates_after_resume": 1
+        },
+        {
+          "name": "workbench",
+          "passed": true,
+          "refresh_seconds": 0.9565078289999983,
+          "resume_seconds": 1.8395568280000008,
+          "export_default": "p1080",
+          "export_options": [
+            "p720",
+            "p1080",
+            "p1440",
+            "p2160"
+          ],
+          "export_jobs": 0,
+          "native_creates_after_resume": 1
+        }
+      ],
+      "services": [
+        {
+          "name": "landscape",
+          "endpoint": "http://127.0.0.1:8791",
+          "pid": 81990,
+          "database": "/Users/vincent/Desktop/海南/风光大片_20261027/workspace.sqlite",
+          "runtime": {
+            "opencut": {
+              "path": "/Users/vincent/.opencut/runtime/native-local-export-color-final-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+              "sha256": "33b2852c0fa3b1d9d732fbee5c444791e8660076c79f11fc02a2b806c126dac1"
+            },
+            "opencut-render-worker": {
+              "path": "/Users/vincent/.opencut/runtime/native-local-export-color-final-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+              "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
+            }
+          },
+          "web_root": "/Users/vincent/.opencut/runtime/native-local-export-color-final-20261101/opencut-0.1.0-x86_64-apple-darwin/web",
+          "assets_verified_at_switch": 285,
+          "assets_rechecked": 3,
+          "ready": true
+        },
+        {
+          "name": "workbench",
+          "endpoint": "http://127.0.0.1:59790",
+          "pid": 81996,
+          "database": "/Users/vincent/.opencut/hainan/workspace.sqlite",
+          "runtime": {
+            "opencut": {
+              "path": "/Users/vincent/.opencut/runtime/native-local-export-color-final-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+              "sha256": "33b2852c0fa3b1d9d732fbee5c444791e8660076c79f11fc02a2b806c126dac1"
+            },
+            "opencut-render-worker": {
+              "path": "/Users/vincent/.opencut/runtime/native-local-export-color-final-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+              "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
+            }
+          },
+          "web_root": "/Users/vincent/.opencut/runtime/native-local-export-color-final-20261101/opencut-0.1.0-x86_64-apple-darwin/web",
+          "assets_verified_at_switch": 285,
+          "assets_rechecked": 3,
+          "ready": true
+        }
+      ],
+      "preservation": [
+        {
+          "name": "landscape",
+          "projects_unchanged": true,
+          "project_count": 2,
+          "historical_jobs_unchanged": true,
+          "historical_job_count": 39,
+          "job_count": 42,
+          "new_preview_jobs": [
+            "job_18c50a064af549e88c37f52960018ab1",
+            "job_7094f26a852948ffb9f130285a9e63ce",
+            "job_a28191a073c4464eb091cd0322857251"
+          ],
+          "only_expected_completed_preview_jobs": true,
+          "metadata_unchanged": true,
+          "integrity": "ok"
+        },
+        {
+          "name": "workbench",
+          "projects_unchanged": true,
+          "project_count": 2,
+          "historical_jobs_unchanged": true,
+          "historical_job_count": 480,
+          "job_count": 488,
+          "new_preview_jobs": [
+            "job_1e49f06d6a114f7aa85fc840302ea88b",
+            "job_21fb98be82974997ab8c110cb4f42ca7",
+            "job_3e2b13f3a6cc4924a033e9b3db8d4b16",
+            "job_5f4641483d3a4810b170f0865ef47b6e",
+            "job_64f2fbc2795448f2aa76a47c9eda57fc",
+            "job_9a4e72ed66d64018a8511fce76b331b9",
+            "job_9bf96dad35fc40e2a086d02a05ad7a40",
+            "job_afde6c06bfef44f4bf9e9f1817f97a6d"
+          ],
+          "only_expected_completed_preview_jobs": true,
+          "metadata_unchanged": true,
+          "integrity": "ok"
+        }
+      ],
+      "cache": {
+        "new_preview_jobs_on_upgrade": 11,
+        "all_completed": true,
+        "only_host_identity_changed": true,
+        "additional_jobs_on_reopen": 0,
+        "current_total_user_jobs": 530,
+        "historical_user_jobs_preserved": 519
+      },
+      "synthetic": {
+        "project_count": 10,
+        "job_count": 122,
+        "old_projects_unchanged": true,
+        "old_jobs_unchanged": true,
+        "new_jobs": [
+          "job_74fe3117f0964a689bccb9a6f79bea2f",
+          "job_86cb7d6c48ec42f6aab4a0205b5e1293",
+          "job_512f4966a5de4501a782294047a2091e",
+          "job_45c1f0294e9e4195910311624ed500bf",
+          "job_477214248f38496989b4d8d6458c41b9",
+          "job_9498ad3630b743dda98758d6613dd7e8",
+          "job_e8f9fa2861f54476a97f5992addc7950",
+          "job_c9d62df200c344ba94f27b00d293e531",
+          "job_fd8fdde3d11148718cebe2c226f171ef",
+          "job_6bc5da54ce354a75aeacdc945c350073",
+          "job_533c5407fe224b96b772dba94db6c383"
+        ],
+        "active_jobs": [],
+        "integrity": "ok"
+      },
+      "visual_inspection": "Both real editor screenshots show expected imagery, media thumbnails, waveform tracks and workbench title; automated checks do not replace physical A/V acceptance.",
+      "reuse_scope": "Prior foreground94s evidence remains bound to its original host producer; unchanged worker/Web and preview code justify scoped reuse, not a new94s measurement.",
+      "delivery_ready": false,
+      "remaining": "Broader codec/color/orientation/default-track and physical A/V acceptance; host updates still invalidate source proxies conservatively."
+    },
+    "geometry_correction": "The first independent1080 experiment resized160x90 RGB while encoding. Repeating with full1920x1080 RGB and no simultaneous resize exactly matched the native outputs; maximum error4 remains recorded."
   }
 }

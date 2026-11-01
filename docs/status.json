@@ -12967,18 +12967,55 @@
     "complete_delivery": false,
     "candidate": {
       "implementation": "Automatic source preparation keeps known compact HD sources (<=1080p in either orientation, <=30fps, <=20Mbit/s) on original native decoding; explicit asset preparation and heavy/unknown sources retain proxy preparation. Preview raster remains540p. Added separate picture-credit audio silence counters.",
-      "status": "source_changes_unbuilt_behavior_pending",
+      "status": "built_scoped_throughput_passed_full_playback_failed",
       "web_unit_tests": {
         "files": 3,
         "passed": 18
       },
       "comparison": {
-        "scope": "Same actual scene at26s, serial public SDK requests; different output rasters, diagnostic not controlled same-raster acceptance",
-        "prepared540_header_ms": 51.61681539189191,
-        "original720_header_ms": 41.94970299999999
+        "scope": "Same actual scene at26s, same540p raster and renderer; serial publicSDK headers, excluding body transfer and presentation",
+        "prepared540_header_ms": 51.68497744827591,
+        "original540_header_ms": 33.926419103448254,
+        "complete_rgba_equal": true,
+        "independent_source_rgba_equal": true
       },
       "manual_acceptance": "failed_on_deployed_candidate",
-      "service_replaced": false
+      "service_replaced": false,
+      "source_commit": "8f60c8a5b9b7df5f6625025910f835c7ad91a1e8",
+      "build_directory": "/private/tmp/opencut-local-upgrade-20261101/stutter-integration",
+      "rust_tests_passed": 22,
+      "full_ui": {
+        "source_commit": "8f60c8a5b9b7df5f6625025910f835c7ad91a1e8",
+        "url": "http://127.0.0.1:61361/editor/hainan-vlog-workbench-20261021?scene=hainan-main",
+        "revision": "rev_70a8b0e829a498b51d36e3bfb73a93b118eb5f8ac6450948f03dede2263b90bd",
+        "duration_seconds": 42,
+        "presented_frames": 1033,
+        "missed_cached_frames": 13,
+        "max_wall_frame_gap_ms": 1529.9000000953674,
+        "gap_at_seconds": 29.0255625,
+        "sample_rate": 48000,
+        "copied_audio_frames": 2016000,
+        "elapsed_device_frames": 2240257,
+        "picture_wait_events": 71,
+        "picture_wait_frames": 224257,
+        "picture_wait_max_frames": 71067,
+        "underflow_events": 0,
+        "repeated_quanta": 0,
+        "passed": false,
+        "deployment_changed": false
+      },
+      "boundary_evidence": "/private/tmp/opencut-local-upgrade-20261101/live-stutter/boundaries/result.json",
+      "confirmed_reinitializations": [
+        "Split of the same continuous source changes element cache key",
+        "Larger decode admission after title end discards an already stricter decoder",
+        "Small resident-byte admission reduction at blur onset discards both decoders"
+      ],
+      "deep_trim_cut": {
+        "source_time_seconds": 7,
+        "original_header_ms": 916.6519389999994,
+        "prepared_header_ms": 276.6197669999999,
+        "scope": "Bounded cut probe, not full playback acceptance"
+      }
     }
   }
 }

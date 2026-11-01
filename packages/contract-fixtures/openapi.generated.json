@@ -20232,6 +20232,16 @@
               "ffprobe_sha256": {
                 "type": "string"
               },
+              "hardware_probe": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportVideoHardwareProbe"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
               "observed_audio_duration_seconds": {
                 "format": "double",
                 "type": [
@@ -20302,6 +20312,33 @@
               "frame_receipts_sha256",
               "frames_rendered",
               "rgba_bytes"
+            ],
+            "type": "object"
+          },
+          "ExportVideoHardwareProbe": {
+            "additionalProperties": false,
+            "description": "Admission-time hardware capability observation, before any project frames.\nA failed real encode is never retried through another backend.",
+            "properties": {
+              "available": {
+                "type": "boolean"
+              },
+              "diagnostics_sha256": {
+                "description": "Hash of the retained first 16 KiB of capability stderr, never local paths.",
+                "type": "string"
+              },
+              "exit_code": {
+                "format": "int32",
+                "type": "integer"
+              },
+              "system": {
+                "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/NativeSystemIdentity"
+              }
+            },
+            "required": [
+              "available",
+              "exit_code",
+              "diagnostics_sha256",
+              "system"
             ],
             "type": "object"
           },
@@ -24312,6 +24349,7 @@
           "VideoEncoderBackend": {
             "enum": [
               "ffmpeg_libx264",
+              "ffmpeg_h264_videotoolbox",
               "ffmpeg_libvpx_vp9",
               "webcodecs_avc"
             ],
@@ -33965,6 +34003,9 @@
           "ExportVideoExecution": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportVideoExecution"
           },
+          "ExportVideoHardwareProbe": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportVideoHardwareProbe"
+          },
           "ExportVideoIdentity": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportVideoIdentity"
           },
@@ -41534,6 +41575,9 @@
           "ExportVideoExecution": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportVideoExecution"
           },
+          "ExportVideoHardwareProbe": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportVideoHardwareProbe"
+          },
           "ExportVideoIdentity": {
             "additionalProperties": false,
             "properties": {
@@ -45808,6 +45852,9 @@
           "ExportVideoExecution": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportVideoExecution"
           },
+          "ExportVideoHardwareProbe": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportVideoHardwareProbe"
+          },
           "ExportVideoIdentity": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportVideoIdentity"
           },
@@ -46371,6 +46418,9 @@
           },
           "ExportVideoExecution": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportVideoExecution"
+          },
+          "ExportVideoHardwareProbe": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportVideoHardwareProbe"
           },
           "ExportVideoIdentity": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportVideoIdentity"
@@ -47738,6 +47788,9 @@
           "ExportVideoExecution": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportVideoExecution"
           },
+          "ExportVideoHardwareProbe": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportVideoHardwareProbe"
+          },
           "ExportVideoIdentity": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportVideoIdentity"
           },
@@ -48492,6 +48545,9 @@
           },
           "ExportVideoExecution": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportVideoExecution"
+          },
+          "ExportVideoHardwareProbe": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportVideoHardwareProbe"
           },
           "ExportVideoIdentity": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportVideoIdentity"
@@ -55353,6 +55409,9 @@
           "ExportVideoExecution": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportVideoExecution"
           },
+          "ExportVideoHardwareProbe": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportVideoHardwareProbe"
+          },
           "ExportVideoIdentity": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportVideoIdentity"
           },
@@ -59719,6 +59778,9 @@
           "ExportVideoExecution": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportVideoExecution"
           },
+          "ExportVideoHardwareProbe": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportVideoHardwareProbe"
+          },
           "ExportVideoIdentity": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportVideoIdentity"
           },
@@ -60301,6 +60363,9 @@
           },
           "ExportVideoExecution": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportVideoExecution"
+          },
+          "ExportVideoHardwareProbe": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportVideoHardwareProbe"
           },
           "ExportVideoIdentity": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportVideoIdentity"
@@ -61031,6 +61096,9 @@
           "ExportVideoExecution": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportVideoExecution"
           },
+          "ExportVideoHardwareProbe": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportVideoHardwareProbe"
+          },
           "ExportVideoIdentity": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportVideoIdentity"
           },
@@ -61606,6 +61674,9 @@
           },
           "ExportVideoExecution": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportVideoExecution"
+          },
+          "ExportVideoHardwareProbe": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportVideoHardwareProbe"
           },
           "ExportVideoIdentity": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportVideoIdentity"
@@ -62185,6 +62256,9 @@
           "ExportVideoExecution": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportVideoExecution"
           },
+          "ExportVideoHardwareProbe": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportVideoHardwareProbe"
+          },
           "ExportVideoIdentity": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportVideoIdentity"
           },
@@ -62732,6 +62806,9 @@
           },
           "ExportVideoExecution": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportVideoExecution"
+          },
+          "ExportVideoHardwareProbe": {
+            "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportVideoHardwareProbe"
           },
           "ExportVideoIdentity": {
             "$ref": "#/components/schemas/OpencutAnalysisAssetOutput/$defs/ExportVideoIdentity"

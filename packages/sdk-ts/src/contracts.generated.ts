@@ -3270,7 +3270,7 @@ export namespace OpencutAnalysisAssetOutput {
   export type MaskVideoProfile = 'classic-v31-cfr-h264-aac-mask-v1';
   export type BlendVideoProfile = 'classic-v31-cfr-h264-aac-blend-v1';
   export type SceneVideoProfile = 'classic-v31-cfr-h264-aac-scene-v1';
-  export type VideoEncoderBackend = 'ffmpeg_libx264' | 'ffmpeg_libvpx_vp9' | 'webcodecs_avc';
+  export type VideoEncoderBackend = 'ffmpeg_libx264' | 'ffmpeg_h264_videotoolbox' | 'ffmpeg_libvpx_vp9' | 'webcodecs_avc';
   export type ExportFormat = 'mp4' | 'webm';
   export type ExportQuality = 'low' | 'medium' | 'high' | 'very_high';
 /**
@@ -4326,12 +4326,26 @@ export namespace OpencutAnalysisAssetOutput {
   backend?: VideoEncoderBackend | null;
   ffmpeg_sha256: string;
   ffprobe_sha256: string;
+  hardware_probe?: ExportVideoHardwareProbe | null;
   observed_audio_duration_seconds?: number | null;
   observed_video_duration_seconds: number;
   observed_video_frames: string;
   pixel_format: string;
   rates: ExportVideoRates;
   video_codec: string;
+}
+/**
+ * Admission-time hardware capability observation, before any project frames.
+ * A failed real encode is never retried through another backend.
+ */
+  export interface ExportVideoHardwareProbe {
+  available: boolean;
+  /**
+   * Hash of the retained first 16 KiB of capability stderr, never local paths.
+   */
+  diagnostics_sha256: string;
+  exit_code: number;
+  system: NativeSystemIdentity;
 }
 /**
  * Numeric target bitrates from Classic's pinned Mediabunny 1.41.0 Quality.
@@ -14978,7 +14992,7 @@ export namespace OpencutSourcePreviewPrepareOutput {
   export type MaskVideoProfile = 'classic-v31-cfr-h264-aac-mask-v1';
   export type BlendVideoProfile = 'classic-v31-cfr-h264-aac-blend-v1';
   export type SceneVideoProfile = 'classic-v31-cfr-h264-aac-scene-v1';
-  export type VideoEncoderBackend = 'ffmpeg_libx264' | 'ffmpeg_libvpx_vp9' | 'webcodecs_avc';
+  export type VideoEncoderBackend = 'ffmpeg_libx264' | 'ffmpeg_h264_videotoolbox' | 'ffmpeg_libvpx_vp9' | 'webcodecs_avc';
   export type ExportFormat = 'mp4' | 'webm';
   export type ExportQuality = 'low' | 'medium' | 'high' | 'very_high';
 /**
@@ -16037,12 +16051,26 @@ export namespace OpencutSourcePreviewPrepareOutput {
   backend?: VideoEncoderBackend | null;
   ffmpeg_sha256: string;
   ffprobe_sha256: string;
+  hardware_probe?: ExportVideoHardwareProbe | null;
   observed_audio_duration_seconds?: number | null;
   observed_video_duration_seconds: number;
   observed_video_frames: string;
   pixel_format: string;
   rates: ExportVideoRates;
   video_codec: string;
+}
+/**
+ * Admission-time hardware capability observation, before any project frames.
+ * A failed real encode is never retried through another backend.
+ */
+  export interface ExportVideoHardwareProbe {
+  available: boolean;
+  /**
+   * Hash of the retained first 16 KiB of capability stderr, never local paths.
+   */
+  diagnostics_sha256: string;
+  exit_code: number;
+  system: NativeSystemIdentity;
 }
 /**
  * Numeric target bitrates from Classic's pinned Mediabunny 1.41.0 Quality.
@@ -20007,7 +20035,7 @@ export namespace OpencutResourceReadOutput {
   export type MaskVideoProfile = 'classic-v31-cfr-h264-aac-mask-v1';
   export type BlendVideoProfile = 'classic-v31-cfr-h264-aac-blend-v1';
   export type SceneVideoProfile = 'classic-v31-cfr-h264-aac-scene-v1';
-  export type VideoEncoderBackend = 'ffmpeg_libx264' | 'ffmpeg_libvpx_vp9' | 'webcodecs_avc';
+  export type VideoEncoderBackend = 'ffmpeg_libx264' | 'ffmpeg_h264_videotoolbox' | 'ffmpeg_libvpx_vp9' | 'webcodecs_avc';
   export type ExportFormat = 'mp4' | 'webm';
   export type ExportQuality = 'low' | 'medium' | 'high' | 'very_high';
 /**
@@ -21831,12 +21859,26 @@ export namespace OpencutResourceReadOutput {
   backend?: VideoEncoderBackend | null;
   ffmpeg_sha256: string;
   ffprobe_sha256: string;
+  hardware_probe?: ExportVideoHardwareProbe | null;
   observed_audio_duration_seconds?: number | null;
   observed_video_duration_seconds: number;
   observed_video_frames: string;
   pixel_format: string;
   rates: ExportVideoRates;
   video_codec: string;
+}
+/**
+ * Admission-time hardware capability observation, before any project frames.
+ * A failed real encode is never retried through another backend.
+ */
+  export interface ExportVideoHardwareProbe {
+  available: boolean;
+  /**
+   * Hash of the retained first 16 KiB of capability stderr, never local paths.
+   */
+  diagnostics_sha256: string;
+  exit_code: number;
+  system: NativeSystemIdentity;
 }
 /**
  * Numeric target bitrates from Classic's pinned Mediabunny 1.41.0 Quality.
@@ -22444,7 +22486,7 @@ export namespace OpencutJobViewOutput {
   export type MaskVideoProfile = 'classic-v31-cfr-h264-aac-mask-v1';
   export type BlendVideoProfile = 'classic-v31-cfr-h264-aac-blend-v1';
   export type SceneVideoProfile = 'classic-v31-cfr-h264-aac-scene-v1';
-  export type VideoEncoderBackend = 'ffmpeg_libx264' | 'ffmpeg_libvpx_vp9' | 'webcodecs_avc';
+  export type VideoEncoderBackend = 'ffmpeg_libx264' | 'ffmpeg_h264_videotoolbox' | 'ffmpeg_libvpx_vp9' | 'webcodecs_avc';
   export type ExportFormat = 'mp4' | 'webm';
   export type ExportQuality = 'low' | 'medium' | 'high' | 'very_high';
 /**
@@ -23500,12 +23542,26 @@ export namespace OpencutJobViewOutput {
   backend?: VideoEncoderBackend | null;
   ffmpeg_sha256: string;
   ffprobe_sha256: string;
+  hardware_probe?: ExportVideoHardwareProbe | null;
   observed_audio_duration_seconds?: number | null;
   observed_video_duration_seconds: number;
   observed_video_frames: string;
   pixel_format: string;
   rates: ExportVideoRates;
   video_codec: string;
+}
+/**
+ * Admission-time hardware capability observation, before any project frames.
+ * A failed real encode is never retried through another backend.
+ */
+  export interface ExportVideoHardwareProbe {
+  available: boolean;
+  /**
+   * Hash of the retained first 16 KiB of capability stderr, never local paths.
+   */
+  diagnostics_sha256: string;
+  exit_code: number;
+  system: NativeSystemIdentity;
 }
 /**
  * Numeric target bitrates from Classic's pinned Mediabunny 1.41.0 Quality.
@@ -24017,7 +24073,7 @@ export namespace OpencutJobQueryOutput {
   export type MaskVideoProfile = 'classic-v31-cfr-h264-aac-mask-v1';
   export type BlendVideoProfile = 'classic-v31-cfr-h264-aac-blend-v1';
   export type SceneVideoProfile = 'classic-v31-cfr-h264-aac-scene-v1';
-  export type VideoEncoderBackend = 'ffmpeg_libx264' | 'ffmpeg_libvpx_vp9' | 'webcodecs_avc';
+  export type VideoEncoderBackend = 'ffmpeg_libx264' | 'ffmpeg_h264_videotoolbox' | 'ffmpeg_libvpx_vp9' | 'webcodecs_avc';
   export type ExportFormat = 'mp4' | 'webm';
   export type ExportQuality = 'low' | 'medium' | 'high' | 'very_high';
 /**
@@ -25078,12 +25134,26 @@ export namespace OpencutJobQueryOutput {
   backend?: VideoEncoderBackend | null;
   ffmpeg_sha256: string;
   ffprobe_sha256: string;
+  hardware_probe?: ExportVideoHardwareProbe | null;
   observed_audio_duration_seconds?: number | null;
   observed_video_duration_seconds: number;
   observed_video_frames: string;
   pixel_format: string;
   rates: ExportVideoRates;
   video_codec: string;
+}
+/**
+ * Admission-time hardware capability observation, before any project frames.
+ * A failed real encode is never retried through another backend.
+ */
+  export interface ExportVideoHardwareProbe {
+  available: boolean;
+  /**
+   * Hash of the retained first 16 KiB of capability stderr, never local paths.
+   */
+  diagnostics_sha256: string;
+  exit_code: number;
+  system: NativeSystemIdentity;
 }
 /**
  * Numeric target bitrates from Classic's pinned Mediabunny 1.41.0 Quality.
@@ -25857,7 +25927,7 @@ export namespace OpencutJobSubmitOutput {
   export type MaskVideoProfile = 'classic-v31-cfr-h264-aac-mask-v1';
   export type BlendVideoProfile = 'classic-v31-cfr-h264-aac-blend-v1';
   export type SceneVideoProfile = 'classic-v31-cfr-h264-aac-scene-v1';
-  export type VideoEncoderBackend = 'ffmpeg_libx264' | 'ffmpeg_libvpx_vp9' | 'webcodecs_avc';
+  export type VideoEncoderBackend = 'ffmpeg_libx264' | 'ffmpeg_h264_videotoolbox' | 'ffmpeg_libvpx_vp9' | 'webcodecs_avc';
   export type ExportFormat = 'mp4' | 'webm';
   export type ExportQuality = 'low' | 'medium' | 'high' | 'very_high';
 /**
@@ -26913,12 +26983,26 @@ export namespace OpencutJobSubmitOutput {
   backend?: VideoEncoderBackend | null;
   ffmpeg_sha256: string;
   ffprobe_sha256: string;
+  hardware_probe?: ExportVideoHardwareProbe | null;
   observed_audio_duration_seconds?: number | null;
   observed_video_duration_seconds: number;
   observed_video_frames: string;
   pixel_format: string;
   rates: ExportVideoRates;
   video_codec: string;
+}
+/**
+ * Admission-time hardware capability observation, before any project frames.
+ * A failed real encode is never retried through another backend.
+ */
+  export interface ExportVideoHardwareProbe {
+  available: boolean;
+  /**
+   * Hash of the retained first 16 KiB of capability stderr, never local paths.
+   */
+  diagnostics_sha256: string;
+  exit_code: number;
+  system: NativeSystemIdentity;
 }
 /**
  * Numeric target bitrates from Classic's pinned Mediabunny 1.41.0 Quality.
@@ -27540,7 +27624,7 @@ export namespace OpencutRenderSubmitOutput {
   export type MaskVideoProfile = 'classic-v31-cfr-h264-aac-mask-v1';
   export type BlendVideoProfile = 'classic-v31-cfr-h264-aac-blend-v1';
   export type SceneVideoProfile = 'classic-v31-cfr-h264-aac-scene-v1';
-  export type VideoEncoderBackend = 'ffmpeg_libx264' | 'ffmpeg_libvpx_vp9' | 'webcodecs_avc';
+  export type VideoEncoderBackend = 'ffmpeg_libx264' | 'ffmpeg_h264_videotoolbox' | 'ffmpeg_libvpx_vp9' | 'webcodecs_avc';
   export type ExportFormat = 'mp4' | 'webm';
   export type ExportQuality = 'low' | 'medium' | 'high' | 'very_high';
 /**
@@ -28596,12 +28680,26 @@ export namespace OpencutRenderSubmitOutput {
   backend?: VideoEncoderBackend | null;
   ffmpeg_sha256: string;
   ffprobe_sha256: string;
+  hardware_probe?: ExportVideoHardwareProbe | null;
   observed_audio_duration_seconds?: number | null;
   observed_video_duration_seconds: number;
   observed_video_frames: string;
   pixel_format: string;
   rates: ExportVideoRates;
   video_codec: string;
+}
+/**
+ * Admission-time hardware capability observation, before any project frames.
+ * A failed real encode is never retried through another backend.
+ */
+  export interface ExportVideoHardwareProbe {
+  available: boolean;
+  /**
+   * Hash of the retained first 16 KiB of capability stderr, never local paths.
+   */
+  diagnostics_sha256: string;
+  exit_code: number;
+  system: NativeSystemIdentity;
 }
 /**
  * Numeric target bitrates from Classic's pinned Mediabunny 1.41.0 Quality.
@@ -40007,7 +40105,7 @@ export namespace OpencutAnalysisSequenceTranscribeOutput {
   export type MaskVideoProfile = 'classic-v31-cfr-h264-aac-mask-v1';
   export type BlendVideoProfile = 'classic-v31-cfr-h264-aac-blend-v1';
   export type SceneVideoProfile = 'classic-v31-cfr-h264-aac-scene-v1';
-  export type VideoEncoderBackend = 'ffmpeg_libx264' | 'ffmpeg_libvpx_vp9' | 'webcodecs_avc';
+  export type VideoEncoderBackend = 'ffmpeg_libx264' | 'ffmpeg_h264_videotoolbox' | 'ffmpeg_libvpx_vp9' | 'webcodecs_avc';
   export type ExportFormat = 'mp4' | 'webm';
   export type ExportQuality = 'low' | 'medium' | 'high' | 'very_high';
 /**
@@ -41063,12 +41161,26 @@ export namespace OpencutAnalysisSequenceTranscribeOutput {
   backend?: VideoEncoderBackend | null;
   ffmpeg_sha256: string;
   ffprobe_sha256: string;
+  hardware_probe?: ExportVideoHardwareProbe | null;
   observed_audio_duration_seconds?: number | null;
   observed_video_duration_seconds: number;
   observed_video_frames: string;
   pixel_format: string;
   rates: ExportVideoRates;
   video_codec: string;
+}
+/**
+ * Admission-time hardware capability observation, before any project frames.
+ * A failed real encode is never retried through another backend.
+ */
+  export interface ExportVideoHardwareProbe {
+  available: boolean;
+  /**
+   * Hash of the retained first 16 KiB of capability stderr, never local paths.
+   */
+  diagnostics_sha256: string;
+  exit_code: number;
+  system: NativeSystemIdentity;
 }
 /**
  * Numeric target bitrates from Classic's pinned Mediabunny 1.41.0 Quality.
@@ -48737,7 +48849,7 @@ export namespace OpencutAnalysisSpeakerTurnsOutput {
   export type MaskVideoProfile = 'classic-v31-cfr-h264-aac-mask-v1';
   export type BlendVideoProfile = 'classic-v31-cfr-h264-aac-blend-v1';
   export type SceneVideoProfile = 'classic-v31-cfr-h264-aac-scene-v1';
-  export type VideoEncoderBackend = 'ffmpeg_libx264' | 'ffmpeg_libvpx_vp9' | 'webcodecs_avc';
+  export type VideoEncoderBackend = 'ffmpeg_libx264' | 'ffmpeg_h264_videotoolbox' | 'ffmpeg_libvpx_vp9' | 'webcodecs_avc';
   export type ExportFormat = 'mp4' | 'webm';
   export type ExportQuality = 'low' | 'medium' | 'high' | 'very_high';
 /**
@@ -49793,12 +49905,26 @@ export namespace OpencutAnalysisSpeakerTurnsOutput {
   backend?: VideoEncoderBackend | null;
   ffmpeg_sha256: string;
   ffprobe_sha256: string;
+  hardware_probe?: ExportVideoHardwareProbe | null;
   observed_audio_duration_seconds?: number | null;
   observed_video_duration_seconds: number;
   observed_video_frames: string;
   pixel_format: string;
   rates: ExportVideoRates;
   video_codec: string;
+}
+/**
+ * Admission-time hardware capability observation, before any project frames.
+ * A failed real encode is never retried through another backend.
+ */
+  export interface ExportVideoHardwareProbe {
+  available: boolean;
+  /**
+   * Hash of the retained first 16 KiB of capability stderr, never local paths.
+   */
+  diagnostics_sha256: string;
+  exit_code: number;
+  system: NativeSystemIdentity;
 }
 /**
  * Numeric target bitrates from Classic's pinned Mediabunny 1.41.0 Quality.
@@ -50317,7 +50443,7 @@ export namespace OpencutAnalysisTranscribeOutput {
   export type MaskVideoProfile = 'classic-v31-cfr-h264-aac-mask-v1';
   export type BlendVideoProfile = 'classic-v31-cfr-h264-aac-blend-v1';
   export type SceneVideoProfile = 'classic-v31-cfr-h264-aac-scene-v1';
-  export type VideoEncoderBackend = 'ffmpeg_libx264' | 'ffmpeg_libvpx_vp9' | 'webcodecs_avc';
+  export type VideoEncoderBackend = 'ffmpeg_libx264' | 'ffmpeg_h264_videotoolbox' | 'ffmpeg_libvpx_vp9' | 'webcodecs_avc';
   export type ExportFormat = 'mp4' | 'webm';
   export type ExportQuality = 'low' | 'medium' | 'high' | 'very_high';
 /**
@@ -51373,12 +51499,26 @@ export namespace OpencutAnalysisTranscribeOutput {
   backend?: VideoEncoderBackend | null;
   ffmpeg_sha256: string;
   ffprobe_sha256: string;
+  hardware_probe?: ExportVideoHardwareProbe | null;
   observed_audio_duration_seconds?: number | null;
   observed_video_duration_seconds: number;
   observed_video_frames: string;
   pixel_format: string;
   rates: ExportVideoRates;
   video_codec: string;
+}
+/**
+ * Admission-time hardware capability observation, before any project frames.
+ * A failed real encode is never retried through another backend.
+ */
+  export interface ExportVideoHardwareProbe {
+  available: boolean;
+  /**
+   * Hash of the retained first 16 KiB of capability stderr, never local paths.
+   */
+  diagnostics_sha256: string;
+  exit_code: number;
+  system: NativeSystemIdentity;
 }
 /**
  * Numeric target bitrates from Classic's pinned Mediabunny 1.41.0 Quality.
@@ -51971,7 +52111,7 @@ export namespace OpencutAnalysisSilenceOutput {
   export type MaskVideoProfile = 'classic-v31-cfr-h264-aac-mask-v1';
   export type BlendVideoProfile = 'classic-v31-cfr-h264-aac-blend-v1';
   export type SceneVideoProfile = 'classic-v31-cfr-h264-aac-scene-v1';
-  export type VideoEncoderBackend = 'ffmpeg_libx264' | 'ffmpeg_libvpx_vp9' | 'webcodecs_avc';
+  export type VideoEncoderBackend = 'ffmpeg_libx264' | 'ffmpeg_h264_videotoolbox' | 'ffmpeg_libvpx_vp9' | 'webcodecs_avc';
   export type ExportFormat = 'mp4' | 'webm';
   export type ExportQuality = 'low' | 'medium' | 'high' | 'very_high';
 /**
@@ -53027,12 +53167,26 @@ export namespace OpencutAnalysisSilenceOutput {
   backend?: VideoEncoderBackend | null;
   ffmpeg_sha256: string;
   ffprobe_sha256: string;
+  hardware_probe?: ExportVideoHardwareProbe | null;
   observed_audio_duration_seconds?: number | null;
   observed_video_duration_seconds: number;
   observed_video_frames: string;
   pixel_format: string;
   rates: ExportVideoRates;
   video_codec: string;
+}
+/**
+ * Admission-time hardware capability observation, before any project frames.
+ * A failed real encode is never retried through another backend.
+ */
+  export interface ExportVideoHardwareProbe {
+  available: boolean;
+  /**
+   * Hash of the retained first 16 KiB of capability stderr, never local paths.
+   */
+  diagnostics_sha256: string;
+  exit_code: number;
+  system: NativeSystemIdentity;
 }
 /**
  * Numeric target bitrates from Classic's pinned Mediabunny 1.41.0 Quality.
@@ -53547,7 +53701,7 @@ export namespace OpencutAnalysisShotsOutput {
   export type MaskVideoProfile = 'classic-v31-cfr-h264-aac-mask-v1';
   export type BlendVideoProfile = 'classic-v31-cfr-h264-aac-blend-v1';
   export type SceneVideoProfile = 'classic-v31-cfr-h264-aac-scene-v1';
-  export type VideoEncoderBackend = 'ffmpeg_libx264' | 'ffmpeg_libvpx_vp9' | 'webcodecs_avc';
+  export type VideoEncoderBackend = 'ffmpeg_libx264' | 'ffmpeg_h264_videotoolbox' | 'ffmpeg_libvpx_vp9' | 'webcodecs_avc';
   export type ExportFormat = 'mp4' | 'webm';
   export type ExportQuality = 'low' | 'medium' | 'high' | 'very_high';
 /**
@@ -54603,12 +54757,26 @@ export namespace OpencutAnalysisShotsOutput {
   backend?: VideoEncoderBackend | null;
   ffmpeg_sha256: string;
   ffprobe_sha256: string;
+  hardware_probe?: ExportVideoHardwareProbe | null;
   observed_audio_duration_seconds?: number | null;
   observed_video_duration_seconds: number;
   observed_video_frames: string;
   pixel_format: string;
   rates: ExportVideoRates;
   video_codec: string;
+}
+/**
+ * Admission-time hardware capability observation, before any project frames.
+ * A failed real encode is never retried through another backend.
+ */
+  export interface ExportVideoHardwareProbe {
+  available: boolean;
+  /**
+   * Hash of the retained first 16 KiB of capability stderr, never local paths.
+   */
+  diagnostics_sha256: string;
+  exit_code: number;
+  system: NativeSystemIdentity;
 }
 /**
  * Numeric target bitrates from Classic's pinned Mediabunny 1.41.0 Quality.
@@ -55123,7 +55291,7 @@ export namespace OpencutAnalysisWaveformOutput {
   export type MaskVideoProfile = 'classic-v31-cfr-h264-aac-mask-v1';
   export type BlendVideoProfile = 'classic-v31-cfr-h264-aac-blend-v1';
   export type SceneVideoProfile = 'classic-v31-cfr-h264-aac-scene-v1';
-  export type VideoEncoderBackend = 'ffmpeg_libx264' | 'ffmpeg_libvpx_vp9' | 'webcodecs_avc';
+  export type VideoEncoderBackend = 'ffmpeg_libx264' | 'ffmpeg_h264_videotoolbox' | 'ffmpeg_libvpx_vp9' | 'webcodecs_avc';
   export type ExportFormat = 'mp4' | 'webm';
   export type ExportQuality = 'low' | 'medium' | 'high' | 'very_high';
 /**
@@ -56179,12 +56347,26 @@ export namespace OpencutAnalysisWaveformOutput {
   backend?: VideoEncoderBackend | null;
   ffmpeg_sha256: string;
   ffprobe_sha256: string;
+  hardware_probe?: ExportVideoHardwareProbe | null;
   observed_audio_duration_seconds?: number | null;
   observed_video_duration_seconds: number;
   observed_video_frames: string;
   pixel_format: string;
   rates: ExportVideoRates;
   video_codec: string;
+}
+/**
+ * Admission-time hardware capability observation, before any project frames.
+ * A failed real encode is never retried through another backend.
+ */
+  export interface ExportVideoHardwareProbe {
+  available: boolean;
+  /**
+   * Hash of the retained first 16 KiB of capability stderr, never local paths.
+   */
+  diagnostics_sha256: string;
+  exit_code: number;
+  system: NativeSystemIdentity;
 }
 /**
  * Numeric target bitrates from Classic's pinned Mediabunny 1.41.0 Quality.
@@ -56695,7 +56877,7 @@ export namespace OpencutJobRequestCancelOutput {
   export type MaskVideoProfile = 'classic-v31-cfr-h264-aac-mask-v1';
   export type BlendVideoProfile = 'classic-v31-cfr-h264-aac-blend-v1';
   export type SceneVideoProfile = 'classic-v31-cfr-h264-aac-scene-v1';
-  export type VideoEncoderBackend = 'ffmpeg_libx264' | 'ffmpeg_libvpx_vp9' | 'webcodecs_avc';
+  export type VideoEncoderBackend = 'ffmpeg_libx264' | 'ffmpeg_h264_videotoolbox' | 'ffmpeg_libvpx_vp9' | 'webcodecs_avc';
   export type ExportFormat = 'mp4' | 'webm';
   export type ExportQuality = 'low' | 'medium' | 'high' | 'very_high';
 /**
@@ -57751,12 +57933,26 @@ export namespace OpencutJobRequestCancelOutput {
   backend?: VideoEncoderBackend | null;
   ffmpeg_sha256: string;
   ffprobe_sha256: string;
+  hardware_probe?: ExportVideoHardwareProbe | null;
   observed_audio_duration_seconds?: number | null;
   observed_video_duration_seconds: number;
   observed_video_frames: string;
   pixel_format: string;
   rates: ExportVideoRates;
   video_codec: string;
+}
+/**
+ * Admission-time hardware capability observation, before any project frames.
+ * A failed real encode is never retried through another backend.
+ */
+  export interface ExportVideoHardwareProbe {
+  available: boolean;
+  /**
+   * Hash of the retained first 16 KiB of capability stderr, never local paths.
+   */
+  diagnostics_sha256: string;
+  exit_code: number;
+  system: NativeSystemIdentity;
 }
 /**
  * Numeric target bitrates from Classic's pinned Mediabunny 1.41.0 Quality.
@@ -70717,7 +70913,7 @@ export namespace JobRenderVideoResult {
   | 'native-libav-windowed-concatenate-linear-resample';
   export type AudioMasteringProfile = 'classic-export-whole-scene-web-audio-v31';
   export type AudioPitchProfile = 'unprepared-linear' | 'prepared-linear' | 'prepared-soundtouch';
-  export type VideoEncoderBackend = 'ffmpeg_libx264' | 'ffmpeg_libvpx_vp9' | 'webcodecs_avc';
+  export type VideoEncoderBackend = 'ffmpeg_libx264' | 'ffmpeg_h264_videotoolbox' | 'ffmpeg_libvpx_vp9' | 'webcodecs_avc';
   export type MediaFrameExecutionSummary =
   | {
       decoder_libraries: NativeLibraryIdentity[];
@@ -70814,12 +71010,26 @@ export namespace JobRenderVideoResult {
   backend?: VideoEncoderBackend | null;
   ffmpeg_sha256: string;
   ffprobe_sha256: string;
+  hardware_probe?: ExportVideoHardwareProbe | null;
   observed_audio_duration_seconds?: number | null;
   observed_video_duration_seconds: number;
   observed_video_frames: string;
   pixel_format: string;
   rates: ExportVideoRates;
   video_codec: string;
+}
+/**
+ * Admission-time hardware capability observation, before any project frames.
+ * A failed real encode is never retried through another backend.
+ */
+  export interface ExportVideoHardwareProbe {
+  available: boolean;
+  /**
+   * Hash of the retained first 16 KiB of capability stderr, never local paths.
+   */
+  diagnostics_sha256: string;
+  exit_code: number;
+  system: NativeSystemIdentity;
 }
 /**
  * Numeric target bitrates from Classic's pinned Mediabunny 1.41.0 Quality.
@@ -70920,7 +71130,7 @@ export namespace JobRenderVideoRangeResult {
   | 'native-libav-windowed-concatenate-linear-resample';
   export type AudioMasteringProfile = 'classic-export-whole-scene-web-audio-v31';
   export type AudioPitchProfile = 'unprepared-linear' | 'prepared-linear' | 'prepared-soundtouch';
-  export type VideoEncoderBackend = 'ffmpeg_libx264' | 'ffmpeg_libvpx_vp9' | 'webcodecs_avc';
+  export type VideoEncoderBackend = 'ffmpeg_libx264' | 'ffmpeg_h264_videotoolbox' | 'ffmpeg_libvpx_vp9' | 'webcodecs_avc';
   export type MediaFrameExecutionSummary =
   | {
       decoder_libraries: NativeLibraryIdentity[];
@@ -71052,12 +71262,26 @@ export namespace JobRenderVideoRangeResult {
   backend?: VideoEncoderBackend | null;
   ffmpeg_sha256: string;
   ffprobe_sha256: string;
+  hardware_probe?: ExportVideoHardwareProbe | null;
   observed_audio_duration_seconds?: number | null;
   observed_video_duration_seconds: number;
   observed_video_frames: string;
   pixel_format: string;
   rates: ExportVideoRates;
   video_codec: string;
+}
+/**
+ * Admission-time hardware capability observation, before any project frames.
+ * A failed real encode is never retried through another backend.
+ */
+  export interface ExportVideoHardwareProbe {
+  available: boolean;
+  /**
+   * Hash of the retained first 16 KiB of capability stderr, never local paths.
+   */
+  diagnostics_sha256: string;
+  exit_code: number;
+  system: NativeSystemIdentity;
 }
 /**
  * Numeric target bitrates from Classic's pinned Mediabunny 1.41.0 Quality.

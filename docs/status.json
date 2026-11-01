@@ -12890,7 +12890,7 @@
     ]
   },
   "hardware_encode_implementation": {
-    "status": "implemented_build_and_behavior_pending",
+    "status": "cli_and_contracts_passed_test_compile_failed_behavior_pending",
     "diagnosis_commit": "85ab817d",
     "public_contract": "Additive VideoEncoderBackend hardware variant and optional ExportVideoHardwareProbe; historical software proof omission retained.",
     "selection": "One admitted synthetic-frame observation using actual raster/rate/color/quality, at most five seconds and no more than captured deadline/RSS. Normal unsupported result selects software before project frames and is explicit in the stored proof. Cancellation/time/resource failures abort. No real-encode retry.",
@@ -12909,11 +12909,61 @@
       "two_by_two_exit_code": 187,
       "scope": "installed FFmpeg argument recipe only, not newly compiled native behavior"
     },
-    "build": "pending",
-    "generated_contracts": "pending",
+    "build": {
+      "source_commit": "9dc3876920c5595cc7327631660d2d503252306c",
+      "exit_code": 0,
+      "sha256": "90fdc6734849af4915add44aeb25ca95d045aa8ddbeacc1e374fdd42b90348b3",
+      "seconds": 1113.5126582540106
+    },
+    "generated_contracts": "Generated, checked and canonical-checked against the same immutable CLI; SDK TypeScript build passed.",
     "scoped_behavior": "pending",
     "manual_acceptance": "pending",
     "deployment": "previous 05074e85 / 0d6b4e800029 remains running",
+    "complete_delivery": false,
+    "test_build": {
+      "exit_code": 101,
+      "error": "E0382: test drops encoder after ownership-consuming finish; no unit behavior result yet."
+    }
+  },
+  "live_workbench_stutter": {
+    "manual_acceptance": "failed: user reports audio and video stutter in the in-app browser",
+    "project_id": "hainan-vlog-workbench-20261021",
+    "revision": "rev_64c554a096944b93ac880b89a296e40725815a4e427f3caacd3736709374284b",
+    "running_cli_sha256": "0d6b4e800029c4ed77a943dc25dc7389c5738e9d62be2b8c28033ba668d9945f",
+    "running_worker_sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6",
+    "preview_raster": [
+      960,
+      540
+    ],
+    "observed": {
+      "build_paused_during_controlled_window": true,
+      "missed_frames_during_window": 29,
+      "max_wall_gap_ms_during_window": 782.2000000476837,
+      "buffered_audio_frames": 126865,
+      "copied_audio_frames": 504815,
+      "elapsed_device_frames": 784512,
+      "underflow_events": 0
+    },
+    "confirmed_mechanism": "Worklet picture credit can output silence despite buffered PCM; its existing underflow counter excludes this cause. Zero underflow is not a smoothness acceptance criterion.",
+    "direct_native_sdk": {
+      "frames": 30,
+      "warm_mean_ms": 77.00741620689648,
+      "warm_max_ms": 93.79873399999997,
+      "browser_bypassed": true,
+      "both_sources_used_prepared_540p": true,
+      "user_job_count_after": 496,
+      "active_jobs_after": 0
+    },
+    "component_decode": {
+      "same_proxy_frames": 100,
+      "one_thread_fps": 25.706768929753423,
+      "four_threads_fps": 74.00796144596626,
+      "pixel_hash_equal": true,
+      "scope": "FFmpeg-only decode including startup, not scene composition or playback"
+    },
+    "local_evidence_directory": "/private/tmp/opencut-local-upgrade-20261101/live-stutter",
+    "preview_fix_implemented": false,
+    "deployment_changed": false,
     "complete_delivery": false
   }
 }

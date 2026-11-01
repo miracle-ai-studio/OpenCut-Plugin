@@ -20,11 +20,15 @@ use std::{
 
 struct CachedDecoder {
     decoder: NativeVideoDecoder,
-    limits: DecodeLimits,
     representation: Option<String>,
 }
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
+struct DecoderKey {
+    element_id: String,
+    source: (String, String, Option<u32>, bool),
+}
 pub struct NativeMediaDecoders {
-    entries: BTreeMap<String, CachedDecoder>,
+    entries: BTreeMap<DecoderKey, CachedDecoder>,
 }
 pub struct MediaFrameSources {
     pub source_preparation: Vec<SourcePreviewUse>,
@@ -110,25 +114,48 @@ pub(crate) fn callbacks<R: ClassicVisualResources + ?Sized, S: VisualProcessSess
         .collect::<Result<Vec<_>, _>>()?;
     session.callbacks(requests, resources, accept)
 }
-fn key(layer: &ClassicVisualLayerPlan) -> String {
+fn key(layer: &ClassicVisualLayerPlan) -> DecoderKey {
+    let image = matches!(layer.decode, VisualDecodeRequest::Image);
     let stream = match layer.decode {
         VisualDecodeRequest::Video {
             selected_video_stream,
             ..
-        } => selected_video_stream.map_or_else(|| "primary".into(), |n| n.to_string()),
-        VisualDecodeRequest::Image => "image".into(),
+        } => selected_video_stream,
+        VisualDecodeRequest::Image => None,
     };
-    format!(
-        "{}:{}:{}:{}",
-        if matches!(layer.decode, VisualDecodeRequest::Image) {
-            "image"
+    DecoderKey {
+        element_id: if image {
+            "image".into()
         } else {
-            &layer.element_id
+            layer.element_id.clone()
         },
-        layer.resource.content_hash,
-        layer.resource.size,
-        stream
-    )
+        source: (
+            layer.resource.content_hash.clone(),
+            layer.resource.size.clone(),
+            stream,
+            image,
+        ),
+    }
+}
+
+fn retain_active<T>(entries: &mut BTreeMap<DecoderKey, T>, active: &BTreeSet<DecoderKey>) {
+    // A split changes the element identity, not the immutable source. Transfer
+    // only an inactive owner; overlapping uses retain independent seek state.
+    // Representation and current admission are checked after fresh resolution.
+    for key in active {
+        if entries.contains_key(key) {
+            continue;
+        }
+        let previous = entries
+            .keys()
+            .find(|old| !active.contains(*old) && old.source == key.source)
+            .cloned();
+        if let Some(previous) = previous {
+            let decoder = entries.remove(&previous).expect("inactive source owner");
+            entries.insert(key.clone(), decoder);
+        }
+    }
+    entries.retain(|key, _| active.contains(key));
 }
 
 impl NativeMediaDecoders {
@@ -143,7 +170,7 @@ impl NativeMediaDecoders {
     ) -> Result<MediaFrameSources, EditorError> {
         resources.checkpoint()?;
         let active: BTreeSet<_> = plan.layers.iter().map(key).collect();
-        self.entries.retain(|key, _| active.contains(key));
+        retain_active(&mut self.entries, &active);
         let mut opened = BTreeMap::new();
         let result = (|| {
             let mut requests = Vec::new();
@@ -300,9 +327,13 @@ impl NativeMediaDecoders {
                         })?;
                 }
                 let key = key(layer);
-                if self.entries.get(&key).is_some_and(|entry| {
-                    entry.limits != limits || entry.representation != representation
-                }) {
+                let reusable = if let Some(entry) = self.entries.get_mut(&key) {
+                    entry.representation == representation
+                        && entry.decoder.retain_within(limits).map_err(media_error)?
+                } else {
+                    false
+                };
+                if !reusable {
                     self.entries.remove(&key);
                 }
                 let new = !self.entries.contains_key(&key);
@@ -324,7 +355,6 @@ impl NativeMediaDecoders {
                         key.clone(),
                         CachedDecoder {
                             decoder,
-                            limits,
                             representation,
                         },
                     );
@@ -543,5 +573,46 @@ fn display_size(frame: &DecodedVideoFrame) -> (u32, u32) {
         (frame.source_width, frame.source_height)
     } else {
         (frame.source_height, frame.source_width)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    fn video(element: &str, source: &str, stream: Option<u32>) -> DecoderKey {
+        DecoderKey {
+            element_id: element.into(),
+            source: (source.into(), "1024".into(), stream, false),
+        }
+    }
+
+    #[test]
+    fn split_handoff_preserves_one_owner_without_sharing_overlapping_uses() {
+        let old = video("left", "source", None);
+        let next = video("right", "source", None);
+        let overlap = video("overlay", "source", None);
+        let mut entries = BTreeMap::from([(old.clone(), 17)]);
+        retain_active(&mut entries, &BTreeSet::from([old.clone(), overlap]));
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries.get(&old), Some(&17));
+        retain_active(&mut entries, &BTreeSet::from([next.clone()]));
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries.get(&next), Some(&17));
+    }
+
+    #[test]
+    fn source_version_stream_and_size_changes_do_not_inherit_decode_state() {
+        let original = video("left", "source", None);
+        let mut changed_size = video("right", "source", None);
+        changed_size.source.1 = "1025".into();
+        for next in [
+            video("right", "changed", None),
+            video("right", "source", Some(0)),
+            changed_size,
+        ] {
+            let mut entries = BTreeMap::from([(original.clone(), 17)]);
+            retain_active(&mut entries, &BTreeSet::from([next]));
+            assert!(entries.is_empty());
+        }
     }
 }

@@ -5,6 +5,46 @@ use opencut_contracts::{
 };
 
 #[test]
+fn deep_trim_preparation_uses_exact_source_time_in_both_span_formats() {
+    for (ticks, timebase, expected) in [
+        ("0", 1, false),
+        ("2", 1, false),
+        ("180000", 90000, false),
+        ("180001", 90000, true),
+        ("7", 1, true),
+        ("-1", 1, true),
+        ("invalid", 1, true),
+        ("0", 0, true),
+    ] {
+        let start = Time {
+            ticks: ticks.into(),
+            timebase,
+        };
+        let zero = Time {
+            ticks: "0".into(),
+            timebase: 1,
+        };
+        assert_eq!(
+            deep_source_start(&ElementSourceSpan::ClassicTrimmed {
+                trim_start: start.clone(),
+                trim_end: zero.clone(),
+                source_duration: None,
+            }),
+            expected
+        );
+        assert_eq!(
+            deep_source_start(&ElementSourceSpan::LegacySourceRange {
+                range: opencut_contracts::TimeRange {
+                    start,
+                    duration: zero
+                },
+            }),
+            expected
+        );
+    }
+}
+
+#[test]
 fn automatic_preparation_retains_compact_hd_and_prepares_unknown_or_heavy_sources() {
     use opencut_contracts::scene::*;
     let asset = ProjectAsset {

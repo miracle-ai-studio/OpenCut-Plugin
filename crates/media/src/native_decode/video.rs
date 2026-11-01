@@ -278,6 +278,41 @@ impl NativeVideoDecoder {
         self.ended
     }
 
+    /// Keep an already stricter codec allocation under the current admission.
+    /// A smaller pixel cap requires reopening: frame-worker contexts captured
+    /// that allocation guard when opened. Resident-byte reductions can reuse
+    /// the codec only when all held frames and its reference/worker reserve fit.
+    /// The caller still supplies fresh authority on every sample/read operation.
+    pub fn retain_within(&mut self, limits: DecodeLimits) -> MediaResult<bool> {
+        limits.validate()?;
+        if self.retired || self.limits.max_pixels > limits.max_pixels {
+            return Ok(false);
+        }
+        if limits.max_resident_bytes < self.limits.max_resident_bytes {
+            if self.previous.is_none() && self.next.is_none() {
+                return Ok(false);
+            }
+            for frame in self.previous.iter().chain(self.next.iter()) {
+                if self.frame_residency(frame)? > limits.max_resident_bytes {
+                    return Ok(false);
+                }
+            }
+        }
+        self.limits.max_resident_bytes = self
+            .limits
+            .max_resident_bytes
+            .min(limits.max_resident_bytes);
+        self.limits.max_io_bytes_per_operation = self
+            .limits
+            .max_io_bytes_per_operation
+            .min(limits.max_io_bytes_per_operation);
+        self.limits.max_packets_per_operation = self
+            .limits
+            .max_packets_per_operation
+            .min(limits.max_packets_per_operation);
+        Ok(true)
+    }
+
     /// For an image, decode one real frame without inventing a frame rate or
     /// temporal duration. Animated formats are deliberately sampled at start.
     pub fn first_image(
@@ -1290,6 +1325,116 @@ mod tests {
     struct Source {
         bytes: Vec<u8>,
         revoked: bool,
+    }
+
+    #[test]
+    #[ignore = "Requires retained OPENCUT_NATIVE_VIDEO_SOURCES JSON paths; no media generation"]
+    fn admission_changes_retain_pixels_seek_state_and_authority_without_reopening() {
+        let paths: Vec<String> = serde_json::from_str(
+            &std::env::var("OPENCUT_NATIVE_VIDEO_SOURCES").expect("Retained source paths"),
+        )
+        .unwrap();
+        for path in paths {
+            let mut source = Source {
+                bytes: std::fs::read(path).unwrap(),
+                revoked: false,
+            };
+            let deadline = Instant::now() + std::time::Duration::from_secs(60);
+            let limits = DecodeLimits {
+                max_pixels: 8_388_608,
+                max_resident_bytes: 512 * 1024 * 1024,
+                max_io_bytes_per_operation: 512 * 1024 * 1024,
+                max_packets_per_operation: 100_000,
+            };
+            let mut decoder =
+                NativeVideoDecoder::open(&mut source, None, limits, deadline).unwrap();
+            let mut control =
+                NativeVideoDecoder::open(&mut source, None, limits, deadline).unwrap();
+            let at = MediaTime {
+                ticks: 0,
+                timebase: 25,
+            };
+            let output = VideoOutputSize::Fit {
+                width: 960,
+                height: 540,
+            };
+            let first = decoder
+                .sample_with_output(&mut source, at, output, deadline)
+                .unwrap()
+                .unwrap();
+            let bytes = decoder.encoded_bytes_read();
+            let larger = DecodeLimits {
+                max_pixels: 16_777_216,
+                max_resident_bytes: 768 * 1024 * 1024,
+                ..limits
+            };
+            assert!(decoder.retain_within(larger).unwrap());
+            let resident = decoder
+                .previous
+                .iter()
+                .chain(decoder.next.iter())
+                .map(|frame| decoder.frame_residency(frame).unwrap())
+                .max()
+                .unwrap();
+            let reduced = DecodeLimits {
+                max_resident_bytes: resident + 4 * 1024 * 1024,
+                ..larger
+            };
+            assert!(reduced.max_resident_bytes < limits.max_resident_bytes);
+            assert!(decoder.retain_within(reduced).unwrap());
+            assert_eq!(decoder.limits.max_pixels, limits.max_pixels);
+            assert_eq!(
+                decoder.limits.max_resident_bytes,
+                reduced.max_resident_bytes
+            );
+            assert!(
+                !decoder
+                    .retain_within(DecodeLimits {
+                        max_resident_bytes: resident - 1,
+                        ..reduced
+                    })
+                    .unwrap()
+            );
+            assert!(
+                !decoder
+                    .retain_within(DecodeLimits {
+                        max_pixels: limits.max_pixels - 1,
+                        ..reduced
+                    })
+                    .unwrap()
+            );
+            let retained = decoder
+                .sample_with_output(&mut source, at, output, deadline)
+                .unwrap()
+                .unwrap();
+            assert!(Arc::ptr_eq(&first, &retained));
+            assert_eq!(decoder.encoded_bytes_read(), bytes);
+            for ticks in [1, 2, 25] {
+                let at = MediaTime {
+                    ticks,
+                    timebase: 25,
+                };
+                let actual = decoder
+                    .sample_with_output(&mut source, at, output, deadline)
+                    .unwrap()
+                    .unwrap();
+                let expected = control
+                    .sample_with_output(&mut source, at, output, deadline)
+                    .unwrap()
+                    .unwrap();
+                assert_eq!(
+                    (actual.pts, actual.duration),
+                    (expected.pts, expected.duration)
+                );
+                assert_eq!(actual.rgba, expected.rgba);
+            }
+            let bytes = decoder.encoded_bytes_read();
+            source.revoked = true;
+            assert!(matches!(decoder.sample_with_output(&mut source,
+                MediaTime { ticks: 25, timebase: 25 }, output, deadline),
+                Err(MediaError::Admission { code, .. }) if code == "NOT_AUTHORIZED"));
+            assert_eq!(decoder.encoded_bytes_read(), bytes);
+        }
     }
     impl ByteSource for Source {
         fn len(&self) -> u64 {

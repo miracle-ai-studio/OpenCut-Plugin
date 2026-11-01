@@ -13016,6 +13016,17 @@
         "prepared_header_ms": 276.6197669999999,
         "scope": "Bounded cut probe, not full playback acceptance"
       }
+    },
+    "decoder_reuse_repair": {
+      "status": "implemented_unbuilt",
+      "scope": [
+        "Transfer only inactive decoder owners across same immutable source/stream splits",
+        "Retain stricter pixel caps and prove held-frame/reference/worker residency before reducing byte admission",
+        "Prepare indexed proxies for source trims beyond two seconds; original source remains authoritative for export"
+      ],
+      "boundary_checks": "14 architecture tests, architecture and contract boundary checks passed",
+      "behavior_validation": "pending integrated build; full UI still failing on previous candidate",
+      "deployment_changed": false
     }
   }
 }

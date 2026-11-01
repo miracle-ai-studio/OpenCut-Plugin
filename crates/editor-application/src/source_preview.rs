@@ -4,7 +4,7 @@ use crate::{JobRecord, JobRequest};
 pub use opencut_contracts::source_preview::*;
 use opencut_contracts::{
     AssetKind, EditorError, Time,
-    scene::{EditorSnapshot, ElementContent},
+    scene::{EditorSnapshot, ElementContent, ElementSourceSpan},
 };
 pub use opencut_job_contracts::ArtifactDescriptor;
 pub use opencut_job_execution::scene_audio::TrustedJobAuthority;
@@ -547,19 +547,37 @@ pub fn source_targets(
     // Automatic preparation avoids expanding compact HD sources into larger
     // lossless RGBA files. Explicit asset requests still prepare that source.
     // Metadata only selects work; actual decoder admission/timing stay binding.
+    let requires_random_access: BTreeSet<_> = sequence
+        .tracks
+        .iter()
+        .filter(|track| track.enabled)
+        .flat_map(|track| &track.elements)
+        .filter(|element| element.enabled)
+        .filter_map(|element| {
+            if let ElementContent::Video {
+                asset_id,
+                video_stream,
+                retime,
+                ..
+            } = &element.content
+            {
+                (retime.rate.denominator == 0
+                    || retime.rate.numerator != retime.rate.denominator
+                    || deep_source_start(&element.source_span))
+                .then(|| (asset_id.clone(), *video_stream))
+            } else {
+                None
+            }
+        })
+        .collect();
     Ok(targets
         .into_iter()
         .filter(|(id, stream)| {
             input.asset_id.is_some()
                 // Aggregate metadata describes the primary stream. Alternate
-                // streams and retimed playback need the bounded proxy path.
+                // streams, retiming and deep trims need bounded random access.
                 || stream.is_some()
-                || sequence.tracks.iter().filter(|track| track.enabled)
-                    .flat_map(|track| &track.elements).filter(|element| element.enabled)
-                    .any(|element| matches!(&element.content,
-                        ElementContent::Video { asset_id, video_stream, retime, .. }
-                        if asset_id == id && video_stream == stream
-                            && (retime.rate.denominator == 0 || retime.rate.numerator != retime.rate.denominator)))
+                || requires_random_access.contains(&(id.clone(), *stream))
                 || snapshot
                     .project
                     .assets
@@ -568,6 +586,20 @@ pub fn source_targets(
                     .is_none_or(needs_automatic_preparation)
         })
         .collect())
+}
+
+fn deep_source_start(span: &ElementSourceSpan) -> bool {
+    let start = match span {
+        ElementSourceSpan::ClassicTrimmed { trim_start, .. } => trim_start,
+        ElementSourceSpan::LegacySourceRange { range } => &range.start,
+    };
+    // Container metadata does not bound GOP length. A cold start beyond the
+    // decoder's two-second forward window uses the existing exact indexed
+    // preparation, even when the source is otherwise inexpensive HD.
+    start.timebase == 0
+        || start.ticks.parse::<i128>().map_or(true, |ticks| {
+            ticks < 0 || ticks > 2 * i128::from(start.timebase)
+        })
 }
 
 fn needs_automatic_preparation(asset: &opencut_contracts::scene::ProjectAsset) -> bool {

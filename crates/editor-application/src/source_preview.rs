@@ -544,7 +544,56 @@ pub fn source_targets(
             return Err(invalid("Source preparation requires a fixed video asset"));
         }
     }
-    Ok(targets)
+    // Automatic preparation avoids expanding compact HD sources into larger
+    // lossless RGBA files. Explicit asset requests still prepare that source.
+    // Metadata only selects work; actual decoder admission/timing stay binding.
+    Ok(targets
+        .into_iter()
+        .filter(|(id, stream)| {
+            input.asset_id.is_some()
+                // Aggregate metadata describes the primary stream. Alternate
+                // streams and retimed playback need the bounded proxy path.
+                || stream.is_some()
+                || sequence.tracks.iter().filter(|track| track.enabled)
+                    .flat_map(|track| &track.elements).filter(|element| element.enabled)
+                    .any(|element| matches!(&element.content,
+                        ElementContent::Video { asset_id, video_stream, retime, .. }
+                        if asset_id == id && video_stream == stream
+                            && (retime.rate.denominator == 0 || retime.rate.numerator != retime.rate.denominator)))
+                || snapshot
+                    .project
+                    .assets
+                    .iter()
+                    .find(|asset| &asset.id == id)
+                    .is_none_or(needs_automatic_preparation)
+        })
+        .collect())
+}
+
+fn needs_automatic_preparation(asset: &opencut_contracts::scene::ProjectAsset) -> bool {
+    let (Some(size), Some(rate), Some(duration)) = (
+        asset.metadata.intrinsic_size.as_ref(),
+        asset.metadata.frame_rate.as_ref(),
+        asset.duration.as_ref(),
+    ) else {
+        return true;
+    };
+    let Ok(ticks) = duration.ticks.parse::<u64>() else {
+        return true;
+    };
+    let compact_hd = size.width > 0
+        && size.height > 0
+        && size.width.max(size.height) <= 1920
+        && size.width.min(size.height) <= 1080
+        && rate.numerator > 0
+        && rate.denominator > 0
+        && u64::from(rate.numerator) <= 30 * u64::from(rate.denominator)
+        && ticks > 0
+        && duration.timebase > 0
+        && asset.version.size > 0
+        && u128::from(asset.version.size) * 8 * u128::from(duration.timebase)
+            <= 20_000_000 * u128::from(ticks);
+    !compact_hd
 }
 
 fn time_base(base: SourcePreviewTimeBase) -> Result<(), EditorError> {

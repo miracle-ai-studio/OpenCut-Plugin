@@ -4,6 +4,88 @@ use opencut_contracts::{
     renderer_identity::{NativeLibraryIdentity, NativeSystemIdentity},
 };
 
+#[test]
+fn automatic_preparation_retains_compact_hd_and_prepares_unknown_or_heavy_sources() {
+    use opencut_contracts::scene::*;
+    let asset = ProjectAsset {
+        id: "video".into(),
+        name: "video".into(),
+        kind: AssetKind::Video,
+        version: AssetVersion {
+            id: "bytes".into(),
+            content_hash: "a".repeat(64),
+            size: 8_000_000,
+        },
+        duration: Some(Time {
+            ticks: "8".into(),
+            timebase: 1,
+        }),
+        origin: ResourceOrigin::LocalImport {
+            original_name: "video.mp4".into(),
+        },
+        metadata: ProjectMediaMetadata {
+            mime_type: Some("video/mp4".into()),
+            intrinsic_size: Some(CanvasSize {
+                width: 1920,
+                height: 1080,
+            }),
+            frame_rate: Some(opencut_contracts::FrameRate {
+                numerator: 30_000,
+                denominator: 1001,
+            }),
+            rotation_degrees: None,
+            audio: AudioPresence::Absent {},
+        },
+        license: None,
+    };
+    assert!(!needs_automatic_preparation(&asset));
+    let mut portrait = asset.clone();
+    portrait.metadata.intrinsic_size = Some(CanvasSize {
+        width: 1080,
+        height: 1920,
+    });
+    assert!(!needs_automatic_preparation(&portrait));
+    let mut cases = Vec::new();
+    let mut value = asset.clone();
+    value.metadata.intrinsic_size = Some(CanvasSize {
+        width: 3840,
+        height: 2160,
+    });
+    cases.push(value);
+    let mut value = asset.clone();
+    value.metadata.frame_rate = Some(opencut_contracts::FrameRate {
+        numerator: 60,
+        denominator: 1,
+    });
+    cases.push(value);
+    let mut value = asset.clone();
+    value.version.size = 20_000_001;
+    cases.push(value);
+    let mut value = asset.clone();
+    value.metadata.frame_rate = None;
+    cases.push(value);
+    let mut value = asset.clone();
+    value.metadata.intrinsic_size = None;
+    cases.push(value);
+    let mut value = asset.clone();
+    value.duration = None;
+    cases.push(value);
+    for ticks in ["0", "-1", "invalid"] {
+        let mut value = asset.clone();
+        value.duration.as_mut().unwrap().ticks = ticks.into();
+        cases.push(value);
+    }
+    let mut value = asset.clone();
+    value.duration.as_mut().unwrap().timebase = 0;
+    cases.push(value);
+    let mut value = asset.clone();
+    value.version.size = u64::MAX;
+    cases.push(value);
+    for value in cases {
+        assert!(needs_automatic_preparation(&value), "{value:?}");
+    }
+}
+
 fn result() -> SourcePreviewResult {
     let runtime = SourcePreviewRuntimeIdentity {
         host_sha256: "a".repeat(64),

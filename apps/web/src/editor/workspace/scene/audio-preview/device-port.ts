@@ -16,6 +16,9 @@ export type DeviceReceipt = {
   underflowEvents?: number;
   underflowAt?: string;
   underflowFrames?: string;
+  pictureWaitEvents?: number;
+  pictureWaitFrames?: string;
+  pictureWaitMaxFrames?: string;
 };
 /** Single owner of the bounded transfer slots and final processor receipt. */
 export class PreviewDevicePort {

@@ -1626,7 +1626,6 @@ mod tests {
             .and_then(|_| encoder.finish_frame())
             .and_then(|_| encoder.finish(&admission).map(|_| ()));
         assert!(failure.is_err());
-        drop(encoder);
         let pids = admission.0.lock().unwrap();
         assert_eq!(pids.len(), 2);
         assert!(

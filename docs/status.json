@@ -12964,6 +12964,21 @@
     "local_evidence_directory": "/private/tmp/opencut-local-upgrade-20261101/live-stutter",
     "preview_fix_implemented": false,
     "deployment_changed": false,
-    "complete_delivery": false
+    "complete_delivery": false,
+    "candidate": {
+      "implementation": "Automatic source preparation keeps known compact HD sources (<=1080p in either orientation, <=30fps, <=20Mbit/s) on original native decoding; explicit asset preparation and heavy/unknown sources retain proxy preparation. Preview raster remains540p. Added separate picture-credit audio silence counters.",
+      "status": "source_changes_unbuilt_behavior_pending",
+      "web_unit_tests": {
+        "files": 3,
+        "passed": 18
+      },
+      "comparison": {
+        "scope": "Same actual scene at26s, serial public SDK requests; different output rasters, diagnostic not controlled same-raster acceptance",
+        "prepared540_header_ms": 51.61681539189191,
+        "original720_header_ms": 41.94970299999999
+      },
+      "manual_acceptance": "failed_on_deployed_candidate",
+      "service_replaced": false
+    }
   }
 }

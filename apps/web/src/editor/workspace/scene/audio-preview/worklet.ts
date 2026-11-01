@@ -32,6 +32,10 @@ class PreviewOutputProcessor extends AudioWorkletProcessor {
   private underflowEvents = 0;
   private underflowAt: string[] = [];
   private underflowFrames = 0n;
+  private pictureWaitEvents = 0;
+  private pictureWaitFrames = 0n;
+  private pictureWaitRunFrames = 0n;
+  private pictureWaitMaxFrames = 0n;
   private firstContentFrame:number|null=null;
   private clockPort:MessagePort|null=null;
   private clockToken:string|null=null;
@@ -42,7 +46,8 @@ class PreviewOutputProcessor extends AudioWorkletProcessor {
     const next=BigInt(limit.frames);if(this.pictureLimit===undefined||next>this.pictureLimit)this.pictureLimit=next;
   }
   private reportClock(receipt:object) {
-    const observation={...receipt,repeatedQuanta:this.repeatedQuanta,underflowAt:this.underflowAt.join(","),elapsedRenderFrames:String(this.firstContentFrame===null?0:Math.max(0,this.contentEndFrame-this.firstContentFrame))};
+    const observation={...receipt,repeatedQuanta:this.repeatedQuanta,underflowAt:this.underflowAt.join(","),elapsedRenderFrames:String(this.firstContentFrame===null?0:Math.max(0,this.contentEndFrame-this.firstContentFrame)),
+      pictureWaitEvents:this.pictureWaitEvents,pictureWaitFrames:String(this.pictureWaitFrames),pictureWaitMaxFrames:String(this.pictureWaitMaxFrames)};
     this.port.postMessage(observation);
     if(this.token===this.clockToken)this.clockPort?.postMessage(observation);
     if(this.token===this.presentationClockToken)this.presentationClockPort?.postMessage(observation);
@@ -81,6 +86,10 @@ class PreviewOutputProcessor extends AudioWorkletProcessor {
         this.underflowEvents = 0;
         this.underflowAt = [];
         this.underflowFrames = 0n;
+        this.pictureWaitEvents = 0;
+        this.pictureWaitFrames = 0n;
+        this.pictureWaitRunFrames = 0n;
+        this.pictureWaitMaxFrames = 0n;
         if (this.token !== this.pictureToken) this.pictureLimit = undefined;
       } else if (data.kind === "stop") {
         this.playing = false;
@@ -134,6 +143,7 @@ class PreviewOutputProcessor extends AudioWorkletProcessor {
   }
   private render(output:Float32Array[]) {
     if (!this.playing || !this.primed) {
+      this.pictureWaitRunFrames = 0n;
       output[0].fill(0);
       output[1].fill(0);
       if (this.playing) {
@@ -161,6 +171,17 @@ class PreviewOutputProcessor extends AudioWorkletProcessor {
     }
     this.completedBlocks = receipt.completedBlocks;
     const pictureBlocked = this.pictureLimit !== undefined && BigInt(receipt.consumedFrames) >= this.pictureLimit && this.queue.freeBlocks < DEVICE_BUFFER_BLOCKS;
+    // Buffered PCM can still be silenced by picture credit. Count that gap
+    // separately from FIFO starvation, excluding startup and the short EOF pad.
+    const pictureWait = pictureBlocked && this.firstContentFrame !== null
+      ? BigInt(output[0].length - receipt.copied) : 0n;
+    if (pictureWait > 0n) {
+      if (this.pictureWaitRunFrames === 0n) this.pictureWaitEvents++;
+      this.pictureWaitFrames += pictureWait;
+      this.pictureWaitRunFrames += pictureWait;
+      if (this.pictureWaitRunFrames > this.pictureWaitMaxFrames)
+        this.pictureWaitMaxFrames = this.pictureWaitRunFrames;
+    } else this.pictureWaitRunFrames = 0n;
     const phase = receipt.copied < output[0].length ? this.ended && !pictureBlocked ? "ended" : "buffering" : "playing";
     this.lastPhase = phase;
     // Recover from a real FIFO underrun with the same bounded startup margin.

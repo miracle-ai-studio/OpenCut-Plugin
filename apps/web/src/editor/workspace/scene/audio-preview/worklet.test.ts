@@ -76,13 +76,15 @@ it("stalls at picture credit without consuming PCM and resumes the exact samples
   send({ kind: "block", token: "first", pcm: new Float32Array([.1,.2,.3,.4]).buffer });
   send({ kind: "end", token: "first" });
   quantum(); expect(left[0]).toBeCloseTo(.1); expect(left[1]).toBe(0);
-  expect(p.port.postMessage).toHaveBeenLastCalledWith(expect.objectContaining({ consumedFrames: "1", copied: 1, phase: "buffering", elapsedRenderFrames:"1" }));
+  expect(p.port.postMessage).toHaveBeenLastCalledWith(expect.objectContaining({ consumedFrames: "1", copied: 1, phase: "buffering", elapsedRenderFrames:"1",pictureWaitEvents:1,pictureWaitFrames:"1",pictureWaitMaxFrames:"1",underflowEvents:0 }));
   limit("old", "100"); quantum(); expect([...left]).toEqual([0,0]);
-  expect(p.port.postMessage).toHaveBeenLastCalledWith(expect.objectContaining({ consumedFrames: "1", copied: 0, completedBlocks: 0 }));
+  expect(p.port.postMessage).toHaveBeenLastCalledWith(expect.objectContaining({ consumedFrames: "1", copied: 0, completedBlocks: 0,pictureWaitEvents:1,pictureWaitFrames:"3",pictureWaitMaxFrames:"3" }));
   limit("first", "2"); quantum(); expect(left[0]).toBeCloseTo(.3); expect(right[0]).toBeCloseTo(.4);
-  expect(p.port.postMessage).toHaveBeenLastCalledWith(expect.objectContaining({ consumedFrames: "2", copied: 1, completedBlocks: 1, elapsedRenderFrames:"5" }));
+  expect(p.port.postMessage).toHaveBeenLastCalledWith(expect.objectContaining({ consumedFrames: "2", copied: 1, completedBlocks: 1, elapsedRenderFrames:"5",pictureWaitEvents:1,pictureWaitFrames:"3",pictureWaitMaxFrames:"3",underflowEvents:0 }));
   send({ kind: "stop" });
   expect(p.port.postMessage).toHaveBeenLastCalledWith({ kind: "stopped", token: "first", consumedFrames: "2" });
+  send({kind:"reset",token:"next"}); quantum();
+  expect(p.port.postMessage).toHaveBeenLastCalledWith(expect.objectContaining({pictureWaitEvents:0,pictureWaitFrames:"0",pictureWaitMaxFrames:"0"}));
 });
 
 it("reports the identical sample interval directly to the clock without giving it device submission ownership",async()=>{

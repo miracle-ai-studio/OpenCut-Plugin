@@ -21,7 +21,8 @@ export type AudioOutputProgress = {
 };
 /** Native-mastered PCM presentation; the worker owns the data-plane port. */
 export class PreviewAudioOutput {
-  clockDiagnostics(){return {...this.clock.diagnostics(),deviceUnderflowAt:this.latestReceipt?.underflowAt??"",deviceElapsedFrames:this.latestReceipt?.elapsedRenderFrames??"",deviceCopiedFrames:this.latestReceipt?.consumedFrames??"",...this.pump?.diagnostics?.()};}
+  clockDiagnostics(){return {...this.clock.diagnostics(),deviceUnderflowAt:this.latestReceipt?.underflowAt??"",deviceElapsedFrames:this.latestReceipt?.elapsedRenderFrames??"",deviceCopiedFrames:this.latestReceipt?.consumedFrames??"",
+    devicePictureWaitEvents:String(this.latestReceipt?.pictureWaitEvents??""),devicePictureWaitFrames:this.latestReceipt?.pictureWaitFrames??"",devicePictureWaitMaxFrames:this.latestReceipt?.pictureWaitMaxFrames??"",...this.pump?.diagnostics?.()};}
   readonly ready: Promise<void>;
   readonly sampleRate: number;
   private context: AudioContext;

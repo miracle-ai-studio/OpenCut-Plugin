@@ -11,6 +11,8 @@ target/release/opencut --json system schema
 target/release/opencut --json system domains --domain edit --schemas
 ```
 
+可配置 MP4 导出的执行结果在 `encoder.backend` 中记录实际选择，包含 `ffmpeg_h264_videotoolbox`。macOS 在真实素材帧写入前，使用同一任务准入、实际尺寸/帧率和编码参数执行一次有界合成帧能力探测；正常不支持时明确选定软件编码，并将 `hardware_probe.available=false`、退出码、受限诊断哈希及操作系统身份保留在结果中。取消、期限、资源错误直接失败；真实编码失败不再切换后端重试。硬件编码明确禁止软件回退。存储结果核验后端/探测结论/平台一致性，历史省略 `hardware_probe` 的软件结果保持原形可读，不能据此伪称硬件执行。该字段不暴露本地路径，不增加请求入口或界面切换项；当前构建和部署状态见 `status.md`。
+
 CLI 通用入口为 `call <operation> --input <request.json>` 和 `domain <domain> <action> --input <request.json>`。HTTP 暴露相同业务语义，Agent 使用独立 Bearer 凭证。标准输入输出 MCP 使用 `mcp serve`；独立 Worker 使用同一数据库，或由连接的 `--with-worker` 管理。实际选项以 `--help` 为准。
 
 `opencut_project_create/list/inspect` 管理工程，`opencut_edit_plan/apply` 处理原子编辑。读取固定 revision 后构造计划，提交携带 expected revision 与稳定幂等键。冲突或未知结果不能触发隐式重写请求、换 revision 或另一条后备写入口。

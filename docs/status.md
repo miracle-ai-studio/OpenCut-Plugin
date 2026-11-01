@@ -8,7 +8,9 @@
 
 这证明当前机器的硬件编码路径可用且值得接入，不代表已接入产品。选择策略须在真实帧写入之前完成一次有界、受准入约束的能力确认，记录实际后端和系统事实；真实编码失败必须返回失败，不能重启另一套编码隐藏问题。历史软件输出证明仍应可读。公开结果合同、验证器及生成消费者需要一起更新，随后只构建一次，再串行运行受影响的原生导出、独立画面/音频和取消验证；通过后才替换本地服务。保持现有预览、分辨率选项、码率、颜色和资源/发布围栏。
 
-检查点 `/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/hardware-encode/checkpoint.json`，SHA-256 `3fe2542a49fb5359e12807ae8e460e1460a1a483edf605e688172f7f3559cc6a`，16 项文件，保留输入、输出、独立像素及实际参数。实验参数依据已安装编码器帮助，并核对 [FFmpeg VideoToolbox 实现](https://www.ffmpeg.org/doxygen/trunk/videotoolboxenc_8c.html) 与 [Apple 硬件编码要求](https://developer.apple.com/documentation/videotoolbox/kvtvideoencoderspecification_requirehardwareacceleratedvideoencoder)。当前产品和两处已部署服务未因此变更。
+检查点 `/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/hardware-encode/checkpoint.json`，SHA-256 `3fe2542a49fb5359e12807ae8e460e1460a1a483edf605e688172f7f3559cc6a`，16 项文件，保留输入、输出、独立像素及实际参数。实验参数依据已安装编码器帮助，并核对 [FFmpeg VideoToolbox 实现](https://www.ffmpeg.org/doxygen/trunk/videotoolboxenc_8c.html) 与 [Apple 硬件编码要求](https://developer.apple.com/documentation/videotoolbox/kvtvideoencoderspecification_requirehardwareacceleratedvideoencoder)。该组件实验未变更产品或部署。
+
+接入代码已实现但尚未构建和部署：在既有原生编码适配器内选择后端，公共结果记录能力观察，应用验证后端、退出码和平台事实，并保留旧结果的省略字段。没有新模块、依赖、写入口或架构例外，14 项架构单测及架构/合同边界检查通过。取消、期限和真实编码失败不重试的回归已加入，尚待统一编译运行；实际 FFmpeg 参数预检中 4K 合成单帧能力观察约 0.486 秒成功，2×2 返回不支持，用于确认预先选择软件的兼容边界。生成合同、原生行为及新候选部署仍待完成，两处用户服务继续使用之前已验证的 `05074e85` / `0d6b4e800029`。
 
 ## 真实连续 42.52 秒 4K 素材（2026-11-01）
 

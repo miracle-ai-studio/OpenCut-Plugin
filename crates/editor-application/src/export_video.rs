@@ -471,7 +471,9 @@ pub fn validate_stored_result(
             0
         }
         Some(VideoEncoderBackend::WebcodecsAvc) => return Err(bad()),
-        Some(VideoEncoderBackend::FfmpegLibx264) if format != ExportFormat::Mp4 => {
+        Some(VideoEncoderBackend::FfmpegLibx264 | VideoEncoderBackend::FfmpegH264Videotoolbox)
+            if format != ExportFormat::Mp4 =>
+        {
             return Err(bad());
         }
         Some(VideoEncoderBackend::FfmpegLibvpxVp9) if format != ExportFormat::Webm => {
@@ -479,6 +481,43 @@ pub fn validate_stored_result(
         }
         _ => rgba,
     };
+    if let Some(probe) = &enc.hardware_probe {
+        let platform_matches = match &v.runtime {
+            opencut_job_contracts::media_frame::VisualRuntimeIdentity::Native(native) => {
+                native.platform.as_ref().is_some_and(|platform| {
+                    platform.os == probe.system.os
+                        && platform.architecture == probe.system.architecture
+                        && platform.kernel_release == probe.system.kernel_release
+                        && platform.system_build == probe.system.system_build
+                })
+            }
+            _ => false,
+        };
+        let expected_backend = if probe.available {
+            VideoEncoderBackend::FfmpegH264Videotoolbox
+        } else {
+            VideoEncoderBackend::FfmpegLibx264
+        };
+        if format != ExportFormat::Mp4
+            || enc.backend != Some(expected_backend)
+            || !(0..=255).contains(&probe.exit_code)
+            || probe.available != (probe.exit_code == 0)
+            || !valid_hash(&probe.diagnostics_sha256)
+            || probe.system.os != "macos"
+            || [
+                &probe.system.architecture,
+                &probe.system.kernel_release,
+                &probe.system.system_build,
+            ]
+            .into_iter()
+            .any(|s| !valid_id(s))
+            || !platform_matches
+        {
+            return Err(bad());
+        }
+    } else if enc.backend == Some(VideoEncoderBackend::FfmpegH264Videotoolbox) {
+        return Err(bad());
+    }
     let duration = opencut_time::RationalTime::try_from(&plan.identity.video_duration)?;
     let seconds = duration.ticks() as f64 / f64::from(duration.timebase());
     // WebM timestamps have millisecond precision and include Opus codec delay.
@@ -666,6 +705,7 @@ browser_version: "test-browser".into(),
                     audio: None,
                     encoder: ExportVideoEncoderSummary {
                         backend:None,
+                        hardware_probe:None,
                         ffmpeg_sha256: hash.clone(),
                         ffprobe_sha256: hash.clone(),
                         video_codec: "vp9".into(),
@@ -769,6 +809,97 @@ browser_version: "test-browser".into(),
             .observed_video_duration_seconds = f64::NAN;
         assert!(validate_stored_result(&input, &changed).is_err());
     }
+    #[test]
+    fn hardware_encoder_proof_binds_availability_backend_and_observed_system() {
+        use opencut_contracts::renderer_identity::*;
+        use opencut_job_contracts::media_frame::VisualRuntimeIdentity;
+        let (mut input, mut stored) = stored_export_fixture();
+        let original = serde_json::to_vec(&stored).unwrap();
+        assert!(
+            !String::from_utf8(original.clone())
+                .unwrap()
+                .contains("hardware_probe")
+        );
+        let historical: StoredExportVideo = serde_json::from_slice(&original).unwrap();
+        assert!(validate_stored_result(&input, &historical).is_ok());
+        input.options.format = ExportFormat::Mp4;
+        let plan = prepare(&input).unwrap();
+        stored.public.identity = public_identity(&input, &plan);
+        stored.public.render_input_sha256 = render_input_sha256(&input).unwrap();
+        stored.public.artifact.mime_type = "video/mp4".into();
+        stored.artifact.mime_type = "video/mp4".into();
+        stored.artifact.path = "/private/attempt/video.mp4".into();
+        let hash = "d".repeat(64);
+        let system = NativeSystemIdentity {
+            os: "macos".into(),
+            architecture: "x86_64".into(),
+            kernel_release: "test kernel".into(),
+            system_build: "test build".into(),
+        };
+        stored.public.execution.visual.runtime =
+            VisualRuntimeIdentity::Native(NativeVisualIdentity {
+                renderer_sha256: hash.clone(),
+                shader_sha256: hash.clone(),
+                decoder_libraries: ["avcodec", "avformat", "avutil", "swresample", "swscale"]
+                    .into_iter()
+                    .map(|name| NativeLibraryIdentity {
+                        name: name.into(),
+                        version: "test".into(),
+                        configuration_sha256: hash.clone(),
+                        binary_sha256: hash.clone(),
+                    })
+                    .collect(),
+                wgpu_version: "30.0.1".into(),
+                rasterizer: crate::classic_visual::NATIVE_RASTERIZER.into(),
+                platform: Some(NativePlatformIdentity {
+                    os: system.os.clone(),
+                    architecture: system.architecture.clone(),
+                    kernel_release: system.kernel_release.clone(),
+                    system_build: system.system_build.clone(),
+                    font_backend: "coretext".into(),
+                }),
+                gpu_backend: NativeGraphicsApi::Metal,
+                gpu_device: "test device".into(),
+                gpu_driver: "test driver".into(),
+                gpu_vendor_id: 1,
+                gpu_device_id: 1,
+                texture_format: "rgba8unorm".into(),
+                decoder_profile: crate::classic_visual::NATIVE_DECODER_PROFILE.into(),
+            });
+        let encoder = &mut stored.public.execution.encoder;
+        encoder.backend = Some(VideoEncoderBackend::FfmpegH264Videotoolbox);
+        encoder.video_codec = "h264".into();
+        encoder.rates =
+            classic_export_rates(&input.options, plan.identity.width, plan.identity.height)
+                .unwrap();
+        encoder.hardware_probe = Some(ExportVideoHardwareProbe {
+            available: true,
+            exit_code: 0,
+            diagnostics_sha256: hash,
+            system,
+        });
+        assert!(validate_stored_result(&input, &stored).is_ok());
+        for change in 0..4 {
+            let mut invalid = stored.clone();
+            let e = &mut invalid.public.execution.encoder;
+            match change {
+                0 => e.hardware_probe = None,
+                1 => e.hardware_probe.as_mut().unwrap().available = false,
+                2 => {
+                    e.hardware_probe.as_mut().unwrap().system.system_build = "another build".into()
+                }
+                _ => e.backend = Some(VideoEncoderBackend::FfmpegLibx264),
+            }
+            assert!(validate_stored_result(&input, &invalid).is_err());
+        }
+        let e = &mut stored.public.execution.encoder;
+        e.backend = Some(VideoEncoderBackend::FfmpegLibx264);
+        e.hardware_probe.as_mut().unwrap().available = false;
+        e.hardware_probe.as_mut().unwrap().exit_code = 1;
+        assert!(validate_stored_result(&input, &stored).is_ok());
+        stored.public.execution.encoder.hardware_probe = None;
+        assert!(validate_stored_result(&input, &stored).is_ok());
+    }
 }
 
 /// Public mapping is derived from the fixed frame grid, never from encoder floats.
@@ -824,4 +955,5 @@ pub fn range_result(
         mapping,
         output,
     })
+
 }

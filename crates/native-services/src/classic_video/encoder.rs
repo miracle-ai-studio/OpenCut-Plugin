@@ -2,6 +2,7 @@ use opencut_contracts::EditorError;
 use opencut_editor_application::classic_visual::ClassicVisualRgbaSink;
 use opencut_editor_application::media_video_jobs::{MAX_VIDEO_FRAMES, VideoExecutionLimit};
 use opencut_media::{OutputAdmission, OutputProcess};
+use opencut_editor_application::export_video::{ExportVideoHardwareProbe, VideoEncoderBackend};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 use std::{
@@ -128,6 +129,7 @@ pub struct ClassicVideoEncoderConfig {
     pub execution_limit: VideoExecutionLimit,
 }
 pub struct ClassicVideoEncoderObservation {
+    pub hardware_probe: Option<ExportVideoHardwareProbe>,
     pub backend: opencut_editor_application::export_video::VideoEncoderBackend,
     pub ffmpeg_sha256: String,
     pub ffprobe_sha256: String,
@@ -155,6 +157,8 @@ pub struct ClassicVideoEncoder<F: FnMut(bool) -> Result<(), EditorError>> {
     offset: u64,
     export_options: Option<opencut_contracts::export_video::ExportVideoOptions>,
     source_preview: bool,
+    backend: VideoEncoderBackend,
+    hardware_probe: Option<ExportVideoHardwareProbe>,
 }
 impl<F: FnMut(bool) -> Result<(), EditorError>> ClassicVideoEncoder<F> {
     #[cfg(unix)]
@@ -208,6 +212,31 @@ impl<F: FnMut(bool) -> Result<(), EditorError>> ClassicVideoEncoder<F> {
         }
         let ffmpeg_hash = hash(&config.ffmpeg, &mut checkpoint)?;
         let ffprobe_hash = hash(&config.ffprobe, &mut checkpoint)?;
+        let started = Instant::now();
+        let default_backend = match export_options.as_ref().map(|v| v.format) {
+            Some(opencut_contracts::export_video::ExportFormat::Webm) => {
+                VideoEncoderBackend::FfmpegLibvpxVp9
+            }
+            _ => VideoEncoderBackend::FfmpegLibx264,
+        };
+        #[cfg(target_os = "macos")]
+        let (backend, hardware_probe) = if let Some(options) = export_options
+            .as_ref()
+            .filter(|v| v.format == opencut_contracts::export_video::ExportFormat::Mp4)
+        {
+            let observed =
+                probe_hardware_encoder(&config, options, admission, started, &mut checkpoint)?;
+            let backend = if observed.available {
+                VideoEncoderBackend::FfmpegH264Videotoolbox
+            } else {
+                default_backend
+            };
+            (backend, Some(observed))
+        } else {
+            (default_backend, None)
+        };
+        #[cfg(not(target_os = "macos"))]
+        let (backend, hardware_probe) = (default_backend, None);
         let mut command = Command::new(&config.ffmpeg);
         if source_preview {
             command
@@ -262,7 +291,7 @@ impl<F: FnMut(bool) -> Result<(), EditorError>> ClassicVideoEncoder<F> {
                 ])
                 .arg(&config.output);
         } else if let Some(options) = &export_options {
-            crate::export_video::append_arguments(&mut command, &config, options)?;
+            crate::export_video::append_arguments(&mut command, &config, options, backend)?;
         } else {
             command
                 .args([
@@ -326,7 +355,6 @@ impl<F: FnMut(bool) -> Result<(), EditorError>> ClassicVideoEncoder<F> {
             .stdin(Stdio::piped())
             .stdout(Stdio::null())
             .stderr(Stdio::piped());
-        let started = Instant::now();
         let mut process = admission
             .spawn(command, Some(&config.output))
             .map_err(media)?;
@@ -357,6 +385,8 @@ impl<F: FnMut(bool) -> Result<(), EditorError>> ClassicVideoEncoder<F> {
             offset: 0,
             export_options,
             source_preview,
+            backend,
+            hardware_probe,
         })
     }
     fn check(&mut self) -> Result<(), EditorError> {
@@ -562,14 +592,8 @@ impl<F: FnMut(bool) -> Result<(), EditorError>> ClassicVideoEncoder<F> {
         if let Some(options) = &self.export_options {
             let observed = crate::export_video::verify_probe(&probe, &self.config, options)?;
             return Ok(ClassicVideoEncoderObservation {
-                backend: match options.format {
-                    opencut_contracts::export_video::ExportFormat::Mp4 => {
-                        opencut_editor_application::export_video::VideoEncoderBackend::FfmpegLibx264
-                    }
-                    opencut_contracts::export_video::ExportFormat::Webm => {
-                        opencut_editor_application::export_video::VideoEncoderBackend::FfmpegLibvpxVp9
-                    }
-                },
+                backend: self.backend,
+                hardware_probe: self.hardware_probe.clone(),
                 ffmpeg_sha256: self.ffmpeg_hash.clone(),
                 ffprobe_sha256: self.ffprobe_hash.clone(),
                 video_frames: observed.frames,
@@ -620,6 +644,7 @@ impl<F: FnMut(bool) -> Result<(), EditorError>> ClassicVideoEncoder<F> {
         }
         Ok(ClassicVideoEncoderObservation {
             backend: opencut_editor_application::export_video::VideoEncoderBackend::FfmpegLibx264,
+            hardware_probe: None,
             ffmpeg_sha256: self.ffmpeg_hash.clone(),
             ffprobe_sha256: self.ffprobe_hash.clone(),
             video_frames: count,
@@ -697,6 +722,82 @@ impl<F: FnMut(bool) -> Result<(), EditorError>> Drop for ClassicVideoEncoder<F> 
         }
     }
 }
+#[cfg(target_os = "macos")]
+fn probe_hardware_encoder(
+    config: &ClassicVideoEncoderConfig,
+    options: &opencut_contracts::export_video::ExportVideoOptions,
+    admission: &dyn OutputAdmission,
+    encoder_started: Instant,
+    checkpoint: &mut dyn FnMut(bool) -> Result<(), EditorError>,
+) -> Result<ExportVideoHardwareProbe, EditorError> {
+    let system = crate::native_process::system_identity()?;
+    let mut command = Command::new(&config.ffmpeg);
+    crate::export_video::append_hardware_probe_arguments(&mut command, config, options)?;
+    command
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::piped());
+    checkpoint(false)?;
+    let mut process = admission.spawn(command, None).map_err(media)?;
+    let stderr = process
+        .child()
+        .stderr
+        .take()
+        .ok_or_else(|| err("Missing hardware probe diagnostics"))?;
+    let reader = thread::spawn(move || bounded_read(stderr, 16384));
+    let start = Instant::now();
+    let mut last_rss = start;
+    let status = (|| {
+        loop {
+            checkpoint(false)?;
+            if start.elapsed()
+                >= Duration::from_millis(config.execution_limit.milliseconds().min(5000))
+                || (!config.execution_limit.renews_on_progress()
+                    && encoder_started.elapsed()
+                        >= Duration::from_millis(config.execution_limit.milliseconds()))
+            {
+                return Err(EditorError::new(
+                    "VIDEO_TIME_LIMIT",
+                    "Hardware encoder capability exceeded captured deadline",
+                ));
+            }
+            if last_rss.elapsed() >= Duration::from_millis(100) {
+                last_rss = Instant::now();
+                if resident_bytes(process.child().id())?
+                    .is_some_and(|rss| rss > config.max_rss_bytes)
+                {
+                    return Err(EditorError::new(
+                        "VIDEO_BUDGET_EXCEEDED",
+                        "Hardware encoder capability exceeded captured RSS admission",
+                    ));
+                }
+            }
+            if let Some(status) = process.child().try_wait().map_err(io)? {
+                return Ok(status);
+            }
+            thread::sleep(Duration::from_millis(10));
+        }
+    })();
+    // The same admitted lifetime kills/reaps a cancelled or over-budget probe.
+    // Such errors propagate; only a normal exit supplies an availability fact.
+    drop(process);
+    let diagnostics = reader
+        .join()
+        .map_err(|_| err("Hardware probe diagnostic reader failed"));
+    let status = status?;
+    let diagnostics = diagnostics?.map_err(io)?;
+    let exit_code = status
+        .code()
+        .ok_or_else(|| err("Hardware encoder capability process was terminated"))?;
+    checkpoint(false)?;
+    Ok(ExportVideoHardwareProbe {
+        available: status.success(),
+        exit_code,
+        diagnostics_sha256: format!("{:x}", Sha256::digest(&diagnostics)),
+        system,
+    })
+}
+
 fn bounded_read(mut reader: impl Read, max: usize) -> std::io::Result<Vec<u8>> {
     let mut retained = Vec::new();
     let mut chunk = [0u8; 4096];
@@ -1427,5 +1528,110 @@ mod tests {
         drop(encoder);
         assert!(start.elapsed() < Duration::from_secs(2));
         assert_eq!(unsafe { libc::kill(pid as i32, 0) }, -1);
+    }
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn hardware_probe_preserves_cancellation_deadline_and_no_real_encode_retry() {
+        use std::os::unix::fs::PermissionsExt;
+        #[derive(Debug, Default)]
+        struct Captured(std::sync::Mutex<Vec<u32>>);
+        impl OutputAdmission for Captured {
+            fn spawn(
+                &self,
+                mut command: Command,
+                _: Option<&Path>,
+            ) -> opencut_media::MediaResult<Box<dyn OutputProcess>> {
+                let child = command.spawn()?;
+                self.0.lock().unwrap().push(child.id());
+                Ok(Box::new(Process(child)))
+            }
+            fn write(&self, _: &Path, _: &[u8]) -> opencut_media::MediaResult<()> {
+                Ok(())
+            }
+        }
+        let directory = tempfile::tempdir().unwrap();
+        let executable = directory.path().join("controlled-encoder");
+        let install = |script: &str| {
+            std::fs::write(&executable, script).unwrap();
+            std::fs::set_permissions(&executable, std::fs::Permissions::from_mode(0o700)).unwrap();
+        };
+        let mut config = ClassicVideoEncoderConfig {
+            ffmpeg: executable.clone(),
+            ffprobe: "/bin/sh".into(),
+            output: directory.path().join("video.mp4"),
+            audio: directory.path().join("audio.wav"),
+            width: 2,
+            height: 2,
+            fps_numerator: 25,
+            fps_denominator: 1,
+            frame_count: 1,
+            max_output_bytes: 1 << 20,
+            max_rss_bytes: 1 << 26,
+            execution_limit: VideoExecutionLimit::Total { milliseconds: 5000 },
+        };
+        let options = opencut_contracts::export_video::ExportVideoOptions {
+            runtime_fingerprint: None,
+            resolution: opencut_contracts::export_video::RasterResolution::Source,
+            format: opencut_contracts::export_video::ExportFormat::Mp4,
+            quality: opencut_contracts::export_video::ExportQuality::High,
+            include_audio: false,
+        };
+        install("#!/bin/sh\nexec /bin/sleep 30\n");
+        for cancelled in [true, false] {
+            config.execution_limit = VideoExecutionLimit::Progress {
+                milliseconds: if cancelled { 5000 } else { 30 },
+            };
+            let admission = Captured::default();
+            let start = Instant::now();
+            let result = probe_hardware_encoder(&config, &options, &admission, start, &mut |_| {
+                if cancelled && start.elapsed() >= Duration::from_millis(30) {
+                    Err(EditorError::new("JOB_CANCELLED", "Captured cancellation"))
+                } else {
+                    Ok(())
+                }
+            });
+            assert_eq!(
+                result.unwrap_err().code,
+                if cancelled {
+                    "JOB_CANCELLED"
+                } else {
+                    "VIDEO_TIME_LIMIT"
+                }
+            );
+            assert!(start.elapsed() < Duration::from_secs(2));
+            let pids = admission.0.lock().unwrap();
+            assert_eq!(pids.len(), 1);
+            assert_eq!(unsafe { libc::kill(pids[0] as i32, 0) }, -1);
+        }
+        config.execution_limit = VideoExecutionLimit::Total { milliseconds: 5000 };
+        install("#!/bin/sh\nexit 1\n");
+        let admission = Captured::default();
+        let unavailable =
+            probe_hardware_encoder(&config, &options, &admission, Instant::now(), &mut |_| {
+                Ok(())
+            })
+            .unwrap();
+        assert!(!unavailable.available);
+        assert_eq!(unavailable.exit_code, 1);
+        assert_eq!(admission.0.lock().unwrap().len(), 1);
+        // Capability succeeds, actual encoding fails. Only those two children
+        // may exist: no x264 retry and no publication probe after that failure.
+        install("#!/bin/sh\ncase \" $* \" in *' lavfi '*) exit 0;; *) exit 42;; esac\n");
+        let admission = Captured::default();
+        let mut encoder =
+            ClassicVideoEncoder::start_export(config, options, &admission, |_| Ok(())).unwrap();
+        assert_eq!(encoder.backend, VideoEncoderBackend::FfmpegH264Videotoolbox);
+        let failure = encoder
+            .chunk(0, &[0, 0, 0, 255].repeat(4))
+            .and_then(|_| encoder.finish_frame())
+            .and_then(|_| encoder.finish(&admission).map(|_| ()));
+        assert!(failure.is_err());
+        drop(encoder);
+        let pids = admission.0.lock().unwrap();
+        assert_eq!(pids.len(), 2);
+        assert!(
+            pids.iter()
+                .all(|pid| unsafe { libc::kill(*pid as i32, 0) } == -1)
+        );
     }
 }

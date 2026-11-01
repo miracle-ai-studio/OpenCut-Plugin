@@ -12888,5 +12888,32 @@
       "Keep original source, color conversion, quality rates, output limits, cancellation and publication fences; source FFV1 preview path stays separate.",
       "Integrate all affected consumers, build once, generate from that binary, then serial native export/pixel/audio/cancellation acceptance before local replacement."
     ]
+  },
+  "hardware_encode_implementation": {
+    "status": "implemented_build_and_behavior_pending",
+    "diagnosis_commit": "85ab817d",
+    "public_contract": "Additive VideoEncoderBackend hardware variant and optional ExportVideoHardwareProbe; historical software proof omission retained.",
+    "selection": "One admitted synthetic-frame observation using actual raster/rate/color/quality, at most five seconds and no more than captured deadline/RSS. Normal unsupported result selects software before project frames and is explicit in the stored proof. Cancellation/time/resource failures abort. No real-encode retry.",
+    "boundary": "Existing native-services encoder adapter and application proof validation; no new module, dependency, write entrypoint or exception edge. Host transports the observed typed evidence; domain/time/composition and worker protocol unchanged.",
+    "prebuild_audit": [
+      "existing DTO result export and job-view registry/domain/host routes remain shared",
+      "same admission, cancellation, error and publication policy",
+      "generated SDK/schema consumers require regeneration against the one integrated binary; no Web backend branch consumes the new result field"
+    ],
+    "architecture_tests": 14,
+    "architecture_check": "passed",
+    "contract_boundaries": "passed",
+    "probe_recipe": {
+      "four_k_seconds": 0.48588816192932427,
+      "four_k_exit_code": 0,
+      "two_by_two_exit_code": 187,
+      "scope": "installed FFmpeg argument recipe only, not newly compiled native behavior"
+    },
+    "build": "pending",
+    "generated_contracts": "pending",
+    "scoped_behavior": "pending",
+    "manual_acceptance": "pending",
+    "deployment": "previous 05074e85 / 0d6b4e800029 remains running",
+    "complete_delivery": false
   }
 }

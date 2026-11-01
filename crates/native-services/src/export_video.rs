@@ -3,6 +3,7 @@
 use crate::classic_video::ClassicVideoEncoderConfig;
 use opencut_contracts::{EditorError, export_video::*};
 use serde_json::Value;
+use opencut_editor_application::export_video::VideoEncoderBackend;
 use std::process::Command;
 fn invalid(message: &str) -> EditorError {
     EditorError::new("VIDEO_ENCODER_FAILED", message)
@@ -53,6 +54,7 @@ pub(crate) fn append_arguments(
     command: &mut Command,
     config: &ClassicVideoEncoderConfig,
     options: &ExportVideoOptions,
+    backend: VideoEncoderBackend,
 ) -> Result<(), EditorError> {
     let rates = classic_export_rates(options, config.width, config.height)
         .ok_or_else(|| invalid("Invalid configurable encoder dimensions"))?;
@@ -81,35 +83,9 @@ pub(crate) fn append_arguments(
     if options.include_audio {
         command.arg("-i").arg(&config.audio);
     }
-    command
-        .args([
-            "-map",
-            "0:v:0",
-            "-c:v",
-            match options.format {
-                ExportFormat::Mp4 => "libx264",
-                ExportFormat::Webm => "libvpx-vp9",
-            },
-            "-pix_fmt",
-            "yuv420p",
-            "-b:v",
-        ])
-        .arg(rates.video_bitrate.to_string())
-        .args([
-            "-threads",
-            "2",
-            "-filter_threads",
-            "1",
-            "-filter_complex_threads",
-            "1",
-        ]);
-    match options.format {
-        ExportFormat::Mp4 => {
-            command.args(["-preset", "medium", "-movflags", "+faststart"]);
-        }
-        ExportFormat::Webm => {
-            command.args(["-deadline", "good", "-cpu-used", "2", "-row-mt", "1"]);
-        }
+    append_video_arguments(command, config, options, backend)?;
+    if options.format == ExportFormat::Mp4 {
+        command.args(["-movflags", "+faststart"]);
     }
     if let Some(rate) = rates.audio_bitrate {
         command
@@ -132,6 +108,92 @@ pub(crate) fn append_arguments(
     command
         .args(["-f", options.format.extension()])
         .arg(&config.output);
+    Ok(())
+}
+
+fn append_video_arguments(
+    command: &mut Command,
+    config: &ClassicVideoEncoderConfig,
+    options: &ExportVideoOptions,
+    backend: VideoEncoderBackend,
+) -> Result<(), EditorError> {
+    let codec = match (options.format, backend) {
+        (ExportFormat::Mp4, VideoEncoderBackend::FfmpegLibx264) => "libx264",
+        (ExportFormat::Mp4, VideoEncoderBackend::FfmpegH264Videotoolbox) => "h264_videotoolbox",
+        (ExportFormat::Webm, VideoEncoderBackend::FfmpegLibvpxVp9) => "libvpx-vp9",
+        _ => return Err(invalid("Selected encoder does not match output format")),
+    };
+    let rates = classic_export_rates(options, config.width, config.height)
+        .ok_or_else(|| invalid("Invalid configurable encoder dimensions"))?;
+    command
+        .args([
+            "-map", "0:v:0", "-c:v", codec, "-pix_fmt", "yuv420p", "-b:v",
+        ])
+        .arg(rates.video_bitrate.to_string())
+        .args([
+            "-threads",
+            "2",
+            "-filter_threads",
+            "1",
+            "-filter_complex_threads",
+            "1",
+        ]);
+    match backend {
+        VideoEncoderBackend::FfmpegLibx264 => {
+            command.args(["-preset", "medium"]);
+        }
+        VideoEncoderBackend::FfmpegH264Videotoolbox => {
+            command.args([
+                "-allow_sw",
+                "0",
+                "-require_sw",
+                "0",
+                "-profile:v",
+                "high",
+                "-realtime",
+                "0",
+            ]);
+        }
+        VideoEncoderBackend::FfmpegLibvpxVp9 => {
+            command.args(["-deadline", "good", "-cpu-used", "2", "-row-mt", "1"]);
+        }
+        VideoEncoderBackend::WebcodecsAvc => unreachable!("validated native encoder"),
+    }
+    Ok(())
+}
+
+#[cfg(target_os = "macos")]
+pub(crate) fn append_hardware_probe_arguments(
+    command: &mut Command,
+    config: &ClassicVideoEncoderConfig,
+    options: &ExportVideoOptions,
+) -> Result<(), EditorError> {
+    // Synthetic input only: no project source or output path enters capability
+    // selection. Use the actual raster/rate and the same codec/color arguments.
+    command
+        .args([
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-nostdin",
+            "-protocol_whitelist",
+            "file,pipe",
+            "-f",
+            "lavfi",
+            "-i",
+        ])
+        .arg(format!(
+            "color=c=black:s={}x{}:r={}/{},format=rgb24",
+            config.width, config.height, config.fps_numerator, config.fps_denominator
+        ));
+    append_video_arguments(
+        command,
+        config,
+        options,
+        VideoEncoderBackend::FfmpegH264Videotoolbox,
+    )?;
+    append_sdr_color_arguments(command);
+    command.args(["-an", "-frames:v", "1", "-f", "null", "-"]);
     Ok(())
 }
 
@@ -324,7 +386,16 @@ mod tests {
                     include_audio: false,
                 };
                 let mut command = Command::new("not-executed");
-                append_arguments(&mut command, &config(), &options).unwrap();
+                append_arguments(
+                    &mut command,
+                    &config(),
+                    &options,
+                    match format {
+                        ExportFormat::Mp4 => VideoEncoderBackend::FfmpegLibx264,
+                        ExportFormat::Webm => VideoEncoderBackend::FfmpegLibvpxVp9,
+                    },
+                )
+                .unwrap();
                 let args = command
                     .get_args()
                     .map(|s| s.to_string_lossy().into_owned())
@@ -377,5 +448,41 @@ mod tests {
             .unwrap()
             .push(serde_json::json!({"codec_type":"audio"}));
         assert!(verify_probe(&probe, &config(), &options).is_err());
+    }
+    #[test]
+    fn hardware_profile_cannot_allow_software_or_mismatch_container() {
+        let mut options = ExportVideoOptions {
+            runtime_fingerprint: None,
+            resolution: RasterResolution::P2160,
+            format: ExportFormat::Mp4,
+            quality: ExportQuality::High,
+            include_audio: false,
+        };
+        let mut command = Command::new("not-executed");
+        append_arguments(
+            &mut command,
+            &config(),
+            &options,
+            VideoEncoderBackend::FfmpegH264Videotoolbox,
+        )
+        .unwrap();
+        let args: Vec<_> = command
+            .get_args()
+            .map(|s| s.to_string_lossy().into_owned())
+            .collect();
+        for flag in ["-allow_sw", "-require_sw"] {
+            assert_eq!(args[args.iter().position(|v| v == flag).unwrap() + 1], "0");
+        }
+        assert!(!args.iter().any(|v| v == "libx264" || v == "-preset"));
+        options.format = ExportFormat::Webm;
+        assert!(
+            append_arguments(
+                &mut Command::new("not-executed"),
+                &config(),
+                &options,
+                VideoEncoderBackend::FfmpegH264Videotoolbox
+            )
+            .is_err()
+        );
     }
 }

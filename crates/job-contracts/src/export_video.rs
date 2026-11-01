@@ -50,14 +50,28 @@ pub struct ExportVideoIdentity {
 #[serde(rename_all = "snake_case")]
 pub enum VideoEncoderBackend {
     FfmpegLibx264,
+    FfmpegH264Videotoolbox,
     FfmpegLibvpxVp9,
     WebcodecsAvc,
+}
+/// Admission-time hardware capability observation, before any project frames.
+/// A failed real encode is never retried through another backend.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ExportVideoHardwareProbe {
+    pub available: bool,
+    pub exit_code: i32,
+    /// Hash of the retained first 16 KiB of capability stderr, never local paths.
+    pub diagnostics_sha256: String,
+    pub system: opencut_contracts::renderer_identity::NativeSystemIdentity,
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ExportVideoEncoderSummary {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub backend: Option<VideoEncoderBackend>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub hardware_probe: Option<ExportVideoHardwareProbe>,
     pub ffmpeg_sha256: String,
     pub ffprobe_sha256: String,
     pub video_codec: String,

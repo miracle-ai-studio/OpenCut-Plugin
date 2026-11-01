@@ -735,6 +735,7 @@ fn execute_kernel(
                     audio: audio_summary,
                     encoder: export::ExportVideoEncoderSummary {
                         backend: Some(observed.backend),
+                        hardware_probe: observed.hardware_probe,
                         ffmpeg_sha256: observed.ffmpeg_sha256,
                         ffprobe_sha256: observed.ffprobe_sha256,
                         video_codec: format.video_codec().into(),

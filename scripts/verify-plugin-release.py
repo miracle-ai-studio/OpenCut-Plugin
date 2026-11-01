@@ -34,8 +34,11 @@ def verify(archive, root):
                 raise ValueError('Unsafe ZIP path')
             package.extractall(source)
     plugin = source / 'opencut'
-    env = dict(os.environ, OPENCUT_PLUGIN_INSTALL_DIR=str(root / ('installation-' + package_sha[:12])), OPENCUT_PLUGIN_DATA_DIR=str(root / 'data'))
-    fresh_env = dict(env, OPENCUT_PLUGIN_DATA_DIR=str(root / ('fresh-data-' + package_sha[:12])))
+    env = {key: value for key, value in os.environ.items() if not key.startswith('OPENCUT_')}
+    env.update(OPENCUT_PLUGIN_INSTALL_DIR=str(root / ('installation-' + package_sha[:12])),
+               OPENCUT_PLUGIN_DATA_DIR=str(root / 'data'), OPENCUT_PLUGIN_DATABASE=str(root / 'data/workspace.sqlite'))
+    fresh_data = root / ('fresh-data-' + package_sha[:12])
+    fresh_env = dict(env, OPENCUT_PLUGIN_DATA_DIR=str(fresh_data), OPENCUT_PLUGIN_DATABASE=str(fresh_data / 'workspace.sqlite'))
     fresh_preexisting = (Path(fresh_env['OPENCUT_PLUGIN_DATA_DIR']) / 'install.json').exists()
     fresh = json.loads(run(['node', plugin / 'scripts/install.mjs'], fresh_env))
     fresh_binary = Path(fresh['runtime']) / 'bin/opencut'
@@ -55,7 +58,11 @@ def verify(archive, root):
     doctor = json.loads(run(['node', plugin / 'scripts/doctor.mjs'], env))
     assert doctor['ready']
     runtime = Path(installed['runtime']); binary = runtime / 'bin/opencut'
-    os.environ['OPENCUT_PLUGIN_DATA_DIR'] = env['OPENCUT_PLUGIN_DATA_DIR']
+    installed_plugin = Path(installed['marketplace']) / 'plugins/opencut'
+    for name in ('plugin.json', 'mcp.json', 'scripts/launch.sh', 'scripts/launch.mjs', 'scripts/runtime.mjs'):
+        assert sha(installed_plugin / name) == sha(plugin / name), name
+    manifest = json.loads((runtime / 'manifest.json').read_text())
+    assert manifest['native_renderer']['format'] == 'opencut.native-renderer'
     state_file = root / ('checkpoint-' + sha(binary)[:12] + '.json')
     if state_file.exists():
         state = json.loads(state_file.read_text())
@@ -78,7 +85,7 @@ def verify(archive, root):
 
     spec = importlib.util.spec_from_file_location('editorial_release_mcp', HERE / 'verify-editorial.py')
     editorial = importlib.util.module_from_spec(spec); spec.loader.exec_module(editorial)
-    mcp = editorial.Mcp(binary, root / 'data/workspace.sqlite', root, ['/bin/sh', str(plugin / 'scripts/launch.sh')])
+    mcp = editorial.Mcp(binary, root / 'data/workspace.sqlite', root, ['/bin/sh', str(installed_plugin / 'scripts/launch.sh')], env=env)
     project_id = 'plugin-release-check'
     checks = ['ZIP and host runtime file identities', 'Relocated versioned installation', 'Idempotent installation preserving an existing custom budget', 'Fresh workspace retains automatic output sizing; no fixed small file cap', 'Base dependency and executable doctor', 'Packaged stdio launcher initialization']
     try:
@@ -149,7 +156,7 @@ def verify(archive, root):
         checks.append('Completed export and artifact content hash matched')
     finally:
         mcp.close()
-    report = {'status': 'passed' if pixel_probe['passed'] else 'package_and_workflow_passed_pixel_probe_failed', 'package_ready': True, 'workflow_passed': True, 'pixel_probe': pixel_probe, 'fixture_origin_binary_sha256': state.get('fixture_origin_binary_sha256'), 'fixture_reuse_scope': 'Existing imported/edited project and source-frame cover reused; current binary verified inspection, idempotent replay and a new export. No earlier render receipt is counted for this binary.' if state.get('fixture_origin_binary_sha256') else 'Created all fixture stages with this binary', 'package_sha256': package_sha, 'binary_sha256': sha(binary), 'target': doctor['target'], 'checks': checks, 'default_mcp_tools': len(tools), 'initial_export_failure': 'Original attempts and the temporary-cap candidate are retained; final candidate fixes automatic reservation headroom without a fixed small file cap', 'client_conversation_acceptance': 'not_run; direct MCP protocol client exercises the packaged launcher', 'clean_machine_acceptance': 'not_run; isolated installation on the current host with existing external dependencies', 'optional_font_transcription': 'not_run', 'scope': 'macOS local plugin package and one synthetic import/edit/cover/export flow; not whole-product acceptance'}
+    report = {'status': 'passed' if pixel_probe['passed'] else 'package_and_workflow_passed_pixel_probe_failed', 'package_ready': True, 'workflow_passed': True, 'pixel_probe': pixel_probe, 'fixture_origin_binary_sha256': state.get('fixture_origin_binary_sha256'), 'fixture_reuse_scope': 'Existing imported/edited project and source-frame cover reused; current binary verified inspection, idempotent replay and a new export. No earlier render receipt is counted for this binary.' if state.get('fixture_origin_binary_sha256') else 'Created all fixture stages with this binary', 'package_sha256': package_sha, 'binary_sha256': sha(binary), 'runtime_manifest_sha256': sha(runtime / 'manifest.json'), 'native_renderer': manifest['native_renderer'], 'runtime_bundle': manifest['runtime_bundle'], 'target': doctor['target'], 'checks': checks, 'default_mcp_tools': len(tools), 'client_conversation_acceptance': 'not_run; direct MCP protocol client exercises the installed launcher', 'clean_machine_acceptance': 'not_run; isolated installation on the current host, bundled native dependencies and external Node bootstrap', 'optional_font_transcription': 'not_run', 'scope': 'macOS local plugin package and one synthetic import/edit/cover/export flow; not whole-product or physical audio acceptance'}
     (root / 'verification.json').write_text(json.dumps(report, indent=2) + '\n')
     print(json.dumps(report, indent=2))
     return report

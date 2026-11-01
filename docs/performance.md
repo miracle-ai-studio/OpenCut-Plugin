@@ -25,7 +25,7 @@
 
 严格实时、旧静帧按钮语义、偶发底层停滞、人工声画与完整交付仍开放，`delivery_ready=false`。
 
-检查点 `/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/source-art/checkpoint.json`，SHA-256 `ad2534427ee13bce2af8d066a0ba7aafc8d6b518e15dc0ec7805adbb26661425`，170 项文件。
+检查点 `${HOME}/Movies/OpenCut-native-rendering/local-upgrade-20261101/source-art/checkpoint.json`，SHA-256 `ad2534427ee13bce2af8d066a0ba7aafc8d6b518e15dc0ec7805adbb26661425`，170 项文件。
 
 ## 音频启动缓冲优化已部署（2026-11-01）
 
@@ -46,7 +46,7 @@ Web 源码 `324a785a` 已替换 8791 和 59790，宿主仍为 `0bb34837` / CLI `
 
 首次验收脚本因读取浏览器响应副本的未处理异常退出，记录保留。修正后的第二次在约 65 秒随会话中断，浏览器进程已退出且无完整报告；后续复用仍在运行的服务完成独立命名的全程检查，没有重编产品。合成服务已停止。偶发底层停滞根因、严格实时和完整交付继续开放，`delivery_ready=false`。
 
-检查点 `/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261031/startup-prime/checkpoint.json`，SHA-256 `4d32ef6be1a8e8da245a3c1a452ea7d522b51a6c9036ce4e6574e8b5d299d6f5`，72 项文件。
+检查点 `${HOME}/Movies/OpenCut-native-rendering/local-upgrade-20261031/startup-prime/checkpoint.json`，SHA-256 `4d32ef6be1a8e8da245a3c1a452ea7d522b51a6c9036ce4e6574e8b5d299d6f5`，72 项文件。
 
 ## 冷启动完整字节校验优化已部署（2026-10-31）
 
@@ -67,7 +67,7 @@ CAS 素材流式固定/校验及来源代理首次校验改用已有 `ring 0.17.
 
 四个工程、497 条旧任务及数据库完整性保留，11 条新身份来源任务全部成功，重复准备复用同一任务。两个服务 ready，各核对 285 项资源；备份 `~/.opencut/backups/native-cold-verification-20261031`。自有合成服务已停止。两张实际工程截图经 agent 检查，预览、标题、缩略图与波形可见；不等于人工物理声画验收。早期同目录数据库副本被工作区绑定保护拒绝的记录保留，副本已移出用户工程目录；原数据库未替换。严格实时、偶发底层停滞根因、人工物理声画及完整交付仍开放，`delivery_ready=false`。
 
-检查点 `/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261031/cold-verification/checkpoint.json`，SHA-256 `d83d231b63291255d707d5c4331f308a5e11f9a77a903a54a2a458454222c499`，103 项文件。
+检查点 `${HOME}/Movies/OpenCut-native-rendering/local-upgrade-20261031/cold-verification/checkpoint.json`，SHA-256 `d83d231b63291255d707d5c4331f308a5e11f9a77a903a54a2a458454222c499`，103 项文件。
 
 ## 实时预览有界追赶已部署（2026-10-31）
 
@@ -90,7 +90,7 @@ Web 源码 `d5df3f10` 已替换 8791 和 59790。已定位逐帧画面信用会�
 
 四次实际工程功能、暂停/续播、来源图请求及导出选项检查通过；原重开推进/续播 5 秒门槛为 `true`。预览保持 540p，导出仍读取原片，720/1080/1440/2160 可选、默认 1080。四个工程、497 条旧任务和数据库完整性保持，两个服务各核对 285 项页面资源且 ready；备份 `~/.opencut/backups/native-realtime-catchup-20261031`。合成服务已停止。两张实际工程截图经 agent 检查，预览、标题、缩略图和波形可见；不等于人工物理声画验收。冷启动、严格实时、偶发底层停滞、人工物理声画及完整交付继续开放，`delivery_ready=false`。
 
-检查点 `/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261031/realtime-catchup/checkpoint.json`，SHA-256 `e355caf587e4979b8815c382e594a27bffbb0c26e3fff6b6a2b243342ed683dd`，89 项文件。
+检查点 `${HOME}/Movies/OpenCut-native-rendering/local-upgrade-20261031/realtime-catchup/checkpoint.json`，SHA-256 `e355caf587e4979b8815c382e594a27bffbb0c26e3fff6b6a2b243342ed683dd`，89 项文件。
 
 ## 音频进度重复调度修复已部署（2026-10-31）
 
@@ -111,7 +111,7 @@ Web 源码 `c93a2646` 已替换 8791 和 59790。已确认音频块完成的即�
 
 四次实际工程功能、暂停/续播与导出选项检查通过；重开推进/续播原 5 秒门槛为 `true`。预览保持 540p，导出仍使用原片，720/1080/1440/2160 可选、默认 1080。四个工程和 497 条旧任务、数据库完整性均保留，两个服务各核对 285 项资源且 ready；备份 `~/.opencut/backups/native-audio-report-20261031`。自有合成服务已停止。严格实时、冷启动推进、偶发底层停滞根因、人工物理声画及完整交付仍开放，`delivery_ready=false`。
 
-持久检查点 `/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261031/audio-report-cadence/checkpoint.json`，SHA-256 `48013d1bf4e7159b0642b687480c1bfdeba2f6fd1182e76277bbf505b73995b9`，61 项文件。
+持久检查点 `${HOME}/Movies/OpenCut-native-rendering/local-upgrade-20261031/audio-report-cadence/checkpoint.json`，SHA-256 `48013d1bf4e7159b0642b687480c1bfdeba2f6fd1182e76277bbf505b73995b9`，61 项文件。
 
 ## 浏览器完整像素摘要优化已部署（2026-10-31）
 
@@ -130,7 +130,7 @@ Web 构建两次，分别 18.939/20.364 秒：首个集成候选通过后发现 
 
 实际工程四次功能检查及默认 1080p、720/1080/1440/2160 导出选项通过。原重开推进/续播 5 秒门槛为 `true`，未以首帧门槛替代。四个工程、497 条旧任务和数据库完整性保持不变，没有新增媒体任务；两个服务均 ready，各核对 285 项页面资源。备份位于 `~/.opencut/backups/native-simd-digest-final-20261031`。既有独立原生像素/PCM/4K 导出证明仅因完整原生运行时相同而复用，不改记为本次重新验收。自有合成服务已停止。严格实时、启动推进和人工/物理声画及完整交付仍开放，`delivery_ready=false`。
 
-检查点 `/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261031/simd-digest-final/checkpoint.json`，摘要 `f46001a95a8da218fb774e1c105bf286149bc201654deaa1a521020d675ef8cf`，72 项文件；其中引用了初始候选与原生证明，保留全部限制。
+检查点 `${HOME}/Movies/OpenCut-native-rendering/local-upgrade-20261031/simd-digest-final/checkpoint.json`，摘要 `f46001a95a8da218fb774e1c105bf286149bc201654deaa1a521020d675ef8cf`，72 项文件；其中引用了初始候选与原生证明，保留全部限制。
 
 ## 当前安装的吞吐归因（2026-10-31）
 
@@ -138,7 +138,7 @@ Web 构建两次，分别 18.939/20.364 秒：首个集成候选通过后发现 
 
 实际海南多轨工程 0/6/30 秒窗口各 16 帧，排除各自首帧后，原生完整帧中位约 38.52/39.25/37.00 ms，仍保持 960×540，已接近 25fps 的 40 ms 预算。该组不含浏览器显示和音频并行，未作独立画质验收。工程快照前后完全相同。另一次约 12 秒合成工程编辑器观察中，开始播放后短时可按实时推进，预取队列随后收窄；不能覆盖既有 94 秒慢于实时的失败结论，也不能单凭此认定音频或硬件限制造成问题。
 
-本批保留诊断脚本的服务已停止、依赖路径错误、越过预取窗口和浏览器语言选择器失败，均不冒充产品回归。所有诊断会话及自有合成服务已停止；两个用户服务仍 ready，身份与上一批安装一致。本批没有重跑完整 94 秒、重导出或重新生成素材。严格实时、实际启动推进门槛和偶发传输停滞根因仍开放，`delivery_ready=false`。84 项持久证据：`/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261031/frame-throughput/checkpoint.json`，摘要 `a60e0d7a92a4cf5dd14b99afb982bf34e18d6452980acab087c0ae22e99edd86`。
+本批保留诊断脚本的服务已停止、依赖路径错误、越过预取窗口和浏览器语言选择器失败，均不冒充产品回归。所有诊断会话及自有合成服务已停止；两个用户服务仍 ready，身份与上一批安装一致。本批没有重跑完整 94 秒、重导出或重新生成素材。严格实时、实际启动推进门槛和偶发传输停滞根因仍开放，`delivery_ready=false`。84 项持久证据：`${HOME}/Movies/OpenCut-native-rendering/local-upgrade-20261031/frame-throughput/checkpoint.json`，摘要 `a60e0d7a92a4cf5dd14b99afb982bf34e18d6452980acab087c0ae22e99edd86`。
 
 ## 首次 WAV 定位探测修复已部署（2026-10-31）
 
@@ -155,7 +155,7 @@ Web 构建两次，分别 18.939/20.364 秒：首个集成候选通过后发现 
 | workbench | cold | 3.252 | 6.303 | 2.753 |
 | workbench | warm | 1.468 | 5.839 | 3.283 |
 
-原 warm 推进/续播 5 秒门槛结果为 `false`，没有用首帧门槛替代。切换及后续检查保留 4 个工程和 486 个旧任务，11 个新身份来源任务成功，重复准备复用同一任务。导出仍为 720/1080/1440/2160，默认 1080；预览保持 540p，小原片不放大。两张实际编辑器截图经 agent 检查；人工/物理声画验收、严格实时和偶发画面传输停滞根因仍未关闭，`delivery_ready=false`。持久证据 `/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261031/wave-seek/checkpoint.json`，摘要 `ad33b959edc79b1c60841bd312a014b74e834ac5ec8450be232ed5e39f9f7a9e`。
+原 warm 推进/续播 5 秒门槛结果为 `false`，没有用首帧门槛替代。切换及后续检查保留 4 个工程和 486 个旧任务，11 个新身份来源任务成功，重复准备复用同一任务。导出仍为 720/1080/1440/2160，默认 1080；预览保持 540p，小原片不放大。两张实际编辑器截图经 agent 检查；人工/物理声画验收、严格实时和偶发画面传输停滞根因仍未关闭，`delivery_ready=false`。持久证据 `${HOME}/Movies/OpenCut-native-rendering/local-upgrade-20261031/wave-seek/checkpoint.json`，摘要 `ad33b959edc79b1c60841bd312a014b74e834ac5ec8450be232ed5e39f9f7a9e`。
 
 ## 540p 代理分片解码修复与本地服务切换（2026-10-31）
 

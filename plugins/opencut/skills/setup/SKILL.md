@@ -1,5 +1,5 @@
 ---
-name: opencut-setup
+name: setup
 description: Install the platform runtime and select the SQLite workspace before connecting OpenCut MCP and Web.
 ---
 
@@ -8,9 +8,15 @@ description: Install the platform runtime and select the SQLite workspace before
 Installing the plugin registers its instructions and MCP launcher; it does not
 install the native editor or select an existing video project automatically.
 If MCP cannot start, finish runtime installation before retrying editing tools.
+This plugin needs a local desktop chat and access to local files and processes.
+An account installation does not give a cloud or mobile chat access to the computer.
 
 1. Read the platform support table in the repository README. Download the
    matching platform ZIP from https://github.com/miracle-ai-studio/OpenCut-Plugin/releases.
+   Read this plugin's version from `plugin.json` and use its `v<version>` release;
+   do not select an older stable release when installing a beta.
+   The `-personal.zip` is the portable plugin for personal account import;
+   the platform ZIP also includes the native runtime required by its launcher.
    A source checkout or GitHub marketplace plugin alone has no runtime archive.
 2. Follow that release's prerequisites and checksum instructions. Extract its
    bundle, then run `node scripts/install.mjs` inside the extracted bundle.
@@ -18,7 +24,7 @@ If MCP cannot start, finish runtime installation before retrying editing tools.
    Preserve the selected database and media; do not substitute a new empty
    workspace or migrate user files merely to make connection succeed.
 3. Run `node scripts/doctor.mjs`. A missing install.json means runtime setup is
-   incomplete. A browser/runtime failure must be resolved before promising
+   incomplete. A native runtime failure must be resolved before promising
    thumbnails, preview or export. Do not override resource admission limits.
 4. Install/reload the plugin using the supported desktop Plugins interface or
    marketplace command reported by the installer. Do not edit the plugin cache.

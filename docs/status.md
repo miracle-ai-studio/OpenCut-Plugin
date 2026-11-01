@@ -2,11 +2,23 @@
 
 当前代码提供本地 CLI/HTTP/MCP 服务、SDK 和 Web 剪辑工作台。完整功能及跨平台发行验收尚未完成；[机器可读状态](status.json)中的 `delivery_ready` 保持 `false`。
 
+公开状态中的本地证据路径以 `${HOME}`、`${TMPDIR}` 代替机器目录。原始记录保留在本机，不随源码或安装包发布。
+
+## 个人插件与原生 beta 发布
+
+`0.5.0-beta.3` 提供个人账号导入包和 macOS 26+ Intel 平台运行包，本轮测试系统为 macOS 26.5.1。个人包包含编辑、安装引导 Skill 和 stdio MCP 启动器，明确要求本地执行；匹配的原生运行包需单独安装。账号私有插件与 GitHub 预发布均不等于官方目录上架。
+
+发布构建映射程序内的编译目录，并重建媒体库及导出工具；保留原始依赖来源和许可证。上游 Node/Python/Skia 的公开构建路径、公共证书库仅对已核验的完整文件哈希放行，修改后的文件仍接受完整检查。本轮只改变打包、引导和验证方式，没有新增业务实现或运行依赖。
+
+最终包已通过安装、重复安装、自定义配额保留、11 个 MCP 域工具发现、导入、原子编辑及重放、封面和原生导出验收。独立合成红色像素为 RGB 250/0/0，原门槛保持 red > 230、green/blue < 15。生成契约和规范契约检查绑定同一交付 CLI；285 个 Web 文件与已验候选逐文件一致。
+
+[对应预发布页面](https://github.com/miracle-ai-studio/OpenCut-Plugin/releases/tag/v0.5.0-beta.3)提供个人插件、平台安装包、校验和及 `verification.json`，其发布状态以 GitHub 为准。CLI 为 `cbf95fb6ba5d`、worker 为 `b889ce0f45ab`，完整运行清单为 `6d7ded475dc2`。桌面客户端会话、物理听感、全新机器和其他平台没有计为本次通过；较早候选的长时间播放结果保留原始程序身份。
+
 ## 本地 MCP 原生启动替换（2026-11-01）
 
-本地 MCP 已切换到与网页服务相同的 CLI `35560d42ef9c` / worker `dfc3f2fdeb94`，保持工作区 `/Users/vincent/.opencut/hainan/workspace.sqlite`。已同步安装来源和 Codex 插件缓存中的启动装配，移除对旧浏览器渲染包的强制加载；原生 worker、动态库与辅助工具按包清单校验，工具路径显式绑定到已验证的运行包，损坏或缺失直接失败。源码 CLI 共用的启动装配同步改为原生路径，没有公共合同、业务入口、新依赖或 Rust/Web 重编译。
+本地 MCP 已切换到与网页服务相同的 CLI `35560d42ef9c` / worker `dfc3f2fdeb94`，保持工作区 `${HOME}/.opencut/hainan/workspace.sqlite`。已同步安装来源和 Codex 插件缓存中的启动装配，移除对旧浏览器渲染包的强制加载；原生 worker、动态库与辅助工具按包清单校验，工具路径显式绑定到已验证的运行包，损坏或缺失直接失败。源码 CLI 共用的启动装配同步改为原生路径，没有公共合同、业务入口、新依赖或 Rust/Web 重编译。
 
-通过已安装的实际 `launch.sh` 完成 MCP 初始化（约 2.36 秒）、11 个领域工具发现、能力查询和项目列表读取；核对实际子进程执行的是上述程序，正常关闭退出码为 0。项目列表为空，工程、修订、删除记录、任务和元数据前后逐项相同。4 项相关测试、14 项架构测试、架构/合同边界检查及源码 CLI 能力读取通过；已核验原运行包 2527 个文件。检查点 `/Users/vincent/.opencut/backups/mcp-native-20261101-214906/acceptance/checkpoint.json`，SHA-256 `30bf452b9959fac3b112898964c512e254cd3e0436c20d94828b7a5f7dbb771a`。
+通过已安装的实际 `launch.sh` 完成 MCP 初始化（约 2.36 秒）、11 个领域工具发现、能力查询和项目列表读取；核对实际子进程执行的是上述程序，正常关闭退出码为 0。项目列表为空，工程、修订、删除记录、任务和元数据前后逐项相同。4 项相关测试、14 项架构测试、架构/合同边界检查及源码 CLI 能力读取通过；已核验原运行包 2527 个文件。检查点 `${HOME}/.opencut/backups/mcp-native-20261101-214906/acceptance/checkpoint.json`，SHA-256 `30bf452b9959fac3b112898964c512e254cd3e0436c20d94828b7a5f7dbb771a`。
 
 本项为本地安装及真实 stdio 启动验收，不是公开插件发行更新；当前对话尚未加载 OpenCut 工具，不宣称桌面对话已经重新连接。客户端重新连接时将使用已替换的入口。
 
@@ -18,7 +30,7 @@
 
 6 项原生导出均明确使用硬件编码。42.52 秒完整 4K 耗时约 138.20 秒，42 秒多轨 1080p 约 94.27 秒；这是本机单次观察。13 幅独立整幅 RGB 检查通过 MAE≤5；6 秒、288000 个音频采样帧的编码前 PCM 与参考逐采样一致，AAC 信噪比 57.51 dB，通过 30 dB 门槛。完整多轨音乐混音未宣称逐采样一致，真实相机源无音轨，物理扬声器/耳机听感仍待人工确认。
 
-用户要求清理的 5 个本地项目已删除，三处工作区可见项目均为 0；源素材保留，备份位于 `/Users/vincent/.opencut/backups/project-cleanup-20261101-183133`。服务替换保留删除记录、原工程历史和 45/496 条历史任务，未新增用户任务。164 项相关 Web 测试、14 项架构测试及边界检查通过；本次只构建 Web，复用已验证的精确原生二进制。验收检查点 `/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/source-readiness/checkpoint.json`，SHA-256 `92f6aa81b1be9cb84e8d2d0367d7cb46da98a7a7270f0646f49547eaf08eb909`。本次修复交付不代表完整迁移或跨平台验收完成。
+用户要求清理的 5 个本地项目已删除，三处工作区可见项目均为 0；源素材保留，备份位于 `${HOME}/.opencut/backups/project-cleanup-20261101-183133`。服务替换保留删除记录、原工程历史和 45/496 条历史任务，未新增用户任务。164 项相关 Web 测试、14 项架构测试及边界检查通过；本次只构建 Web，复用已验证的精确原生二进制。验收检查点 `${HOME}/Movies/OpenCut-native-rendering/local-upgrade-20261101/source-readiness/checkpoint.json`，SHA-256 `92f6aa81b1be9cb84e8d2d0367d7cb46da98a7a7270f0646f49547eaf08eb909`。本次修复交付不代表完整迁移或跨平台验收完成。
 
 ### 保留的诊断过程
 
@@ -56,7 +68,7 @@
 
 这证明当前机器的硬件编码路径可用且值得接入，不代表已接入产品。选择策略须在真实帧写入之前完成一次有界、受准入约束的能力确认，记录实际后端和系统事实；真实编码失败必须返回失败，不能重启另一套编码隐藏问题。历史软件输出证明仍应可读。公开结果合同、验证器及生成消费者需要一起更新，随后只构建一次，再串行运行受影响的原生导出、独立画面/音频和取消验证；通过后才替换本地服务。保持现有预览、分辨率选项、码率、颜色和资源/发布围栏。
 
-检查点 `/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/hardware-encode/checkpoint.json`，SHA-256 `3fe2542a49fb5359e12807ae8e460e1460a1a483edf605e688172f7f3559cc6a`，16 项文件，保留输入、输出、独立像素及实际参数。实验参数依据已安装编码器帮助，并核对 [FFmpeg VideoToolbox 实现](https://www.ffmpeg.org/doxygen/trunk/videotoolboxenc_8c.html) 与 [Apple 硬件编码要求](https://developer.apple.com/documentation/videotoolbox/kvtvideoencoderspecification_requirehardwareacceleratedvideoencoder)。该组件实验未变更产品或部署。
+检查点 `${HOME}/Movies/OpenCut-native-rendering/local-upgrade-20261101/hardware-encode/checkpoint.json`，SHA-256 `3fe2542a49fb5359e12807ae8e460e1460a1a483edf605e688172f7f3559cc6a`，16 项文件，保留输入、输出、独立像素及实际参数。实验参数依据已安装编码器帮助，并核对 [FFmpeg VideoToolbox 实现](https://www.ffmpeg.org/doxygen/trunk/videotoolboxenc_8c.html) 与 [Apple 硬件编码要求](https://developer.apple.com/documentation/videotoolbox/kvtvideoencoderspecification_requirehardwareacceleratedvideoencoder)。该组件实验未变更产品或部署。
 
 初次接入完成一次 CLI 构建时尚未部署：在既有原生编码适配器内选择后端，公共结果记录能力观察，应用验证后端、退出码和平台事实，并保留旧结果的省略字段。没有新模块、依赖、写入口或架构例外，14 项架构单测及架构/合同边界检查通过。当时取消、期限和真实编码失败不重试的回归已加入，等待后续统一编译运行；实际 FFmpeg 参数预检中 4K 合成单帧能力观察约 0.486 秒成功，2×2 返回不支持，用于确认预先选择软件的兼容边界。同一不可变 CLI `90fdc6734849` 的合同生成、生成检查、规范检查及 SDK 构建通过。首次测试编译的 E0382 已修正；随后 `8f60c8a5` 的统一构建及相关 22 项 Rust 测试通过。后续候选的 6 项真实硬件导出及独立质量检查已通过，两处用户服务已替换为本节顶部记录的当前运行包；初始测试编译失败保留为历史记录。
 
@@ -72,7 +84,7 @@
 
 独立工作区原 10 个工程修订及 128 条任务记录完全保持，仅新增一个隔离工程及导入、来源代理、导出三条成功任务，总计 11 个工程、131 条任务，无运行中任务，验证服务已关闭。上传验证器最初逐块启动 CLI 较慢；中途只切换传输到 HTTP，复用原上传 ID 和已确认偏移，没有重建上传或任务。两处用户服务 PID 90413 / 90421、二进制、数据库、网页资源和 4 个工程 / 541 条任务再次核验，未重启且没有新增任务。原相机素材哈希保持。
 
-检查点 `/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/camera-long/checkpoint.json`，SHA-256 `ccb93d8dc60f2e92c66c949f3ce323ad8b46cbc67efbde26b90dbc84d7443993`，59 项文件，包含输出、无损压缩像素参照、运行观察和验证器。物理听感人工验收仍待用户反馈，完整交付标记保持 `false`。
+检查点 `${HOME}/Movies/OpenCut-native-rendering/local-upgrade-20261101/camera-long/checkpoint.json`，SHA-256 `ccb93d8dc60f2e92c66c949f3ce323ad8b46cbc67efbde26b90dbc84d7443993`，59 项文件，包含输出、无损压缩像素参照、运行观察和验证器。物理听感人工验收仍待用户反馈，完整交付标记保持 `false`。
 
 ## 导出完成校验的线程瓶颈（2026-11-01）
 
@@ -86,7 +98,7 @@
 
 4 个用户工程、原 530 条任务及元数据保持。升级触发的 11 条预览任务全部完成，总数 541（45 + 496）；再次打开两处编辑器新增任务为 0，全部已完成任务记录相同。独立工作区原 10 个工程与 123 条任务保持，仅新增本次 5 条成功任务，无运行中任务。备份 `~/.opencut/backups/native-probe-throughput-20261101`。
 
-检查点 `/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/probe-throughput/checkpoint.json`，SHA-256 `525799e0dee106fcc9bc43759a38d878bebae7e03d1e3545e40144fdb4171d46`，101 项文件。56.463→17.862 秒仅是同一完整文件的校验阶段对照，不能声称整个导出提速 68%。下节完整 94 秒导出保留原生产者身份，未在新宿主重复生成。历史无素材停顿根因、更广格式及物理声画人工验收仍开放；单一真实长素材的新增验证见上节，`delivery_ready=false`。
+检查点 `${HOME}/Movies/OpenCut-native-rendering/local-upgrade-20261101/probe-throughput/checkpoint.json`，SHA-256 `525799e0dee106fcc9bc43759a38d878bebae7e03d1e3545e40144fdb4171d46`，101 项文件。56.463→17.862 秒仅是同一完整文件的校验阶段对照，不能声称整个导出提速 68%。下节完整 94 秒导出保留原生产者身份，未在新宿主重复生成。历史无素材停顿根因、更广格式及物理声画人工验收仍开放；单一真实长素材的新增验证见上节，`delivery_ready=false`。
 
 ## 历史文字场景的当前回归与证据边界（2026-11-01）
 
@@ -94,7 +106,7 @@
 
 保留 2,143 条设备消费观察和 307 组画面/设备时间采样。设备与 DOM 记录使用浏览器时钟，HTTP 请求另用 Node 时钟；没有宣称直接观测到 Worklet FIFO 占用。历史失败报告哈希保持，其缺失的设备时间、画面信用和队列观测无法事后重建，因此不能从本次成功反推旧故障唯一原因。没有再次盲目重播，也未因此修改产品。
 
-播放结束后会为最后一帧创建静态编辑会话，这是单帧及编辑所有权切换，不是重新生成整段素材代理。独立工作区原 10 个工程、128 条任务完全保持，服务已停止；两处用户服务未动。未构建、未生成素材或导出任务。最终画面截图已检查。检查点 `/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/resume-closure/checkpoint.json`，SHA-256 `8fee1ab03de88f886a5f10c7463c4d41fca49792330d52b202077070d3440ed7`，18 项文件；该限定回归通过，历史根因及完整交付标记仍保持开放。
+播放结束后会为最后一帧创建静态编辑会话，这是单帧及编辑所有权切换，不是重新生成整段素材代理。独立工作区原 10 个工程、128 条任务完全保持，服务已停止；两处用户服务未动。未构建、未生成素材或导出任务。最终画面截图已检查。检查点 `${HOME}/Movies/OpenCut-native-rendering/local-upgrade-20261101/resume-closure/checkpoint.json`，SHA-256 `8fee1ab03de88f886a5f10c7463c4d41fca49792330d52b202077070d3440ed7`，18 项文件；该限定回归通过，历史根因及完整交付标记仍保持开放。
 
 ## 完整 94 秒 4K 导出验收（2026-11-01）
 
@@ -108,7 +120,7 @@
 
 另检查了历史无素材文字场景停在约 1.87 秒的原报告：最后 588 次成功控制观察的消费值均为 52000，不能归因于素材视频解码；原记录缺少同代际设备时间、画面队列/完成范围及 PCM/画面信用占用，尚不能区分等待环与设备/队列停滞，也不能由后来的成功播放关闭。此次未进行盲目重播或据此修改产品。
 
-证据检查点 `/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/full-4k/checkpoint.json`，SHA-256 `f1ddfb9cdb6e0d4cd16220f07f7651ac9c11d5e6f1684b3a61a8e0ed5ba55364`，25 项文件；保留原生 MP4、编码前 WAV、无损压缩的独立 RGB 参照、完整执行身份、失败记录和原请求。更广格式、独立长素材、历史停顿根因及物理声画人工验收仍开放，`delivery_ready=false`。
+证据检查点 `${HOME}/Movies/OpenCut-native-rendering/local-upgrade-20261101/full-4k/checkpoint.json`，SHA-256 `f1ddfb9cdb6e0d4cd16220f07f7651ac9c11d5e6f1684b3a61a8e0ed5ba55364`，25 项文件；保留原生 MP4、编码前 WAV、无损压缩的独立 RGB 参照、完整执行身份、失败记录和原请求。更广格式、独立长素材、历史停顿根因及物理声画人工验收仍开放，`delivery_ready=false`。
 
 ## 原生导出色彩修复与本地服务替换（2026-11-01）
 
@@ -122,7 +134,7 @@
 
 4 个用户工程、原 519 条历史任务和元数据保持，数据库完整性通过。首次打开因完整宿主身份变化新增 11 条已完成的预览缓存任务，当前任务总数为 530（42 + 488）；再次打开两处编辑器新增任务为 0。解码器和编解码工具身份未变化，此处存在跨宿主升级的保守缓存失效成本，未为减少重建而移除证明围栏。该轮结束时独立工作区有 10 个工程、122 条任务，原 9 个工程和 111 条任务保留，无运行中任务。
 
-备份 `~/.opencut/backups/native-export-color-20261101`。证据检查点 `/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/export-color/checkpoint.json`，SHA-256 `d793d74d1274e33ff69bf3f317ff3193f6e16d26e4229875a6fc55f8f1fca94f`，158 项文件。完整编解码器/颜色/方向/默认流覆盖及物理声画人工验收仍开放，`delivery_ready=false`。
+备份 `~/.opencut/backups/native-export-color-20261101`。证据检查点 `${HOME}/Movies/OpenCut-native-rendering/local-upgrade-20261101/export-color/checkpoint.json`，SHA-256 `d793d74d1274e33ff69bf3f317ff3193f6e16d26e4229875a6fc55f8f1fca94f`，158 项文件。完整编解码器/颜色/方向/默认流覆盖及物理声画人工验收仍开放，`delivery_ready=false`。
 
 ## 导出色彩矩阵修复前的诊断记录（2026-11-01）
 
@@ -144,7 +156,7 @@
 
 预览保持 540p，导出原素材及默认 1080p 不变。两处本地服务最终身份及健康检查通过；4 个用户工程、519 条历史任务完整保留，独立工作区 9 个工程、111 条任务保持且服务停止。未生成新素材、代理或导出任务。更广的来源/导出色彩矩阵及人工验收仍开放，`delivery_ready=false`。
 
-检查点 `/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/presentation-isolation/checkpoint.json`，SHA-256 `3af99708393ab55e9fc69ff460f27f504690fed4fdc4c92fc87ab5d901d7fd26`，124 项文件；GPU 轨迹无损压缩并核对原始哈希。
+检查点 `${HOME}/Movies/OpenCut-native-rendering/local-upgrade-20261101/presentation-isolation/checkpoint.json`，SHA-256 `3af99708393ab55e9fc69ff460f27f504690fed4fdc4c92fc87ab5d901d7fd26`，124 项文件；GPU 轨迹无损压缩并核对原始哈希。
 
 ## 静帧转播放复用与键盘采样率修复已部署（2026-11-01）
 
@@ -160,7 +172,7 @@
 
 两处服务各核对 285 项资源，最终进程、二进制、数据库、Web 根及 readiness 一致。4 个用户工程、519 条历史任务及元数据完整保留，数据库完整性通过；独立工作区 9 个工程、111 条任务保持且服务已停止。备份 `~/.opencut/backups/native-static-play-handoff-20261101`。严格实时、冷启动波动与物理声画人工验收仍开放，`delivery_ready=false`。
 
-检查点 `/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/static-play-handoff/checkpoint.json`，SHA-256 `bdc3ae7b051d4b4723d5907e25aec93c44c006c114de8cf274b74cbdf808135d`，96 项文件，含基线、未部署构建、最终候选及独立 Metal 诊断。
+检查点 `${HOME}/Movies/OpenCut-native-rendering/local-upgrade-20261101/static-play-handoff/checkpoint.json`，SHA-256 `bdc3ae7b051d4b4723d5907e25aec93c44c006c114de8cf274b74cbdf808135d`，96 项文件，含基线、未部署构建、最终候选及独立 Metal 诊断。
 
 ## 并发能力查询合并的先前部署记录（2026-11-01）
 
@@ -174,7 +186,7 @@
 
 两处服务各校验 285 项资源，最终进程、二进制、数据库、Web 根和 readiness 一致。4 个工程和 519 条历史任务保持，数据库完整性通过，无新增用户任务；独立工作区 9 个工程及 111 条任务保持，测试服务已停止。备份 `~/.opencut/backups/native-capability-discovery-20261101`。持续播放慢帧、稳定启动与人工验收仍待完成，`delivery_ready=false`。
 
-检查点 `/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/capability-discovery/checkpoint.json`，SHA-256 `43238d29a08fca10bee2a387f9523c4dca828f8869af7d045318b021de9cbc6a`，48 项文件。
+检查点 `${HOME}/Movies/OpenCut-native-rendering/local-upgrade-20261101/capability-discovery/checkpoint.json`，SHA-256 `43238d29a08fca10bee2a387f9523c4dca828f8869af7d045318b021de9cbc6a`，48 项文件。
 
 ## 播放意图及时取消静帧的先前部署记录（2026-11-01）
 
@@ -192,7 +204,7 @@
 
 两个服务各核对 285 项资源，最终入口、两个显示工作线程、进程、二进制、Web 根和 readiness 相符。4 个用户工程、519 个旧任务及元数据完整保留；独立工作区 9 个工程、111 个任务保持且服务停止。备份 `~/.opencut/backups/native-startup-retirement-20261101`。严格实时、初始化波动及完整交付仍开放，`delivery_ready=false`。
 
-检查点 `/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/startup-attribution/checkpoint.json`，SHA-256 `48b9cae629a3818ad8f3a697150b48684011bccaeb4fb113f2e34b146cf21e58`，68 项文件。构建后有一次证据脚本过早读取尚未完成安装的元数据；改读已完成的构建记录，仅补该脚本，没有重建或重跑媒体。
+检查点 `${HOME}/Movies/OpenCut-native-rendering/local-upgrade-20261101/startup-attribution/checkpoint.json`，SHA-256 `48b9cae629a3818ad8f3a697150b48684011bccaeb4fb113f2e34b146cf21e58`，68 项文件。构建后有一次证据脚本过早读取尚未完成安装的元数据；改读已完成的构建记录，仅补该脚本，没有重建或重跑媒体。
 
 ## 完整位图显示修复的先前部署记录（2026-11-01）
 
@@ -208,7 +220,7 @@
 
 两个服务各核对 285 项资源，最终再次核对入口及两个显示工作线程、进程、Web 根、二进制和 readiness。4 个用户工程、519 个旧任务及元数据完整保留；独立工作区 9 个工程、111 个任务保持且服务已停止。备份 `~/.opencut/backups/native-bitmap-presentation-20261101`。下一限定诊断针对首帧准备，不重复成功的 94 秒流程。严格实时、完整交付仍未通过，`delivery_ready=false`。
 
-检查点 `/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/bitmap-presentation/checkpoint.json`，SHA-256 `cd9814fe76ceef8546b2716689389f8828dd8c0a1d16039f24ec49328004497f`，118 项文件。大浏览器轨迹已无损压缩并核对原始及压缩哈希。
+检查点 `${HOME}/Movies/OpenCut-native-rendering/local-upgrade-20261101/bitmap-presentation/checkpoint.json`，SHA-256 `cd9814fe76ceef8546b2716689389f8828dd8c0a1d16039f24ec49328004497f`，118 项文件。大浏览器轨迹已无损压缩并核对原始及压缩哈希。
 
 ## 声音进度通知合并的先前部署记录（2026-11-01）
 
@@ -226,7 +238,7 @@
 
 4 个用户工程和 519 条旧任务完整保留，无新增用户任务；两个服务各校验 285 项资源，最终身份和 readiness 核对通过。备份 `~/.opencut/backups/native-report-cadence-20261101`。独立工作区 9 个工程和 111 条任务保持，测试服务已停止。仍需归因持续预览慢帧及片尾自动静帧刷新；不重复成功的 94 秒检查，不预设硬件限制。`delivery_ready=false`。
 
-检查点 `/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/picture-wait/checkpoint.json`，SHA-256 `86aee5f5a1d9c84a1db60833d352dba7921435a6770c4721935fb3d9b934ea20`，61 项文件。
+检查点 `${HOME}/Movies/OpenCut-native-rendering/local-upgrade-20261101/picture-wait/checkpoint.json`，SHA-256 `86aee5f5a1d9c84a1db60833d352dba7921435a6770c4721935fb3d9b934ea20`，61 项文件。
 
 ## 原生当前画面预览接线修复已部署（2026-11-01）
 
@@ -249,7 +261,7 @@
 
 原生当前画面按钮问题已收口；严格实时、冷启动波动、偶发底层停滞、人工声画及完整交付仍开放，`delivery_ready=false`。本轮不重复 94 秒播放或视频导出，先前证明保留其原生产者身份；接着使用保留的全程记录归因剩余画面等待。
 
-检查点 `/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/preview-action/checkpoint.json`，SHA-256 `51583d2c07d6262591d6dcbd54f09e43234dfefe9ab61f502b7bd7108f62f426`，85 项文件。
+检查点 `${HOME}/Movies/OpenCut-native-rendering/local-upgrade-20261101/preview-action/checkpoint.json`，SHA-256 `51583d2c07d6262591d6dcbd54f09e43234dfefe9ab61f502b7bd7108f62f426`，85 项文件。
 
 ## 来源图重验与预览取消修复已部署（2026-11-01）
 
@@ -276,7 +288,7 @@
 
 此生产者的旧静帧按钮问题已由上节后续修复收口；严格实时、偶发底层停滞、人工声画与完整交付仍开放，`delivery_ready=false`。
 
-检查点 `/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/source-art/checkpoint.json`，SHA-256 `ad2534427ee13bce2af8d066a0ba7aafc8d6b518e15dc0ec7805adbb26661425`，170 项文件。
+检查点 `${HOME}/Movies/OpenCut-native-rendering/local-upgrade-20261101/source-art/checkpoint.json`，SHA-256 `ad2534427ee13bce2af8d066a0ba7aafc8d6b518e15dc0ec7805adbb26661425`，170 项文件。
 
 ## 音频启动缓冲优化已部署（2026-11-01）
 
@@ -297,7 +309,7 @@ Web 源码 `324a785a` 已替换 8791 和 59790，宿主仍为 `0bb34837` / CLI `
 
 首次验收脚本因读取浏览器响应副本的未处理异常退出，记录保留。修正后的第二次在约 65 秒随会话中断，浏览器进程已退出且无完整报告；后续复用仍在运行的服务完成独立命名的全程检查，没有重编产品。合成服务已停止。偶发底层停滞根因、严格实时和完整交付继续开放，`delivery_ready=false`。
 
-检查点 `/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261031/startup-prime/checkpoint.json`，SHA-256 `4d32ef6be1a8e8da245a3c1a452ea7d522b51a6c9036ce4e6574e8b5d299d6f5`，72 项文件。
+检查点 `${HOME}/Movies/OpenCut-native-rendering/local-upgrade-20261031/startup-prime/checkpoint.json`，SHA-256 `4d32ef6be1a8e8da245a3c1a452ea7d522b51a6c9036ce4e6574e8b5d299d6f5`，72 项文件。
 
 ## 冷启动完整字节校验优化已部署（2026-10-31）
 
@@ -318,7 +330,7 @@ CAS 素材流式固定/校验及来源代理首次校验改用已有 `ring 0.17.
 
 四个工程、497 条旧任务及数据库完整性保留，11 条新身份来源任务全部成功，重复准备复用同一任务。两个服务 ready，各核对 285 项资源；备份 `~/.opencut/backups/native-cold-verification-20261031`。自有合成服务已停止。两张实际工程截图经 agent 检查，预览、标题、缩略图与波形可见；不等于人工物理声画验收。早期同目录数据库副本被工作区绑定保护拒绝的记录保留，副本已移出用户工程目录；原数据库未替换。严格实时、偶发底层停滞根因、人工物理声画及完整交付仍开放，`delivery_ready=false`。
 
-检查点 `/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261031/cold-verification/checkpoint.json`，SHA-256 `d83d231b63291255d707d5c4331f308a5e11f9a77a903a54a2a458454222c499`，103 项文件。
+检查点 `${HOME}/Movies/OpenCut-native-rendering/local-upgrade-20261031/cold-verification/checkpoint.json`，SHA-256 `d83d231b63291255d707d5c4331f308a5e11f9a77a903a54a2a458454222c499`，103 项文件。
 
 ## 实时预览有界追赶已部署（2026-10-31）
 
@@ -341,7 +353,7 @@ Web 源码 `d5df3f10` 已替换 8791 和 59790。已定位逐帧画面信用会�
 
 四次实际工程功能、暂停/续播、来源图请求及导出选项检查通过；原重开推进/续播 5 秒门槛为 `true`。预览保持 540p，导出仍读取原片，720/1080/1440/2160 可选、默认 1080。四个工程、497 条旧任务和数据库完整性保持，两个服务各核对 285 项页面资源且 ready；备份 `~/.opencut/backups/native-realtime-catchup-20261031`。合成服务已停止。两张实际工程截图经 agent 检查，预览、标题、缩略图和波形可见；不等于人工物理声画验收。冷启动、严格实时、偶发底层停滞、人工物理声画及完整交付继续开放，`delivery_ready=false`。
 
-检查点 `/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261031/realtime-catchup/checkpoint.json`，SHA-256 `e355caf587e4979b8815c382e594a27bffbb0c26e3fff6b6a2b243342ed683dd`，89 项文件。
+检查点 `${HOME}/Movies/OpenCut-native-rendering/local-upgrade-20261031/realtime-catchup/checkpoint.json`，SHA-256 `e355caf587e4979b8815c382e594a27bffbb0c26e3fff6b6a2b243342ed683dd`，89 项文件。
 
 ## 音频进度重复调度修复已部署（2026-10-31）
 
@@ -362,7 +374,7 @@ Web 源码 `c93a2646` 已替换 8791 和 59790。已确认音频块完成的即�
 
 四次实际工程功能、暂停/续播与导出选项检查通过；重开推进/续播原 5 秒门槛为 `true`。预览保持 540p，导出仍使用原片，720/1080/1440/2160 可选、默认 1080。四个工程和 497 条旧任务、数据库完整性均保留，两个服务各核对 285 项资源且 ready；备份 `~/.opencut/backups/native-audio-report-20261031`。自有合成服务已停止。严格实时、冷启动推进、偶发底层停滞根因、人工物理声画及完整交付仍开放，`delivery_ready=false`。
 
-持久检查点 `/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261031/audio-report-cadence/checkpoint.json`，SHA-256 `48013d1bf4e7159b0642b687480c1bfdeba2f6fd1182e76277bbf505b73995b9`，61 项文件。
+持久检查点 `${HOME}/Movies/OpenCut-native-rendering/local-upgrade-20261031/audio-report-cadence/checkpoint.json`，SHA-256 `48013d1bf4e7159b0642b687480c1bfdeba2f6fd1182e76277bbf505b73995b9`，61 项文件。
 
 ## 浏览器完整像素摘要优化已部署（2026-10-31）
 
@@ -381,7 +393,7 @@ Web 构建两次，分别 18.939/20.364 秒：首个集成候选通过后发现 
 
 实际工程四次功能检查及默认 1080p、720/1080/1440/2160 导出选项通过。原重开推进/续播 5 秒门槛为 `true`，未以首帧门槛替代。四个工程、497 条旧任务和数据库完整性保持不变，没有新增媒体任务；两个服务均 ready，各核对 285 项页面资源。备份位于 `~/.opencut/backups/native-simd-digest-final-20261031`。既有独立原生像素/PCM/4K 导出证明仅因完整原生运行时相同而复用，不改记为本次重新验收。自有合成服务已停止。严格实时、启动推进和人工/物理声画及完整交付仍开放，`delivery_ready=false`。
 
-检查点 `/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261031/simd-digest-final/checkpoint.json`，摘要 `f46001a95a8da218fb774e1c105bf286149bc201654deaa1a521020d675ef8cf`，72 项文件；其中引用了初始候选与原生证明，保留全部限制。
+检查点 `${HOME}/Movies/OpenCut-native-rendering/local-upgrade-20261031/simd-digest-final/checkpoint.json`，摘要 `f46001a95a8da218fb774e1c105bf286149bc201654deaa1a521020d675ef8cf`，72 项文件；其中引用了初始候选与原生证明，保留全部限制。
 
 ## 当前安装的吞吐归因（2026-10-31）
 
@@ -389,7 +401,7 @@ Web 构建两次，分别 18.939/20.364 秒：首个集成候选通过后发现 
 
 实际海南多轨工程 0/6/30 秒窗口各 16 帧，排除各自首帧后，原生完整帧中位约 38.52/39.25/37.00 ms，仍保持 960×540，已接近 25fps 的 40 ms 预算。该组不含浏览器显示和音频并行，未作独立画质验收。工程快照前后完全相同。另一次约 12 秒合成工程编辑器观察中，开始播放后短时可按实时推进，预取队列随后收窄；不能覆盖既有 94 秒慢于实时的失败结论，也不能单凭此认定音频或硬件限制造成问题。
 
-本批保留诊断脚本的服务已停止、依赖路径错误、越过预取窗口和浏览器语言选择器失败，均不冒充产品回归。所有诊断会话及自有合成服务已停止；两个用户服务仍 ready，身份与上一批安装一致。本批没有重跑完整 94 秒、重导出或重新生成素材。严格实时、实际启动推进门槛和偶发传输停滞根因仍开放，`delivery_ready=false`。84 项持久证据：`/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261031/frame-throughput/checkpoint.json`，摘要 `a60e0d7a92a4cf5dd14b99afb982bf34e18d6452980acab087c0ae22e99edd86`。
+本批保留诊断脚本的服务已停止、依赖路径错误、越过预取窗口和浏览器语言选择器失败，均不冒充产品回归。所有诊断会话及自有合成服务已停止；两个用户服务仍 ready，身份与上一批安装一致。本批没有重跑完整 94 秒、重导出或重新生成素材。严格实时、实际启动推进门槛和偶发传输停滞根因仍开放，`delivery_ready=false`。84 项持久证据：`${HOME}/Movies/OpenCut-native-rendering/local-upgrade-20261031/frame-throughput/checkpoint.json`，摘要 `a60e0d7a92a4cf5dd14b99afb982bf34e18d6452980acab087c0ae22e99edd86`。
 
 ## 首次 WAV 定位探测修复已部署（2026-10-31）
 
@@ -406,7 +418,7 @@ Web 构建两次，分别 18.939/20.364 秒：首个集成候选通过后发现 
 | workbench | cold | 3.252 | 6.303 | 2.753 |
 | workbench | warm | 1.468 | 5.839 | 3.283 |
 
-原 warm 推进/续播 5 秒门槛结果为 `false`，没有用首帧门槛替代。切换及后续检查保留 4 个工程和 486 个旧任务，11 个新身份来源任务成功，重复准备复用同一任务。导出仍为 720/1080/1440/2160，默认 1080；预览保持 540p，小原片不放大。两张实际编辑器截图经 agent 检查；人工/物理声画验收、严格实时和偶发画面传输停滞根因仍未关闭，`delivery_ready=false`。持久证据 `/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261031/wave-seek/checkpoint.json`，摘要 `ad33b959edc79b1c60841bd312a014b74e834ac5ec8450be232ed5e39f9f7a9e`。
+原 warm 推进/续播 5 秒门槛结果为 `false`，没有用首帧门槛替代。切换及后续检查保留 4 个工程和 486 个旧任务，11 个新身份来源任务成功，重复准备复用同一任务。导出仍为 720/1080/1440/2160，默认 1080；预览保持 540p，小原片不放大。两张实际编辑器截图经 agent 检查；人工/物理声画验收、严格实时和偶发画面传输停滞根因仍未关闭，`delivery_ready=false`。持久证据 `${HOME}/Movies/OpenCut-native-rendering/local-upgrade-20261031/wave-seek/checkpoint.json`，摘要 `ad33b959edc79b1c60841bd312a014b74e834ac5ec8450be232ed5e39f9f7a9e`。
 
 ## 音频预览事实传输及画面等待修复已部署（2026-10-31）
 

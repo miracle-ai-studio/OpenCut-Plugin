@@ -17,6 +17,25 @@ spec = importlib.util.spec_from_file_location('hygiene', ROOT / 'scripts/check-s
 hygiene = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(hygiene)
 
+# Exact unmodified members of Node 24.19.0 darwin-x64 and Astral's
+# 20260929 CPython 3.14.7 distribution, plus the reviewed native worker's
+# single header path from the pinned skia-bindings 0.153.3 binary. Upstream paths and the
+# public certifi trust store are not local workspace data. The complete
+# file hash is required; modified dependencies receive no exemption.
+PUBLIC_UPSTREAM_FILES = {
+    'bin/opencut-render-worker': (
+        'b889ce0f45abd017bc953d6172f70846acfc12b172cceadc0f0ca99f90e2e56a',
+        b'/Users/' + b'runner/work/rust-skia/rust-skia/skia-bindings/skia/include/codec/SkEncodedOrigin.h'),
+    'bin/libexec/runtimes/node/bin/node': (
+        '1052eb9c7d6c60a79b968e09f75af55a73462b0f6dff0964336d63b5e13eb63c', b'/Users/' + b'admin/'),
+    'bin/libexec/runtimes/python/lib/python3.14/_sysconfig_vars__darwin_darwin.json': (
+        '8c0bdc0beb6c40eb979530f835e53e89d5cbd9ebee21e270af37419ae4a2e0b8', b'/Users/' + b'runner/'),
+    'bin/libexec/runtimes/python/upstream/PYTHON.json': (
+        'ca487586a72f57620576ca7835d9aa8442da3eee768f68bde804ba0b6264d673', b'/Users/' + b'runner/'),
+    'bin/libexec/runtimes/python/lib/python3.14/site-packages/pip/_vendor/certifi/cacert.pem': (
+        'bbc7e9c01d7551bb8a159b5dedd989b8ee3ce105aff522b68eb1b01bf854cab0', None),
+}
+
 
 def sha(file):
     digest = hashlib.sha256()
@@ -27,6 +46,12 @@ def sha(file):
 
 
 def publication_findings(relative, content):
+    upstream = PUBLIC_UPSTREAM_FILES.get(relative)
+    if upstream and hashlib.sha256(content).hexdigest() == upstream[0]:
+        if upstream[1]:
+            content = content.replace(upstream[1], b'${UPSTREAM_BUILD_ROOT}/')
+        else:
+            relative = relative.removesuffix('.pem') + '.public-ca'
     # Playwright 1.63.0 contains this public Docker-user cache template. Only
     # exempt that exact literal in its pinned dependency, not arbitrary homes.
     if relative == 'bin/libexec/classic-audio-renderer/node_modules/playwright-core/lib/coreBundle.js':
@@ -75,14 +100,15 @@ def inspect_runtime(archive):
 
 
 def package(runtime_archive, output):
-    top, runtime = inspect_runtime(runtime_archive)
+    top, runtime = inspect_runtime(runtime_archive) if runtime_archive else (None, None)
     metadata = json.loads((SOURCE / 'plugin.json').read_text())
     interface = metadata['extensions']['com.openai']['interface']
     if len(interface['shortDescription']) > 30:
         raise ValueError('Plugin subtitle exceeds 30 characters')
     version = metadata['version']
     output.mkdir(parents=True, exist_ok=True)
-    destination = output / f'opencut-plugin-{version}-{runtime["target"]}.zip'
+    target = runtime['target'] if runtime else 'personal'
+    destination = output / f'opencut-plugin-{version}-{target}.zip'
     if destination.exists():
         raise FileExistsError('Refusing to replace an existing release ZIP')
     with tempfile.TemporaryDirectory(prefix='opencut-portable-plugin-') as temporary:
@@ -97,6 +123,8 @@ def package(runtime_archive, output):
         # Retain a compatibility overlay; the portable root remains authoritative.
         compatibility = {key: metadata[key] for key in ('name', 'version', 'description', 'author')}
         compatibility.update(skills='./skills/', mcpServers='./.mcp.json', interface=interface)
+        compatibility['requires_local_executor'] = metadata['extensions']['com.openai'].get('requires_local_executor', False)
+        compatibility['extensions'] = {'com.openai': {'onboardingSkill': metadata['extensions']['com.openai']['onboardingSkill']}}
         (stage / '.codex-plugin').mkdir()
         (stage / '.codex-plugin/plugin.json').write_text(json.dumps(compatibility, indent=2) + '\n')
         mcp = json.loads((SOURCE / 'mcp.json').read_text())
@@ -105,9 +133,19 @@ def package(runtime_archive, output):
                    'runtime_top_dir': top, 'runtime_archive_sha256': sha(runtime_archive),
                    'binary_sha256': runtime['binary_sha256'], 'target': runtime['target'],
                    'external_dependencies': runtime['external_dependencies'],
-                   'scope': 'GitHub local-install prerelease; not submitted to the official directory; full product qualification remains incomplete'}
-        (stage / 'release.json').write_text(json.dumps(release, indent=2) + '\n')
-        shutil.copy2(runtime_archive, stage / 'runtime.tar.gz')
+                   'scope': 'GitHub local-install prerelease; not submitted to the official directory; full product qualification remains incomplete'} if runtime else {
+                       'format': 'opencut.personal-plugin-package.v1', 'version': version,
+                       'runtime_release_url': f'https://github.com/miracle-ai-studio/OpenCut-Plugin/releases/tag/v{version}',
+                       'requires_runtime_install': True,
+                       'scope': 'Personal plugin import; install the matching platform runtime before using MCP. Not an official directory listing.'}
+        (stage / ('release.json' if runtime else 'distribution.json')).write_text(json.dumps(release, indent=2) + '\n')
+        if runtime:
+            shutil.copy2(runtime_archive, stage / 'runtime.tar.gz')
+        for file in stage.rglob('*'):
+            if file.is_file() and file.name != 'runtime.tar.gz':
+                findings = publication_findings(file.relative_to(stage).as_posix(), file.read_bytes())
+                if findings:
+                    raise ValueError(f'Plugin publication hygiene failed: {file.relative_to(stage)}: {[x[1] for x in findings]}')
         with zipfile.ZipFile(destination, 'w') as archive:
             for file in sorted(stage.rglob('*')):
                 if file.is_file():
@@ -124,7 +162,9 @@ def package(runtime_archive, output):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--runtime-archive', type=Path, required=True)
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument('--runtime-archive', type=Path)
+    mode.add_argument('--personal', action='store_true', help='Package the portable plugin for personal account import; native runtime is installed separately')
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
-    print(json.dumps(package(args.runtime_archive.resolve(), args.output.resolve()), indent=2))
+    print(json.dumps(package(args.runtime_archive.resolve() if args.runtime_archive else None, args.output.resolve()), indent=2))

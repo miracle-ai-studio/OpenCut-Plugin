@@ -9,10 +9,10 @@ from fractions import Fraction
 from pathlib import Path
 
 class Mcp:
-    def __init__(self,binary,database,root,launch=None,trace=None):
+    def __init__(self,binary,database,root,launch=None,trace=None,env=None):
         self.trace=trace
         self.log=(root/f'mcp-{time.time_ns()}.log').open('wb')
-        self.process=subprocess.Popen(launch or [str(binary),'--database',str(database),'mcp','serve','--with-worker'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=self.log)
+        self.process=subprocess.Popen(launch or [str(binary),'--database',str(database),'mcp','serve','--with-worker'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=self.log,env=env)
         self.selector=selectors.DefaultSelector();self.selector.register(self.process.stdout,selectors.EVENT_READ)
         self.buffer=bytearray();self.serial=0
         try:

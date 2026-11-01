@@ -41,9 +41,17 @@ def inspect_file(relative, content):
         findings.append((0, 'SQLite database content'))
     # Approved source assets include font-atlas AVIFs and licensed vector artwork.
     # The synthetic username "private" is used in authorization rejection fixtures.
-    for label, pattern in PATTERNS.items():
-        for match in pattern.finditer(content):
-            findings.append((content.count(b'\n', 0, match.start()) + 1, label))
+    matches = [(match.start(), label) for label, pattern in PATTERNS.items()
+               for match in pattern.finditer(content)]
+    # Binaries can contain thousands of compiler paths. Count each interval
+    # once instead of rescanning the entire prefix for every finding.
+    lines = {}
+    previous, line = 0, 1
+    for offset in sorted({offset for offset, _ in matches}):
+        line += content.count(b'\n', previous, offset)
+        lines[offset] = line
+        previous = offset
+    findings.extend((lines[offset], label) for offset, label in matches)
     return findings
 
 

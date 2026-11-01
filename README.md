@@ -43,16 +43,16 @@ Download the matching ZIP and `.sha256` from [GitHub Releases](https://github.co
 
 Prerequisites for this prerelease:
 
-- macOS Intel for the supplied executable; Node.js **22.12+** and FFmpeg/ffprobe on PATH.
-- Chromium matching the delivered Playwright **1.63.0** runtime. It can be installed with `npx playwright@1.63.0 install chromium`.
+- macOS Intel for the supplied executable; Node.js **22.12+** on PATH to run the installer and plugin launcher.
+- The platform package includes the Rust renderer, native media libraries, FFmpeg/ffprobe, Node for catalog tools, and Python/fontTools. Chromium is not a runtime dependency.
 - A desktop client supporting local stdio MCP plugins. Web/mobile chats cannot execute this local runtime.
-- Optional font derivation additionally needs the exact Python/fontTools environment declared by the runtime locks. It is not bundled or enabled by this base installation. Optional transcription needs a local model and executable.
+- Optional transcription needs a separately configured local model and executable.
 
-For example, after installing Node and FFmpeg with your package manager:
+After installing Node.js with your package manager:
 
 ```sh
-shasum -a 256 -c opencut-plugin-0.5.0-beta.1-x86_64-apple-darwin.zip.sha256
-unzip opencut-plugin-0.5.0-beta.1-x86_64-apple-darwin.zip
+shasum -a 256 -c opencut-plugin-0.5.0-beta.3-x86_64-apple-darwin.zip.sha256
+unzip opencut-plugin-0.5.0-beta.3-x86_64-apple-darwin.zip
 cd opencut
 node scripts/install.mjs
 ```
@@ -82,11 +82,17 @@ node scripts/web.mjs stop
 
 Open the returned `web_url`; it binds to loopback on an available port and uses the same private workspace. Stopping an MCP chat does not stop a separately started Web service.
 
-The current source candidate (`0.5.0-beta.2`, not yet published) adds explicit
+This beta supports explicit
 workspace selection: `node scripts/install.mjs --database /absolute/path/workspace.sqlite`.
 Both MCP and Web use that database; `OPENCUT_PLUGIN_DATABASE` is an explicit
 environment override. The setup skill explains runtime installation when the
 marketplace plugin is installed before its native runtime.
+
+## Install as a personal plugin
+
+Download `opencut-plugin-0.5.0-beta.3-personal.zip` and its checksum from the same release. Ask Plugin Creator to import that ZIP into your own account, then run **OpenCut Plugin setup** in a local desktop chat. Setup installs the matching platform runtime and selects your workspace. The personal ZIP contains the skills and stdio launcher; the platform ZIP contains the native runtime. Importing the personal ZIP alone does not install the editor runtime.
+
+A private account plugin is not a public directory listing. Other users can download the same personal ZIP from GitHub and import it into their own accounts. Cloud and mobile chats cannot access local video files or launch this runtime.
 
 ## MCP and CLI capabilities
 
@@ -138,23 +144,17 @@ Business operations have one implementation. Adapters preserve exact rational ti
 
 ## Build from source
 
-Install rustup, Node.js 22.12+, Python 3.11+, FFmpeg/ffprobe and the configured Chromium runtime. Rust is pinned by `rust-toolchain.toml`.
+Install rustup, Node.js 22.12+ and Python 3.11+. Rust is pinned by `rust-toolchain.toml`. Native builds additionally require the reviewed FFmpeg shared-library inputs described in [development](https://github.com/miracle-ai-studio/OpenCut-Plugin/blob/main/docs/development.md).
 
 ```sh
-git clone https://github.com/miracle-ai-studio/OpenCut-Plugin.git
-cd OpenCut-Plugin
 npm ci --prefix packages/sdk-ts
 npm ci --prefix apps/web
-npm ci --prefix packages/classic-audio-renderer
-npm ci --prefix packages/classic-visual-renderer
-npm ci --prefix packages/classic-source-art-renderer
-cargo build --locked --release -p opencut-cli
+# Set PKG_CONFIG_PATH to the reviewed native media library installation.
+RUSTFLAGS="--remap-path-prefix=$HOME=/opencut/build" cargo build --locked --release -p opencut-cli -p opencut-render-worker
 npm run build --prefix apps/web
-# Source host assembly supplies the renderer package, Node and Chromium paths.
-node scripts/opencut.mjs --binary target/release/opencut --database /absolute/path/workspace.sqlite --json server --directory /absolute/path/server start --web-root apps/web/dist --listen 127.0.0.1:0
 ```
 
-See runtime configuration before starting a media service. A production Web build does not automatically update running services. Publishable binaries are built with remapped personal source paths; packaging checks the final archive rather than trusting the checkout alone.
+Assemble the native runtime and pinned tools with `scripts/package-local.py` as described in [development](https://github.com/miracle-ai-studio/OpenCut-Plugin/blob/main/docs/development.md). The source launcher requires that assembled runtime's manifest; pass its `bin/opencut`, not an unassembled Cargo executable. Packaging, generated contracts, installation and renderer acceptance must all identify the delivered files.
 
 ## Data, updates and limitations
 
@@ -162,7 +162,7 @@ Media processing and workspace storage are local. MCP responses and resources ex
 
 Runtime versions are installed separately from workspace data. Stop active clients/jobs before removing a runtime. `codex plugin remove opencut@opencut-plugin` removes the client plugin; it does not delete project data. Preserve the workspace database and associated CAS/media when backing up or migrating. Optional downloads and font caches are not part of the GitHub package.
 
-This is an unsigned development prerelease. Gatekeeper/notarization, clean-machine and cross-platform acceptance, full independent pixel/PCM equivalence, long-media resource limits and physical audio/IME/Finder interactions are not fully qualified. Read [delivery status](https://github.com/miracle-ai-studio/OpenCut-Plugin/blob/main/docs/status.md) and the release verification report for the exact tested scope. The release color probe on an untagged synthetic H264 source failed its unchanged red-pixel gate (RGB 254/23/0; green must be below 15). Package/workflow validation is reported separately from this failed pixel check. The initial export check exposed automatic output reservations starving database heartbeat headroom; reservation calculation now retains control space and accounts for actual file growth. Explicit workspace quotas remain effective. No GitHub Actions pipelines are included.
+This is an unsigned development prerelease. Gatekeeper/notarization, clean-machine and cross-platform acceptance, full independent pixel/PCM equivalence, long-media resource limits and physical audio/IME/Finder interactions are not fully qualified. Read [delivery status](https://github.com/miracle-ai-studio/OpenCut-Plugin/blob/main/docs/status.md) and the release verification report for the exact tested scope. The earlier browser-runtime release failed its unchanged synthetic red-pixel gate. Its evidence does not qualify this native package; use the verification report attached to this release for the actual installed producer and result. The initial export check exposed automatic output reservations starving database heartbeat headroom; reservation calculation now retains control space and accounts for actual file growth. Explicit workspace quotas remain effective. No GitHub Actions pipelines are included.
 
 ## Keywords
 

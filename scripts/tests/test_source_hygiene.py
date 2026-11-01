@@ -12,6 +12,13 @@ spec.loader.exec_module(hygiene)
 
 
 class SourceHygieneTests(unittest.TestCase):
+    def test_repeated_findings_preserve_lines_and_pattern_order(self):
+        content = b'\n'.join([b'/Users/' + b'fixture-owner/code.rs',
+                               b'ordinary text', b'-----BEGIN ' + b'PRIVATE KEY-----',
+                               b'/Users/' + b'fixture-owner/other.rs'])
+        self.assertEqual(hygiene.inspect_file('fixture.bin', content),
+                         [(3, 'private key'), (1, 'personal home path'), (4, 'personal home path')])
+
     def test_publication_set_includes_staged_and_untracked_but_not_ignored(self):
         with tempfile.TemporaryDirectory(prefix='opencut-source-hygiene-') as directory:
             root = Path(directory)

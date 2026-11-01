@@ -43,16 +43,16 @@ OpenCut Plugin 是基于 [OpenCut](https://github.com/OpenCut-app/OpenCut) 衍�
 
 本次预发布需要：
 
-- 对应的 macOS Intel 环境，以及 PATH 中的 Node.js **22.12+**、FFmpeg/ffprobe。
-- 与已交付 Playwright **1.63.0** 匹配的 Chromium，可执行 `npx playwright@1.63.0 install chromium` 安装。
+- 对应的 macOS Intel 环境，以及 PATH 中的 Node.js **22.12+**，用于运行安装器和插件启动器。
+- 平台安装包内含 Rust 渲染器、原生媒体库、FFmpeg/ffprobe、目录工具使用的 Node，以及 Python/fontTools；运行时无需 Chromium。
 - 支持本地 stdio MCP 插件的桌面客户端；网页/手机会话不能直接执行该本机运行时。
-- 可选字体派生另需锁文件指定的 Python/fontTools 环境，本次基础安装不内置或启用；可选转写需要本地模型及程序。
+- 可选转写需要另行配置的本地模型及程序。
 
-使用自己的包管理器安装 Node 和 FFmpeg 后：
+使用自己的包管理器安装 Node.js 后：
 
 ```sh
-shasum -a 256 -c opencut-plugin-0.5.0-beta.1-x86_64-apple-darwin.zip.sha256
-unzip opencut-plugin-0.5.0-beta.1-x86_64-apple-darwin.zip
+shasum -a 256 -c opencut-plugin-0.5.0-beta.3-x86_64-apple-darwin.zip.sha256
+unzip opencut-plugin-0.5.0-beta.3-x86_64-apple-darwin.zip
 cd opencut
 node scripts/install.mjs
 ```
@@ -82,10 +82,16 @@ node scripts/web.mjs stop
 
 打开返回的 `web_url`。服务绑定本机回环地址上的可用端口，与插件共用独立工作区；关闭 MCP 会话不会停止另行启动的 Web 服务。
 
-当前源码候选版（`0.5.0-beta.2`，尚未发布）增加显式工作区选择：
+本次 beta 支持显式工作区选择：
 `node scripts/install.mjs --database /absolute/path/workspace.sqlite`。
 MCP 和 Web 共用选中的数据库；`OPENCUT_PLUGIN_DATABASE` 可显式覆盖它。
 安装引导 Skill 会说明仅安装 marketplace 插件后，还需完成原生运行时安装。
+
+## 作为个人插件安装
+
+从同一发行页下载 `opencut-plugin-0.5.0-beta.3-personal.zip` 及校验文件，请 Plugin Creator 将 ZIP 导入自己的账号，然后在本地桌面对话中运行 **OpenCut Plugin setup**。安装引导会安装匹配的平台运行包并选择工作区。个人插件 ZIP 包含 Skill 和 MCP 启动器，平台 ZIP 包含原生运行时；只导入个人插件不等于已安装剪辑器。
+
+账号里的私有插件不属于官方公开目录。其他人可以从 GitHub 下载同一份个人插件 ZIP，导入各自账号。云端和手机对话无法访问本地视频或启动此运行时。
 
 ## MCP / CLI 当前能力
 
@@ -137,23 +143,17 @@ flowchart LR
 
 ## 从源码构建
 
-安装 rustup、Node.js 22.12+、Python 3.11+、FFmpeg/ffprobe 与所需 Chromium。Rust 版本由 `rust-toolchain.toml` 固定。
+安装 rustup、Node.js 22.12+ 和 Python 3.11+。Rust 版本由 `rust-toolchain.toml` 固定；原生构建还需要[开发文档](https://github.com/miracle-ai-studio/OpenCut-Plugin/blob/main/docs/development.md)中定义的 FFmpeg 共享库输入。
 
 ```sh
-git clone https://github.com/miracle-ai-studio/OpenCut-Plugin.git
-cd OpenCut-Plugin
 npm ci --prefix packages/sdk-ts
 npm ci --prefix apps/web
-npm ci --prefix packages/classic-audio-renderer
-npm ci --prefix packages/classic-visual-renderer
-npm ci --prefix packages/classic-source-art-renderer
-cargo build --locked --release -p opencut-cli
+# 将 PKG_CONFIG_PATH 指向已审核的原生媒体库安装目录。
+RUSTFLAGS="--remap-path-prefix=$HOME=/opencut/build" cargo build --locked --release -p opencut-cli -p opencut-render-worker
 npm run build --prefix apps/web
-# 源码启动器负责配置渲染包、Node 和 Chromium 路径。
-node scripts/opencut.mjs --binary target/release/opencut --database /absolute/path/workspace.sqlite --json server --directory /absolute/path/server start --web-root apps/web/dist --listen 127.0.0.1:0
 ```
 
-媒体服务启动前按运行文档配置依赖。构建网页不会自动更新已运行的服务。用于公开分发的程序会映射个人编译目录，打包时检查最终压缩包，而非只检查源码仓库。
+按[开发文档](https://github.com/miracle-ai-studio/OpenCut-Plugin/blob/main/docs/development.md)使用 `scripts/package-local.py` 装配原生运行时和固定依赖。源码启动器需要装配后的运行清单，传入其 `bin/opencut`；Cargo 输出本身尚未完成运行时装配。生成契约、安装和渲染验收须绑定最终交付文件。
 
 ## 数据、升级与限制
 
@@ -161,7 +161,7 @@ node scripts/opencut.mjs --binary target/release/opencut --database /absolute/pa
 
 运行版本与工程数据分离。移除运行版本前停止活动客户端和任务。`codex plugin remove opencut@opencut-plugin` 移除客户端插件，不删除工程数据。备份或迁移时共同保留数据库及关联 CAS/素材；可选模型、下载和字体缓存不进入 GitHub 安装包。
 
-这是未签名的开发预发布版。Gatekeeper/公证、全新机器与跨平台安装、完整独立像素/PCM 等价、长素材资源限制、物理声画、IME/Finder 等尚未全部验收。以[交付状态](https://github.com/miracle-ai-studio/OpenCut-Plugin/blob/main/docs/status.md)和发行验证报告中的范围为准。本轮未标记颜色信息的合成 H264 素材未通过预设红色像素门槛（RGB 254/23/0，绿色通道要求小于 15）；安装包和工作流检查与该像素失败分开报告。首次导出检查发现自动输出预占会挤占数据库心跳空间；现已修正计算，保留控制写入余量并考虑实际文件增长。用户显式设置的工作区配额继续生效。仓库不包含 GitHub Actions 流水线。
+这是未签名的开发预发布版。Gatekeeper/公证、全新机器与跨平台安装、完整独立像素/PCM 等价、长素材资源限制、物理声画、IME/Finder 等尚未全部验收。以[交付状态](https://github.com/miracle-ai-studio/OpenCut-Plugin/blob/main/docs/status.md)和发行验证报告中的范围为准。早期浏览器运行包曾未通过固定的合成红色像素门槛；该结果不代表本次原生安装包，实际安装程序身份与检查结果以本次发行附件中的验证报告为准。首次导出检查发现自动输出预占会挤占数据库心跳空间；现已修正计算，保留控制写入余量并考虑实际文件增长。用户显式设置的工作区配额继续生效。仓库不包含 GitHub Actions 流水线。
 
 ## 关键词
 

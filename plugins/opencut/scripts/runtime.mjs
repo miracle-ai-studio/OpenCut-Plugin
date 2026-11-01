@@ -3,7 +3,6 @@ import path from "node:path";
 import os from "node:os";
 import crypto from "node:crypto";
 import { spawnSync } from "node:child_process";
-import { pathToFileURL } from "node:url";
 
 export const digest = (file) =>
   crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex");
@@ -74,56 +73,48 @@ export async function runtimeEnvironment(root) {
   const binary = path.join(root, "bin/opencut");
   if (digest(binary) !== manifest.binary_sha256)
     throw new Error("OpenCut executable identity differs");
-  return rendererEnvironment(binary,path.join(root,"bin/libexec"));
+  root = fs.realpathSync(root);
+  function checkedFile(name) {
+    const expected = manifest.files[name];
+    const file = path.resolve(root, name);
+    if (!expected || !file.startsWith(root + path.sep) ||
+        !fs.realpathSync(file).startsWith(root + path.sep) ||
+        fs.statSync(file).size !== expected.size || digest(file) !== expected.sha256)
+      throw new Error(`Runtime file differs: ${name}`);
+    return file;
+  }
+  const native = manifest.native_renderer;
+  if (native?.format !== "opencut.native-renderer" || native.target !== target ||
+      native.cli !== "bin/opencut" || native.worker !== "bin/opencut-render-worker")
+    throw new Error("A native renderer installation is required");
+  for (const [name, expected] of Object.entries(native.files)) {
+    if (manifest.files[name]?.sha256 !== expected.sha256 || manifest.files[name]?.size !== expected.size)
+      throw new Error(`Native renderer identity differs: ${name}`);
+    checkedFile(name);
+  }
+  const bundle = JSON.parse(fs.readFileSync(checkedFile("bin/libexec/runtime-bundle.json"), "utf8"));
+  if (bundle.format !== "opencut.native-runtime-bundle")
+    throw new Error("A native tool bundle is required");
+  const environment = { ...process.env, OPENCUT_RENDER_WORKER: checkedFile(native.worker) };
+  const variables = { ffmpeg: "OPENCUT_FFMPEG", ffprobe: "OPENCUT_FFPROBE",
+    python: "OPENCUT_FONT_DERIVE_PYTHON", node: "OPENCUT_CLASSIC_VISUAL_NODE" };
+  for (const [component, variable] of Object.entries(variables)) {
+    const entry = bundle.components[component]?.entry;
+    if (typeof entry !== "string") throw new Error(`Missing native runtime component: ${component}`);
+    environment[variable] = checkedFile("bin/libexec/" + entry);
+  }
+  return rendererEnvironment(binary, environment);
 }
-// Host assembly shared by the verified installed runtime and explicit source CLI.
-export async function rendererEnvironment(binary,libexec) {
+// Native host assembly shared by installed and explicit source CLI entrypoints.
+export async function rendererEnvironment(binary, inherited = process.env) {
   const [major, minor] = process.versions.node.split(".").map(Number);
   if (major < 22 || (major === 22 && minor < 12))
     throw new Error("Node.js 22.12+ is required");
-  for (const executable of ["ffmpeg", "ffprobe"]) {
-    const result = spawnSync(executable, ["-version"], {
-      encoding: "utf8",
-      timeout: 10000,
-    });
-    if (result.status !== 0)
-      throw new Error(
-        `${executable} is unavailable; install FFmpeg and expose it on PATH`,
-      );
-  }
-
-  const { chromium } = await import(
-    pathToFileURL(
-      path.join(
-        libexec,
-        "classic-audio-renderer/node_modules/playwright-core/index.mjs",
-      ),
-    ).href
-  );
-  const browser =
-    process.env.OPENCUT_CLASSIC_VISUAL_CHROMIUM ||
-    process.env.OPENCUT_CLASSIC_AUDIO_CHROMIUM ||
-    chromium.executablePath();
-  if (!fs.existsSync(browser))
-    throw new Error(
-      "Chromium is unavailable. Run: npx playwright@1.63.0 install chromium",
-    );
-  const environment = {
-    ...process.env,
-    OPENCUT_CLASSIC_AUDIO_NODE: process.execPath,
-    OPENCUT_CLASSIC_VISUAL_NODE: process.execPath,
-    OPENCUT_CLASSIC_AUDIO_CHROMIUM: browser,
-    OPENCUT_CLASSIC_VISUAL_CHROMIUM: browser,
-    OPENCUT_CLASSIC_AUDIO_PACKAGE: path.join(libexec, "classic-audio-renderer"),
-    OPENCUT_CLASSIC_VISUAL_PACKAGE: path.join(
-      libexec,
-      "classic-visual-renderer",
-    ),
-    OPENCUT_SOURCE_ART_PACKAGE: path.join(
-      libexec,
-      "classic-source-art-renderer",
-    ),
-  };
+  const environment = Object.fromEntries(Object.entries(inherited).filter(([key]) =>
+    !key.startsWith("OPENCUT_CLASSIC_") && !key.startsWith("DYLD_") &&
+    key !== "OPENCUT_SOURCE_ART_PACKAGE"));
+  // Existing catalog tools still use this host variable for their Node executable.
+  environment.OPENCUT_CLASSIC_VISUAL_NODE = inherited.OPENCUT_CLASSIC_VISUAL_NODE || process.execPath;
   const probe = spawnSync(binary, ["--json", "system", "capabilities"], {
     env: environment,
     encoding: "utf8",

@@ -13575,5 +13575,50 @@
       "cli_sha256": "0d6b4e800029c4ed77a943dc25dc7389c5738e9d62be2b8c28033ba668d9945f",
       "worker_sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
     }
+  },
+  "local_mcp_native_replacement": {
+    "status": "installed_plugin_launch_and_readonly_mcp_verified",
+    "runtime": "/Users/vincent/.opencut/runtime/native-local-source-readiness-20261101/opencut-0.1.0-x86_64-apple-darwin",
+    "cli_sha256": "35560d42ef9c2c19302215994ab9b88ba7e15a10c499e330e74944b1f60b2393",
+    "worker_sha256": "dfc3f2fdeb94b8a1a714cee2bcb68e0e2119b0ca4216fdb93dbd2330b26eeaa4",
+    "launcher_sha256": "9c301cb63eed2550a317f65fe6435fbf420b8e467cb0682d7e7f81b9455fa055",
+    "installed_launchers": [
+      "/Users/vincent/.codex/plugins/cache/opencut-plugin/opencut/0.5.0-beta.2/scripts/runtime.mjs",
+      "/Users/vincent/Library/Application Support/OpenCut Plugin/0.5.0-beta.2/plugins/opencut/scripts/runtime.mjs"
+    ],
+    "database": "/Users/vincent/.opencut/hainan/workspace.sqlite",
+    "initialization_seconds": 2.359849943080917,
+    "domain_tools": [
+      "opencut_system",
+      "opencut_project",
+      "opencut_edit",
+      "opencut_media",
+      "opencut_analysis",
+      "opencut_render",
+      "opencut_catalog",
+      "opencut_task",
+      "opencut_observe",
+      "opencut_plugin",
+      "opencut_access"
+    ],
+    "project_list": {
+      "items": [],
+      "next_cursor": null
+    },
+    "workspace_unchanged": true,
+    "native_rebuilt": false,
+    "web_services_changed": false,
+    "unit_tests_passed": 4,
+    "architecture_tests_passed": 14,
+    "architecture_and_contract_boundaries": "passed",
+    "package_files_verified": 2527,
+    "source_entry_capabilities": "passed",
+    "checkpoint": {
+      "path": "/Users/vincent/.opencut/backups/mcp-native-20261101-214906/acceptance/checkpoint.json",
+      "sha256": "30bf452b9959fac3b112898964c512e254cd3e0436c20d94828b7a5f7dbb771a"
+    },
+    "desktop_conversation_reload": "Current conversation OpenCut tools are not loaded; actual installed stdio entrypoint verified separately.",
+    "public_release_updated": false,
+    "complete_delivery": false
   }
 }

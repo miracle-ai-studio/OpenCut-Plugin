@@ -12779,5 +12779,114 @@
       "4K export throughput is not realtime; sampled encoding backpressure hypothesis requires controlled follow-up",
       "historical failure causality and broader manual delivery remain open"
     ]
+  },
+  "hardware_encode_diagnosis": {
+    "status": "component_passed_integration_pending",
+    "source_baseline": "d8dec1b8",
+    "scope": "Paired encoding component experiment only: 50 identical original-camera RGB frames, 3840x2160 at25fps, same22393000bitrate and color transform; no product integration or native-export speed claim.",
+    "ffmpeg_sha256": "df7bf6ac82589b188a9246592bf7be3fd4d4718b237dcb92198f05cd4e280103",
+    "input_sha256": "2d4cf509af2d15790efd419b9656b8dbc05f3dc9e2c5782b61d73ecfd4b27140",
+    "cases": {
+      "x264": {
+        "seconds": 15.444938269909471,
+        "sampled_peak_rss_kib": 1626900,
+        "quality_passed": true,
+        "size": 6555878,
+        "sha256": "c3085f48b9d6e85056457162d2d63578fb27a3a7041bc8590dd712845993047a",
+        "pixels": [
+          {
+            "frame": 0,
+            "mae": 1.2851249035493828,
+            "gate": 5,
+            "passed": true,
+            "expected_sha256": "ff2841e1678413a5be7342a5e69fd242d1bf6bc8a5f8b349190866d0123b6d95",
+            "actual_sha256": "14a3ca36a15c50ab92418cc31527bd5a7cab22060d050e4b4ccdec6237ac63ac"
+          },
+          {
+            "frame": 12,
+            "mae": 2.9795604664994855,
+            "gate": 5,
+            "passed": true,
+            "expected_sha256": "12c413048b1258ecc8485e1d83c60f180738bc2f9fe00f5b2287d0e32c46571e",
+            "actual_sha256": "337b4efc573b590ece4ed9df493ef51fcbcbcffbd1463531e703663462b81b02"
+          },
+          {
+            "frame": 25,
+            "mae": 2.690705576453189,
+            "gate": 5,
+            "passed": true,
+            "expected_sha256": "aa8c97233d0c26c1c39b08604590a355a9314c10754495a2174542a9c8cddeec",
+            "actual_sha256": "20a82cc038b3d617c831470961cfaeb67a129ae1f5db9cc13e4d0108689f3304"
+          },
+          {
+            "frame": 49,
+            "mae": 2.6269775189686215,
+            "gate": 5,
+            "passed": true,
+            "expected_sha256": "540f734929c267245d75ecef629ec5220932e148e65eccf39aec6aa2e99d2dbb",
+            "actual_sha256": "9a7d6fdb23a9130ef8d958f647833a2423db1bea49c97ebad76251d74b552e9f"
+          }
+        ]
+      },
+      "videotoolbox": {
+        "seconds": 2.9420220348984003,
+        "sampled_peak_rss_kib": 480164,
+        "quality_passed": true,
+        "size": 6045982,
+        "sha256": "dcfdd6fedf2a1c1600c9dfb7023a1737a035ccb9cb357e466c86033dcc747c71",
+        "pixels": [
+          {
+            "frame": 0,
+            "mae": 2.0632544447659464,
+            "gate": 5,
+            "passed": true,
+            "expected_sha256": "ff2841e1678413a5be7342a5e69fd242d1bf6bc8a5f8b349190866d0123b6d95",
+            "actual_sha256": "991ed18ba49296d5d883cada35768429ca5b467d7db96bc2793fd7f1d0d1f008"
+          },
+          {
+            "frame": 12,
+            "mae": 2.1467607060185183,
+            "gate": 5,
+            "passed": true,
+            "expected_sha256": "12c413048b1258ecc8485e1d83c60f180738bc2f9fe00f5b2287d0e32c46571e",
+            "actual_sha256": "04a1db504ae219491a82e65108f64b8751df728e094f9d37c3d0a32fad795390"
+          },
+          {
+            "frame": 25,
+            "mae": 2.5816694396219138,
+            "gate": 5,
+            "passed": true,
+            "expected_sha256": "aa8c97233d0c26c1c39b08604590a355a9314c10754495a2174542a9c8cddeec",
+            "actual_sha256": "4a738a629d03f8890b060c40c8ac57c9c1d0661d98bd760c13c2ef8c620a4b3f"
+          },
+          {
+            "frame": 49,
+            "mae": 2.682440602494856,
+            "gate": 5,
+            "passed": true,
+            "expected_sha256": "540f734929c267245d75ecef629ec5220932e148e65eccf39aec6aa2e99d2dbb",
+            "actual_sha256": "c04a9a2d8f5ac0f89eada686ae27f00cacee106d3ab0c412b72fe39873b87e33"
+          }
+        ]
+      }
+    },
+    "encoding_time_ratio": 5.249769745671822,
+    "hardware_requires_no_software_fallback": true,
+    "checkpoint": {
+      "path": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/hardware-encode/checkpoint.json",
+      "sha256": "3fe2542a49fb5359e12807ae8e460e1460a1a483edf605e688172f7f3559cc6a",
+      "files": 16,
+      "bytes": 649443770
+    },
+    "product_changed": false,
+    "build_performed": false,
+    "deployment_changed": false,
+    "complete_delivery": false,
+    "next": [
+      "Select one encoder before real frame delivery, using admitted bounded capability observation at actual dimensions; do not retry failed real encoding through another backend.",
+      "Persist explicit selected backend and hardware capability/system evidence in typed contracts; validate stored proof and preserve historical omitted fields.",
+      "Keep original source, color conversion, quality rates, output limits, cancellation and publication fences; source FFV1 preview path stays separate.",
+      "Integrate all affected consumers, build once, generate from that binary, then serial native export/pixel/audio/cancellation acceptance before local replacement."
+    ]
   }
 }

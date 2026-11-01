@@ -2,6 +2,14 @@
 
 当前代码提供本地 CLI/HTTP/MCP 服务、SDK 和 Web 剪辑工作台。完整功能及跨平台发行验收尚未完成；[机器可读状态](status.json)中的 `delivery_ready` 保持 `false`。
 
+## 硬件 H.264 编码假设的有界实验（2026-11-01）
+
+真实长素材任务的编码反压证据之后，用同一份从原片独立解码的 50 帧 RGB 输入（两秒、3840×2160、25 fps）做一次配对实验。码率均为 22,393,000 bit/s，保留相同 BT.709 转换和颜色标记、像素格式及封装。x264 medium 两线程耗时 15.445 秒，VideoToolbox 明确设置 `allow_sw=0` 后耗时 2.942 秒，组件耗时比约 5.25；本项排除素材准备及原生渲染成本，不能换算成整个导出的提速倍数。两者输出均为 50 帧、两秒、完整 4K，四幅独立整幅 RGB 检查通过原 MAE≤5 门槛，所测最大误差分别 2.9796、2.6824。采样峰值 RSS 分别约 1588.8、468.9 MiB，未发生软件回退或资源上限退出。
+
+这证明当前机器的硬件编码路径可用且值得接入，不代表已接入产品。选择策略须在真实帧写入之前完成一次有界、受准入约束的能力确认，记录实际后端和系统事实；真实编码失败必须返回失败，不能重启另一套编码隐藏问题。历史软件输出证明仍应可读。公开结果合同、验证器及生成消费者需要一起更新，随后只构建一次，再串行运行受影响的原生导出、独立画面/音频和取消验证；通过后才替换本地服务。保持现有预览、分辨率选项、码率、颜色和资源/发布围栏。
+
+检查点 `/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/hardware-encode/checkpoint.json`，SHA-256 `3fe2542a49fb5359e12807ae8e460e1460a1a483edf605e688172f7f3559cc6a`，16 项文件，保留输入、输出、独立像素及实际参数。实验参数依据已安装编码器帮助，并核对 [FFmpeg VideoToolbox 实现](https://www.ffmpeg.org/doxygen/trunk/videotoolboxenc_8c.html) 与 [Apple 硬件编码要求](https://developer.apple.com/documentation/videotoolbox/kvtvideoencoderspecification_requirehardwareacceleratedvideoencoder)。当前产品和两处已部署服务未因此变更。
+
 ## 真实连续 42.52 秒 4K 素材（2026-11-01）
 
 在当前已安装宿主 `05074e85` / CLI `0d6b4e800029`、worker `d1366df2e6a1`、Web `a6c7b571` 上完成一次真实独立长素材验证，没有重新构建或再次替换服务。来源 `DJI_0311.MP4` 为 3840×2160、25 fps、42.52 秒、1063 帧的 H.264 相机片段，SHA-256 `346d5874f364bca57e82d458aaa405d7ed41ba28f1519680b5cdc050f8e983fd`；无循环、变速、转场或效果，来源没有音轨。本项不代表任意时长、编码或复杂多轨覆盖。

@@ -13227,7 +13227,7 @@
       }
     },
     "steady_preview_repair": {
-      "status": "implemented_integrated_build_pending",
+      "status": "built_cold_complete_playback_failed",
       "diagnostic_evidence_directory": "/private/tmp/opencut-local-upgrade-20261101/cold-preparation/steady-profile",
       "diagnostic_original_frame_ms": 12.89787618,
       "diagnostic_prepared_frame_ms": 24.34229388,
@@ -13243,7 +13243,49 @@
       "architecture_and_contract_boundaries": "passed",
       "public_contract_changed": false,
       "new_dependencies": false,
-      "deployment_changed": false
+      "deployment_changed": false,
+      "source_commit": "481d0f728933014aafa4199ad11a9931ea5a90a5",
+      "evidence_directory": "/private/tmp/opencut-local-upgrade-20261101/steady-preview",
+      "build_passed": true,
+      "rust_tests_passed": 25,
+      "packaged_contracts_passed": true,
+      "ui_playback": {
+        "passed": false,
+        "seconds": 42,
+        "presented_frames": 1049,
+        "missed_frames": 2,
+        "maximum_wall_frame_gap_ms": 389.8,
+        "maximum_gap_at_seconds": 36,
+        "audio_picture_wait_events": 2,
+        "audio_picture_wait_frames": 14144,
+        "audio_picture_wait_seconds": 0.2946666666666667,
+        "underflow_frames": 0,
+        "cold_cut_prepare_ms": 1385.8,
+        "capacity_at_surface_worker": 22,
+        "source_keyframes_seconds": [
+          0,
+          10
+        ],
+        "source_trim_seconds": 7
+      }
+    },
+    "cut_reserve_repair": {
+      "status": "implemented_integrated_build_pending",
+      "cause": "The first seek into a 7s trim must preroll from the 0s H264 keyframe; the next is 10s. The measured 1.386s cut exceeds the current 1.12s combined presentation reserve.",
+      "implementation": "Up to 2s/64 frames, limited by the native reserved envelope less 4 in-flight slots. Default 512MiB RGBA/GPU policy admits 128MiB per presentation envelope, leaving 256MiB RGBA and 384MiB GPU for execution; global policy limits unchanged. At 540p 25fps, 50 prepared frames cover 2s. Lower policies retain proportional admission.",
+      "preview_raster": [
+        960,
+        540
+      ],
+      "export_unchanged": true,
+      "public_contract_changed": false,
+      "new_dependencies": false,
+      "deployment_changed": false,
+      "web_tests_passed": 28,
+      "architecture_tests_passed": 14,
+      "architecture_and_contract_boundaries": "passed",
+      "presentation_consumer_cap": 64,
+      "internal_worker_port": "Carries the admitted byte capacity to both producer and display queues; both reject excessive credits."
     }
   }
 }

@@ -7,7 +7,7 @@ import type {SurfacePictureSource} from './surface-player';
 const flush=async()=>{for(let i=0;i<80;i++)await Promise.resolve();};
 const deferred=()=>{let resolve!:()=>void;const promise=new Promise<void>(yes=>{resolve=yes;});return {promise,resolve};};
 afterEach(()=>vi.unstubAllGlobals());
-function fixture(){
+function fixture(maxRetainedBytes=64*1024*1024){
  class FakeWorker{onmessage:((event:{data:SurfaceEvent})=>void)|null=null;onerror:null|(()=>void)=null;messages:SurfaceCommand[]=[];postMessage=(data:SurfaceCommand)=>this.messages.push(data);terminate=vi.fn();}
  vi.stubGlobal('Worker',FakeWorker);
  const host=new SurfaceWorkerHost(),worker=host.worker as unknown as FakeWorker;
@@ -18,7 +18,7 @@ function fixture(){
   const pixels={width:2,height:2,close:vi.fn()};raw.push(pixels);
   return {frame:{prepare_ahead:true,next_time:{ticks:String(Number(time.ticks)+1),timebase:25},plan:{identity:{time}},time_seconds:Number(time.ticks)/25},pixels,runtime:{}};
  });
- const source:SurfacePictureSource={descriptor:()=>plan,preparationFrames:24,hasFrame:()=>true,frame};
+ const source:SurfacePictureSource={descriptor:()=>plan,preparationFrames:24,maxRetainedBytes,hasFrame:()=>true,frame};
  const exporter=vi.fn(async(_picture:CachedPicture)=>{const pixels={width:2,height:2,close:vi.fn()};bitmaps.push(pixels);return pixels;});
  const failed=vi.fn(),run=new SurfaceWorkerRun(host,source,{} as OffscreenCanvas,session,{token:'device',sampleRate:48000,graphLatencySeconds:0},{} as MessagePort,exporter,vi.fn(),failed);
  const event=(data:SurfaceEvent extends infer E?E extends {token:string}?Omit<E,'token'>:never:never)=>worker.onmessage?.({data:{...data,token:run.token} as SurfaceEvent});
@@ -129,8 +129,10 @@ it('requires the head claim even when its pixels have completed',async()=>{
  }finally{claim.resolve();later.resolve();await flush();await f.finish();}
 });
 it('charges an early transferred bitmap until the next presentation credit report',async()=>{
- const f=fixture(),capacity=64*1024*1024,bytes=16;
+ for(const capacity of [64*1024*1024,128*1024*1024]){
+ const f=fixture(capacity),bytes=16;
  const starting=f.run.start(new AbortController().signal);f.event({kind:'started',report:f.report});await starting;
+ expect(f.worker.messages.find(m=>m.kind==='start')).toMatchObject({maxRetainedBytes:capacity});
  try{
   f.event({kind:'frame',id:1,time:{ticks:'0',timebase:25},retainedBytes:capacity-3*bytes} as never);await flush();
   expect(f.frame.mock.calls.map(c=>c[2])).toEqual([capacity-3*bytes,capacity-2*bytes]);
@@ -139,6 +141,7 @@ it('charges an early transferred bitmap until the next presentation credit repor
  }finally{await f.finish();}
  expect(f.raw.every(p=>p.close.mock.calls.length===1)).toBe(true);
  expect(f.bitmaps.every(p=>p.close.mock.calls.length===1)).toBe(true);
+ }
 });
 
 it('transfers a completed native catch-up interval with its original request binding',async()=>{

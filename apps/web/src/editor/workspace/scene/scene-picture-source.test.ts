@@ -86,13 +86,14 @@ it('preserves the native consumer catch-up binding while rejecting arbitrary fut
 });
 
 it("keeps cold-seek reserve inside the native byte budget including four in-flight slots",async()=>{
- for(const capacity of [32*1024*1024,64*1024*1024]){
+ for(const capacity of [32*1024*1024,64*1024*1024,128*1024*1024]){
   const f=fixture(),original=f.render.getMockImplementation()!;
   f.render.mockImplementationOnce(async(...args)=>{const picture=await original(...args);picture.runtime.maxRetainedBytes=String(capacity);return picture;});
   await f.source.initialize(new AbortController().signal);
   const count=f.source.preparationFrames;
   expect((count+4)*960*540*4).toBeLessThanOrEqual(capacity);
-  expect(count*.04).toBeLessThanOrEqual(1.2);
-  expect(count).toBe(Math.floor(capacity/(960*540*4))-4);
+  expect(count*.04).toBeLessThanOrEqual(2);
+  expect(count).toBe(Math.min(50,Math.floor(capacity/(960*540*4))-4));
+  if(capacity===128*1024*1024)expect(count).toBe(50);
  }
 });

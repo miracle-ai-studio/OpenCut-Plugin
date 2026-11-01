@@ -4,6 +4,7 @@ import type {DeviceTimestamp,PresentationClockBinding} from "./audio-preview/pre
 import {pictureConsumptionLimit} from "./audio-preview/presentation-clock";
 import type {AudioPreviewSession} from "./types";
 import type {CachedPicture,PictureCachePlan} from "./picture-cache";
+import {surfaceByteCapacity} from "./surface-worker-protocol";
 
 type Time=AudioPreviewSession["presentation_time"];
 const compare=(a:Time,b:Time)=>BigInt(a.ticks)*BigInt(b.timebase)-BigInt(b.ticks)*BigInt(a.timebase);
@@ -26,6 +27,7 @@ export type PreparedSurfacePicture={
   complete:Promise<CachedPicture>;
 };
 export interface SurfacePictureSource {
+  readonly maxRetainedBytes?:number;
   readonly preparationFrames?:number;
   createPainter?(canvas:OffscreenCanvas):SurfacePainter|undefined;
   descriptor():Pick<PictureCachePlan,"project_id"|"revision"|"sequence_id"|"width"|"height"|"duration"|"frame_step_seconds">;
@@ -66,6 +68,7 @@ export class SurfacePlayer {
   private reportAt=-Infinity;
   private painter:SurfacePainter;
   private capacity:number;
+  private maxRetainedBytes:number;
   private validated=new WeakSet<CachedPicture>();
   private validating=0;
   private slowPreparations:Record<string,number>[]=[];
@@ -81,7 +84,8 @@ export class SurfacePlayer {
     if(binding.sampleRate!==session.identity.sample_rate||!Number.isFinite(binding.graphLatencySeconds)||binding.graphLatencySeconds<0||binding.graphLatencySeconds>1)
       throw Error("Invalid presentation clock binding");
     const plan=cache.descriptor();
-    this.capacity=Math.min(24,Math.max(1,cache.preparationFrames??8));
+    this.capacity=Math.min(64,Math.max(1,cache.preparationFrames??8));
+    this.maxRetainedBytes=surfaceByteCapacity(cache);
     if(plan.project_id!==session.identity.project_id||plan.revision!==session.identity.revision||plan.sequence_id!==session.identity.sequence_id)
       throw Error("Presentation cache differs from its fixed session");
     this.clock=new PreviewOutputClock(binding.sampleRate,binding.graphLatencySeconds);
@@ -134,7 +138,7 @@ export class SurfacePlayer {
         // window. A cold reserve is filled asynchronously after audio starts.
         if(!waitForCold&&!this.cache.hasFrame(this.next))break;
         const retained=this.canvas.width*this.canvas.height*4+this.queue.reduce((bytes,p)=>bytes+p.pixels.width*p.pixels.height*4,0);
-        if(this.queue.length&&retained+plan.width*plan.height*4>64*1024*1024)break;
+        if(this.queue.length&&retained+plan.width*plan.height*4>this.maxRetainedBytes)break;
         let picture:CachedPicture;
         try {picture=await this.cache.frame(this.next,this.abort.signal,retained);}
         catch(error){

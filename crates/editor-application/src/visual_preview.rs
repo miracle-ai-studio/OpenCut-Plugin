@@ -249,7 +249,9 @@ pub fn reserve_native_picture_memory(
     mut policy: LocalVisualExecutionPolicy,
     retained: u32,
 ) -> Result<(LocalVisualExecutionPolicy, u32), EditorError> {
-    let capacity = (64 * 1024 * 1024u64)
+    // A long-GOP HD cut can require over one second of preroll. Reserve the
+    // parent and client queues up front, within the unchanged owner policy.
+    let capacity = (128 * 1024 * 1024u64)
         .min(policy.max_rgba_bytes / 4)
         .min(policy.max_gpu_bytes / 4);
     if capacity < 65536 || u64::from(retained) > capacity {
@@ -360,6 +362,27 @@ mod tests {
             original.max_gpu_bytes
         );
         assert!(reserve_native_picture_memory(original, capacity + 1).is_err());
+    }
+    #[test]
+    fn native_cut_reserve_keeps_both_queues_inside_the_owner_policy() {
+        for (gpu_mib, rgba_mib, expected_mib) in [(64, 128, 16), (256, 256, 64), (512, 512, 128)] {
+            let mut original = crate::classic_text_frame::tests::policy();
+            original.max_gpu_bytes = gpu_mib * 1024 * 1024;
+            original.max_rgba_bytes = rgba_mib * 1024 * 1024;
+            let (cold, capacity) = reserve_native_picture_memory(original.clone(), 0).unwrap();
+            assert_eq!(u64::from(capacity), expected_mib * 1024 * 1024);
+            let (full, _) = reserve_native_picture_memory(original.clone(), capacity).unwrap();
+            assert_eq!(cold, full);
+            assert_eq!(
+                cold.max_rgba_bytes + 2 * u64::from(capacity),
+                original.max_rgba_bytes
+            );
+            assert_eq!(
+                cold.max_gpu_bytes + u64::from(capacity),
+                original.max_gpu_bytes
+            );
+            assert!(reserve_native_picture_memory(original, capacity + 1).is_err());
+        }
     }
 }
 

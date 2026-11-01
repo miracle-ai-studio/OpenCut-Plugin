@@ -2,7 +2,7 @@ import type {PreparedSurfacePicture,SurfacePictureSource,SurfaceReport} from './
 import type {CachedPicture} from './picture-cache';
 import type {AudioPreviewSession} from './types';
 import type {DeviceTimestamp,PresentationClockBinding} from './audio-preview/presentation-clock';
-import {surfaceError,PRODUCER_AHEAD,surfacePictureMatches} from './surface-worker-protocol';
+import {surfaceError,PRODUCER_AHEAD,surfacePictureMatches,surfaceByteCapacity} from './surface-worker-protocol';
 import type {SurfaceCommand,SurfaceEvent} from './surface-worker-protocol';
 const isPressure=(error:unknown)=>error instanceof Error&&'code' in error&&['VISUAL_BUDGET_EXCEEDED','PREVIEW_FRAME_STALE'].includes(String(error.code));
 const compare=(a:{ticks:string;timebase:number},b:{ticks:string;timebase:number})=>BigInt(a.ticks)*BigInt(b.timebase)-BigInt(b.ticks)*BigInt(a.timebase);
@@ -37,6 +37,7 @@ export class SurfaceWorkerRun {
  private filling:Promise<void>|null=null;
  private headAvailable:(()=>void)|null=null;
  private retained=0;
+ private maxRetainedBytes:number;
  private closed=false;
  private serving=false;
  private report:SurfaceReport;
@@ -46,6 +47,7 @@ export class SurfaceWorkerRun {
  private stopping:Promise<SurfaceReport>|null=null;
  constructor(private host:SurfaceWorkerHost,private source:SurfacePictureSource,private canvas:OffscreenCanvas,private session:AudioPreviewSession,private binding:PresentationClockBinding,private port:MessagePort,
   private exportBitmap:(picture:CachedPicture)=>ImageBitmap|Promise<ImageBitmap>,private updated:(report:SurfaceReport)=>void,private failed:(error:Error)=>void){
+  this.maxRetainedBytes=surfaceByteCapacity(source);
   if(host.closed||host.current)throw Error('Device surface still owns an earlier run or is closed');host.current=this;this.next=session.presentation_time;
   this.report={time:Number(this.next.ticks)/this.next.timebase,frameTime:this.next,readyThrough:this.next,generation:session.generation,runtime:'{}',presentedFrames:0,discardedFrames:0,statistics:'{}'};
  }
@@ -56,7 +58,7 @@ export class SurfaceWorkerRun {
   const timer=setTimeout(()=>this.fail(Error('Device presentation did not initialize')),10000);
   void promise.finally(()=>{clearTimeout(timer);signal.removeEventListener('abort',abort);}).catch(()=>{});
   const canvas=this.host.takeCanvas(this.canvas);
-  this.host.post({token:this.token,kind:'start',...(canvas?{canvas}:{}),session:this.session,plan:this.source.descriptor(),capacity:this.source.preparationFrames??8,clockPort:this.port,binding:this.binding},[...(canvas?[canvas]:[]),this.port,...(this.binding.outputPort?[this.binding.outputPort]:[])]);return promise;
+  this.host.post({token:this.token,kind:'start',...(canvas?{canvas}:{}),session:this.session,plan:this.source.descriptor(),capacity:this.source.preparationFrames??8,maxRetainedBytes:this.maxRetainedBytes,clockPort:this.port,binding:this.binding},[...(canvas?[canvas]:[]),this.port,...(this.binding.outputPort?[this.binding.outputPort]:[])]);return promise;
  }
  timestamp(timestamp:DeviceTimestamp){if(!this.closed)this.host.post({token:this.token,kind:'timestamp',timestamp});}
  snapshot(){return this.report;}
@@ -93,7 +95,7 @@ export class SurfaceWorkerRun {
    // Reserve both the owned texture and its future transferable bitmap before
    // either asynchronous export or another native frame can allocate.
    const retained=()=>this.retained+this.queue.length*bytes*2;
-   while(!this.closed&&this.queue.length<PRODUCER_AHEAD&&compare(this.next,plan.duration)<0n&&retained()+bytes*2<=64*1024*1024){
+   while(!this.closed&&this.queue.length<PRODUCER_AHEAD&&compare(this.next,plan.duration)<0n&&retained()+bytes*2<=this.maxRetainedBytes){
     if(this.source.prepareFrame&&this.reading.size>=2){await waitFor(Promise.race(this.reading),this.abort.signal);continue;}
     let pending:PreparedSurfacePicture;
     try{
@@ -119,7 +121,7 @@ export class SurfaceWorkerRun {
  }
  private refill(){void this.fill().catch(error=>{if(!isPressure(error))this.fail(error instanceof Error?error:Error(String(error)));});}
  private async serve(request:Extract<SurfaceEvent,{kind:'frame'}>){
-  if(this.serving||!Number.isSafeInteger(request.retainedBytes)||request.retainedBytes<0||request.retainedBytes>64*1024*1024)throw Error('Invalid presentation preparation credit');
+  if(this.serving||!Number.isSafeInteger(request.retainedBytes)||request.retainedBytes<0||request.retainedBytes>this.maxRetainedBytes)throw Error('Invalid presentation preparation credit');
   this.serving=true;this.retained=request.retainedBytes;let exported:ImageBitmap|undefined;
   try{
    // A ready head must not wait for unrelated later preparation or body reads.

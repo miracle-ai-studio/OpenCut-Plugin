@@ -7,7 +7,7 @@ import type {DeviceReceipt} from "./audio-preview/device-port";
 import type {PresentationClockBinding} from "./audio-preview/presentation-clock";
 
 const flush=async()=>{for(let i=0;i<30;i++)await Promise.resolve();};
-function fixture(preparationFrames=8) {
+function fixture(preparationFrames=8,maxRetainedBytes=64*1024*1024) {
   const session={session_id:"session",generation:"1",overlay_epoch:"0",owner_id:"owner",lease_id:"lease",
     identity:{project_id:"p",revision:"r",sequence_id:"s",profile:"classic-realtime-v31",sample_rate:48000,channels:2},
     state:"playing",actual_start_sample:"0",total_frames:"192000",presentation_time:{ticks:"0",timebase:48000},
@@ -23,7 +23,7 @@ function fixture(preparationFrames=8) {
   };
   const frame=vi.fn(async(time:{ticks:string;timebase:number})=>picture(time));
   const hasFrame=vi.fn(()=>true);
-  const cache={descriptor:()=>plan,frame,hasFrame,preparationFrames} as unknown as PictureCache;
+  const cache={descriptor:()=>plan,frame,hasFrame,preparationFrames,maxRetainedBytes} as unknown as PictureCache;
   const presentBitmap=vi.fn(),clearPicture=vi.fn();
   const getContext=vi.fn(()=>({transferFromImageBitmap:(bitmap:{width:number;height:number}|null)=>{
     if(bitmap){presentBitmap(bitmap);bitmap.width=0;bitmap.height=0;}else clearPicture();
@@ -91,16 +91,18 @@ it("starts at a warm window tail without granting audio credit into a cold next 
  expect(late.pixels.close).toHaveBeenCalledOnce();expect(f.failed).not.toHaveBeenCalled();
 });
 
-it("bounds live scene preparation to twenty-four native frames and accounts every queued raster before another render",async()=>{
- const f=fixture(24);await f.player.start(new AbortController().signal);
+it("honors admitted small and long-cut reserves and accounts every queued raster before another render",async()=>{
+ for(const capacity of [24,44]){
+ const f=fixture(capacity,(capacity===24?64:128)*1024*1024);f.binding.directPictureCredit=true;await f.player.start(new AbortController().signal);
  await f.tick();
- expect(f.frame).toHaveBeenCalledTimes(25);
- expect(f.frame.mock.calls.at(-1)?.[0]).toEqual({ticks:"24",timebase:25});
+ expect(f.frame).toHaveBeenCalledTimes(capacity+1);
+ expect(f.frame.mock.calls.at(-1)?.[0]).toEqual({ticks:String(capacity),timebase:25});
  const calls=f.frame.mock.calls as unknown as [unknown,AbortSignal,number][];
- expect(calls.at(-1)?.[2]).toBe(24*960*540*4);
- expect(calls.at(-1)![2]).toBeLessThan(64*1024*1024);
+ expect(calls.at(-1)?.[2]).toBe(capacity*960*540*4);
+ expect(calls.at(-1)![2]).toBeLessThan((capacity===24?64:128)*1024*1024);
  expect(f.failed).not.toHaveBeenCalled();await f.player.stop(true);
  expect(f.bitmaps.every(b=>b.close.mock.calls.length===1)).toBe(true);
+ }
 });
 
 it("establishes its bounded startup reserve and does not credit a blocked later clip",async()=>{

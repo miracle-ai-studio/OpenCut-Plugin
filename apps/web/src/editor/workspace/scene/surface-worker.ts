@@ -22,7 +22,7 @@ scope.onmessage=({data})=>{
   void(async()=>{
    if(data.canvas){if(canvas)throw Error('Presentation canvas already captured');canvas=data.canvas;}
    if(!canvas)throw Error('Presentation canvas missing');run.abort.signal.throwIfAborted();
-   const source:SurfacePictureSource={descriptor:()=>data.plan,preparationFrames:Math.max(1,data.capacity-PRODUCER_AHEAD),hasFrame:time=>BigInt(time.ticks)*BigInt(data.plan.duration.timebase)<BigInt(data.plan.duration.ticks)*BigInt(time.timebase),
+   const source:SurfacePictureSource={descriptor:()=>data.plan,maxRetainedBytes:data.maxRetainedBytes,preparationFrames:Math.max(1,data.capacity-PRODUCER_AHEAD),hasFrame:time=>BigInt(time.ticks)*BigInt(data.plan.duration.timebase)<BigInt(data.plan.duration.ticks)*BigInt(time.timebase),
     frame:(time,signal,retainedBytes=0)=>new Promise<CachedPicture>((resolve,reject)=>{
      signal.throwIfAborted();const id=++run.serial;
      run.pending.set(id,{time,resolve,reject});scope.postMessage({token:run.token,kind:'frame',id,time,retainedBytes});

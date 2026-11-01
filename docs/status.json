@@ -3242,7 +3242,7 @@
       "long native continuous video/audio playback and seek/retirement/resource matrix",
       "broader source artwork format and color/orientation coverage",
       "broader native audio codecs, prepared preview and long-play/device acceptance",
-      "unique long-source and broader 4K codec/pixel/memory/performance matrix; retained full94s repeated-source output now qualified",
+      "unique 42.52s 4K camera and full94s repeated-source output qualified; broader duration/codec/effect/pixel/memory coverage and 4K encode throughput remain open",
       "runtime dependency/license packaging and clean installation",
       "broader editor and manual acceptance"
     ],
@@ -12633,5 +12633,151 @@
     "seek_consumed_frames": 72000,
     "sample_rate": 48000,
     "maximum_underflow_events": 0
+  },
+  "native_camera_long_validation": {
+    "status": "passed_scoped",
+    "scope": "One continuous unique 42.52-second 4K H264 camera source, not a loop; installed candidate, no product build or code change. Source has no audio; device clock evidence is not audible sound acceptance.",
+    "host_source": "05074e85de5a40a74ea9a7f0b3537ffad53a32e6",
+    "runtime": {
+      "opencut": {
+        "path": "/Users/vincent/.opencut/runtime/native-local-probe-throughput-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+        "sha256": "0d6b4e800029c4ed77a943dc25dc7389c5738e9d62be2b8c28033ba668d9945f"
+      },
+      "opencut-render-worker": {
+        "path": "/Users/vincent/.opencut/runtime/native-local-probe-throughput-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+        "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
+      }
+    },
+    "web": {
+      "source_commit": "a6c7b5717177564ecd9ac7fc5a2603a08374831a",
+      "exit_code": 0,
+      "seconds": 18.213148361071944,
+      "asset_digest": "de2e85fadc72521404d4ea6b8d0298b9b4f49d991412bbae88d514a469ad3604",
+      "web_root": "/Users/vincent/.opencut/runtime/native-local-probe-throughput-20261101/opencut-0.1.0-x86_64-apple-darwin/web",
+      "source_digest": "8f7aa8fc060548099abeabae2a29f63cfd2cd015830fa5233093c698bc8247c8"
+    },
+    "fixture": {
+      "project_id": "native-camera-long-acceptance",
+      "revision": "rev_7f9015ad4257a4a3d98bfa9c301b2e4100a14b02b671fb8ad30caf54cf6e8866",
+      "sequence_id": "81779691-1704-4e94-82d8-f936f4d229ee"
+    },
+    "source_sha256": "346d5874f364bca57e82d458aaa405d7ed41ba28f1519680b5cdc050f8e983fd",
+    "source_preparation_seconds": 52.832335263025016,
+    "source_job_id": "job_b97cae669b0848349be57d5d8abee116",
+    "preview": {
+      "size": [
+        960,
+        540
+      ],
+      "frames_presented": 1063,
+      "startup_seconds": 3.491100000143051,
+      "startup_gate_seconds": 5,
+      "underflow_events": 0,
+      "underflow_frames": 0,
+      "seek_seconds": 38,
+      "pause_resume_passed": true,
+      "independent_whole_frame_rgba_equal": [
+        100,
+        125,
+        150
+      ]
+    },
+    "export": {
+      "job_id": "job_64f971e0f13b41ad9e6ef41075175df6",
+      "seconds": 389.7478339970112,
+      "size": [
+        3840,
+        2160
+      ],
+      "frames": 1063,
+      "fps": 25,
+      "duration_seconds": 42.52,
+      "original_asset_lock_verified": true,
+      "artifact_sha256": "48ec6eefadaca5c1002166365e609d2aba1da624ea82332bbb4aee0598e54100",
+      "whole_frame_mae_gate": 5,
+      "whole_frame_mae": [
+        {
+          "source_frame": 0,
+          "mae": 2.1334864085005143,
+          "gate": 5,
+          "passed": true,
+          "expected_sha256": "ff2841e1678413a5be7342a5e69fd242d1bf6bc8a5f8b349190866d0123b6d95",
+          "actual_sha256": "b970c0f6eee94d49b49738a93ae23bc1dc710045341cbc50853bd7f0996d648a"
+        },
+        {
+          "source_frame": 249,
+          "mae": 2.8667058899176956,
+          "gate": 5,
+          "passed": true,
+          "expected_sha256": "3d05d44ec86ae0cbdf6818530f81e8f6ff60dcb3057be5b422bfb384a3285012",
+          "actual_sha256": "a801d534978b46e68f0a580c745984d68dcf99d68256eacc12a6fd85f3de94c0"
+        },
+        {
+          "source_frame": 749,
+          "mae": 2.820227181391461,
+          "gate": 5,
+          "passed": true,
+          "expected_sha256": "c7047d02871b0ce8579a745cea6e2060a1f1939d26018b98861467532d90c74a",
+          "actual_sha256": "7fb9b60c178d42966c485ce56dce533584f0ac202e77987777bc9e2f6ccc49bb"
+        },
+        {
+          "source_frame": 1062,
+          "mae": 2.933519241898148,
+          "gate": 5,
+          "passed": true,
+          "expected_sha256": "9e4445e462c5e52861db900d81b10bdf0542e1da1a0c7d18887258184d22c306",
+          "actual_sha256": "bdc2d54c31f5a4d73fe4cc3e0ae453e1361f420215f3e51e34e598c88c12e513"
+        }
+      ],
+      "rss_sampled_peak_kib": {
+        "opencut": 72760,
+        "ffmpeg": 1832124,
+        "opencut-render-worker": 244076,
+        "ffprobe": 194284
+      },
+      "simultaneous_child_peak_kib": 2076192
+    },
+    "checkpoint": {
+      "path": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/camera-long/checkpoint.json",
+      "sha256": "ccb93d8dc60f2e92c66c949f3ce323ad8b46cbc67efbde26b90dbc84d7443993",
+      "files": 59,
+      "bytes": 635481392
+    },
+    "preservation": {
+      "original_projects_unchanged": 10,
+      "original_jobs_unchanged": 128,
+      "new_project": "native-camera-long-acceptance",
+      "new_jobs": [
+        "job_64f971e0f13b41ad9e6ef41075175df6",
+        "job_b97cae669b0848349be57d5d8abee116",
+        "job_f7956e1b14bc41349f2701bdc1ae8df7"
+      ],
+      "new_jobs_succeeded": true,
+      "source_media_unchanged": true,
+      "synthetic_service_stopped": true
+    },
+    "user_services": {
+      "landscape": {
+        "pid": 90413,
+        "port": 8791,
+        "projects": 2,
+        "jobs": 45
+      },
+      "workbench": {
+        "pid": 90421,
+        "port": 59790,
+        "projects": 2,
+        "jobs": 496
+      },
+      "reverified": true,
+      "restarted_this_slice": false
+    },
+    "new_build": false,
+    "manual_physical_sound_acceptance": "pending",
+    "remaining": [
+      "broader duration, codecs, effects and audio; this source is silent",
+      "4K export throughput is not realtime; sampled encoding backpressure hypothesis requires controlled follow-up",
+      "historical failure causality and broader manual delivery remain open"
+    ]
   }
 }

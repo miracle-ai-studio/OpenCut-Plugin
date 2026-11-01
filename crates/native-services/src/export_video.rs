@@ -141,7 +141,7 @@ pub(crate) fn append_arguments(
 pub(crate) fn append_sdr_color_arguments(command: &mut Command) {
     command.args([
         "-vf",
-        "scale=out_color_matrix=bt709:out_range=tv",
+        "scale=out_color_matrix=bt709:out_range=tv,setparams=range=limited:color_primaries=bt709:color_trc=bt709:colorspace=bt709",
         "-color_range",
         "tv",
         "-colorspace",

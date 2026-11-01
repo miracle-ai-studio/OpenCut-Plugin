@@ -11868,7 +11868,7 @@
     "diagnostic_limits": "Sequential observations,not attribution of all historical delays to headless mode. No physical display/audibility or broader export/media qualification."
   },
   "native_export_color_validation": {
-    "phase": "implemented_pending_integrated_build",
+    "phase": "frame_metadata_correction_pending_integrated_build",
     "evidence_root": "/private/tmp/opencut-local-upgrade-20261101/export-color",
     "installed_host_source": "8ea7ae22a92ad1858f510803498cb5aff8524162",
     "installed_cli_sha256": "f3e59cda80eae9a78d9aff733bcef305a9efa315966860f893a87a8d0d0639d2",
@@ -11928,6 +11928,53 @@
     "deployment_changed": false,
     "implementation": "Shared explicit BT.709 limited-range conversion and metadata for fixed/configurable video encoders; bounded probe preserves and verifies four color facts; RGBA proxies unchanged.",
     "build_passed": false,
-    "behavior_passed": false
+    "behavior_passed": false,
+    "rejected_candidate": {
+      "source_commit": "50d32dd1dfe05bad40177a9a498992f3bb1232b4",
+      "cli_sha256": "235343fa5a9d794cc0ca13356f8ba3cdad69ebba1f77eb8edc858ded3e3d3522",
+      "job_id": "job_74fe3117f0964a689bccb9a6f79bea2f",
+      "reason": "Postcondition rejected missing primaries/transfer: encoder options plus scale left frame metadata unspecified. No artifact publication or user-service switch."
+    },
+    "independent_counterfactual": {
+      "path": "/private/tmp/opencut-local-upgrade-20261101/export-color/encoder-validation",
+      "passed": true,
+      "correction": "Set the four frame properties after the BT.709 conversion, as well as encoder metadata.",
+      "visible_browser_rgb": [
+        [
+          251,
+          0,
+          1
+        ],
+        [
+          255,
+          23,
+          0
+        ],
+        [
+          253,
+          0,
+          0
+        ],
+        [
+          255,
+          23,
+          0
+        ],
+        [
+          251,
+          0,
+          1
+        ],
+        [
+          255,
+          23,
+          0
+        ]
+      ],
+      "scope": "Encoder-only fixed RGB experiment, not native project acceptance",
+      "small_source_strict_probe_still_failed": true,
+      "small_source_maximum_channel_error": 4,
+      "explanation": "Source-to-RGB observation differs by 2; independently isolated encoder round trip differs by 2. Keep failed limit-3 diagnostic; do not claim lossless output."
+    }
   }
 }

@@ -2,13 +2,13 @@
   "format": "opencut.delivery-status.v1",
   "delivery_ready": false,
   "in_progress": {
-    "candidate_cli_sha256": "0d6b4e800029c4ed77a943dc25dc7389c5738e9d62be2b8c28033ba668d9945f",
-    "candidate_worker_sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6",
-    "candidate_web_source_digest": "8f7aa8fc060548099abeabae2a29f63cfd2cd015830fa5233093c698bc8247c8",
+    "candidate_cli_sha256": "35560d42ef9c2c19302215994ab9b88ba7e15a10c499e330e74944b1f60b2393",
+    "candidate_worker_sha256": "dfc3f2fdeb94b8a1a714cee2bcb68e0e2119b0ca4216fdb93dbd2330b26eeaa4",
+    "candidate_web_source_digest": "9727c2fab6d7e408bb433933918548939cbfd5433d5aed6ec4f6a4fccb89b675",
     "execution_scope_optimization": "Native10b27506 retains one bounded visual owner within the same fixed session/principal/owner/lease and identical policy. Full runtime/counter revalidation per generation/overlay handoff;old pixels/readers invalidated and fresh per-frame authority/admission/publication fences preserved. Handoff errors retire without silent retry. Existing paused heartbeat/same-position dedupe from unchanged Webe3953742 retained.",
     "preview_resolution": "Actual preview540 output960x540 for4K source;smallsource320x180 retained,no further reduction.",
-    "export_resolution": "Original-source720/1080/1440/2160;Web default1080. Current host6s4K independent pixels/PCM passed; full94s retained result has old33b2852c producer.",
-    "bottleneck_attribution": "Comparable actual browser6s/30s native prepare observations865.7/840.2ms to371.9/328.0ms with exact same Web. Same child PID sets across pause/seek/resume/active42sseek. One observation,not stablebenchmark or puredecode. Full runtime checks remain;new lease,idle or execution faults may cold-start. No full94s/export replay. Prior4K107.0135s result belongs to CLI2e/worker6dc/Web324,not current candidate.",
+    "export_resolution": "Original-source720/1080/1440/2160;Web default1080. Current runtime6s4K,full42.52s4K camera,and42s1080 multitrack exports verified; full94s export retains its historical producer.",
+    "bottleneck_attribution": "Confirmed unnecessary decoder rebuilds, insufficient cold-cut reserve, and playback racing source preparation. Fixed decoder retention and bounded2s reserve; first4K preparation is now awaited before PCM. No claim that up-front preparation is instantaneous or all codecs/platforms are realtime.",
     "runtime_acceptance": {
       "small_source": {
         "fixture": "small",
@@ -950,17 +950,17 @@
       "qualification": "Current working candidate only,no install/package promotion.Process RSS samples exclude GPU/driver allocation;agent screenshots are not physical/human acceptance."
     },
     "web_build_policy": "Build into owned external outDir;retained apps/web/dist untouched. Current services use installed Weba6c7b571,285 resources each verified. This slice had2 Web builds;first2512c3ea was superseded before any service use. No Rust rebuild.",
-    "candidate_web_source_commit": "a6c7b5717177564ecd9ac7fc5a2603a08374831a",
+    "candidate_web_source_commit": "f4a81c6f785b2562a95e5583c93a6319c4176170",
     "runtime_acceptance_original_producer_scope": {
       "web_source_commit": "32421ea267cedd33cf451f87d7a1709624c76eb1",
       "web_source_digest": "5cfed08f1bdfa63fd8645eae2123ef0118d2badcfe5c7e6b2333ebb456d98826",
-      "native_runtime": "Retained original CLI2e2c682bc729/worker6dc2eaedf9f7 only;not rerun with current CLIc96/worker779. New bounded preview acceptance is seek_owner_implementation."
+      "native_runtime": "Historical original CLI2e2c682bc729/worker6dc2eaedf9f7 only. Current deployed35560d42ef9c/dfc3f2fdeb94 fixed-scenario acceptance is live_workbench_stutter.source_readiness_repair; historical observations are not relabeled as current."
     },
-    "candidate_native_source_commit": "05074e85de5a40a74ea9a7f0b3537ffad53a32e6",
-    "installed_cli_sha256": "0d6b4e800029c4ed77a943dc25dc7389c5738e9d62be2b8c28033ba668d9945f",
-    "current_slice": "Bounded export verification decoding fixed and deployed to both local services; scoped acceptance complete",
-    "installed_worker_sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6",
-    "latest_scoped_acceptance": "Fixed four threads for complete bounded export verification. One CLI build,7 affected tests, same explicit binary generated/canonical and package doctor passed. Native source-size/1080MP4,1080WebM,6s4KMP4 and12s540pFFV1 passed scoped checks; independent pixels/PCM and exact preview index/RGBA verified. Both local editors and cache reuse passed; no worker/Web build. Historical full94s export retains old33b2852c producer.",
+    "candidate_native_source_commit": "1761fea226752dfcb9be2fc577e3365270ab438c",
+    "installed_cli_sha256": "35560d42ef9c2c19302215994ab9b88ba7e15a10c499e330e74944b1f60b2393",
+    "current_slice": "Native preview continuity and source readiness repaired; six native hardware exports independently checked; both local services replaced with project deletion records preserved.",
+    "installed_worker_sha256": "dfc3f2fdeb94b8a1a714cee2bcb68e0e2119b0ca4216fdb93dbd2330b26eeaa4",
+    "latest_scoped_acceptance": "Actual42s HD multitrack,94s first4K preparation/playback,and42.52s real camera playback pass fixed timing/wait/miss gates. Seek and pause/resume pass. Six native exports720/1080/1440/2160 pass; independent RGB and6s PCM/AAC pass. Fresh process/database/Web identity and empty project page checked. Physical listening remains pending.",
     "previous_recorded_candidate_before_wave_seek": {
       "candidate_cli_sha256": "a2472d1bef079d3ee2a539e541cf36e3114092088487da001360a7f26112a5a3",
       "candidate_worker_sha256": "5d6ed551941117c9ca9580d3e3bb5060525f298e69d4db1c9b3bd89e18ee8a94",
@@ -1150,9 +1150,15 @@
       "full_ui_passed": true,
       "strict_realtime_accepted": false
     },
-    "candidate_host_source_commit": "05074e85de5a40a74ea9a7f0b3537ffad53a32e6",
-    "candidate_worker_source_commit": "853e3ab590a9f05a9fd4b14e4020a6028d42995c",
-    "strict_realtime_accepted": false
+    "candidate_host_source_commit": "1761fea226752dfcb9be2fc577e3365270ab438c",
+    "candidate_worker_source_commit": "1761fea226752dfcb9be2fc577e3365270ab438c",
+    "strict_realtime_accepted": false,
+    "current_scope_checkpoint": {
+      "path": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/source-readiness/checkpoint.json",
+      "sha256": "92f6aa81b1be9cb84e8d2d0367d7cb46da98a7a7270f0646f49547eaf08eb909",
+      "files": 114,
+      "bytes": 265154404
+    }
   },
   "scope": "Local CLI/HTTP/MCP/SDK service and Web editor; GPUI shell is not an integrated editor.",
   "public_contract": {
@@ -12890,7 +12896,7 @@
     ]
   },
   "hardware_encode_implementation": {
-    "status": "cli_and_contracts_passed_test_compile_failed_behavior_pending",
+    "status": "built_scoped_native_exports_and_fidelity_passed_deployed",
     "diagnosis_commit": "85ab817d",
     "public_contract": "Additive VideoEncoderBackend hardware variant and optional ExportVideoHardwareProbe; historical software proof omission retained.",
     "selection": "One admitted synthetic-frame observation using actual raster/rate/color/quality, at most five seconds and no more than captured deadline/RSS. Normal unsupported result selects software before project frames and is explicit in the stored proof. Cancellation/time/resource failures abort. No real-encode retry.",
@@ -12916,21 +12922,28 @@
       "seconds": 1113.5126582540106
     },
     "generated_contracts": "Generated, checked and canonical-checked against the same immutable CLI; SDK TypeScript build passed.",
-    "scoped_behavior": "pending",
-    "manual_acceptance": "pending",
-    "deployment": "previous 05074e85 / 0d6b4e800029 remains running",
+    "scoped_behavior": "Six actual native hardware exports passed; all recorded VideoToolbox hardware availability and retained original-source asset locks. Independent RGB and6s PCM/AAC passed.",
+    "manual_acceptance": "Physical audio listening remains pending; automated native export quality scope passed.",
+    "deployment": "Both local services use current source-readiness runtime; see live_workbench_stutter.source_readiness_repair.",
     "complete_delivery": false,
-    "test_build": {
+    "initial_test_build": {
       "exit_code": 101,
       "error": "E0382: test drops encoder after ownership-consuming finish; no unit behavior result yet."
+    },
+    "test_build_resolution": "Initial E0382 failure was fixed before subsequent integrated native builds and affected tests; the failed initial observation is retained separately.",
+    "current_native_export_checkpoint": {
+      "path": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/source-readiness/checkpoint.json",
+      "sha256": "92f6aa81b1be9cb84e8d2d0367d7cb46da98a7a7270f0646f49547eaf08eb909",
+      "files": 114,
+      "bytes": 265154404
     }
   },
   "live_workbench_stutter": {
-    "manual_acceptance": "failed: user reports audio and video stutter in the in-app browser",
+    "manual_acceptance": "Previous deployed runtime failed per user report. New deployed runtime passes fixed automated scope; physical speaker/headphone acceptance remains pending.",
     "project_id": "hainan-vlog-workbench-20261021",
     "revision": "rev_64c554a096944b93ac880b89a296e40725815a4e427f3caacd3736709374284b",
-    "running_cli_sha256": "0d6b4e800029c4ed77a943dc25dc7389c5738e9d62be2b8c28033ba668d9945f",
-    "running_worker_sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6",
+    "running_cli_sha256": "35560d42ef9c2c19302215994ab9b88ba7e15a10c499e330e74944b1f60b2393",
+    "running_worker_sha256": "dfc3f2fdeb94b8a1a714cee2bcb68e0e2119b0ca4216fdb93dbd2330b26eeaa4",
     "preview_raster": [
       960,
       540
@@ -12962,8 +12975,8 @@
       "scope": "FFmpeg-only decode including startup, not scene composition or playback"
     },
     "local_evidence_directory": "/private/tmp/opencut-local-upgrade-20261101/live-stutter",
-    "preview_fix_implemented": false,
-    "deployment_changed": false,
+    "preview_fix_implemented": true,
+    "deployment_changed": true,
     "complete_delivery": false,
     "candidate": {
       "implementation": "Automatic source preparation keeps known compact HD sources (<=1080p in either orientation, <=30fps, <=20Mbit/s) on original native decoding; explicit asset preparation and heavy/unknown sources retain proxy preparation. Preview raster remains540p. Added separate picture-credit audio silence counters.",
@@ -13333,17 +13346,234 @@
       }
     },
     "source_readiness_repair": {
-      "status": "implemented_web_tests_passed_build_and_cold_ui_pending",
+      "status": "built_scoped_ui_and_independent_exports_passed_deployed",
       "implementation": "Before native surface initialization, await the existing Rust-selected fixed-scene source jobs using one cancellable SDK observer. Reuse successful jobs, do not cancel shared work, propagate failures and authorization errors. Existing audio preparation heartbeat remains active; PCM starts only after prepared pictures.",
       "native_build_reused_from": "1761fea226752dfcb9be2fc577e3365270ab438c",
       "web_tests_passed": 164,
       "new_dependencies": false,
       "public_contract_changed": false,
       "native_policy_changed": false,
-      "deployment_changed": false,
+      "deployment_changed": true,
       "evidence_directory": "/private/tmp/opencut-local-upgrade-20261101/source-readiness",
       "architecture_tests_passed": 14,
-      "architecture_and_contract_boundaries": "passed"
+      "architecture_and_contract_boundaries": "passed",
+      "runtime": {
+        "opencut": {
+          "path": "/Users/vincent/.opencut/runtime/native-local-source-readiness-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+          "sha256": "35560d42ef9c2c19302215994ab9b88ba7e15a10c499e330e74944b1f60b2393"
+        },
+        "opencut-render-worker": {
+          "path": "/Users/vincent/.opencut/runtime/native-local-source-readiness-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+          "sha256": "dfc3f2fdeb94b8a1a714cee2bcb68e0e2119b0ca4216fdb93dbd2330b26eeaa4"
+        }
+      },
+      "web_source_commit": "f4a81c6f785b2562a95e5583c93a6319c4176170",
+      "web_asset_digest": "e4a407027e03edee47f77bc8a23bc4c92a8283d1f259dfd2211a3b2738e90645",
+      "web_build_seconds": 17.822586823021993,
+      "checkpoint": {
+        "path": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/source-readiness/checkpoint.json",
+        "sha256": "92f6aa81b1be9cb84e8d2d0367d7cb46da98a7a7270f0646f49547eaf08eb909",
+        "files": 114,
+        "bytes": 265154404
+      },
+      "complete_delivery": false,
+      "actual_ui": [
+        {
+          "case": "42s_multitrack",
+          "presented_frames": 1050,
+          "audio_copied_frames": 2016000,
+          "picture_wait_frames": 0,
+          "audio_underflow_frames": 0,
+          "missed_frames": 0,
+          "max_wall_frame_gap_ms": 50.5,
+          "lag_p99_ms": 39.75,
+          "preview_size": [
+            960,
+            540
+          ]
+        },
+        {
+          "case": "cold_4k",
+          "presented_frames": 2820,
+          "audio_copied_frames": 4512000,
+          "picture_wait_frames": 0,
+          "audio_underflow_frames": 0,
+          "missed_frames": 0,
+          "max_wall_frame_gap_ms": 42.799999952316284,
+          "lag_p99_ms": 33.020833333333336,
+          "preview_size": [
+            960,
+            540
+          ]
+        },
+        {
+          "case": "camera_reuse",
+          "presented_frames": 1063,
+          "audio_copied_frames": 2040960,
+          "picture_wait_frames": 0,
+          "audio_underflow_frames": 0,
+          "missed_frames": 0,
+          "max_wall_frame_gap_ms": 49.200000047683716,
+          "lag_p99_ms": 39.708333333333336,
+          "preview_size": [
+            960,
+            540
+          ]
+        }
+      ],
+      "source_readiness": {
+        "job_id": "job_8496e71ae5c94ab7954f3fcfa6c367f4",
+        "job_seconds": 12.0,
+        "pending_snapshot_saved_at": "2026-11-01T12:22:53.665615+00:00",
+        "job_completed_at": "2026-11-01T12:23:03+00:00",
+        "audio_started_while_pending": false,
+        "new_source_jobs": 1,
+        "camera_existing_job_reused": true
+      },
+      "seek_resume": {
+        "seek_seconds": 35.8,
+        "seek_frames": 155,
+        "same_session": true,
+        "samples_before_pause": 384512,
+        "samples_after_resume": 1353088,
+        "total_samples": 1737600,
+        "resume_device_elapsed_frames": 1353216,
+        "repeated_host_quanta": 1,
+        "scope": "Resumed native frame grid (25 fps, zero discarded or missed frames) is independently matched to the stopped audio sample count. The immediate paused still image was not yet refreshed. Diagnostic clock span, not the copied source PCM count; repeated host quanta are not an audible-duplication verdict."
+      },
+      "native_exports": [
+        {
+          "job_id": "job_64595bd87670476d8f9cbd8ac7fc5c62",
+          "width": 3840,
+          "height": 2160,
+          "frame_count": "180",
+          "seconds": 37.464411220978945,
+          "backend": "ffmpeg_h264_videotoolbox",
+          "artifact_sha256": "7cab824691a2b205741419a1bb10cd35d366fd13458a664efab7d2d500c1e901"
+        },
+        {
+          "job_id": "job_3431dc62fd1345b0a15a2c7b80a1ac9c",
+          "width": 1280,
+          "height": 720,
+          "frame_count": "25",
+          "seconds": 7.143004028825089,
+          "backend": "ffmpeg_h264_videotoolbox",
+          "artifact_sha256": "06f87f6faa7eb45b8462abd8bfa2193da3827382ee0a67c7a3adf5aceab9ce04"
+        },
+        {
+          "job_id": "job_2a928891936a4988859d98af6a2eb6b6",
+          "width": 1920,
+          "height": 1080,
+          "frame_count": "25",
+          "seconds": 7.660632665967569,
+          "backend": "ffmpeg_h264_videotoolbox",
+          "artifact_sha256": "ec3133a6471f7d86d1c069cea7a7b79f2058742c65dbcbaa45e25f7145bb7bb2"
+        },
+        {
+          "job_id": "job_e4fb8a10e1a64dc8a9a0b249ec27e810",
+          "width": 2560,
+          "height": 1440,
+          "frame_count": "25",
+          "seconds": 6.639024928212166,
+          "backend": "ffmpeg_h264_videotoolbox",
+          "artifact_sha256": "4e98f7af91ab848ddc8d10173cd74fe8ba9bc0ed57cc329ef722eb18114e5dc9"
+        },
+        {
+          "job_id": "job_6b2b3ddd3f3d44638b5aa8aee45eeaa9",
+          "width": 3840,
+          "height": 2160,
+          "frame_count": "1063",
+          "seconds": 138.1988833809737,
+          "backend": "ffmpeg_h264_videotoolbox",
+          "artifact_sha256": "c160ea84e7da927f2a50c4ffaccf0fc9c46727b2fa187bd8c3b99501722fcd57"
+        },
+        {
+          "job_id": "job_62310a856a64406b932614d76392b395",
+          "width": 1920,
+          "height": 1080,
+          "frame_count": "1050",
+          "seconds": 94.26608372107148,
+          "backend": "ffmpeg_h264_videotoolbox",
+          "artifact_sha256": "03198b631cd89737ddd7dfc4ee22cdb1edb1e03cec86b035b7a99d20bca1c460"
+        }
+      ],
+      "independent_fidelity": {
+        "report_directory": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/source-readiness/exports",
+        "whole_rgb_frames_checked": 13,
+        "maximum_rgb_mae": 3.795383391203704,
+        "rgb_mae_gate": 5,
+        "pcm_frames": 288000,
+        "pcm_maximum_error": 0.0,
+        "aac_snr_db": 57.51187623684451,
+        "aac_snr_gate_db": 30,
+        "scope": "Independent6s whole PCM/AAC;3 full4K test frames,4 full4K camera frames,one each720/1080/1440 camera frame,and3 full1080 workbench frames. Full42s music mix is not asserted sample-perfect. Native boundary pixel proof reused for identical native bytes."
+      },
+      "services": [
+        {
+          "name": "landscape",
+          "endpoint": "http://127.0.0.1:8791",
+          "pid": 10499,
+          "database": "/Users/vincent/Desktop/海南/风光大片_20261027/workspace.sqlite",
+          "web_root": "/Users/vincent/.opencut/runtime/native-local-source-readiness-20261101/opencut-0.1.0-x86_64-apple-darwin/web",
+          "runtime": {
+            "opencut": {
+              "path": "/Users/vincent/.opencut/runtime/native-local-source-readiness-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+              "sha256": "35560d42ef9c2c19302215994ab9b88ba7e15a10c499e330e74944b1f60b2393"
+            },
+            "opencut-render-worker": {
+              "path": "/Users/vincent/.opencut/runtime/native-local-source-readiness-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+              "sha256": "dfc3f2fdeb94b8a1a714cee2bcb68e0e2119b0ca4216fdb93dbd2330b26eeaa4"
+            }
+          },
+          "ready": true,
+          "visible_projects": 0,
+          "deleted_projects_preserved": 2,
+          "historical_jobs_unchanged": 45,
+          "additional_jobs_on_page_open": 0,
+          "integrity": "ok"
+        },
+        {
+          "name": "workbench",
+          "endpoint": "http://127.0.0.1:59790",
+          "pid": 10511,
+          "database": "/Users/vincent/.opencut/hainan/workspace.sqlite",
+          "web_root": "/Users/vincent/.opencut/runtime/native-local-source-readiness-20261101/opencut-0.1.0-x86_64-apple-darwin/web",
+          "runtime": {
+            "opencut": {
+              "path": "/Users/vincent/.opencut/runtime/native-local-source-readiness-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+              "sha256": "35560d42ef9c2c19302215994ab9b88ba7e15a10c499e330e74944b1f60b2393"
+            },
+            "opencut-render-worker": {
+              "path": "/Users/vincent/.opencut/runtime/native-local-source-readiness-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+              "sha256": "dfc3f2fdeb94b8a1a714cee2bcb68e0e2119b0ca4216fdb93dbd2330b26eeaa4"
+            }
+          },
+          "ready": true,
+          "visible_projects": 0,
+          "deleted_projects_preserved": 2,
+          "historical_jobs_unchanged": 496,
+          "additional_jobs_on_page_open": 0,
+          "integrity": "ok"
+        }
+      ],
+      "project_cleanup": {
+        "deleted_projects": 5,
+        "visible_projects_after": 0,
+        "backup": "/Users/vincent/.opencut/backups/project-cleanup-20261101-183133",
+        "original_media_preserved": true,
+        "deletion_records_and_historical_jobs_preserved": true
+      },
+      "limits": [
+        "First unprepared4K source still requires up-front preparation; the measured12-second job is not a five-second cold-open acceptance.",
+        "Physical speaker/headphone listening is not inferred from samples or counters.",
+        "Camera source has no audio; audible-source continuity is covered separately by the HD and94-second fixtures.",
+        "Independent whole PCM/AAC fidelity covers6 seconds; the42-second music mix is not claimed sample-perfect.",
+        "Fixed test projects and this macOS runtime only; broader formats, platforms and whole-product migration remain incomplete."
+      ]
+    },
+    "reported_failure_runtime": {
+      "cli_sha256": "0d6b4e800029c4ed77a943dc25dc7389c5738e9d62be2b8c28033ba668d9945f",
+      "worker_sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
     }
   }
 }

@@ -141,6 +141,26 @@ pub(super) async fn prepare(
     }
 }
 
+// Owner validation only checks its live browser grant. Do not open a managed
+// database that Identity::validate would never consult for this caller.
+pub(super) fn picture_authority<'a>(
+    identity: &'a crate::http_identity::Identity,
+    database: &std::path::Path,
+) -> Result<impl FnMut() -> Result<(), EditorError> + 'a, EditorError> {
+    identity.check_lifetime()?;
+    let mut authority = if identity.caller.is_owner() {
+        None
+    } else {
+        Some(opencut_host_runtime::workspace::Workspace::open_managed(
+            database,
+        )?)
+    };
+    Ok(move || match authority.as_mut() {
+        Some(app) => identity.validate(app),
+        None => identity.check_lifetime(),
+    })
+}
+
 fn picture_response(
     host: crate::http::Host,
     mut reader: VisualPictureReader,
@@ -155,30 +175,28 @@ fn picture_response(
     let (send, receive) = tokio::sync::mpsc::channel::<Result<Bytes, std::io::Error>>(2);
     let runtime = tokio::runtime::Handle::current();
     tokio::task::spawn_blocking(move || {
-        let mut authority = match opencut_host_runtime::workspace::Workspace::open_managed(
-            host.database.as_ref(),
-        ) {
+        let mut authority = match picture_authority(&host.identity, host.database.as_ref()) {
             Ok(authority) => authority,
             Err(_) => return,
         };
         if let Some(metadata) = metadata {
             for chunk in metadata.chunks(PICTURE_CHUNK_BYTES) {
-                if host.identity.validate(&mut authority).is_err() || reader.checkpoint().is_err() {
+                if authority().is_err() || reader.checkpoint().is_err() {
                     return;
                 }
                 let bytes = Bytes::copy_from_slice(chunk);
-                if reader.checkpoint().is_err() || host.identity.validate(&mut authority).is_err() {
+                if reader.checkpoint().is_err() || authority().is_err() {
                     return;
                 }
                 if !runtime.block_on(send_picture_chunk(&send, bytes, || {
-                    reader.checkpoint().is_ok() && host.identity.validate(&mut authority).is_ok()
+                    reader.checkpoint().is_ok() && authority().is_ok()
                 })) {
                     return;
                 }
             }
         }
         loop {
-            if send.is_closed() || host.identity.validate(&mut authority).is_err() {
+            if send.is_closed() || authority().is_err() {
                 return;
             }
             let chunk = match reader.read() {
@@ -191,11 +209,11 @@ fn picture_response(
                     return;
                 }
             };
-            if host.identity.validate(&mut authority).is_err() {
+            if authority().is_err() {
                 return;
             }
             if !runtime.block_on(send_picture_chunk(&send, Bytes::from(chunk), || {
-                reader.checkpoint().is_ok() && host.identity.validate(&mut authority).is_ok()
+                reader.checkpoint().is_ok() && authority().is_ok()
             })) {
                 return;
             }
@@ -228,6 +246,30 @@ fn picture_response(
 mod tests {
     use super::*;
     use std::cell::Cell;
+
+    #[test]
+    fn only_the_owner_can_skip_an_unused_authority_database() {
+        let directory = tempfile::tempdir().unwrap();
+        let file = directory.path().join("not-a-directory");
+        std::fs::write(&file, b"unchanged").unwrap();
+        let database = file.join("workspace.sqlite");
+        let owner = crate::http_identity::Identity::owner();
+        let mut checkpoint = picture_authority(&owner, &database).unwrap();
+        checkpoint().unwrap();
+        checkpoint().unwrap();
+        let credential = crate::http_identity::Identity {
+            caller: opencut_automation::Caller::Credential(
+                opencut_editor_application::access::VerifiedCredential::from_verified(
+                    "principal".into(),
+                    "credential".into(),
+                ),
+            ),
+            policy_revision: Some("policy".into()),
+            browser_grant: None,
+        };
+        assert!(picture_authority(&credential, &database).is_err());
+        assert_eq!(std::fs::read(file).unwrap(), b"unchanged");
+    }
 
     #[test]
     fn prepared_prefix_has_exact_lengths_and_bounded_metadata() {

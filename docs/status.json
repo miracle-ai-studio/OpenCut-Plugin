@@ -13225,6 +13225,25 @@
         "cold_static_picture_prepare_ms": 2826.3,
         "qualification": "Fresh owned service and ordinary page load, ready source artifacts, no preceding SDK frame warmup; durable job count remained135, which does not exclude ephemeral thumbnail or waveform work."
       }
+    },
+    "steady_preview_repair": {
+      "status": "implemented_integrated_build_pending",
+      "diagnostic_evidence_directory": "/private/tmp/opencut-local-upgrade-20261101/cold-preparation/steady-profile",
+      "diagnostic_original_frame_ms": 12.89787618,
+      "diagnostic_prepared_frame_ms": 24.34229388,
+      "diagnostic_managed_open_ms": 3.3108874,
+      "measurement_scope": "Same integrated native worker and source, 50 warm consecutive frames after36s; direct harness excludes HTTP/audio/UI and is not full playback acceptance.",
+      "implementation": [
+        "Compact unit-rate HD deep trim no longer forces prepared sources; explicit requests, retiming, alternate streams and heavy or unknown sources remain prepared.",
+        "Owner picture streams skip an unused managed connection; live grant and picture checks stay per chunk, credential policy checks remain unchanged.",
+        "At most1.2s/32 frames within native byte capacity minus4 in-flight slots;64MiB540p admits28 frames."
+      ],
+      "web_tests_passed": 109,
+      "architecture_tests_passed": 14,
+      "architecture_and_contract_boundaries": "passed",
+      "public_contract_changed": false,
+      "new_dependencies": false,
+      "deployment_changed": false
     }
   }
 }

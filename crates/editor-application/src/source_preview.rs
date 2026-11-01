@@ -4,7 +4,7 @@ use crate::{JobRecord, JobRequest};
 pub use opencut_contracts::source_preview::*;
 use opencut_contracts::{
     AssetKind, EditorError, Time,
-    scene::{EditorSnapshot, ElementContent, ElementSourceSpan},
+    scene::{EditorSnapshot, ElementContent},
 };
 pub use opencut_job_contracts::ArtifactDescriptor;
 pub use opencut_job_execution::scene_audio::TrustedJobAuthority;
@@ -561,10 +561,8 @@ pub fn source_targets(
                 ..
             } = &element.content
             {
-                (retime.rate.denominator == 0
-                    || retime.rate.numerator != retime.rate.denominator
-                    || deep_source_start(&element.source_span))
-                .then(|| (asset_id.clone(), *video_stream))
+                (retime.rate.denominator == 0 || retime.rate.numerator != retime.rate.denominator)
+                    .then(|| (asset_id.clone(), *video_stream))
             } else {
                 None
             }
@@ -575,7 +573,8 @@ pub fn source_targets(
         .filter(|(id, stream)| {
             input.asset_id.is_some()
                 // Aggregate metadata describes the primary stream. Alternate
-                // streams, retiming and deep trims need bounded random access.
+                // streams and retiming still require indexed preparation. A deep
+                // trim alone does not justify slower continuous proxy decoding.
                 || stream.is_some()
                 || requires_random_access.contains(&(id.clone(), *stream))
                 || snapshot
@@ -586,20 +585,6 @@ pub fn source_targets(
                     .is_none_or(needs_automatic_preparation)
         })
         .collect())
-}
-
-fn deep_source_start(span: &ElementSourceSpan) -> bool {
-    let start = match span {
-        ElementSourceSpan::ClassicTrimmed { trim_start, .. } => trim_start,
-        ElementSourceSpan::LegacySourceRange { range } => &range.start,
-    };
-    // Container metadata does not bound GOP length. A cold start beyond the
-    // decoder's two-second forward window uses the existing exact indexed
-    // preparation, even when the source is otherwise inexpensive HD.
-    start.timebase == 0
-        || start.ticks.parse::<i128>().map_or(true, |ticks| {
-            ticks < 0 || ticks > 2 * i128::from(start.timebase)
-        })
 }
 
 fn needs_automatic_preparation(asset: &opencut_contracts::scene::ProjectAsset) -> bool {

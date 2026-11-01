@@ -647,6 +647,18 @@ mod tests {
     async fn logout_revokes_an_already_captured_grant_before_queued_bytes_are_yielded() {
         let sessions = BrowserSession::new();
         let cookie = open(&sessions);
+        let identity = crate::http_identity::Identity {
+            browser_grant: sessions.capture(&api_request(&cookie)),
+            ..crate::http_identity::Identity::owner()
+        };
+        assert!(identity.browser_grant.is_some());
+        let directory = tempfile::tempdir().unwrap();
+        let mut picture_checkpoint = crate::visual_preview_http::picture_authority(
+            &identity,
+            &directory.path().join("unused.sqlite"),
+        )
+        .unwrap();
+        picture_checkpoint().unwrap();
         let response = Response::builder()
             .status(StatusCode::PARTIAL_CONTENT)
             .header("content-range", "bytes 0-5/6")
@@ -659,6 +671,8 @@ mod tests {
         assert_eq!(response.status(), StatusCode::PARTIAL_CONTENT);
         assert_eq!(response.headers()["content-range"], "bytes 0-5/6");
         sessions.handle(request(Method::DELETE, Some(&cookie)));
+        assert_eq!(picture_checkpoint().unwrap_err().code, "NOT_AUTHORIZED");
+        assert!(!directory.path().join("unused.sqlite").exists());
         assert!(
             axum::body::to_bytes(response.into_body(), 1024)
                 .await

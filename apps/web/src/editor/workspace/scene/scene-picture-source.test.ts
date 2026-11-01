@@ -46,7 +46,7 @@ it("waits for a newly authorized manifest before making the first picture availa
 it("uses native frame boundaries and session duration, reuses the first bitmap, and forwards retained-pixel admission",async()=>{
  const f=fixture(),signal=new AbortController().signal;await f.source.initialize(signal);
  expect(f.source.descriptor()).toEqual({project_id:"p",revision:"r",sequence_id:"s",width:960,height:540,duration:{ticks:"2016000",timebase:48000},frame_step_seconds:.04});
- expect(f.source.preparationFrames).toBe(24);
+ expect(f.source.preparationFrames).toBe(28);
  expect(f.source.hasFrame({ticks:"42",timebase:1})).toBe(false);
  await f.source.frame({ticks:"0",timebase:1},signal);expect(f.render).toHaveBeenCalledTimes(1);expect(f.render.mock.calls[0][1]).toEqual({session_id:"session",generation:"1",overlay_epoch:"0",owner_id:"owner",lease_id:"lease"});
  const next=await f.source.frame({ticks:"1",timebase:25},signal,123456);
@@ -82,5 +82,17 @@ it('preserves the native consumer catch-up binding while rejecting arbitrary fut
   if(valid){const p=await pending;expect(p.frame.catchUp).toEqual({requestedTime:{ticks:'1',timebase:25},consumerSeconds:.13});p.pixels.close();}
   else await expect(pending).rejects.toThrow('fixed session');
   expect(f.closed).toHaveBeenCalledOnce();
+ }
+});
+
+it("keeps cold-seek reserve inside the native byte budget including four in-flight slots",async()=>{
+ for(const capacity of [32*1024*1024,64*1024*1024]){
+  const f=fixture(),original=f.render.getMockImplementation()!;
+  f.render.mockImplementationOnce(async(...args)=>{const picture=await original(...args);picture.runtime.maxRetainedBytes=String(capacity);return picture;});
+  await f.source.initialize(new AbortController().signal);
+  const count=f.source.preparationFrames;
+  expect((count+4)*960*540*4).toBeLessThanOrEqual(capacity);
+  expect(count*.04).toBeLessThanOrEqual(1.2);
+  expect(count).toBe(Math.floor(capacity/(960*540*4))-4);
  }
 });

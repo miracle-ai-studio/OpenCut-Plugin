@@ -4,50 +4,9 @@ use opencut_contracts::{
     renderer_identity::{NativeLibraryIdentity, NativeSystemIdentity},
 };
 
-#[test]
-fn deep_trim_preparation_uses_exact_source_time_in_both_span_formats() {
-    for (ticks, timebase, expected) in [
-        ("0", 1, false),
-        ("2", 1, false),
-        ("180000", 90000, false),
-        ("180001", 90000, true),
-        ("7", 1, true),
-        ("-1", 1, true),
-        ("invalid", 1, true),
-        ("0", 0, true),
-    ] {
-        let start = Time {
-            ticks: ticks.into(),
-            timebase,
-        };
-        let zero = Time {
-            ticks: "0".into(),
-            timebase: 1,
-        };
-        assert_eq!(
-            deep_source_start(&ElementSourceSpan::ClassicTrimmed {
-                trim_start: start.clone(),
-                trim_end: zero.clone(),
-                source_duration: None,
-            }),
-            expected
-        );
-        assert_eq!(
-            deep_source_start(&ElementSourceSpan::LegacySourceRange {
-                range: opencut_contracts::TimeRange {
-                    start,
-                    duration: zero
-                },
-            }),
-            expected
-        );
-    }
-}
-
-#[test]
-fn automatic_preparation_retains_compact_hd_and_prepares_unknown_or_heavy_sources() {
+fn compact_hd_asset() -> opencut_contracts::scene::ProjectAsset {
     use opencut_contracts::scene::*;
-    let asset = ProjectAsset {
+    ProjectAsset {
         id: "video".into(),
         name: "video".into(),
         kind: AssetKind::Video,
@@ -77,7 +36,13 @@ fn automatic_preparation_retains_compact_hd_and_prepares_unknown_or_heavy_source
             audio: AudioPresence::Absent {},
         },
         license: None,
-    };
+    }
+}
+
+#[test]
+fn automatic_preparation_retains_compact_hd_and_prepares_unknown_or_heavy_sources() {
+    use opencut_contracts::scene::*;
+    let asset = compact_hd_asset();
     assert!(!needs_automatic_preparation(&asset));
     let mut portrait = asset.clone();
     portrait.metadata.intrinsic_size = Some(CanvasSize {
@@ -315,4 +280,85 @@ fn runtime_facts_and_authority_are_part_of_exact_source_identity() {
     altered = source;
     altered.frame_index.size_bytes = "207".into();
     assert!(validate_public_result(&altered).is_err());
+}
+
+#[test]
+fn deep_trimmed_compact_hd_uses_original_unless_explicit_or_retimed() {
+    use opencut_contracts::{CreateProject, FrameRate, scene::*};
+    let mut project = crate::scene::new_document(&CreateProject {
+        id: "project".into(),
+        name: "Source selection".into(),
+        sequence_id: "scene".into(),
+        width: 1920,
+        height: 1080,
+        fps: FrameRate {
+            numerator: 25,
+            denominator: 1,
+        },
+    })
+    .unwrap();
+    project.assets.push(compact_hd_asset());
+    let t = |ticks: &str| Time {
+        ticks: ticks.into(),
+        timebase: 1,
+    };
+    let element: TimelineElement = serde_json::from_value(serde_json::json!({
+        "id":"clip", "name":"Deep source start", "enabled":true,
+        "timeline_range":{"start":t("0"),"duration":t("1")},
+        "source_span":{"profile":"classic_trimmed","trim_start":t("7"),"trim_end":t("0"),"source_duration":t("8")},
+        "content":{"kind":"video","asset_id":"video","video_stream":null,"source_audio_enabled":false,
+            "audio":{"stream":null,"gain":{"unit":"decibels","value":0},"muted":false},
+            "retime":{"rate":{"numerator":1,"denominator":1},"maintain_pitch":true,"mapping":{"kind":"classic_rounded_ticks","timebase":120000}}},
+        "visual":{"profile":"classic_canvas_v31","transform":{"position_x_px":0,"position_y_px":0,"scale_x":1,"scale_y":1,"rotation_degrees":0},"opacity":1,"blend_mode":"normal","effects":[],"masks":[]},
+        "channels":[]
+    })).unwrap();
+    project.sequences[0].tracks[0].elements.push(element);
+    let mut snapshot = EditorSnapshot {
+        project,
+        revision: "fixed".into(),
+    };
+    let input = SourcePreviewPrepare {
+        project_id: "project".into(),
+        revision: "fixed".into(),
+        sequence_id: "scene".into(),
+        asset_id: None,
+        selected_video_stream: None,
+    };
+    assert!(source_targets(&snapshot, &input).unwrap().is_empty());
+    snapshot.project.sequences[0].tracks[0].elements[0].source_span =
+        ElementSourceSpan::LegacySourceRange {
+            range: opencut_contracts::TimeRange {
+                start: t("7"),
+                duration: t("1"),
+            },
+        };
+    assert!(source_targets(&snapshot, &input).unwrap().is_empty());
+    let mut explicit = input.clone();
+    explicit.asset_id = Some("video".into());
+    assert_eq!(
+        source_targets(&snapshot, &explicit).unwrap(),
+        BTreeSet::from([("video".into(), None)])
+    );
+    if let ElementContent::Video { retime, .. } =
+        &mut snapshot.project.sequences[0].tracks[0].elements[0].content
+    {
+        retime.rate.numerator = 2;
+    }
+    assert_eq!(
+        source_targets(&snapshot, &input).unwrap(),
+        BTreeSet::from([("video".into(), None)])
+    );
+    if let ElementContent::Video {
+        retime,
+        video_stream,
+        ..
+    } = &mut snapshot.project.sequences[0].tracks[0].elements[0].content
+    {
+        retime.rate.numerator = 1;
+        *video_stream = Some(1);
+    }
+    assert_eq!(
+        source_targets(&snapshot, &input).unwrap(),
+        BTreeSet::from([("video".into(), Some(1))])
+    );
 }

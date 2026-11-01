@@ -36,7 +36,12 @@ export class ScenePictureSource implements SurfacePictureSource {
       signal.throwIfAborted();this.first=picture;
     }catch(error){picture.pixels.close();throw error;}
   }
-  get preparationFrames(){const plan=this.descriptor();return Math.max(1,Math.min(24,Math.floor(.96/plan.frame_step_seconds),Math.floor(this.pictureCapacity/(plan.width*plan.height*4))-4));}
+  get preparationFrames(){
+    const plan=this.descriptor();
+    // Keep four native/read/transfer slots inside the same advertised budget.
+    // The remaining 540p storage covers a cold HD seek without slowing audio.
+    return Math.max(1,Math.min(32,Math.floor(1.2/plan.frame_step_seconds),Math.floor(this.pictureCapacity/(plan.width*plan.height*4))-4));
+  }
   createPainter(canvas:OffscreenCanvas){return this.renderer.surfacePresenter?.(canvas);}
   descriptor(){if(!this.plan)throw Error("Scene picture source is not initialized");return this.plan;}
   hasFrame(time:Time){return compare(time,{ticks:"0",timebase:1})>=0n&&compare(time,this.descriptor().duration)<0n;}

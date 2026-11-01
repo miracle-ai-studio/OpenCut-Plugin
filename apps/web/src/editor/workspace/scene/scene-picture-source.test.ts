@@ -1,7 +1,7 @@
 import {expect,it,vi} from "vitest";
-import {ScenePictureSource} from "./scene-picture-source";
+import {ScenePictureSource,type ScenePictureExecutionApi} from "./scene-picture-source";
 import type {AudioPreviewSession} from "./types";
-import type {VisualPreviewRenderer,VisualPreviewExecutionApi} from "./visual-preview-renderer";
+import type {VisualPreviewRenderer} from "./visual-preview-renderer";
 const session={session_id:"session",generation:"1",overlay_epoch:"0",owner_id:"owner",lease_id:"lease",identity:{project_id:"p",revision:"r",sequence_id:"s",sample_rate:48000},presentation_time:{ticks:"0",timebase:1},total_frames:"2016000"} as AudioPreviewSession;
 function fixture(){
  const closed=vi.fn();let revision="r",width=960;
@@ -11,13 +11,54 @@ function fixture(){
    pixels:{width,height:540,close:closed},runtime:{gpuBackend:"webgpu"}} as unknown as Awaited<ReturnType<VisualPreviewRenderer["render"]>>;
  });
  const prepare=vi.fn(async(...args:Parameters<VisualPreviewRenderer["prepare"]>)=>{const result=await render(...args);return {frame:result.frame,claimed:Promise.resolve(),complete:Promise.resolve(result)};});
- const renderer={prepare};const source=new ScenePictureSource(renderer,{} as VisualPreviewExecutionApi,session);
- return {source,renderer,prepare,render,closed,changeRevision:()=>revision="other",changeWidth:()=>width=640};
+ const prepareSources=vi.fn(async()=>({jobs:[] as Array<{job_id:string;state:string}>})),waitForJob=vi.fn(async(_id:string,_options?:{signal?:AbortSignal})=>({state:"succeeded"}));
+ const api={sdk:{call:prepareSources,waitForJob}} as unknown as ScenePictureExecutionApi;
+ const renderer={prepare};const source=new ScenePictureSource(renderer,api,session);
+ return {source,renderer,api,prepareSources,waitForJob,prepare,render,closed,changeRevision:()=>revision="other",changeWidth:()=>width=640};
 }
+it("waits for every Rust-selected scene source before starting native frames, with one bounded observer",async()=>{
+ const f=fixture(),signal=new AbortController().signal;
+ f.prepareSources.mockResolvedValue({jobs:[{job_id:"ready",state:"succeeded"},{job_id:"first",state:"running"},{job_id:"later",state:"queued"}]});
+ let finish!:()=>void,finishLater!:()=>void;
+ f.waitForJob.mockImplementationOnce(()=>new Promise(resolve=>{finish=()=>resolve({state:"succeeded"});}));
+ f.waitForJob.mockImplementationOnce(()=>new Promise(resolve=>{finishLater=()=>resolve({state:"succeeded"});}));
+ const pending=f.source.initialize(signal);
+ await vi.waitFor(()=>expect(f.waitForJob).toHaveBeenCalledOnce());
+ expect(f.prepareSources).toHaveBeenCalledWith("opencut_source_preview_prepare",{project_id:"p",revision:"r",sequence_id:"s",asset_id:null,selected_video_stream:null},{signal});
+ expect(f.render).not.toHaveBeenCalled();
+ finish();await vi.waitFor(()=>expect(f.waitForJob).toHaveBeenCalledTimes(2));expect(f.render).not.toHaveBeenCalled();finishLater();await pending;
+ expect(f.waitForJob.mock.calls.map(([id])=>id)).toEqual(["first","later"]);
+ expect(f.waitForJob).toHaveBeenCalledWith("first",{signal,timeoutMs:1800000,pollIntervalMs:500});
+ expect(f.render).toHaveBeenCalledOnce();
+});
+it("stops an interrupted source wait before rendering without cancelling the shared source job",async()=>{
+ const f=fixture(),cancel=new AbortController();
+ f.prepareSources.mockResolvedValue({jobs:[{job_id:"shared",state:"running"}]});
+ f.waitForJob.mockImplementation((_id,options)=>new Promise((_resolve,reject)=>options!.signal!.addEventListener("abort",()=>reject(options!.signal!.reason),{once:true})));
+ const pending=f.source.initialize(cancel.signal);const rejected=expect(pending).rejects.toMatchObject({name:"AbortError"});
+ await vi.waitFor(()=>expect(f.waitForJob).toHaveBeenCalledOnce());cancel.abort();await rejected;
+ expect(f.render).not.toHaveBeenCalled();expect(f.prepareSources).toHaveBeenCalledOnce();
+});
+it("preserves source-job failures and rejects a late completion after the playback intent was retired",async()=>{
+ for(const cancelled of [false,true]){
+  const f=fixture(),cancel=new AbortController(),failure=Error("Source job failed");
+  f.prepareSources.mockResolvedValue({jobs:[{job_id:"source",state:"running"}]});
+  f.waitForJob.mockImplementationOnce(async()=>{if(cancelled){cancel.abort();return {state:"succeeded"};}throw failure;});
+  const pending=f.source.initialize(cancel.signal);
+  if(cancelled)await expect(pending).rejects.toMatchObject({name:"AbortError"});else await expect(pending).rejects.toBe(failure);
+  expect(f.render).not.toHaveBeenCalled();
+ }
+});
+it("starts compact sources without a durable wait and reuses completed source preparations",async()=>{
+ for(const jobs of [[],[{job_id:"existing",state:"succeeded"}]]){
+  const f=fixture();f.prepareSources.mockResolvedValue({jobs});await f.source.initialize(new AbortController().signal);
+  expect(f.waitForJob).not.toHaveBeenCalled();expect(f.render).toHaveBeenCalledOnce();
+ }
+});
 it("requests a future authored boundary without waiting for speculative decode or queued cache publication",async()=>{
  const f=fixture(),signal=new AbortController().signal,follow=vi.fn();
  const cache={rebind:async()=>true,follow,hasFrame:()=>false,state:()=>"preparing"} as unknown as import("./picture-cache").PictureCache;
- const source=new ScenePictureSource(f.renderer,{} as VisualPreviewExecutionApi,session,cache,[{ticks:"6",timebase:1}]);
+ const source=new ScenePictureSource(f.renderer,f.api,session,cache,[{ticks:"6",timebase:1}]);
  await source.initialize(signal);await source.frame(session.presentation_time,signal);
  const picture=await source.frame({ticks:"4",timebase:1},signal,0);
  expect(f.render.mock.calls[1][5]?.time).toEqual({ticks:"4",timebase:1});expect(picture.runtime.cacheState).toBe("preparing");expect(follow).toHaveBeenCalledOnce();
@@ -27,7 +68,7 @@ it("uses a completed authorized derived window and rejects a stale revision inst
  const frame=vi.fn(async()=>({pixels:{width:960,height:540,close:vi.fn()},frame:{plan:{identity:{time:{ticks:"1",timebase:25}}},next_time:{ticks:"2",timebase:25}},runtime:{cacheSegment:"verified"}}));
  const plan={project_id:"p",revision:"r",sequence_id:"s"};
  const cache={rebind:async()=>true,follow:vi.fn(),hasFrame:()=>true,descriptor:()=>plan,nextWindow:()=>null,frame,state:()=>"ready"} as unknown as import("./picture-cache").PictureCache;
- const source=new ScenePictureSource(f.renderer,{} as VisualPreviewExecutionApi,session,cache);
+ const source=new ScenePictureSource(f.renderer,f.api,session,cache);
  await source.initialize(signal);await source.frame(session.presentation_time,signal);
  const picture=await source.frame({ticks:"1",timebase:25},signal);expect(picture.runtime.cacheHits).toBe("1");expect(f.render).toHaveBeenCalledOnce();
  plan.revision="other";await expect(source.frame({ticks:"2",timebase:25},signal)).rejects.toThrow("fixed session");expect(frame).toHaveBeenCalledOnce();
@@ -37,7 +78,7 @@ it("waits for a newly authorized manifest before making the first picture availa
  let finish!:()=>void;const gate=new Promise<void>(resolve=>{finish=resolve;});
  const prepare=vi.fn(()=>gate),rebind=vi.fn(async()=>false);
  const cache={rebind,suspend:vi.fn(),state:()=>"preparing"} as unknown as import("./picture-cache").PictureCache;
- const source=new ScenePictureSource(f.renderer,{} as VisualPreviewExecutionApi,session,cache,[],prepare);
+ const source=new ScenePictureSource(f.renderer,f.api,session,cache,[],prepare);
  let ready=false;const pending=source.initialize(signal).then(()=>{ready=true;});
  await vi.waitFor(()=>expect(prepare).toHaveBeenCalledOnce());expect(ready).toBe(false);
  finish();await pending;expect(ready).toBe(true);expect(cache.suspend).not.toHaveBeenCalled();

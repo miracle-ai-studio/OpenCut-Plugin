@@ -1178,7 +1178,7 @@ export const zh: Record<string, string> = {
     "场景预览跟随已确认的声音播放位置。支持普通混合的视频、静态 PNG/JPEG 和固定字体文字；其他视觉功能需要对应的渲染支持。",
   "Pause scene audio": "暂停场景声音",
   "Retry original audio session": "重试原声音试听请求",
-  "Preparing scene sound…": "正在准备场景声音…",
+  "Preparing scene playback…": "正在准备场景播放…",
   "Playing scene sound": "正在播放场景声音",
   "Waiting for scene audio; the playhead is stopped.":
     "正在等待场景声音，播放位置已停止。",

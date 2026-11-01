@@ -2,9 +2,11 @@ import type {AudioPreviewSession} from "./types";
 import type {CachedPicture,PictureCache} from "./picture-cache";
 import type {PreparedSurfacePicture,SurfacePictureSource} from "./surface-player";
 import type {VisualPreviewRenderer,VisualPreviewExecutionApi} from "./visual-preview-renderer";
+import type {EditorApi} from "../api";
 import {surfacePictureMatches} from "./surface-worker-protocol";
 
 type Time=AudioPreviewSession["presentation_time"];
+export type ScenePictureExecutionApi=VisualPreviewExecutionApi&{sdk:Pick<EditorApi["sdk"],"call"|"waitForJob">};
 const compare=(a:Time,b:Time)=>BigInt(a.ticks)*BigInt(b.timebase)-BigInt(b.ticks)*BigInt(a.timebase);
 /** Execution adapter only: every time/grid, layer and binding comes from Rust. */
 export class ScenePictureSource implements SurfacePictureSource {
@@ -13,9 +15,22 @@ export class ScenePictureSource implements SurfacePictureSource {
   private pictureCapacity=64*1024*1024;
   private hits=0;
   private usingCache=false;
-  constructor(private renderer:Pick<VisualPreviewRenderer,"prepare">&Partial<Pick<VisualPreviewRenderer,"surfacePresenter">>,private api:VisualPreviewExecutionApi,private session:AudioPreviewSession,private cache?:PictureCache,_cuts:Time[]=[],private prepareCache?:()=>Promise<void>){
+  constructor(private renderer:Pick<VisualPreviewRenderer,"prepare">&Partial<Pick<VisualPreviewRenderer,"surfacePresenter">>,private api:ScenePictureExecutionApi,private session:AudioPreviewSession,private cache?:PictureCache,_cuts:Time[]=[],private prepareCache?:()=>Promise<void>){
   }
   async initialize(signal:AbortSignal){
+    signal.throwIfAborted();
+    // Rust selects the whole scene's required sources and reuses the accepted
+    // jobs. Do not compete with their decoders or switch to published sources
+    // halfway through playback. Stopping this wait does not cancel shared jobs.
+    const {project_id,revision,sequence_id}=this.session.identity;
+    const preparation=await this.api.sdk.call("opencut_source_preview_prepare",{
+      project_id,revision,sequence_id,asset_id:null,selected_video_stream:null,
+    },{signal});
+    for(const job of preparation.jobs){
+      signal.throwIfAborted();
+      if(job.state!=="succeeded")await this.api.sdk.waitForJob(job.job_id,{signal,timeoutMs:1800000,pollIntervalMs:500});
+    }
+    signal.throwIfAborted();
     const picture=await (await this.prepareNative(this.session.presentation_time,signal,0)).complete;
     try {
       const at=picture.frame.plan.identity.time,next=picture.frame.next_time;

@@ -64,7 +64,7 @@ export function AudioPreviewControls({ compact = false }: { compact?: boolean } 
   };
   const status =
     state.phase === "loading"
-      ? "Preparing scene sound…"
+      ? "Preparing scene playback…"
       : state.phase === "playing"
         ? "Playing scene sound"
         : state.phase === "stalled"

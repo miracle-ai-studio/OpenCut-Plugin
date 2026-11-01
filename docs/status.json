@@ -13270,7 +13270,7 @@
       }
     },
     "cut_reserve_repair": {
-      "status": "implemented_integrated_build_pending",
+      "status": "hd_ui_and_boundaries_passed_cold_4k_source_preparation_failed",
       "cause": "The first seek into a 7s trim must preroll from the 0s H264 keyframe; the next is 10s. The measured 1.386s cut exceeds the current 1.12s combined presentation reserve.",
       "implementation": "Up to 2s/64 frames, limited by the native reserved envelope less 4 in-flight slots. Default 512MiB RGBA/GPU policy admits 128MiB per presentation envelope, leaving 256MiB RGBA and 384MiB GPU for execution; global policy limits unchanged. At 540p 25fps, 50 prepared frames cover 2s. Lower policies retain proportional admission.",
       "preview_raster": [
@@ -13285,7 +13285,65 @@
       "architecture_tests_passed": 14,
       "architecture_and_contract_boundaries": "passed",
       "presentation_consumer_cap": 64,
-      "internal_worker_port": "Carries the admitted byte capacity to both producer and display queues; both reject excessive credits."
+      "internal_worker_port": "Carries the admitted byte capacity to both producer and display queues; both reject excessive credits.",
+      "source_commit": "1761fea226752dfcb9be2fc577e3365270ab438c",
+      "evidence_directory": "/private/tmp/opencut-local-upgrade-20261101/cut-reserve",
+      "runtime": {
+        "opencut": {
+          "path": "/Users/vincent/.opencut/runtime/native-local-cut-reserve-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+          "sha256": "35560d42ef9c2c19302215994ab9b88ba7e15a10c499e330e74944b1f60b2393"
+        },
+        "opencut-render-worker": {
+          "path": "/Users/vincent/.opencut/runtime/native-local-cut-reserve-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+          "sha256": "dfc3f2fdeb94b8a1a714cee2bcb68e0e2119b0ca4216fdb93dbd2330b26eeaa4"
+        }
+      },
+      "native_tests_passed": 4,
+      "integrated_build": "passed",
+      "generated_and_canonical_contracts": "passed",
+      "package_checks": "passed",
+      "hd_ui": {
+        "passed": true,
+        "presented_frames": 1050,
+        "audio_copied_frames": 2016000,
+        "audio_picture_wait_frames": 0,
+        "missed_frames": 0,
+        "max_wall_gap_ms": 49.4,
+        "lag_p99_ms": 39.604166666666664
+      },
+      "seek_resume": "passed_with_exact_samples_same_session_and_no_durable_jobs",
+      "boundary_pixels": "passed",
+      "cold_4k_ui": {
+        "passed": false,
+        "renderer_sha256": "dfc3f2fdeb94b8a1a714cee2bcb68e0e2119b0ca4216fdb93dbd2330b26eeaa4",
+        "missed_frames": 24,
+        "max_wall_gap_ms": 3132.600000143051,
+        "audio_picture_wait_frames": 419969,
+        "audio_picture_wait_seconds": 8.749354166666667,
+        "raw_evidence": "ui-camera-end.json"
+      },
+      "ready_4k_control": {
+        "passed": true,
+        "presented_frames": 1063,
+        "audio_copied_frames": 2040960,
+        "audio_picture_wait_frames": 0,
+        "missed_frames": 0,
+        "max_wall_gap_ms": 56.2,
+        "source_audio": "absent"
+      }
+    },
+    "source_readiness_repair": {
+      "status": "implemented_web_tests_passed_build_and_cold_ui_pending",
+      "implementation": "Before native surface initialization, await the existing Rust-selected fixed-scene source jobs using one cancellable SDK observer. Reuse successful jobs, do not cancel shared work, propagate failures and authorization errors. Existing audio preparation heartbeat remains active; PCM starts only after prepared pictures.",
+      "native_build_reused_from": "1761fea226752dfcb9be2fc577e3365270ab438c",
+      "web_tests_passed": 164,
+      "new_dependencies": false,
+      "public_contract_changed": false,
+      "native_policy_changed": false,
+      "deployment_changed": false,
+      "evidence_directory": "/private/tmp/opencut-local-upgrade-20261101/source-readiness",
+      "architecture_tests_passed": 14,
+      "architecture_and_contract_boundaries": "passed"
     }
   }
 }

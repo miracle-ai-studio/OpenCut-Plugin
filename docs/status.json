@@ -960,7 +960,7 @@
     "installed_cli_sha256": "33b2852c0fa3b1d9d732fbee5c444791e8660076c79f11fc02a2b806c126dac1",
     "current_slice": "Explicit SDR export conversion and frame/codec metadata deployed to both local services; scoped checks complete",
     "installed_worker_sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6",
-    "latest_scoped_acceptance": "Three native outputs pass original red gate and explicit metadata; visible browser green25 becomes0. Both real editors pass Play/Pause/static refresh/resume. Four projects and519 historical jobs preserved;11 upgrade preview jobs completed, repeat opening adds0. Strict channel-error limit3 still fails at4, independently isolated as cumulative conversion/encoding quantization.",
+    "latest_scoped_acceptance": "Same installed0d778351/33b2852c0fa3 host with unchanged853e3ab5/d1366df2e6a1 worker and a6c7b571 Web: complete94s4K export passed in458.624s,2820frames,seven independent full-raster probes and whole independent PCM/AAC. Original122 synthetic jobs retained,one added,services and530 user jobs unchanged. No build. Historical text stall cause remains unproven.",
     "previous_recorded_candidate_before_wave_seek": {
       "candidate_cli_sha256": "a2472d1bef079d3ee2a539e541cf36e3114092088487da001360a7f26112a5a3",
       "candidate_worker_sha256": "5d6ed551941117c9ca9580d3e3bb5060525f298e69d4db1c9b3bd89e18ee8a94",
@@ -3106,7 +3106,7 @@
   },
   "known_limits": [
     "Current visible-window94s observation on Weba6c7b571:action-to-end96.9367s includingstartup,actual first frame2.0372s,maximum device elapsed-minus-copied0.0106667s,max wall frame gap43ms,max lag44.4167ms,no missed cached frames or PCM starvation. This bounded repeated-source observation does not qualify physical output,all media or universal realtime. Historical headless0.528/0.692s waits retain original identities and are not representative foreground guarantees.",
-    "Historical scoped observation: Current single retained4K-source94s editor flow passes original startup/completion/seek/pause/resume gates,but119.15s click-to-ended is not real-time. Full94s4Kexport,unique long sources,broader performance and process/GPU/driver memory remain unqualified.",
+    "Full94s4K export on the current installed host passed in458.624s(0.205x realtime),2820frames,seven whole-raster pixel probes and whole independent PCM/AAC. This repeats one12s4K source;unique long-source performance and driver/GPU residency remain unqualified. Earlier119.15s editor timing retains its historical producer and is not a current measurement.",
     "Broader codec/container/color/orientation/default-track fidelity remains open. The tested output matrix mismatch is fixed with explicit BT.709 conversion and frame/codec metadata. The strict limit-3 source-to-output channel probe still records maximum4/255; encoder-only same-raster experiments reproduce the cumulative8-bit lossy quantization.",
     "The recorded asset-free four-second text resume stall near1.87seconds is not causally closed by later successful playback cases.",
     "Native worker RSS and device-clock observations are scoped per candidate. Whole-product/browser and driver/GPU residency, physical display timing and audibility remain unqualified.",
@@ -3242,7 +3242,7 @@
       "long native continuous video/audio playback and seek/retirement/resource matrix",
       "broader source artwork format and color/orientation coverage",
       "broader native audio codecs, prepared preview and long-play/device acceptance",
-      "large-source and 4K pixel/memory/performance matrix",
+      "unique long-source and broader 4K codec/pixel/memory/performance matrix; retained full94s repeated-source output now qualified",
       "runtime dependency/license packaging and clean installation",
       "broader editor and manual acceptance"
     ],
@@ -4583,6 +4583,14 @@
         "opencut-render-worker": {
           "path": "/Users/vincent/.opencut/runtime/native-local-export-color-final-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
           "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
+        }
+      },
+      "additional_verification": {
+        "full_4k_export": {
+          "path": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/full-4k/checkpoint.json",
+          "sha256": "f1ddfb9cdb6e0d4cd16220f07f7651ac9c11d5e6f1684b3a61a8e0ed5ba55364",
+          "files": 25,
+          "bytes": 321081451
         }
       }
     },
@@ -6459,6 +6467,17 @@
           "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
         }
       }
+    },
+    "full_4k_export_validation": {
+      "checkpoint": {
+        "path": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/full-4k/checkpoint.json",
+        "sha256": "f1ddfb9cdb6e0d4cd16220f07f7651ac9c11d5e6f1684b3a61a8e0ed5ba55364",
+        "files": 25,
+        "bytes": 321081451
+      },
+      "job_id": "job_ac844b9876ae4112a272bf4abd58b1c9",
+      "status": "passed_scoped",
+      "delivery_ready": false
     }
   },
   "preview_digest_diagnosis": {
@@ -12212,5 +12231,208 @@
       "remaining": "Broader codec/color/orientation/default-track and physical A/V acceptance; host updates still invalidate source proxies conservatively."
     },
     "geometry_correction": "The first independent1080 experiment resized160x90 RGB while encoding. Repeating with full1920x1080 RGB and no simultaneous resize exactly matched the native outputs; maximum error4 remains recorded."
+  },
+  "full_4k_export_validation": {
+    "status": "passed_scoped_same_installed_candidate",
+    "host_source_commit": "0d77835160420229614dda8ccec05c711afc99db",
+    "worker_source_commit": "853e3ab590a9f05a9fd4b14e4020a6028d42995c",
+    "web_source_commit": "a6c7b5717177564ecd9ac7fc5a2603a08374831a",
+    "runtime": {
+      "opencut": {
+        "path": "/Users/vincent/.opencut/runtime/native-local-export-color-final-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut",
+        "sha256": "33b2852c0fa3b1d9d732fbee5c444791e8660076c79f11fc02a2b806c126dac1"
+      },
+      "opencut-render-worker": {
+        "path": "/Users/vincent/.opencut/runtime/native-local-export-color-final-20261101/opencut-0.1.0-x86_64-apple-darwin/bin/opencut-render-worker",
+        "sha256": "d1366df2e6a10a9492b60afe76058ba9f6d3ca475a8abf39b614393c156da7e6"
+      }
+    },
+    "builds": 0,
+    "job_id": "job_ac844b9876ae4112a272bf4abd58b1c9",
+    "project_id": "native-4k-media-acceptance",
+    "revision": "rev_6529d28c682afd7010dc7f4a916863cf20f1ffd7c31d4be22c7eabd4d1b02378",
+    "width": 3840,
+    "height": 2160,
+    "fps": "30/1",
+    "frames": 2820,
+    "seconds": 94,
+    "production_seconds": 458.6243725211825,
+    "production_realtime_factor": 0.2049607601167302,
+    "artifact_sha256": "047ecd1ccfddbf3bcefcaa38fd0f655d7664a43557077eca9757e75f30401289",
+    "artifact_bytes": 265217937,
+    "independent_checks": {
+      "container_and_color": {
+        "passed": true,
+        "frames": 2820,
+        "width": 3840,
+        "height": 2160,
+        "seconds": 94,
+        "matrix": "bt709"
+      },
+      "preencode_pcm": {
+        "frames": 4512000,
+        "padding_frames": 0,
+        "maximum_absolute_error": 0.0,
+        "snr_db": 300.0,
+        "actual_pcm_sha256": "eb7bc38bf2ffff9d5fd673ce96b0ac0a2217338044aa6923ff7a4dae0f0ff5a6",
+        "expected_pcm_sha256": "eb7bc38bf2ffff9d5fd673ce96b0ac0a2217338044aa6923ff7a4dae0f0ff5a6",
+        "maximum_error_gate": 1e-06,
+        "minimum_snr_db": 100,
+        "fitting": "none",
+        "passed": true
+      },
+      "encoded_aac": {
+        "frames": 4512000,
+        "padding_frames": 768,
+        "maximum_absolute_error": 0.001479998230934143,
+        "snr_db": 57.76281596779082,
+        "actual_pcm_sha256": "f2f420757e7cf4829be5ebe860afb56d14ab9ccfcd85bd51ab176a7f9743b6cd",
+        "expected_pcm_sha256": "eb7bc38bf2ffff9d5fd673ce96b0ac0a2217338044aa6923ff7a4dae0f0ff5a6",
+        "maximum_error_gate": null,
+        "minimum_snr_db": 30,
+        "fitting": "none",
+        "passed": true
+      },
+      "pixels": [
+        {
+          "frame": 0,
+          "source_frame": 0,
+          "mae": 1.441478989840535,
+          "gate": 5,
+          "passed": true,
+          "actual_sha256": "df510de0185585e6747a1e48be79b15d45d7de766802140085716710ba9f9191",
+          "expected_sha256": "48b69d175da5a9b0ea736fff236647b880a9a6a2275e528de64f673c9cb60e47",
+          "rgb_bytes": 24883200
+        },
+        {
+          "frame": 29,
+          "source_frame": 29,
+          "mae": 1.6217988040123457,
+          "gate": 5,
+          "passed": true,
+          "actual_sha256": "13c586e74ebd9aea69ca5f0d2393a4e3e8d9bfb6e92b2633f8100cc54e9d82e5",
+          "expected_sha256": "76bebad20a9f793ed33af06412e80d74157cdcc454f786b9eeec0b24b6cd9fbd",
+          "rgb_bytes": 24883200
+        },
+        {
+          "frame": 359,
+          "source_frame": 359,
+          "mae": 1.554311623906893,
+          "gate": 5,
+          "passed": true,
+          "actual_sha256": "5b930ad15d3ded66e188d299aafd3b971a4258914a899ade9a7ede4adf2a0ab0",
+          "expected_sha256": "b315820abcf324abc4cdb595c3a09a44fc878239023e371a09e61411a3b59a85",
+          "rgb_bytes": 24883200
+        },
+        {
+          "frame": 360,
+          "source_frame": 0,
+          "mae": 1.6652740805041153,
+          "gate": 5,
+          "passed": true,
+          "actual_sha256": "3ea871a2158cd70409a7093c2d223ef4f677b8498890af37a14be0f64b546319",
+          "expected_sha256": "48b69d175da5a9b0ea736fff236647b880a9a6a2275e528de64f673c9cb60e47",
+          "rgb_bytes": 24883200
+        },
+        {
+          "frame": 1410,
+          "source_frame": 330,
+          "mae": 1.5977049575617284,
+          "gate": 5,
+          "passed": true,
+          "actual_sha256": "fd754c09766865d0d4f11dc564d14daf88e99776b372909c36c8a776506419aa",
+          "expected_sha256": "e1965710705c1743fe234e5b11ba4458653e3d045058d87ccc45219270165ae2",
+          "rgb_bytes": 24883200
+        },
+        {
+          "frame": 2700,
+          "source_frame": 180,
+          "mae": 1.6345049672067902,
+          "gate": 5,
+          "passed": true,
+          "actual_sha256": "6fd9f1046ad82609d51e1ed475d955ba39bb5074667d68a3ed278e792159475e",
+          "expected_sha256": "bc72918d76d0df62183295f898c4cb2e38d346ae7eed2c443f298b57199665d1",
+          "rgb_bytes": 24883200
+        },
+        {
+          "frame": 2819,
+          "source_frame": 299,
+          "mae": 1.6667499758873456,
+          "gate": 5,
+          "passed": true,
+          "actual_sha256": "7e48fff28ae2e7b4f4359d10899997bee759828abfd64d76c75fb431dd2753d9",
+          "expected_sha256": "c72632f7a93ebcce69686fdb2d02f48952c1c224b133e21e0dcc79c57f822e35",
+          "rgb_bytes": 24883200
+        }
+      ]
+    },
+    "sampled_rss": {
+      "scope": "Two-second process RSS sampling for owned child processes only; not driver/GPU residency or hard peak proof.",
+      "samples": 217,
+      "process_peak_kib": {
+        "opencut-render-worker": 324180,
+        "opencut": 36688,
+        "ffmpeg": 1838356,
+        "ffprobe": 97620,
+        "(opencut)": 10932,
+        "ps": 1212,
+        "(Python)": 548
+      },
+      "sum_peak_kib": 2200296
+    },
+    "preservation": {
+      "projects_unchanged": true,
+      "old_jobs_unchanged": true,
+      "new_jobs": [
+        "job_ac844b9876ae4112a272bf4abd58b1c9"
+      ],
+      "integrity": "ok"
+    },
+    "synthetic_workspace": {
+      "projects": 10,
+      "jobs": 123,
+      "active_jobs": [],
+      "integrity": "ok"
+    },
+    "local_services_rechecked": [
+      {
+        "name": "landscape",
+        "pid": 81990,
+        "endpoint": "http://127.0.0.1:8791",
+        "ready": true,
+        "job_count": 42,
+        "additional_jobs_since_previous_acceptance": 0
+      },
+      {
+        "name": "workbench",
+        "pid": 81996,
+        "endpoint": "http://127.0.0.1:59790",
+        "ready": true,
+        "job_count": 488,
+        "additional_jobs_since_previous_acceptance": 0
+      }
+    ],
+    "verifier_correction": "The first harness expected a ranged wrapper. Preserve its failed report; read the same succeeded full-scene render.video result without another job or render.",
+    "historical_stall_audit": {
+      "unchanged_failure_report_sha256": "8dacccd0c33cef4e65d6d3eba17c1dc994606d3ec31298ecb2a3ba6ea97c3bf0",
+      "asset_free": true,
+      "consecutive_final_equal_consumption_observations": 588,
+      "consumed_frames": "52000",
+      "cause_closed": false,
+      "missing": "Correlated device timestamps, picture queue/ready horizon and PCM/credit occupancy from the failure."
+    },
+    "checkpoint": {
+      "path": "/Users/vincent/Movies/OpenCut-native-rendering/local-upgrade-20261101/full-4k/checkpoint.json",
+      "sha256": "f1ddfb9cdb6e0d4cd16220f07f7651ac9c11d5e6f1684b3a61a8e0ed5ba55364",
+      "files": 25,
+      "bytes": 321081451
+    },
+    "scope": "Full 94-second 4K output from retained timeline repeating one 12-second 4K source; not unique long-source coverage.",
+    "remaining": [
+      "Original historical asset-free resume stall lacks causal evidence; historical-stall-audit.json preserves facts and missing observations.",
+      "Full94s4K export is slower than realtime. A12s synthetic source is repeated; unique long-source and broader format performance are not qualified.",
+      "Broader codec/color/orientation/default-track and physical A/V manual acceptance remain incomplete."
+    ],
+    "delivery_ready": false
   }
 }

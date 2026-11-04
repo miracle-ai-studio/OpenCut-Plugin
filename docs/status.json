@@ -1,6 +1,19 @@
 {
   "format": "opencut.delivery-status.v1",
   "delivery_ready": false,
+  "plugin_permission_recovery": {
+    "date": "2026-11-04",
+    "plugin_version": "0.5.0-beta.5",
+    "change": "Classify host permission denial separately from service failure and application authorization; use one host-approved read-only retry when permitted.",
+    "restricted_probe": "Operation not permitted (EPERM)",
+    "authorized_probe": "HTTP 200 and ready=true; same service instance and configured database",
+    "account_readback_and_local_installation": "passed; skill bytes verified, identity and retained configuration preserved",
+    "package_checks_passed": 10,
+    "restarted_service_or_edited_project": false,
+    "rebuilt_rust_or_web": false,
+    "evidence_directory": "${TMPDIR}/opencut-permission-recovery-20261104",
+    "scope": "Instruction update and real host permission-recovery comparison; future model compliance, current-chat hot reload and editing/playback acceptance not established"
+  },
   "plugin_editor_entry": {
     "date": "2026-11-04",
     "plugin_version": "0.5.0-beta.4",

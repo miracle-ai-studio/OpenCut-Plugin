@@ -22,7 +22,8 @@ session does not prove that an HTTP editor is running.
    database and environment as MCP. Read the returned `state`, `ready`,
    `database`, `executable`, `executable_sha256`, `endpoint` and `web_url`.
    Match the database and runtime to the selected installation; an HTTP 200
-   from an unrelated workspace is insufficient.
+   from an unrelated workspace is insufficient. If the host denies the check,
+   follow "Recover a denied local check" below before declaring a service fault.
 2. Reuse a matching ready service. When its state is `stopped`, starting the
    configured loopback editor is part of the requested local editing task:
    run `node scripts/web.mjs start` once and inspect its returned readiness and
@@ -50,6 +51,44 @@ local-owner service startup. If local execution, the runtime or Web assets are
 missing, report that limitation before editing and follow setup when available.
 Do not claim that a cloud/mobile chat can reach the user's localhost. An explicit
 headless-only request may skip Web startup; say that no editor page was started.
+
+## Recover a denied local check
+
+Classify the failure before choosing a recovery action:
+
+- Host execution or socket errors such as `Operation not permitted`, `EPERM`,
+  `EACCES` or a sandbox denial mean that this probe was blocked. Service health
+  is unknown; these errors do not prove a stopped server, a closed port, missing
+  media, a disconnected MCP server or a cloud-only session.
+- `Connection refused` means that the observed address rejected the connection;
+  inspect the configured service rather than guessing another port. A timeout
+  remains inconclusive. Actual service identity mismatches and startup errors
+  retain their original diagnostic and must not trigger blind restarts.
+- An OpenCut authorization/access-policy error is an application denial. Do not
+  use OS approval, local-owner CLI access or another credential to bypass it.
+
+For a host permission denial on a local read-only check, inspect the execution
+host's supported approval mechanism. When the host policy permits it, request
+one narrowly scoped authorized retry of the same service status/page check.
+In Codex, if the available exec tool supports it, use
+`sandbox_permissions: "require_escalated"` with a justification explaining that
+the check only verifies the configured local editor and workspace. Keep the
+same database, binary, service directory and observed endpoint. Do not disable
+the host's restrictions, broaden application grants or request a port scan.
+
+After approval, run the bounded check once. If it confirms the matching ready
+service and reachable page, give the verified link and resume the authorized
+workflow without asking the user to repeat the task or restart the service.
+Existing connected MCP tools can still supply permitted read-only project and
+capability observations; a failed standalone port probe is not evidence that
+those tools failed. Do not retry uncertain editing writes as a connectivity test.
+
+While approval is pending, wait for its result; silence is not a denial or an
+approval. If approval is denied or unavailable, respect that outcome.
+Report which check was blocked, the actual denial and any independently verified
+service/MCP facts; identify the specific access needed without claiming an outage
+or completed edits. Do not repeat the blocked probe, switch workspaces or send
+the user to a cloud/local session merely on the basis of `EPERM`.
 
 ## Discover the connected candidate
 

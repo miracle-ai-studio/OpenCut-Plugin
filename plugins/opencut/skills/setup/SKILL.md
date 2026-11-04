@@ -10,6 +10,12 @@ install the native editor or select an existing video project automatically.
 If MCP cannot start, finish runtime installation before retrying editing tools.
 This plugin needs a local desktop chat and access to local files and processes.
 An account installation does not give a cloud or mobile chat access to the computer.
+An `Operation not permitted` error from a local probe does not establish that
+this is a cloud session or that the runtime is missing. Before declaring setup
+blocked, follow "Recover a denied local check" in `../edit/SKILL.md`: distinguish
+host permission limits from service failures and application access denials,
+and use the host's supported approval flow for one bounded read-only retry when
+permitted. Never use that flow to bypass an OpenCut authorization decision.
 
 1. Read the platform support table in the repository README. Download the
    matching platform ZIP from https://github.com/miracle-ai-studio/OpenCut-Plugin/releases.

@@ -1,6 +1,22 @@
 {
   "format": "opencut.delivery-status.v1",
   "delivery_ready": false,
+  "plugin_editor_entry": {
+    "date": "2026-11-04",
+    "plugin_version": "0.5.0-beta.4",
+    "public_runtime_release": "v0.5.0-beta.3",
+    "change": "Editing and setup skills require a verified editor link before interactive work and an observed project link after project selection or creation.",
+    "account_update_readback": "passed; same private identity, metadata and retained components",
+    "local_installation": "passed; official marketplace registration and install, installed files matched staged source",
+    "package_checks_passed": 10,
+    "installed_launcher_mcp_domain_tools": 11,
+    "installed_launcher_readonly_checks": "initialize, tools, capabilities, domain resource, project list; independent Web service retained after MCP close",
+    "web_entry": "Ready service, configured database and executable matched; two served static assets matched runtime; visible local workspace with empty project list",
+    "evidence_directory": "${TMPDIR}/opencut-editor-entry-20261104",
+    "rebuilt_rust_or_web": false,
+    "current_chat_hot_reload_verified": false,
+    "scope": "Instruction, installation and entry checks only; no new editing, playback or export acceptance"
+  },
   "in_progress": {
     "candidate_cli_sha256": "35560d42ef9c2c19302215994ab9b88ba7e15a10c499e330e74944b1f60b2393",
     "candidate_worker_sha256": "dfc3f2fdeb94b8a1a714cee2bcb68e0e2119b0ca4216fdb93dbd2330b26eeaa4",

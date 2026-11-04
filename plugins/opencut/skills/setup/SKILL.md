@@ -13,8 +13,10 @@ An account installation does not give a cloud or mobile chat access to the compu
 
 1. Read the platform support table in the repository README. Download the
    matching platform ZIP from https://github.com/miracle-ai-studio/OpenCut-Plugin/releases.
-   Read this plugin's version from `plugin.json` and use its `v<version>` release;
-   do not select an older stable release when installing a beta.
+   For a personal package, use the exact `runtime_release_url` recorded in
+   `distribution.json`; an instructions-only plugin update may retain its
+   previously verified runtime release. For a platform package, use its bundled
+   runtime and `release.json`. Do not substitute an unrelated stable release.
    The `-personal.zip` is the portable plugin for personal account import;
    the platform ZIP also includes the native runtime required by its launcher.
    A source checkout or GitHub marketplace plugin alone has no runtime archive.
@@ -28,12 +30,23 @@ An account installation does not give a cloud or mobile chat access to the compu
    thumbnails, preview or export. Do not override resource admission limits.
 4. Install/reload the plugin using the supported desktop Plugins interface or
    marketplace command reported by the installer. Do not edit the plugin cache.
-5. Run `node scripts/web.mjs start` to open the Web editor for that same configured
-   database. MCP and Web use `OPENCUT_PLUGIN_DATABASE` when explicitly provided,
-   otherwise install.json's database, otherwise the default plugin workspace.
+5. From the actual plugin directory, run `node scripts/web.mjs status`. Reuse
+   the matching ready service; if stopped, run `node scripts/web.mjs start` once
+   for the same configured database. These commands return service information;
+   do not assume they open a browser or communicate its address to the user.
+   MCP and Web use `OPENCUT_PLUGIN_DATABASE` when explicitly provided, otherwise
+   install.json's database, otherwise the default plugin workspace. Verify the
+   returned database and executable identity, `ready: true` and non-null
+   `web_url`, and check that `<endpoint>/projects` serves the editor page.
+   Immediately send that observed URL as a clickable Markdown link, before
+   starting any editing work. Never reuse a remembered port or present an
+   unavailable service as ready; surface a failed check instead of retrying
+   startup blindly. Follow the edit skill's startup flow on later editing tasks.
 6. Inspect project IDs and runtime capabilities through the connected MCP tools
    before editing. Confirm the intended project is present; never claim a skill
-   being visible proves its MCP server is connected.
+   being visible proves its MCP server is connected. After selecting or creating
+   a project, provide `<endpoint>/editor/<URL-encoded observed project ID>`;
+   append a scene query only for a scene observed in that project.
 
 Installation paths are local configuration. Keep install.json, databases, media,
 credentials and diagnostic outputs outside the repository and release archive.

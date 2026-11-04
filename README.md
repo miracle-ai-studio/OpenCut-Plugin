@@ -51,8 +51,8 @@ Prerequisites for this prerelease:
 After installing Node.js with your package manager:
 
 ```sh
-shasum -a 256 -c opencut-plugin-0.5.0-beta.3-x86_64-apple-darwin.zip.sha256
-unzip opencut-plugin-0.5.0-beta.3-x86_64-apple-darwin.zip
+shasum -a 256 -c opencut-plugin-0.5.0-beta.6-x86_64-apple-darwin.zip.sha256
+unzip opencut-plugin-0.5.0-beta.6-x86_64-apple-darwin.zip
 cd opencut
 node scripts/install.mjs
 ```
@@ -82,21 +82,17 @@ node scripts/web.mjs stop
 
 Open the returned `web_url`; it binds to loopback on an available port and uses the same private workspace. Stopping an MCP chat does not stop a separately started Web service.
 
-This beta supports explicit
-workspace selection: `node scripts/install.mjs --database /absolute/path/workspace.sqlite`.
-Both MCP and Web use that database; `OPENCUT_PLUGIN_DATABASE` is an explicit
-environment override. The setup skill explains runtime installation when the
-marketplace plugin is installed before its native runtime.
+The installer records one shared local workspace for MCP, Web and CLI commands without `--database`. To select an existing database, stop the current Web service with its original configuration, then run `node scripts/install.mjs --database /absolute/path/workspace.sqlite` and reload the plugin. A fresh installation defaults to `~/.opencut/workspace.sqlite`. `OPENCUT_PLUGIN_DATABASE` can seed a first installation. Running clients use the saved selection. CLI commands can still explicitly target an isolated workspace with `--database`.
 
 ## Install as a personal plugin
 
-Download `opencut-plugin-0.5.0-beta.3-personal.zip` and its checksum from the same release. Ask Plugin Creator to import that ZIP into your own account, then run **OpenCut Plugin setup** in a local desktop chat. Setup installs the matching platform runtime and selects your workspace. The personal ZIP contains the skills and stdio launcher; the platform ZIP contains the native runtime. Importing the personal ZIP alone does not install the editor runtime.
+Download `opencut-plugin-0.5.0-beta.6-personal.zip` and its checksum from the same release. Ask Plugin Creator to import that ZIP into your own account, then run **OpenCut Plugin setup** in a local desktop chat. Setup installs the matching platform runtime and selects your workspace. The personal ZIP contains the skills and stdio launcher; the platform ZIP contains the native runtime. Importing the personal ZIP alone does not install the editor runtime.
 
 A private account plugin is not a public directory listing. Other users can download the same personal ZIP from GitHub and import it into their own accounts. Cloud and mobile chats cannot access local video files or launch this runtime.
 
 ## MCP and CLI capabilities
 
-The current shared registry declares **184 named operations in 12 logical domains**. Default MCP discovery groups operations into domain tools; the administrative `workspace` domain is not included in the compact default list. `--tool-surface legacy` exposes the existing named operation surface. Both resolve to the same Rust application operations and permission checks.
+The current shared registry declares **185 named operations in 12 logical domains**. Default MCP discovery groups operations into domain tools; the administrative `workspace` domain is not included in the compact default list. `--tool-surface legacy` exposes the existing named operation surface. Both resolve to the same Rust application operations and permission checks.
 
 | Domain | Current capability |
 |---|---|
@@ -122,7 +118,7 @@ opencut --database /absolute/path/to/workspace.sqlite --json project list
 opencut --database /absolute/path/to/workspace.sqlite mcp serve --with-worker
 ```
 
-The plugin installer uses an isolated database under `~/.opencut-plugin/`. Use the installed executable path printed by the installer, or add its directory to your PATH. CLI `call <operation> --input request.json` and `domain <domain> <action> --input request.json` share semantics with MCP. For example, `opencut_edit` accepts `{"action":"plan","input":...}`; named tools expose `opencut_edit_plan`. Writes retain the fixed revision, original request and idempotency key.
+Use the installed executable path printed by the installer, or add its directory to your PATH. CLI `call <operation> --input request.json` and `domain <domain> <action> --input request.json` share semantics with MCP. For example, `opencut_edit` accepts `{"action":"plan","input":...}`; named tools expose `opencut_edit_plan`. Writes retain the fixed revision, original request and idempotency key.
 
 ## Design
 

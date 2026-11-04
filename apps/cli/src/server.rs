@@ -109,6 +109,13 @@ fn absolute(path: &Path) -> Result<PathBuf> {
     std::path::absolute(path).map_err(error)
 }
 
+fn database_identity(path: &Path) -> Result<PathBuf> {
+    match fs::canonicalize(path) {
+        Err(err) if err.kind() == io::ErrorKind::NotFound => absolute(path),
+        result => result.map_err(error),
+    }
+}
+
 fn directory(path: Option<&Path>) -> Result<PathBuf> {
     match path {
         Some(path) => absolute(path),
@@ -339,7 +346,7 @@ fn start(directory: &Path, database: &Path, options: &Options) -> Result<Value> 
     }
     if running(directory)? {
         let existing = read_state(directory)?;
-        if existing.database != absolute(database)?
+        if database_identity(&existing.database)? != database_identity(database)?
             || existing.listen != options.listen
             || existing.allow_origin != options.allow_origin
             || existing.web_root != options.web_root.as_deref().map(absolute).transpose()?
@@ -443,7 +450,12 @@ fn stop(directory: &Path, timeout: u64) -> Result<Value> {
     status(directory)
 }
 
-pub async fn execute(database: &Path, path: Option<&Path>, command: &Command) -> Result<Value> {
+pub async fn execute(
+    database: &Path,
+    path: Option<&Path>,
+    command: &Command,
+    require_database: bool,
+) -> Result<Value> {
     let directory = directory(path)?;
     if let Command::Run { options, instance } = command {
         private_directory(&directory)?;
@@ -494,6 +506,17 @@ pub async fn execute(database: &Path, path: Option<&Path>, command: &Command) ->
     private_directory(&directory)?;
     let _command = lock(&directory.join("command.lock"))?
         .ok_or_else(|| error("Another service lifecycle command is in progress; retry"))?;
+    if require_database
+        && matches!(command, Command::Status | Command::Stop { .. })
+        && running(&directory)?
+        && let Ok(state) = read_state(&directory)
+        && database_identity(&state.database)? != database_identity(database)?
+    {
+        return Err(EditorError::new(
+            "SERVICE_TARGET_MISMATCH",
+            "The running service uses a different database; specify its original database to manage it.",
+        ));
+    }
     match command {
         Command::Start(options) => {
             let path = options

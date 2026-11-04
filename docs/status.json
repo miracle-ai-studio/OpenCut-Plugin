@@ -1,6 +1,40 @@
 {
   "format": "opencut.delivery-status.v1",
   "delivery_ready": false,
+  "plugin_shared_workspace_candidate": {
+    "candidate_plugin_version": "0.5.0-beta.6",
+    "scope": "One saved local database for plugin MCP, Web and the implicit CLI; verified editor timeline in the side browser is the interactive workflow default",
+    "cli_sha256": "2e1453e9261b136ebde486442985444431d2caff6a0353465b1f74dbc4229d6c",
+    "checks": "Retained integrated CLI build; generated/canonical contracts checked against delivered CLI 34b0e9969d31 (185 operations, 12 domains); 14 architecture, 5 plugin runtime and 6 package tests passed; boundary and publication checks passed",
+    "real_project_edit": "Restored Hainan package in a test workspace, split a clip through MCP, replayed the same transaction and read the new revision through CLI",
+    "fresh_footage_edit": "Imported village and boat excerpts from original Hainan footage using a matching native worker, placed both clips in one MCP transaction, replayed it, and read the same revision through CLI",
+    "personal_candidate_archive": "Final personal ZIP integrity and publication check passed; GitHub publication pending",
+    "development_runtime_archive": "Relocated development package passed startup and shared workspace readback, then was refused for developer paths; not used as the platform candidate.",
+    "platform_candidate": {
+      "archive_sha256": "5cecbe6136cbd03a64ad30821663d461b48b7ba0dff647b11aac3ef4fa274510",
+      "binary_sha256": "34b0e9969d312974813275bb607710fc83e33aec602edefb8958fc6a8ebd0b31",
+      "scope": "Publication content check, isolated installation, 11 MCP tools, import, atomic edits, replay, cover and readback of both Hainan fixture revisions passed",
+      "native_export": "Passed on the same retained fixed-revision fixture after the host environment changed; independent FFmpeg decode RGB 250/0/0 passed the original threshold. Prior failed Metal attempt remains recorded.",
+      "workflow_archive_sha256": "e0aefcaca4734432c70176e48b46473a224e8e12f410e59c0243f3030ff2cb9f",
+      "package_refresh": "Only bilingual README version and operation-count references changed; runtime, scripts and skills are byte-identical to the workflow-tested candidate"
+    },
+    "side_browser_live_edit": "Not run: host browser control disabled. Installed HTTP HTML/assets, MCP and default CLI verification passed; this does not establish side-browser acceptance.",
+    "published": false,
+    "local_installation_updated": true,
+    "date": "2026-11-05",
+    "local_installation": {
+      "plugin_version": "0.5.0-beta.6",
+      "binary_sha256": "34b0e9969d312974813275bb607710fc83e33aec602edefb8958fc6a8ebd0b31",
+      "shared_workspace_checked": true,
+      "stale_environment_override_ignored": true,
+      "wrong_database_lifecycle_refused": true,
+      "cached_plugin_files_match": true,
+      "default_cli_entrypoint_updated": true,
+      "final_service_state": "stopped",
+      "client_conversation_acceptance": "not claimed"
+    },
+    "verification_report_sha256": "91550a4f2c70bdf9b17755bb1f83ddae65e87696cc11914cba8c9645c820c198"
+  },
   "plugin_permission_recovery": {
     "date": "2026-11-04",
     "plugin_version": "0.5.0-beta.5",

@@ -36,11 +36,19 @@ session does not prove that an HTTP editor is running.
    identifying the selected workspace in plain language. Use the observed
    endpoint; never hard-code a remembered port, invent an address, expose a
    credential or substitute the plugin's GitHub/download page.
+   For interactive editing, open the verified URL in the local in-app browser
+   by default when that browser is available. Leave the side tab visible.
 4. After locating, creating or restoring the requested project through MCP,
    immediately provide `<endpoint>/editor/<URL-encoded observed project ID>`.
    Add `?scene=<URL-encoded observed scene ID>` only when that scene was read
    from the selected project. Include the project link again in the final
-   handoff. A page loading alone does not prove playback or editing acceptance.
+   handoff. If the in-app tab is available, navigate that same tab to the
+   project and confirm that it shows the selected timeline before applying edits.
+   Keep the tab visible so committed changes can refresh in the editor. Use
+   the browser's tab retention control when available so it stays open after
+   the turn. If the host cannot open the side tab, provide the verified project link and state
+   what could not be opened. A page loading alone does not prove playback or
+   editing acceptance.
 
 Generated connection-only plugins may not contain `scripts/web.mjs`. In that
 case use the pinned binary's existing `server status/start` interface and its

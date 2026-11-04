@@ -17,8 +17,11 @@ const source = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 try {
   const {values}=parseArgs({options:{database:{type:"string"}},allowPositionals:false});
   const data=dataDirectory();
-  const previous=fs.existsSync(path.join(data,"install.json"))?readConfig():{};
-  const database=workspaceDatabase({...previous,...(values.database!==undefined?{database:values.database}:{})});
+  const installed=fs.existsSync(path.join(data,"install.json"));
+  const previous=installed?readConfig():{};
+  const initialDatabase=installed?undefined:
+    process.env.OPENCUT_PLUGIN_DATABASE ?? path.join(os.homedir(),".opencut/workspace.sqlite");
+  const database=workspaceDatabase(previous, values.database ?? initialDatabase);
   if(!fs.existsSync(path.join(source,"release.json")))
     throw new Error("This is a source plugin, not an installable release bundle. Download the matching platform ZIP from GitHub Releases and run its scripts/install.mjs; see skills/setup/SKILL.md.");
   const release = JSON.parse(

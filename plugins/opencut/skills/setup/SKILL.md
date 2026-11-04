@@ -40,8 +40,9 @@ permitted. Never use that flow to bypass an OpenCut authorization decision.
    the matching ready service; if stopped, run `node scripts/web.mjs start` once
    for the same configured database. These commands return service information;
    do not assume they open a browser or communicate its address to the user.
-   MCP and Web use `OPENCUT_PLUGIN_DATABASE` when explicitly provided, otherwise
-   install.json's database, otherwise the default plugin workspace. Verify the
+   MCP, Web, and the default local CLI use the database saved in install.json.
+   To change it, stop the Web service with the original configuration before
+   running the installer with `--database`, then reload the plugin. Verify the
    returned database and executable identity, `ready: true` and non-null
    `web_url`, and check that `<endpoint>/projects` serves the editor page.
    Immediately send that observed URL as a clickable Markdown link, before

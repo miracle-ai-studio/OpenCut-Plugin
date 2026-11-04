@@ -51,8 +51,8 @@ OpenCut Plugin 是基于 [OpenCut](https://github.com/OpenCut-app/OpenCut) 衍�
 使用自己的包管理器安装 Node.js 后：
 
 ```sh
-shasum -a 256 -c opencut-plugin-0.5.0-beta.3-x86_64-apple-darwin.zip.sha256
-unzip opencut-plugin-0.5.0-beta.3-x86_64-apple-darwin.zip
+shasum -a 256 -c opencut-plugin-0.5.0-beta.6-x86_64-apple-darwin.zip.sha256
+unzip opencut-plugin-0.5.0-beta.6-x86_64-apple-darwin.zip
 cd opencut
 node scripts/install.mjs
 ```
@@ -84,18 +84,18 @@ node scripts/web.mjs stop
 
 本次 beta 支持显式工作区选择：
 `node scripts/install.mjs --database /absolute/path/workspace.sqlite`。
-MCP 和 Web 共用选中的数据库；`OPENCUT_PLUGIN_DATABASE` 可显式覆盖它。
+MCP、Web 和未传 `--database` 的 CLI 共用安装配置中选定的数据库。切换已有库时，先按原配置停止 Web 服务，再用 `install.mjs --database` 保存目标库并重新加载插件。首次安装默认使用 `~/.opencut/workspace.sqlite`。`OPENCUT_PLUGIN_DATABASE` 仅可用于首次安装时选库。需要隔离测试时，可在 CLI 命令上显式传入 `--database`。
 安装引导 Skill 会说明仅安装 marketplace 插件后，还需完成原生运行时安装。
 
 ## 作为个人插件安装
 
-从同一发行页下载 `opencut-plugin-0.5.0-beta.3-personal.zip` 及校验文件，请 Plugin Creator 将 ZIP 导入自己的账号，然后在本地桌面对话中运行 **OpenCut Plugin setup**。安装引导会安装匹配的平台运行包并选择工作区。个人插件 ZIP 包含 Skill 和 MCP 启动器，平台 ZIP 包含原生运行时；只导入个人插件不等于已安装剪辑器。
+从同一发行页下载 `opencut-plugin-0.5.0-beta.6-personal.zip` 及校验文件，请 Plugin Creator 将 ZIP 导入自己的账号，然后在本地桌面对话中运行 **OpenCut Plugin setup**。安装引导会安装匹配的平台运行包并选择工作区。个人插件 ZIP 包含 Skill 和 MCP 启动器，平台 ZIP 包含原生运行时；只导入个人插件不等于已安装剪辑器。
 
 账号里的私有插件不属于官方公开目录。其他人可以从 GitHub 下载同一份个人插件 ZIP，导入各自账号。云端和手机对话无法访问本地视频或启动此运行时。
 
 ## MCP / CLI 当前能力
 
-同一份 Rust 注册表声明 **184 个具名操作、12 个逻辑领域**。MCP 默认按领域聚合工具；管理用 `workspace` 领域不进入默认紧凑列表。`--tool-surface legacy` 可以展开已有具名操作，业务实现和权限检查仍是同一套。
+同一份 Rust 注册表声明 **185 个具名操作、12 个逻辑领域**。MCP 默认按领域聚合工具；管理用 `workspace` 领域不进入默认紧凑列表。`--tool-surface legacy` 可以展开已有具名操作，业务实现和权限检查仍是同一套。
 
 | 领域 | 已实现范围 |
 |---|---|

@@ -22,7 +22,7 @@ mod upload_http;
 mod visual_preview_http;
 mod web_host;
 
-use clap::{Parser, Subcommand};
+use clap::{CommandFactory, FromArgMatches, Parser, Subcommand, parser::ValueSource};
 use opencut_automation::{Response, capabilities, exit_code, tool_specs};
 use opencut_contracts::EditorError;
 use opencut_host_runtime::Automation;
@@ -40,7 +40,13 @@ use std::{
     about = "Transactional video editing for people, scripts and agents"
 )]
 struct Cli {
-    #[arg(long, global = true, default_value = ".opencut/workspace.sqlite")]
+    /// Override the shared local workspace for this command.
+    #[arg(
+        long,
+        global = true,
+        default_value = ".opencut/workspace.sqlite",
+        hide_default_value = true
+    )]
     database: PathBuf,
     /// Use a restricted principal credential; default local invocation is OS-owner authority.
     #[arg(long, global = true)]
@@ -310,10 +316,63 @@ enum McpCommand {
     },
 }
 
+fn shared_workspace() -> Result<(PathBuf, Option<PathBuf>), EditorError> {
+    #[derive(serde::Deserialize)]
+    struct Installation {
+        format: String,
+        runtime: PathBuf,
+        #[serde(default)]
+        database: Option<PathBuf>,
+    }
+
+    let error = |message: &str| EditorError::new("INVALID_ARGUMENT", message);
+    let home = std::env::var_os("HOME")
+        .filter(|value| !value.is_empty())
+        .map(PathBuf::from);
+    let plugin_data = std::env::var_os("OPENCUT_PLUGIN_DATA_DIR")
+        .filter(|value| !value.is_empty())
+        .map(PathBuf::from)
+        .or_else(|| home.as_ref().map(|home| home.join(".opencut-plugin")));
+    if let Some(directory) = plugin_data {
+        let directory = std::path::absolute(directory)
+            .map_err(|_| error("Invalid OpenCut plugin data directory"))?;
+        match std::fs::read(directory.join("install.json")) {
+            Ok(bytes) => {
+                let install: Installation = serde_json::from_slice(&bytes)
+                    .map_err(|_| error("Invalid OpenCut plugin installation configuration"))?;
+                let database = install
+                    .database
+                    .unwrap_or_else(|| directory.join("workspace.sqlite"));
+                if install.format != "opencut.plugin-install.v1"
+                    || !install.runtime.is_absolute()
+                    || !database.is_absolute()
+                {
+                    return Err(error("Invalid OpenCut plugin installation configuration"));
+                }
+                return Ok((database, Some(directory.join("server"))));
+            }
+            Err(error) if error.kind() == io::ErrorKind::NotFound => {}
+            Err(_) => {
+                return Err(error(
+                    "Could not read OpenCut plugin installation configuration",
+                ));
+            }
+        }
+    }
+    Ok((
+        home.ok_or_else(|| error("HOME is unavailable; specify --database"))?
+            .join(".opencut/workspace.sqlite"),
+        None,
+    ))
+}
+
 #[tokio::main]
 async fn main() {
-    let cli = match Cli::try_parse() {
-        Ok(cli) => cli,
+    let (mut cli, database_explicit) = match Cli::command().try_get_matches().and_then(|matches| {
+        let explicit = matches.value_source("database") == Some(ValueSource::CommandLine);
+        Cli::from_arg_matches(&matches).map(|cli| (cli, explicit))
+    }) {
+        Ok(parsed) => parsed,
         Err(error) => {
             let args: Vec<_> = std::env::args_os().collect();
             let ndjson = args.iter().any(|arg| arg == "--format=ndjson")
@@ -352,6 +411,20 @@ async fn main() {
         emit_response(remote_call(&cli, endpoint).await, cli.json);
         return;
     }
+    let shared_service = if database_explicit {
+        None
+    } else {
+        match shared_workspace() {
+            Ok((database, service)) => {
+                cli.database = database;
+                service
+            }
+            Err(error) => {
+                emit_response(opencut_automation::response(Err(error)), cli.json);
+                return;
+            }
+        }
+    };
     if let Command::Server { directory, command } = &cli.command {
         // Service administration is local OS-owner authority, never a scoped API credential.
         let result = if cli.credential_file.is_some() {
@@ -360,7 +433,9 @@ async fn main() {
                 "Service administration requires local OS-owner authority; omit --credential-file",
             ))
         } else {
-            server::execute(&cli.database, directory.as_deref(), command).await
+            let selected_directory = directory.as_deref().or(shared_service.as_deref());
+            let require_database = database_explicit || directory.is_none();
+            server::execute(&cli.database, selected_directory, command, require_database).await
         };
         let unhealthy = matches!(command, server::Command::Status)
             && result.as_ref().is_ok_and(|value| value["ready"] != true);

@@ -36,12 +36,12 @@ class PluginPackageTests(unittest.TestCase):
         name = 'bin/libexec/runtimes/node/bin/node'
         prefix = b'/Users/' + b'upstream-builder/'
         content = prefix + b'build/file.cc'
-        with patch.dict(package.PUBLIC_UPSTREAM_FILES, {name: (hashlib.sha256(content).hexdigest(), prefix)}):
+        with patch.dict(package.PUBLIC_UPSTREAM_FILES, {name: ({hashlib.sha256(content).hexdigest()}, prefix)}):
             self.assertFalse(package.publication_findings(name, content))
             self.assertTrue(package.publication_findings(name, content + b' changed'))
             self.assertTrue(package.publication_findings('bin/other', content))
         content += b'\n-----BEGIN ' + b'PRIVATE KEY-----'
-        with patch.dict(package.PUBLIC_UPSTREAM_FILES, {name: (hashlib.sha256(content).hexdigest(), prefix)}):
+        with patch.dict(package.PUBLIC_UPSTREAM_FILES, {name: ({hashlib.sha256(content).hexdigest()}, prefix)}):
             self.assertIn('private key', [label for _, label in package.publication_findings(name, content)])
 
     def fixture(self, archive, content=b'fixture executable', extra=None):

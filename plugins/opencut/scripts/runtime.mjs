@@ -11,11 +11,21 @@ export const dataDirectory = () =>
     process.env.OPENCUT_PLUGIN_DATA_DIR ||
       path.join(os.homedir(), ".opencut-plugin"),
   );
-export function workspaceDatabase(config={}) {
-  const selected=process.env.OPENCUT_PLUGIN_DATABASE??config.database;
-  if(selected!==undefined && (typeof selected!=="string" || !path.isAbsolute(selected)))
-    throw new Error("OPENCUT_PLUGIN_DATABASE / database must be an absolute SQLite file path");
-  return selected??path.join(dataDirectory(),"workspace.sqlite");
+function canonicalPath(file) {
+  try {
+    return fs.realpathSync(file);
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+    return path.join(canonicalPath(path.dirname(file)), path.basename(file));
+  }
+}
+export function workspaceDatabase(config = {}, explicit) {
+  const selected = explicit ?? (config.database === undefined
+    ? path.join(dataDirectory(), "workspace.sqlite")
+    : config.database);
+  if (typeof selected !== "string" || !path.isAbsolute(selected))
+    throw new Error("The OpenCut workspace database must be an absolute SQLite file path");
+  return canonicalPath(selected);
 }
 export function readConfig() {
   const file = path.join(dataDirectory(), "install.json");

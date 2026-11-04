@@ -8,7 +8,7 @@
     "checks": "Retained integrated CLI build; generated/canonical contracts checked against delivered CLI 34b0e9969d31 (185 operations, 12 domains); 14 architecture, 5 plugin runtime and 6 package tests passed; boundary and publication checks passed",
     "real_project_edit": "Restored Hainan package in a test workspace, split a clip through MCP, replayed the same transaction and read the new revision through CLI",
     "fresh_footage_edit": "Imported village and boat excerpts from original Hainan footage using a matching native worker, placed both clips in one MCP transaction, replayed it, and read the same revision through CLI",
-    "personal_candidate_archive": "Final personal ZIP integrity and publication check passed; GitHub publication pending",
+    "personal_candidate_archive": "Final personal ZIP integrity and publication check passed; published in v0.5.0-beta.6 with remote size and SHA-256 verified",
     "development_runtime_archive": "Relocated development package passed startup and shared workspace readback, then was refused for developer paths; not used as the platform candidate.",
     "platform_candidate": {
       "archive_sha256": "5cecbe6136cbd03a64ad30821663d461b48b7ba0dff647b11aac3ef4fa274510",
@@ -19,7 +19,16 @@
       "package_refresh": "Only bilingual README version and operation-count references changed; runtime, scripts and skills are byte-identical to the workflow-tested candidate"
     },
     "side_browser_live_edit": "Not run: host browser control disabled. Installed HTTP HTML/assets, MCP and default CLI verification passed; this does not establish side-browser acceptance.",
-    "published": false,
+    "published": true,
+    "publication": {
+      "tag": "v0.5.0-beta.6",
+      "url": "https://github.com/miracle-ai-studio/OpenCut-Plugin/releases/tag/v0.5.0-beta.6",
+      "source_commit": "f2a74b4aea9e3e9a22ae5dbd76e2027373614957",
+      "published_at": "2026-11-04T17:59:59Z",
+      "prerelease": true,
+      "remote_assets_verified": 5,
+      "verification": "All five uploaded asset sizes and SHA-256 digests match the final local release files"
+    },
     "local_installation_updated": true,
     "date": "2026-11-05",
     "local_installation": {

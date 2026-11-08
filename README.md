@@ -29,11 +29,7 @@ The external agent interprets creative requests. OpenCut executes typed operatio
 
 ![OpenCut Plugin English interface](docs/images/interface-en.png)
 
-User-supplied English workbench capture with a coastline preview.
 
-### 简体中文
-
-![OpenCut Plugin Chinese interface](docs/images/interface-zh-CN.png)
 
 User-supplied Chinese workbench capture.
 

@@ -15,17 +15,27 @@ OpenCut is an open-source video editing system with a Web workbench and a local 
 
 ## Install on macOS
 
+The current `0.0.1-beta` package requires **macOS 26 or later on an Intel Mac**. Apple Silicon validation is deferred.
+
+### Install for Codex
+
+On an Intel Mac running macOS 26 or later with the Codex CLI installed, paste this block into Terminal. You can also ask a local Codex session to run it.
+
+```sh
+(
+  installer=$(mktemp) && trap 'rm -f "$installer"' EXIT &&
+  curl -fsSL https://github.com/miracle-ai-studio/OpenCut-Plugin/releases/download/v0.0.1-beta/install-desktop.sh -o "$installer" &&
+  sh "$installer" install v0.0.1-beta --codex-plugin
+)
+```
+
+The script verifies the platform package, starts the local service, registers MCP and enables **OpenCut Plugin**. Open a new local Codex conversation, select **OpenCut Plugin**, and ask it to list your OpenCut projects.
+
+### Install the desktop app
+
 Download the `OpenCut-<version>-<chip>.zip` that matches your Mac, unzip it, and double-click `OpenCut.app`. Choose **Install Desktop App** to place the branded app in `~/Applications`, then **Install / Start** and **Open Editor**. The app installs its bundled runtime, starts the local service, and registers `opencut_desktop` when Codex is installed. Existing installations can use **Switch to Standard Workspace** to select the existing `~/.opencut/workspace.sqlite` database. Projects in the previous workspace remain there and its database is kept. The window displays the current Metal device status. To upgrade a running service, choose **Stop Service** before **Install / Start**. A public download with only local ad-hoc signing may require a manual macOS trust decision; a Developer ID signed and notarized release requires an Apple Developer account.
 
 After installation, opening OpenCut starts a stopped service automatically and reuses a ready service. **Install Desktop App** also replaces an existing OpenCut app of the same or an older version after checking the staged copy. The MCP entry is `opencut_desktop`, using stdio with the fixed executable `~/.opencut-plugin/opencut-mcp` and no arguments or environment variables. Open OpenCut before connecting your MCP client.
-
-The command-line installer is also available:
-
-Download the desktop installer from a matching [GitHub release](https://github.com/miracle-ai-studio/OpenCut-Plugin/releases). Run it on the Mac where Codex runs. Replace `v0.0.1-beta` with the release tag. The script selects the package for your CPU, verifies it, starts the service, and registers `opencut_desktop`.
-
-```sh
-sh install-desktop.sh install v0.0.1-beta
-```
 
 You can also install from a downloaded platform ZIP with its `.sha256` file beside it. From a source checkout, use `scripts/install-desktop.sh` in place of `install-desktop.sh`.
 
@@ -56,6 +66,6 @@ sh scripts/build-desktop-release.sh TARGET native-media.json runtime.json dist/r
 sh scripts/package-desktop-app.sh dist/releases/opencut-plugin-VERSION-TARGET.zip dist/releases
 ```
 
-The GitHub Actions build runs both targets in parallel on configured release runners. [Build setup](docs/development.md) · [Architecture](docs/architecture.md) · [Release status](docs/status.md)
+The GitHub Actions build runs Intel by default on a configured release runner. Enable Apple Silicon explicitly to build and validate both targets in parallel. [Build setup](docs/development.md) · [Architecture](docs/architecture.md) · [Release status](docs/status.md)
 
 OpenCut is a community fork of [OpenCut](https://github.com/OpenCut-app/OpenCut), maintained by [miracle-ai-studio](https://github.com/miracle-ai-studio). [MIT license](LICENSE)

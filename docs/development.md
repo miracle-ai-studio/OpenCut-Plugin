@@ -4,7 +4,7 @@
 
 ## 边界与行为
 
-仓库不包含 GitHub Actions 流水线。按实际改动范围在本地运行以下检查。
+`.github/workflows/desktop-build.yml` 提供 macOS 发行构建和隔离验收，默认只运行 Intel；Apple Silicon 需手动启用。按实际改动范围在本地运行以下检查，发行工作流不能代替源码边界与专项行为检查。
 
 ```sh
 python3 -m unittest discover -s scripts/tests -p 'test_architecture.py'
@@ -53,11 +53,13 @@ python3 scripts/verify-package-exchange.py --help
 
 当前 macOS 装配要求 `--native-media-spec /absolute/path/to/native-media.json`。该可信构建输入使用 `opencut.native-media-input`，声明 `target`、媒体库安装 `root` 和对应源码/许可证的 `provenance_root`。后者的 `build.json` 记录五个已识别 FFmpeg 共享库的字节、禁用 GPL/nonfree/version3 的配置和静态 dav1d 来源；同时保留 `build-media-runtime.py`、`sources` 中的对应源码归档和 `licenses` 中的原文。打包只修改副本，拒绝未记录的非系统动态依赖；尚不支持的平台明确失败。
 
-### macOS 双架构发布构建
+### macOS 发布构建
 
 在原生 Intel 或 Apple Silicon 构建机上运行 `sh scripts/build-desktop-release.sh TARGET native-media.json runtime.json dist/releases`。脚本构建 Rust CLI 和 Worker、组装 Web 与原生运行时，再用发布检查生成平台 ZIP 和校验文件。构建输入中的 FFmpeg 组件及来源记录需提前满足发布内容检查。
 
-手动触发 `Build OpenCut Desktop` 可并行运行两个平台作业。专用构建机分别使用 `macOS`、`X64` 或 `ARM64` 及 `opencut-release` 标签，并配置 rustup、Node.js、Python 3.11+ 和验收用 FFmpeg。设置 `OPENCUT_RELEASE_INPUTS` 指向可信输入根目录，在其两个目标三元组子目录中分别放置 `native-media.json` 和 `runtime.json`。工作流通过确切 ZIP 的隔离验收后上传平台产物及安装脚本，供后续发版使用。
+手动触发 `Build OpenCut Desktop` 默认运行 Intel，勾选 `apple_silicon` 才同时运行 ARM64。专用构建机分别使用 `macOS`、`X64` 或 `ARM64` 及 `opencut-release` 标签，并配置 rustup、Node.js、Python 3.11+ 和验收用 FFmpeg。设置 `OPENCUT_RELEASE_INPUTS` 指向可信输入根目录，在对应目标三元组子目录中放置 `native-media.json` 和 `runtime.json`；设置 `OPENCUT_CHROME` 为 Chrome 可执行文件的绝对路径。当前媒体运行时、应用最低系统声明和安装器统一要求 macOS 26 或更新版本。
+
+工作流先用 `verify-plugin-release.py` 对确切 ZIP 做隔离安装、MCP 和原生导出验收，再串行运行 `apps/web/scripts/verify-desktop-release.mjs --archive ZIP --workspace 同一验收目录`，检查实际界面、连续画面、独立 PCM 对照、暂停/继续/跳转、撤销/重做、重新加载和服务重启。后者默认无界面；本机可加 `--headed` 保留可见浏览器模式。两者复用合成工程、检查点和原有导出，不写用户工作区；证据保存在仓库外。通过后上传平台产物及安装脚本，供后续发版使用。
 
 `--binary` 可复用已构建的 CLI，`--render-worker` 指定同批 worker，缺省取 CLI 的相邻文件。`--web-root` 和 `--reuse-sdk-dist` 复用已验证的构建。可选 `--runtime-spec` 使用 `opencut.native-runtime-input`，接受 FFmpeg/ffprobe、Node/Python 安装及原始再分发许可证；FFmpeg/ffprobe 还要求 `corresponding_sources` 列出组件根目录内的对应源码归档与构建记录（至少两个文件），发布清单保持这些相对路径和文件身份；不再接受旧 Chromium 构建输入。旧清单读取不构成后端回退。搬迁会改变程序和库哈希，生成契约检查使用装配后的确切 CLI，媒体验收也必须绑定实际分发身份。
 
@@ -70,7 +72,7 @@ python3 scripts/verify-package-exchange.py --help
 
 手动触发时 `publish` 默认关闭；推送到专用 `release/0.0.1-beta` 分支仅启动构建，不发布或删除 Release。所选 macOS 平台构建和隔离验收成功才创建预发布草稿；上传并校验每个文件的 GitHub SHA-256、大小和清单，再发布新 Release；仅本次手动勾选 `cleanup_old_releases` 时，才删除旧 `v0.5.0-beta.*` Release 及标签。源码 Git 历史不重写。
 
-只校验目录：`python3.12 scripts/publish-release.py --directory dist/releases/0.0.1-beta`。手动发布增加 `--publish --commit <已验收的40位提交> --remove-previous-releases`，说明来自 `docs/release-notes.md`。缺少所选架构或文件不符会在远端写入前失败；上传失败不会删除旧 Release。
+只校验目录：`python3.12 scripts/publish-release.py --directory dist/releases/0.0.1-beta`。手动发布增加 `--publish --commit <已验收的40位提交>`，说明来自 `docs/release-notes.md`；仅明确需要清理旧版时另加 `--remove-previous-releases`。缺少所选架构或文件不符会在远端写入前失败；上传失败不会删除旧 Release。
 
 从旧版本重置编号时，先停止服务，再执行 `sh install-desktop.sh install v0.0.1-beta`，保留选定工作区。后续普通 `update` 仍禁止降级。
 

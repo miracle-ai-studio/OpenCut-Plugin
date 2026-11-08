@@ -75,6 +75,13 @@ console.log(JSON.stringify(report, null, 2));
   install) shift ;;
 esac
 
+# The 0.0.1-beta media runtime is built for macOS 26 or later. Check before
+# downloading or executing the bundled Node/FFmpeg on an older system.
+macos_version=$(/usr/bin/sw_vers -productVersion)
+macos_major=${macos_version%%.*}
+case $macos_major in ''|*[!0-9]*) fail 'Cannot determine the macOS version.' ;; esac
+[ "$macos_major" -ge 26 ] || fail "This release requires macOS 26 or later (found $macos_version)."
+
 if [ "$(/usr/sbin/sysctl -n hw.optional.arm64 2>/dev/null || true)" = 1 ]; then
   target=aarch64-apple-darwin
 else
@@ -112,10 +119,14 @@ case ${1:-} in
 esac
 
 register_codex=true
-if [ "${1:-}" = --no-register-codex ]; then
-  register_codex=false
-  shift
-fi
+install_codex_plugin=false
+case ${1:-} in
+  --no-register-codex) register_codex=false; shift ;;
+  --codex-plugin)
+    command -v codex >/dev/null || fail 'Install Codex with CLI plugin support first.'
+    install_codex_plugin=true
+    shift ;;
+esac
 
 [ -f "$archive" ] && [ -f "$archive.sha256" ] || fail 'The ZIP and its official .sha256 companion are required.'
 expected=$(/usr/bin/awk 'NR == 1 { print $1 }' < "$archive.sha256")
@@ -155,7 +166,30 @@ case $top in ''|.*|*[!a-zA-Z0-9._-]*) fail 'Invalid runtime archive root.' ;; es
 node=$work/node
 /usr/bin/tar -xOzf "$plugin/runtime.tar.gz" "$top/bin/libexec/runtimes/node/bin/node" > "$node"
 /bin/chmod 700 "$node"
-if [ "$register_codex" = true ]; then
+if [ "$install_codex_plugin" = true ]; then
+  receipt=$work/install.json
+  "$node" "$plugin/scripts/install.mjs" --register-codex "$@" > "$receipt" ||
+    { /bin/cat "$receipt"; exit 1; }
+  /bin/cat "$receipt"
+  [ "$(/usr/bin/plutil -extract desktop_mcp.status raw -o - "$receipt")" = registered ] ||
+    fail 'OpenCut is installed. Enable the opencut_desktop MCP connection in Codex before installing the plugin.'
+  marketplace=$(/usr/bin/plutil -extract marketplace raw -o - "$receipt")
+  codex plugin marketplace add "$marketplace" --json > "$work/marketplace.json"
+  [ "$(/usr/bin/plutil -extract marketplaceName raw -o - "$work/marketplace.json")" = opencut-plugin ] &&
+    [ "$(/usr/bin/plutil -extract installedRoot raw -o - "$work/marketplace.json")" = "$marketplace" ] ||
+    fail 'Codex already has an OpenCut marketplace at a different path. Review it in Codex before retrying.'
+  codex plugin add opencut@opencut-plugin --json >&2
+  codex plugin list --marketplace opencut-plugin --json > "$work/plugins.json"
+  "$node" --input-type=module --eval '
+import { readFileSync } from "node:fs";
+const [list, release] = process.argv.slice(1).map(file => JSON.parse(readFileSync(file, "utf8")));
+if (!list.installed?.some(plugin => plugin.pluginId === "opencut@opencut-plugin" &&
+    plugin.version === release.version && plugin.installed === true && plugin.enabled === true)) {
+  console.error("OpenCut Desktop: Codex did not report the requested plugin as installed and enabled.");
+  process.exitCode = 1;
+}
+' "$work/plugins.json" "$release"
+elif [ "$register_codex" = true ]; then
   "$node" "$plugin/scripts/install.mjs" --register-codex "$@"
 else
   "$node" "$plugin/scripts/install.mjs" "$@"

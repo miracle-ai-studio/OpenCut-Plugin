@@ -35,7 +35,9 @@ trap 'exit 1' HUP INT TERM
 app="$work/OpenCut.app"
 /bin/mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
 export CLANG_MODULE_CACHE_PATH="$work/clang-cache"
-/usr/bin/xcrun swiftc -O -module-cache-path "$work/swift-cache" -target "$host-apple-macosx12.0" \
+# The bundled FFmpeg executables and libraries require macOS 26.
+minimum_macos=26.0
+/usr/bin/xcrun swiftc -O -module-cache-path "$work/swift-cache" -target "$host-apple-macosx$minimum_macos" \
   -file-prefix-map "$HOME=/opencut-build/user" -file-prefix-map "$PWD=/opencut-build/source" \
   -debug-prefix-map "$HOME=/opencut-build/user" -debug-prefix-map "$work=/opencut-build/output" \
   -framework AppKit -framework Metal apps/desktop-launcher/main.swift \
@@ -57,7 +59,7 @@ export CLANG_MODULE_CACHE_PATH="$work/clang-cache"
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleShortVersionString</key><string>$version</string>
   <key>CFBundleVersion</key><string>1</string>
-  <key>LSMinimumSystemVersion</key><string>12.0</string>
+  <key>LSMinimumSystemVersion</key><string>$minimum_macos</string>
   <key>NSHighResolutionCapable</key><true/>
 </dict></plist>
 EOF

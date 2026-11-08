@@ -4,13 +4,24 @@
   "delivery_ready": false,
   "implementation": {
     "release_version": "Rust workspace and plugin aligned",
-    "installer": "Supports bare beta versions and explicit numbering reset",
-    "distribution": "Portable checksums, path remapping and pinned native dependency provenance"
+    "installer": "Supports numbering reset and an opt-in Codex install that verifies the service, MCP registration and plugin enablement",
+    "distribution": "Portable checksums, path remapping and pinned native dependency provenance",
+    "minimum_macos": "26.0; bundled FFmpeg deployment target, desktop declaration and installer gate aligned"
   },
   "build": {
     "target": "x86_64-apple-darwin",
     "rust_cli_and_worker": "passed",
     "desktop_app": "built; strict ad-hoc signature and ZIP integrity passed"
+  },
+  "candidate": {
+    "directory": "dist/releases/0.0.1-beta-intel-review",
+    "platform_zip_sha256": "411ea7cd6dd9c7d7f4962cd34a3c1265defed8d542ea5701ecbe270a7cc71de6",
+    "desktop_zip_sha256": "7b008fea4a796b0b580ce795504b1a6420e3531d26751368c27a8a8ad0da7247",
+    "installer_sha256": "038e2784bc82ab63db8d8b0c9a5794a46bf19184ea770794d201fb7550c82a6a",
+    "runtime_archive_sha256": "04672798002fd18a6579c04811b3c3bc982cc7bb6b8f5d96d3c2739360759abb",
+    "runtime_manifest_sha256": "65120afa4f9d9f2db0e30e55427576c273657726174834ee47b90ff9c52ca845",
+    "cli_sha256": "0c68d2f534603942604dd2061e7bd9196924a3970c96538d28bed31651611bda",
+    "worker_sha256": "2e34bac2e04e6da923cc389ee52a90ae49589d7b38157731dc3cef459f872567"
   },
   "validation": {
     "generated_and_canonical_contracts": "passed for the built and assembled CLI",
@@ -23,20 +34,33 @@
     "local_package_tests": 8,
     "native_runtime_tests": 5,
     "release_publication_tests": 6,
+    "source_hygiene_tests": 5,
+    "source_hygiene": "3470 publication files passed; Git history and ignored files excluded",
     "isolated_install_reinstall_and_doctor": "passed",
-    "service_mcp_media_acceptance": "blocked by execution-environment permission; not accepted",
-    "manual_acceptance": "pending"
+    "service_mcp_media_acceptance": "passed: installed launcher, 11 domain tools, import, atomic edit, idempotent replay, cover, native MP4 export and independent pixel check",
+    "shell_installer": "passed with the bundled Node bootstrap in the owned workspace; Codex registration not requested",
+    "desktop_ui_acceptance": "passed in headless Chrome for this platform ZIP and visible Chrome on the identical runtime: import/placement, continuous pixels and independent PCM, pause/resume/seek, rename/undo/redo/reload, service restart retaining project and export",
+    "browser": "Chrome 156.0.8078.80; visible and headless",
+    "desktop_verifier_sha256": "ac041ba8fbf2141d4c8b1c2e11fa699f0816561bb18b5ff8f74bdcec2e48a0b3",
+    "desktop_package": "passed: minimum OS 26.0 in launcher and Info.plist, strict ad-hoc signature, ZIP integrity, matching nested package and installer, wrapper publication hygiene",
+    "pcm_reference": "4096 actual preview samples; maximum absolute error 0 against independent browser mastering; fixed 288-frame predelay, no fitted gain or timing",
+    "manual_acceptance": "pending",
+    "codex_one_command": "Passed on this Intel Mac against the accepted runtime: existing service reused, MCP registered, plugin installed and enabled"
   },
   "platforms": {
-    "x86_64-apple-darwin": "current release target; service acceptance pending",
+    "x86_64-apple-darwin": "macOS 26 or later; isolated installation and scoped native behavior passed",
     "aarch64-apple-darwin": "validation explicitly deferred until compatible hardware is available; not required for current Intel release"
   },
   "publication": {
     "source_branch": "release/0.0.1-beta",
-    "github_release": "pending",
+    "runtime_source_base": "3dd5d2c7f831d79e93db65d17ff835f79796fdf4",
+    "source_candidate": "Intel prerelease with the accepted runtime and updated installer and documentation",
+    "github_release": "Prepared for v0.0.1-beta publication",
     "old_releases_removed": false
   },
   "limits": [
+    "Finder/Gatekeeper first launch, another clean machine, a real MCP client conversation and physical audio acceptance remain pending.",
+    "Synthetic automated behavior does not qualify sustained FPS, interrupted writes or the full feature matrix.",
     "Ad-hoc signature only; Developer ID and notarization are not complete.",
     "Full product qualification is not claimed."
   ]

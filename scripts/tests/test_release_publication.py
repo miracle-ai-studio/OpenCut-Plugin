@@ -84,6 +84,28 @@ class ReleasePublicationTests(unittest.TestCase):
                 publication.publish(root, Path('notes'), 'a' * 40, True)
             self.assertFalse(any(call[:2] == ('release', 'delete') for call in calls))
 
+    def test_resume_verified_draft_without_tag_lookup_or_reupload(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            version = self.fixture(root)
+            _, files = publication.validate(root)
+            draft = {'tag_name': 'v' + version, 'target_commitish': 'a' * 40, 'draft': True,
+                     'assets': [{'name': p.name, 'size': p.stat().st_size,
+                                 'digest': 'sha256:' + publication.digest(p)} for p in files]}
+            def gh(*args):
+                if args[:2] == ('api', '--paginate'):
+                    return json.dumps([[draft]])
+                if args[:2] == ('release', 'edit'):
+                    draft.update(draft=False, published_at='2026-11-08',
+                                 html_url='https://github.com/example/release')
+                    return ''
+                if args[0] == 'api' and not draft['draft']:
+                    return json.dumps(draft)
+                self.fail(f'Unexpected GitHub call: {args}')
+            with patch.object(publication, 'gh', gh):
+                result = publication.publish(root, Path('notes'), 'a' * 40)
+            self.assertEqual(result['published'], 'https://github.com/example/release')
+
     def test_installer_accepts_bare_beta_and_still_refuses_downgrades(self):
         installer = (publication.ROOT / 'scripts/install-desktop.sh').read_text()
         start = installer.index('import { readFileSync } from "node:fs";\nfunction version(file)')

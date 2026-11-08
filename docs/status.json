@@ -33,7 +33,7 @@
     "plugin_package_tests": 6,
     "local_package_tests": 8,
     "native_runtime_tests": 5,
-    "release_publication_tests": 6,
+    "release_publication_tests": 7,
     "source_hygiene_tests": 5,
     "source_hygiene": "3470 publication files passed; Git history and ignored files excluded",
     "isolated_install_reinstall_and_doctor": "passed",
@@ -55,7 +55,7 @@
     "source_branch": "release/0.0.1-beta",
     "runtime_source_base": "3dd5d2c7f831d79e93db65d17ff835f79796fdf4",
     "source_candidate": "Intel prerelease with the accepted runtime and updated installer and documentation",
-    "github_release": "Prepared for v0.0.1-beta publication",
+    "github_release": "Draft created for v0.0.1-beta. Large ZIP uploads are pending.",
     "old_releases_removed": false
   },
   "limits": [

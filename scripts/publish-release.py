@@ -50,12 +50,16 @@ def gh(*args):
     return subprocess.run(['gh', *args], check=True, capture_output=True, text=True).stdout
 
 
+def release_inventory():
+    pages = json.loads(gh('api', '--paginate', '--slurp', f'repos/{REPOSITORY}/releases?per_page=100'))
+    return [release for page in pages for release in page]
+
+
 def publish(directory, notes, commit, remove_previous=False, targets=TARGETS[:1]):
     version, files = validate(directory, targets)
     tag = 'v' + version
     # Fail before mutation if the complete existing release inventory is unavailable.
-    pages = json.loads(gh('api', '--paginate', '--slurp', f'repos/{REPOSITORY}/releases?per_page=100'))
-    releases = [release for page in pages for release in page]
+    releases = release_inventory()
     existing = next((r for r in releases if r['tag_name'] == tag), None)
     if not re.fullmatch(r'[0-9a-f]{40}', commit):
         raise ValueError('Publication requires the exact tested source commit')
@@ -64,14 +68,21 @@ def publish(directory, notes, commit, remove_previous=False, targets=TARGETS[:1]
     if existing is None:
         gh('release', 'create', tag, '--repo', REPOSITORY, '--target', commit, '--draft',
            '--prerelease', '--title', f'OpenCut {version}', '--notes-file', str(notes))
+    identities = {file.name: (file.stat().st_size, 'sha256:' + digest(file)) for file in files}
     if existing is None or existing['draft']:
-        gh('release', 'upload', tag, '--repo', REPOSITORY, '--clobber', *(str(p) for p in files))
-    uploaded = json.loads(gh('api', f'repos/{REPOSITORY}/releases/tags/{tag}'))
+        retained = {a['name']: (a['size'], a.get('digest')) for a in (existing or {}).get('assets', [])}
+        pending = [str(p) for p in files if retained.get(p.name) != identities[p.name]]
+        if pending:
+            gh('release', 'upload', tag, '--repo', REPOSITORY, '--clobber', *pending)
+        # GitHub's tag lookup excludes drafts, even for a repository maintainer.
+        uploaded = next(r for r in release_inventory() if r['tag_name'] == tag)
+    else:
+        uploaded = existing
     actual = {a['name']: a for a in uploaded['assets']}
     if set(actual) != {p.name for p in files}:
         raise ValueError('Uploaded release inventory differs; kept as draft')
     for file in files:
-        if actual[file.name]['size'] != file.stat().st_size or actual[file.name].get('digest') != 'sha256:' + digest(file):
+        if (actual[file.name]['size'], actual[file.name].get('digest')) != identities[file.name]:
             raise ValueError(f'Uploaded identity differs: {file.name}; kept as draft')
     if uploaded['draft']:
         gh('release', 'edit', tag, '--repo', REPOSITORY, '--draft=false', '--prerelease', '--notes-file', str(notes))

@@ -15,7 +15,7 @@ Chrome 中，实际界面通过素材导入与放置、超过 4 秒的原生连�
 
 发布资产保留在 `dist/releases/0.0.1-beta-public`，与此前验收包分开保存。命令行安装器使用包内 Node 的隔离安装通过；桌面包的严格 ad-hoc 签名、ZIP 完整性、嵌套包与安装器身份、最低系统声明和外壳内容卫生检查通过。当前候选哈希见 [status.json](status.json)。
 
-发行分支为 `release/0.0.1-beta`，运行时候选对应源码基线 `3dd5d2c7f831d79e93db65d17ff835f79796fdf4`。一键安装入口已在本机 Codex 验证服务就绪、MCP 注册和插件启用。发布用平台 ZIP 仅更新两份 README，运行时和插件脚本与已验收包逐文件相同。完整交付保持 **false**。
+发行分支为 `release/0.0.1-beta`，运行时候选对应源码基线 `3dd5d2c7f831d79e93db65d17ff835f79796fdf4`。一键安装入口已在本机 Codex 验证服务就绪、MCP 注册和插件启用。发布用平台 ZIP 仅更新两份 README，运行时和插件脚本与已验收包逐文件相同。GitHub 已创建预发行草稿，大型 ZIP 上传待完成。完整交付保持 **false**。
 
 尚缺 Finder/Gatekeeper 下载首启、另一台干净机器、真实 MCP 客户端剪辑会话和物理音频人工验收。桌面应用仅有 ad-hoc 签名，未进行 Developer ID 签名或公证。Apple Silicon 验证暂缓。
 

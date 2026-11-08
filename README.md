@@ -19,7 +19,7 @@ The current `0.0.1-beta` package requires **macOS 26 or later on an Intel Mac**.
 
 ### Install for Codex
 
-On an Intel Mac running macOS 26 or later with the Codex CLI installed, paste this block into Terminal. You can also ask a local Codex session to run it.
+After the [GitHub prerelease](https://github.com/miracle-ai-studio/OpenCut-Plugin/releases/tag/v0.0.1-beta) is public, on an Intel Mac running macOS 26 or later with the Codex CLI installed, paste this block into Terminal. You can also ask a local Codex session to run it.
 
 ```sh
 (
@@ -56,6 +56,8 @@ Open the `web_url` in the installer output. To edit with an agent, open a new lo
 | `sh install-desktop.sh update v0.0.1-beta` | Install the selected version and start the service again |
 
 Finish active jobs and run `stop` before updating. `update --archive /path/to/opencut-release.zip` upgrades from a local ZIP. Run `check` after updating to verify the connection. [Operations guide](docs/operations.md)
+
+The shared registry provides 185 named operations across 12 domains. See the [MCP and CLI operation reference](docs/cli-mcp-capabilities.md) for the available tools.
 
 ## Build a desktop package
 

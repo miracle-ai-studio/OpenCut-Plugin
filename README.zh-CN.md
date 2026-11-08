@@ -19,7 +19,7 @@ OpenCut 是一套开源视频剪辑系统，由 Web 工作台和本地 Rust 引�
 
 ### 一键安装到 Codex
 
-在已安装 Codex CLI、运行 macOS 26 或更新版本的 Intel Mac 上，把下面整段粘贴到终端执行，也可以让本地 Codex 会话执行。
+[GitHub 预发行版](https://github.com/miracle-ai-studio/OpenCut-Plugin/releases/tag/v0.0.1-beta)公开后，在已安装 Codex CLI、运行 macOS 26 或更新版本的 Intel Mac 上，把下面整段粘贴到终端执行，也可以让本地 Codex 会话执行。
 
 ```sh
 (
@@ -56,6 +56,8 @@ sh install-desktop.sh install --archive /path/to/opencut-release.zip
 | `sh install-desktop.sh update v0.0.1-beta` | 升级到指定版本并重新启动服务 |
 
 升级前等任务完成，再执行 `stop`。使用 `update --archive /path/to/opencut-release.zip` 可以从本地 ZIP 升级。升级完成后运行 `check` 验证连接。[运行手册](docs/operations.md)
+
+共享注册表提供 12 个领域、185 个具名操作。可用工具见 [MCP / CLI 操作参考](docs/cli-mcp-capabilities.md)。
 
 ## 构建桌面安装包
 

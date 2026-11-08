@@ -65,3 +65,44 @@ class NativeRuntimeTest(unittest.TestCase):
                 native.source_spec(spec, 'x86_64-apple-darwin')
             with self.assertRaisesRegex(ValueError, 'matching target'):
                 native.source_spec(spec, 'aarch64-apple-darwin')
+
+
+    def retained_input(self, root):
+        value = self.fixture(root)
+        notice = root / 'THIRD_PARTY/native-media/licenses/notice.txt'
+        notice.parent.mkdir(); notice.write_text('retained license')
+        manifest = {'target': value['target'], 'native_renderer': value,
+                    'files': {str(p.relative_to(root)): {'sha256': native.runtime.sha(p), 'size': p.stat().st_size}
+                              for p in root.rglob('*') if p.is_file()}}
+        (root / 'manifest.json').write_text(json.dumps(manifest))
+        spec = root / 'reuse-input.json'
+        spec.write_text(json.dumps({'format': 'opencut.native-media-reuse-input', 'target': value['target'],
+                                    'root': str(root), 'manifest_sha256': native.runtime.sha(root / 'manifest.json')}))
+        return spec, value, notice
+
+    def test_retained_dependencies_keep_original_proof_and_reject_changed_library(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            spec, value, _ = self.retained_input(root)
+            proof = (root / value['build']).read_bytes()
+            prepared, inputs = native.source_spec(spec, value['target'])
+            self.assertEqual(prepared['reuse']['source_native_renderer'], value)
+            self.assertEqual(set(inputs['libraries']), {Path(p).name for p in value['libraries'].values()})
+            self.assertEqual((root / value['build']).read_bytes(), proof)
+            library = root / next(iter(value['libraries'].values()))
+            library.write_bytes(library.read_bytes() + b'changed')
+            with self.assertRaisesRegex(ValueError, 'bytes differ'):
+                native.source_spec(spec, value['target'])
+
+    def test_retained_inputs_require_pinned_manifest_target_and_complete_provenance(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            spec, value, notice = self.retained_input(root)
+            with self.assertRaisesRegex(ValueError, 'matching'):
+                native.source_spec(spec, 'aarch64-apple-darwin')
+            notice.unlink()
+            with self.assertRaisesRegex(ValueError, 'inventory'):
+                native.source_spec(spec, value['target'])
+            (root / 'manifest.json').write_text('{}')
+            with self.assertRaisesRegex(ValueError, 'manifest identity'):
+                native.source_spec(spec, value['target'])

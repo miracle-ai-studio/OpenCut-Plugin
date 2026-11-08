@@ -59,8 +59,15 @@ def verify(archive, root):
     assert doctor['ready']
     runtime = Path(installed['runtime']); binary = runtime / 'bin/opencut'
     installed_plugin = Path(installed['marketplace']) / 'plugins/opencut'
-    for name in ('plugin.json', 'mcp.json', 'scripts/launch.sh', 'scripts/launch.mjs', 'scripts/runtime.mjs'):
+    for name in ('plugin.json', 'mcp.json', 'scripts/launch.sh', 'scripts/launch.mjs', 'scripts/runtime.mjs',
+                 'scripts/desktop-mcp.sh', 'scripts/codex.mjs'):
         assert sha(installed_plugin / name) == sha(plugin / name), name
+    desktop_mcp = Path(installed['desktop_mcp']['command'])
+    assert installed['desktop_mcp']['name'] == 'opencut_desktop'
+    assert installed['desktop_mcp']['status'] == 'not_requested'
+    assert desktop_mcp == Path(repeated['desktop_mcp']['command'])
+    assert desktop_mcp.stat().st_mode & 0o100
+    assert sha(desktop_mcp) == sha(installed_plugin / 'scripts/desktop-mcp.sh')
     manifest = json.loads((runtime / 'manifest.json').read_text())
     assert manifest['native_renderer']['format'] == 'opencut.native-renderer'
     state_file = root / ('checkpoint-' + sha(binary)[:12] + '.json')
@@ -85,10 +92,19 @@ def verify(archive, root):
 
     spec = importlib.util.spec_from_file_location('editorial_release_mcp', HERE / 'verify-editorial.py')
     editorial = importlib.util.module_from_spec(spec); spec.loader.exec_module(editorial)
-    mcp = editorial.Mcp(binary, root / 'data/workspace.sqlite', root, ['/bin/sh', str(installed_plugin / 'scripts/launch.sh')], env=env)
+    mcp = None
+    service_started = False
     project_id = 'plugin-release-check'
-    checks = ['ZIP and host runtime file identities', 'Relocated versioned installation', 'Idempotent installation preserving an existing custom budget', 'Fresh workspace retains automatic output sizing; no fixed small file cap', 'Base dependency and executable doctor', 'Packaged stdio launcher initialization']
+    checks = ['ZIP and host runtime file identities', 'Relocated versioned installation', 'Idempotent installation preserving an existing custom budget', 'Fresh workspace retains automatic output sizing; no fixed small file cap', 'Base dependency and executable doctor', 'Packaged launcher file identity']
     try:
+        # API-backed launchers attach to this one owned service. Installation
+        # and chat startup never implicitly acquire another SQLite/Worker host.
+        service = json.loads(run(['node', installed_plugin / 'scripts/web.mjs', 'start'], env))
+        assert service['error'] is None and service['data']['ready'], service
+        service_started = True
+        mcp = editorial.Mcp(binary, root / 'data/workspace.sqlite', root,
+            [str(desktop_mcp)], env=env)
+        checks.append('One separately owned Web/API service started before plugin attachment')
         tools = mcp.request('tools/list', {})['tools']
         assert 0 < len(tools) <= 12
         mcp.tool('opencut_system', {'action': 'capabilities', 'input': {}})
@@ -155,7 +171,12 @@ def verify(archive, root):
         pixel_probe = {'passed': center[0] > 230 and center[1] < 15 and center[2] < 15, 'actual_rgb': list(center), 'expected': 'red > 230; green < 15; blue < 15', 'scope': 'Center pixel of one untagged synthetic H264 source through the delivered renderer; thresholds unchanged'}
         checks.append('Completed export and artifact content hash matched')
     finally:
-        mcp.close()
+        try:
+            if mcp is not None:
+                mcp.close()
+        finally:
+            if service_started:
+                run(['node', installed_plugin / 'scripts/web.mjs', 'stop'], env)
     report = {'status': 'passed' if pixel_probe['passed'] else 'package_and_workflow_passed_pixel_probe_failed', 'package_ready': True, 'workflow_passed': True, 'pixel_probe': pixel_probe, 'fixture_origin_binary_sha256': state.get('fixture_origin_binary_sha256'), 'fixture_reuse_scope': 'Existing imported/edited project and source-frame cover reused; current binary verified inspection, idempotent replay and a new export. No earlier render receipt is counted for this binary.' if state.get('fixture_origin_binary_sha256') else 'Created all fixture stages with this binary', 'package_sha256': package_sha, 'binary_sha256': sha(binary), 'runtime_manifest_sha256': sha(runtime / 'manifest.json'), 'native_renderer': manifest['native_renderer'], 'runtime_bundle': manifest['runtime_bundle'], 'target': doctor['target'], 'checks': checks, 'default_mcp_tools': len(tools), 'client_conversation_acceptance': 'not_run; direct MCP protocol client exercises the installed launcher', 'clean_machine_acceptance': 'not_run; isolated installation on the current host, bundled native dependencies and external Node bootstrap', 'optional_font_transcription': 'not_run', 'scope': 'macOS local plugin package and one synthetic import/edit/cover/export flow; not whole-product or physical audio acceptance'}
     (root / 'verification.json').write_text(json.dumps(report, indent=2) + '\n')
     print(json.dumps(report, indent=2))

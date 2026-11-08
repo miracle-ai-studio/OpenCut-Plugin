@@ -31,3 +31,7 @@ bin/opencut --json server --directory /absolute/path/to/service stop
 更新前停止原服务并按 SQLite 要求备份数据库和关联资源，再替换程序与网页。不要覆盖正在运行的媒体执行包或删除活动资源。存储回收使用正式计划和 publication fence。
 
 `manifest.json` 记录包文件身份，`status.json` 记录交付资格及已知限制。包构建成功不等于完整功能、签名、升级或跨平台发行验收通过。
+
+macOS 桌面安装入口按 `x86_64-apple-darwin` 和 `aarch64-apple-darwin` 分别选择发行包。分别在对应架构的原生构建机上组装 CLI、Worker、媒体库、Node 和 Python。发行构建用 Rust `--remap-path-prefix` 和原生编译器的文件路径映射去除构建机目录，再用 `scripts/package-plugin.py --runtime-archive` 校验完整运行包，最后通过 `scripts/install-desktop.sh --archive` 在同架构机器上验收。
+
+`scripts/package-desktop-app.sh` 把同一平台 ZIP、校验文件与安装入口封入可双击的 `OpenCut.app`，使用系统 Swift/AppKit 编译入口并进行本地 ad-hoc 签名。应用首次启动显示服务与 Metal 状态；用户操作“安装 / 启动”完成安装、Codex 注册和服务启动，再打开 Web 编辑器。发行工作流为每个平台同时产出应用 ZIP 和校验文件。ad-hoc 签名不替代 Apple Developer ID、公证或真实用户桌面会话的原生画面验收。

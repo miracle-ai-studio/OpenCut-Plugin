@@ -408,6 +408,46 @@ async fn main() {
         }
     };
     if let Some(endpoint) = &cli.endpoint {
+        if let Command::Mcp {
+            command:
+                McpCommand::Serve {
+                    with_worker,
+                    service_directory,
+                    transport,
+                    listen,
+                    token_file,
+                    allow_origin,
+                    session_timeout_seconds,
+                    tool_surface,
+                },
+        } = &cli.command
+        {
+            let result = async {
+                if *with_worker
+                    || service_directory.is_some()
+                    || transport != "stdio"
+                    || listen.is_some()
+                    || token_file.is_some()
+                    || !allow_origin.is_empty()
+                    || session_timeout_seconds.is_some()
+                {
+                    return Err(EditorError::new(
+                        "INVALID_ARGUMENT",
+                        "Remote MCP requires stdio and cannot manage a local host or Worker",
+                    ));
+                }
+                let client = connection::remote(endpoint, cli.credential_file.as_deref())?;
+                mcp::serve_remote(client, *tool_surface)
+                    .await
+                    .map_err(|error| EditorError::new("TRANSPORT_ERROR", error.to_string()))
+            }
+            .await;
+            if let Err(error) = result {
+                eprintln!("{}: {}", error.code, error.message);
+                std::process::exit(exit_code(&error));
+            }
+            std::process::exit(0);
+        }
         emit_response(remote_call(&cli, endpoint).await, cli.json);
         return;
     }

@@ -23,9 +23,39 @@ pub(super) enum ToolSurface {
     Legacy,
 }
 
+// Transport selection only: every call still reaches the existing registered use case.
+// Remote sessions never construct a Workspace or acquire a database/service lock.
+#[derive(Clone)]
+pub(super) enum Backend {
+    Local(Arc<PathBuf>),
+    Remote(Arc<opencut_sdk::Client>),
+}
+impl Backend {
+    pub(super) fn call(
+        &self,
+        source: opencut_automation::CallSource,
+        caller: opencut_automation::Caller,
+        name: &str,
+        input: Value,
+    ) -> opencut_automation::Response {
+        match self {
+            Self::Local(database) => match Automation::open(database.as_ref()) {
+                Ok(app) => app
+                    .with_source(source)
+                    .with_caller(caller)
+                    .call(name, input),
+                Err(error) => opencut_automation::response(Err(error)),
+            },
+            Self::Remote(client) => {
+                crate::connection::response(client.call_registered(name, &input))
+            }
+        }
+    }
+}
+
 #[derive(Clone)]
 pub(super) struct EditorMcp {
-    database: Arc<PathBuf>,
+    backend: Backend,
     subscriptions: crate::mcp_context::Subscriptions,
     source: opencut_automation::CallSource,
     caller: opencut_automation::Caller,
@@ -67,10 +97,34 @@ impl EditorMcp {
         context: &RequestContext<RoleServer>,
     ) -> Result<opencut_automation::Caller, McpError> {
         let caller = self.request_caller(context)?;
+        if let Backend::Remote(client) = &self.backend {
+            let client = client.clone();
+            // The host authenticates this token on every HTTP request. The local
+            // caller value is unused by Remote and cannot grant owner authority.
+            let response = tokio::task::spawn_blocking(move || {
+                crate::connection::response(
+                    client.call_registered("opencut_capabilities", &json!({})),
+                )
+            })
+            .await
+            .map_err(|_| McpError::internal_error("Remote identity check failed", None))?;
+            if let Some(error) = response.error {
+                return Err(McpError::invalid_params(
+                    error.message,
+                    Some(json!({
+                        "code": error.code, "request_id": response.request_id, "warnings": response.warnings
+                    })),
+                ));
+            }
+            return Ok(caller);
+        }
         if caller.is_owner() {
             return Ok(caller);
         }
-        let database = self.database.clone();
+        let Backend::Local(database) = &self.backend else {
+            unreachable!()
+        };
+        let database = database.clone();
         let source = self.source;
         let checked = caller.clone();
         tokio::task::spawn_blocking(move|| {
@@ -95,7 +149,7 @@ impl EditorMcp {
         tool_surface: ToolSurface,
     ) -> Self {
         Self {
-            database,
+            backend: Backend::Local(database),
             subscriptions: Default::default(),
             source,
             caller: opencut_automation::Caller::LocalOwner,
@@ -171,7 +225,7 @@ impl ServerHandler for EditorMcp {
         context: RequestContext<RoleServer>,
     ) -> Result<rmcp::model::ReadResourceResponse, McpError> {
         let data = crate::mcp_context::read(
-            self.database.clone(),
+            self.backend.clone(),
             self.authorized_caller(&context).await?,
             self.source,
             request.uri.clone(),
@@ -200,7 +254,7 @@ impl ServerHandler for EditorMcp {
         context: RequestContext<RoleServer>,
     ) -> Result<rmcp::model::GetPromptResponse, McpError> {
         crate::mcp_context::prompt(
-            self.database.clone(),
+            self.backend.clone(),
             self.authorized_caller(&context).await?,
             self.source,
             request,
@@ -214,7 +268,7 @@ impl ServerHandler for EditorMcp {
     ) -> Result<(), McpError> {
         self.subscriptions
             .subscribe(
-                self.database.clone(),
+                self.backend.clone(),
                 self.authorized_caller(&context).await?,
                 self.source,
                 request.uri,
@@ -265,7 +319,7 @@ impl ServerHandler for EditorMcp {
                 Some(json!({"name":request.name})),
             ));
         }
-        let database = self.database.clone();
+        let backend = self.backend.clone();
         let source = self.source;
         let caller = self.request_caller(&context)?;
         let identity = context
@@ -278,14 +332,25 @@ impl ServerHandler for EditorMcp {
                 if let Some(identity) = &identity {
                     identity.check_lifetime()?;
                 }
-                let automation = Automation::open(database.as_ref())?;
-                if let Some(identity) = &identity {
-                    identity.check_lifetime()?;
+                // HTTP browser lifetime is checked before and after opening the
+                // local host. Remote calls retain the service's own fences.
+                if let Backend::Local(database) = &backend {
+                    let automation = Automation::open(database.as_ref())?;
+                    if let Some(identity) = &identity {
+                        identity.check_lifetime()?;
+                    }
+                    Ok(automation.with_source(source).with_caller(caller).call(
+                        &request.name,
+                        Value::Object(request.arguments.unwrap_or_default()),
+                    ))
+                } else {
+                    Ok(backend.call(
+                        source,
+                        caller,
+                        &request.name,
+                        Value::Object(request.arguments.unwrap_or_default()),
+                    ))
                 }
-                Ok(automation.with_source(source).with_caller(caller).call(
-                    &request.name,
-                    Value::Object(request.arguments.unwrap_or_default()),
-                ))
             };
             match dispatch() {
                 Ok(response) => response,
@@ -322,6 +387,27 @@ pub async fn serve(
         tool_surface,
     )
     .with_caller(caller);
+    run_stdio(handler, with_worker.then(|| database.to_path_buf())).await
+}
+
+pub async fn serve_remote(
+    client: Arc<opencut_sdk::Client>,
+    tool_surface: ToolSurface,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let handler = EditorMcp {
+        backend: Backend::Remote(client),
+        subscriptions: Default::default(),
+        source: opencut_automation::CallSource::McpStdio,
+        caller: opencut_automation::Caller::LocalOwner,
+        tool_surface,
+    };
+    run_stdio(handler, None).await
+}
+
+async fn run_stdio(
+    handler: EditorMcp,
+    worker_database: Option<PathBuf>,
+) -> Result<(), Box<dyn std::error::Error>> {
     let subscriptions = handler.subscriptions.clone();
     let disconnected = tokio_util::sync::CancellationToken::new();
     let (input, output) = stdio();
@@ -331,8 +417,7 @@ pub async fn serve(
     };
     let server = handler.serve((input, output)).await?;
     let stop = Arc::new(std::sync::atomic::AtomicBool::new(false));
-    let mut worker = with_worker.then(|| {
-        let worker_database = database.to_path_buf();
+    let mut worker = worker_database.map(|worker_database| {
         let worker_stop = stop.clone();
         tokio::task::spawn_blocking(move || {
             opencut_host_runtime::worker::run(&worker_database, false, worker_stop)
@@ -386,5 +471,52 @@ impl<R: tokio::io::AsyncRead + Unpin> tokio::io::AsyncRead for DisconnectReader<
             self.disconnected.cancel();
         }
         result
+    }
+}
+
+#[cfg(test)]
+mod remote_tests {
+    use super::*;
+
+    fn unavailable() -> Backend {
+        Backend::Remote(Arc::new(
+            opencut_sdk::Client::with_options(
+                "http://127.0.0.1:1",
+                "synthetic-test-token",
+                opencut_sdk::Options {
+                    request_timeout: std::time::Duration::from_millis(100),
+                    max_response_bytes: 4096,
+                },
+            )
+            .unwrap(),
+        ))
+    }
+
+    #[test]
+    fn remote_calls_fail_as_transport_errors_without_local_owner_fallback() {
+        let response = unavailable().call(
+            opencut_automation::CallSource::McpStdio,
+            opencut_automation::Caller::LocalOwner,
+            "opencut_project",
+            json!({"action":"list","input":{"limit":1}}),
+        );
+        assert!(response.data.is_none());
+        assert_eq!(response.error.unwrap().code, "TRANSPORT_ERROR");
+        assert!(!response.request_id.is_empty());
+    }
+
+    #[tokio::test]
+    async fn remote_resource_failures_keep_transport_code_and_request_identity() {
+        let error = crate::mcp_context::read(
+            unavailable(),
+            opencut_automation::Caller::LocalOwner,
+            opencut_automation::CallSource::McpStdio,
+            "opencut://system/capabilities".into(),
+        )
+        .await
+        .unwrap_err();
+        let data = error.data.unwrap();
+        assert_eq!(data["code"], "TRANSPORT_ERROR");
+        assert!(!data["request_id"].as_str().unwrap().is_empty());
     }
 }

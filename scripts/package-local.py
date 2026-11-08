@@ -324,7 +324,7 @@ def package_with_web_root(output, skip_build, supplied_binary, web_root, runtime
             shutil.copy2(assembled, destination)
         digest = sha(destination)
         Path(str(destination)+'.sha256').write_text(f'{digest}  {destination.name}\n')
-        receipt = {'status': 'packaged_not_yet_accepted', 'archive': str(destination), 'sha256': digest, 'binary_sha256': sha(packaged_binary), 'target': target, 'manifest': manifest}
+        receipt = {'status': 'packaged_not_yet_accepted', 'archive': destination.name, 'sha256': digest, 'binary_sha256': sha(packaged_binary), 'target': target, 'manifest': manifest}
         Path(str(destination)+'.json').write_text(json.dumps(receipt, indent=2)+'\n')
         print(json.dumps({k: v for k, v in receipt.items() if k != 'manifest'}, indent=2))
 

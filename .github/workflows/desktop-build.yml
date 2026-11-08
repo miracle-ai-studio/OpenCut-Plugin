@@ -1,0 +1,100 @@
+name: Build OpenCut Desktop
+
+on:
+  push:
+    branches: ['release/0.0.1-beta']
+  workflow_dispatch:
+    inputs:
+      apple_silicon:
+        description: Also build and validate Apple Silicon on a compatible runner
+        type: boolean
+        default: false
+      cleanup_old_releases:
+        description: After successful publication, delete the old 0.5.0 beta releases and tags once
+        type: boolean
+        default: false
+      publish:
+        description: Publish the selected validated platforms for this run
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  macos:
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/release/0.0.1-beta'
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(inputs.apple_silicon && '{"include":[{"arch":"X64","target":"x86_64-apple-darwin"},{"arch":"ARM64","target":"aarch64-apple-darwin"}]}' || '{"include":[{"arch":"X64","target":"x86_64-apple-darwin"}]}') }}
+    runs-on: [self-hosted, macOS, '${{ matrix.arch }}', opencut-release]
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+      - name: Build and package native runtime
+        shell: bash
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          specs="${OPENCUT_RELEASE_INPUTS:?Set OPENCUT_RELEASE_INPUTS on the release runner}/$TARGET"
+          output="$RUNNER_TEMP/opencut-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          echo "OPENCUT_OUTPUT=$output" >> "$GITHUB_ENV"
+          sh scripts/build-desktop-release.sh "$TARGET" "$specs/native-media.json" "$specs/runtime.json" "$output"
+      - name: Verify the exact platform ZIP
+        shell: bash
+        run: |
+          set -- "$OPENCUT_OUTPUT"/*.zip
+          test "$#" -eq 1
+          python3 scripts/verify-plugin-release.py --archive "$1" --workspace "$OPENCUT_OUTPUT/acceptance"
+      - name: Package double-click macOS app
+        shell: bash
+        run: |
+          set -- "$OPENCUT_OUTPUT"/opencut-plugin-*.zip
+          test "$#" -eq 1
+          sh scripts/package-desktop-app.sh "$1" "$OPENCUT_OUTPUT"
+          /usr/bin/codesign --verify --strict "$OPENCUT_OUTPUT"/OpenCut-*.app
+      - uses: actions/upload-artifact@v4
+        with:
+          name: opencut-${{ matrix.target }}
+          if-no-files-found: error
+          path: |
+            ${{ env.OPENCUT_OUTPUT }}/*.zip
+            ${{ env.OPENCUT_OUTPUT }}/*.zip.sha256
+            ${{ env.OPENCUT_OUTPUT }}/install-desktop.sh
+
+  publish:
+    if: inputs.publish
+    needs: macos
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: opencut-*
+          merge-multiple: true
+          path: release
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Publish verified artifacts, then retire previous versions
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INCLUDE_APPLE_SILICON: ${{ inputs.apple_silicon }}
+          CLEANUP_OLD_RELEASES: ${{ inputs.cleanup_old_releases }}
+        run: |
+          set --
+          if [ "$INCLUDE_APPLE_SILICON" = true ]; then set -- --include-apple-silicon; fi
+          if [ "$CLEANUP_OLD_RELEASES" = true ]; then set -- "$@" --remove-previous-releases; fi
+          python scripts/publish-release.py --directory release --commit "$GITHUB_SHA" --publish "$@"

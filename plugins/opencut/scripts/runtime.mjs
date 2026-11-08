@@ -41,6 +41,33 @@ export function readConfig() {
     throw new Error("Invalid local installation configuration");
   return config;
 }
+// Read-only attachment facts. Readiness and authorization are checked by the API,
+// never inferred from a PID, stale state record, or browser HTML response.
+export function serviceConnection(config) {
+  const directory = path.join(dataDirectory(), "server");
+  const file = path.join(directory, "state.json");
+  if (!fs.existsSync(file))
+    throw new Error("Start the configured OpenCut Web service outside the chat before connecting the API plugin (node scripts/web.mjs start).");
+  if (fs.statSync(file).size > 16384)
+    throw new Error("Invalid OpenCut service state");
+  const state = JSON.parse(fs.readFileSync(file, "utf8"));
+  const executable = fs.realpathSync(path.join(config.runtime, "bin/opencut"));
+  if (state.version !== 1 || typeof state.instance !== "string" || !state.instance ||
+      typeof state.database !== "string" || !path.isAbsolute(state.database) ||
+      workspaceDatabase(state) !== workspaceDatabase(config))
+    throw new Error("The configured API service uses a different database or invalid state");
+  if (typeof state.executable !== "string" || !path.isAbsolute(state.executable) ||
+      fs.realpathSync(state.executable) !== executable ||
+      state.executable_sha256 !== digest(executable))
+    throw new Error("The configured API service uses a different executable");
+  const endpoint = new URL(state.endpoint);
+  if (endpoint.protocol !== "http:" || endpoint.hostname !== "127.0.0.1" ||
+      !endpoint.port || endpoint.username || endpoint.password ||
+      endpoint.pathname !== "/" || endpoint.search || endpoint.hash)
+    throw new Error("The OpenCut API endpoint must be the configured loopback HTTP origin");
+  return { endpoint: endpoint.origin, executable, tokenFile: path.join(directory, "api-token") };
+}
+
 export function verifyRuntime(root) {
   root = fs.realpathSync(root);
   const manifest = JSON.parse(

@@ -5,6 +5,7 @@ implementations must be captured in those binaries (e.g. static dav1d), avoiding
 unrecorded transitive decoder identities. System frameworks remain platform facts.
 """
 import importlib.util
+import json
 from pathlib import Path
 import re
 import shutil
@@ -40,6 +41,39 @@ def command(args):
 
 def source_spec(path, target):
     value = runtime.read_json(path)
+    if value.get('format') == 'opencut.native-media-reuse-input':
+        if (set(value) != {'format', 'target', 'root', 'manifest_sha256'}
+                or value['target'] != target or target not in TARGETS):
+            raise ValueError('A pinned matching native runtime is required')
+        root = Path(value['root'])
+        if not root.is_absolute() or root.is_symlink() or not root.is_dir():
+            raise ValueError('The retained runtime must be a real absolute directory')
+        if runtime.sha(root / 'manifest.json') != value['manifest_sha256']:
+            raise ValueError('Retained native runtime manifest identity mismatch')
+        manifest = runtime.read_json(root / 'manifest.json')
+        native = verify(root, manifest['native_renderer'])
+        if manifest['target'] != target or native['target'] != target:
+            raise ValueError('Retained native runtime target mismatch')
+        provenance = root / 'THIRD_PARTY/native-media'
+        # Validate every provenance file against the retained delivery inventory.
+        # The original build proof and corresponding source remain byte-exact.
+        entries = runtime.inventory(provenance)
+        expected = {p.removeprefix('THIRD_PARTY/native-media/') for p in manifest['files']
+                    if p.startswith('THIRD_PARTY/native-media/')}
+        if set(entries) != expected:
+            raise ValueError('Retained native provenance inventory mismatch')
+        for relative, entry in entries.items():
+            if (entry['kind'] != 'file' or manifest['files'].get('THIRD_PARTY/native-media/' + relative)
+                    != {'sha256': entry.get('sha256'), 'size': entry.get('size')}):
+                raise ValueError('Retained native provenance identity mismatch')
+        if (provenance / 'runtime-reuse.json').exists():
+            raise ValueError('Select the original retained runtime, not a chain of repackaged inputs')
+        prepared = {'root': str(root / 'bin'), 'provenance_root': str(provenance),
+                    'reuse': {'format': 'opencut.native-media-reuse', 'target': target,
+                              'source_manifest_sha256': value['manifest_sha256'],
+                              'source_native_renderer': native}}
+        libraries = {Path(p).name: native['files'][p] for p in native['libraries'].values()}
+        return prepared, {'libraries': libraries}
     if (set(value) != {'format', 'target', 'root', 'provenance_root'}
             or value['format'] != 'opencut.native-media-input' or value['target'] != target or target not in TARGETS):
         raise ValueError('An explicit macOS native media input and matching target are required')
@@ -113,6 +147,8 @@ def bundle(host, cli, worker, target, spec_path):
             command(['/usr/bin/install_name_tool', '-id', '@loader_path/' + path.name, path])
         command(['/usr/bin/codesign', '--force', '--sign', '-', path])
     runtime.copy_tree(spec['provenance_root'], host / 'THIRD_PARTY/native-media')
+    if 'reuse' in spec:
+        (host / 'THIRD_PARTY/native-media/runtime-reuse.json').write_text(json.dumps(spec['reuse'], indent=2) + '\n')
     records = {p.relative_to(host).as_posix(): {'sha256': runtime.sha(p), 'size': p.stat().st_size} for p in paths}
     value = {'format': 'opencut.native-renderer', 'target': target, 'cli': 'bin/opencut',
              'worker': 'bin/opencut-render-worker', 'libraries': {library_name(p.name): p.relative_to(host).as_posix() for p in paths if p.parent.name == 'lib'},

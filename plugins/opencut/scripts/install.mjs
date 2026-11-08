@@ -4,6 +4,7 @@ import os from "node:os";
 import {parseArgs} from "node:util";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
+import { registerCodex } from "./codex.mjs";
 import {
   digest,
   dataDirectory,
@@ -11,17 +12,61 @@ import {
   runtimeEnvironment,
   workspaceDatabase,
   readConfig,
+  serviceConnection,
 } from "./runtime.mjs";
 
 const source = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+
+function web(runtime, action) {
+  const script = path.join(path.dirname(runtime), "plugins/opencut/scripts/web.mjs");
+  const result = spawnSync(process.execPath, [script, action], {
+    encoding: "utf8",
+    timeout: 70000,
+    maxBuffer: 2 * 1024 * 1024,
+  });
+  if (result.error) throw result.error;
+  const response = result.stdout ? JSON.parse(result.stdout) : null;
+  // Status returns 1 for a stopped or unhealthy service, with structured state.
+  if (action === "status" && typeof response?.data?.state === "string" && !response.error)
+    return response.data;
+  if (result.status !== 0 || response?.error || !response?.data)
+    throw new Error(response?.error?.message || result.stderr.trim() || `OpenCut service ${action} failed.`);
+  return response.data;
+}
+
+function installDesktopCommand(data, destination) {
+  const command = path.join(data, "opencut-mcp");
+  const script = fs.readFileSync(path.join(destination, "plugins/opencut/scripts/desktop-mcp.sh"));
+  const staging = fs.mkdtempSync(path.join(data, ".mcp-entry-"));
+  const pending = path.join(staging, "opencut-mcp");
+  try {
+    fs.writeFileSync(pending, script, { mode: 0o700 });
+    try {
+      fs.linkSync(pending, command);
+    } catch (error) {
+      if (error.code !== "EEXIST") throw error;
+      const existing = fs.lstatSync(command);
+      if (!existing.isFile() || !(existing.mode & 0o100) || existing.size !== script.length ||
+          !fs.readFileSync(command).equals(script))
+        throw new Error("The stable OpenCut MCP command already exists with different contents.");
+    }
+  } finally {
+    fs.rmSync(staging, { recursive: true, force: true });
+  }
+  return command;
+}
+
 try {
-  const {values}=parseArgs({options:{database:{type:"string"}},allowPositionals:false});
-  const data=dataDirectory();
-  const installed=fs.existsSync(path.join(data,"install.json"));
-  const previous=installed?readConfig():{};
-  const initialDatabase=installed?undefined:
-    process.env.OPENCUT_PLUGIN_DATABASE ?? path.join(os.homedir(),".opencut/workspace.sqlite");
-  const database=workspaceDatabase(previous, values.database ?? initialDatabase);
+  const { values } = parseArgs({
+    options: { database: { type: "string" }, "register-codex": { type: "boolean" } },
+    allowPositionals: false,
+  });
+  const data = dataDirectory();
+  const installed = fs.existsSync(path.join(data, "install.json"));
+  const previous = installed ? readConfig() : {};
+  const initialDatabase = installed ? undefined :
+    process.env.OPENCUT_PLUGIN_DATABASE ?? path.join(os.homedir(), ".opencut", "workspace.sqlite");
+  const database = workspaceDatabase(previous, values.database ?? initialDatabase);
   if(!fs.existsSync(path.join(source,"release.json")))
     throw new Error("This is a source plugin, not an installable release bundle. Download the matching platform ZIP from GitHub Releases and run its scripts/install.mjs; see skills/setup/SKILL.md.");
   const release = JSON.parse(
@@ -35,6 +80,12 @@ try {
       path.join(os.homedir(), "Library/Application Support/OpenCut Plugin"),
   );
   const destination = path.join(prefix, release.version);
+  const runtime = path.join(destination, "runtime");
+  if (installed && fs.existsSync(path.join(data, "server")) &&
+      (previous.runtime !== runtime || workspaceDatabase(previous) !== database) &&
+      web(previous.runtime, "status").state !== "stopped") {
+    throw new Error("Stop the current OpenCut service from its original installation before switching runtime or workspace.");
+  }
   fs.mkdirSync(prefix, { recursive: true, mode: 0o700 });
   if (!fs.existsSync(destination)) {
     const stage = fs.mkdtempSync(path.join(prefix, ".install-"));
@@ -119,7 +170,6 @@ try {
       throw error;
     }
   }
-  const runtime = path.join(destination, "runtime");
   const manifest = verifyRuntime(runtime);
   await runtimeEnvironment(runtime);
   if (manifest.binary_sha256 !== release.binary_sha256)
@@ -127,22 +177,35 @@ try {
       "Existing installation belongs to another runtime candidate",
     );
   fs.mkdirSync(data, { recursive: true, mode: 0o700 });
+  const desktopCommand = installDesktopCommand(data, destination);
+  const config = {
+    format: "opencut.plugin-install.v1",
+    runtime,
+    version: release.version,
+    database,
+  };
   const pending = path.join(data, `install.json.${process.pid}.tmp`);
   fs.writeFileSync(
     pending,
-    JSON.stringify(
-      {
-        format: "opencut.plugin-install.v1",
-        runtime,
-        version: release.version,
-        database,
-      },
-      null,
-      2,
-    ),
+    JSON.stringify(config, null, 2),
     { mode: 0o600 },
   );
   fs.renameSync(pending, path.join(data, "install.json"));
+  const desktopMcp = { name: "opencut_desktop", transport: "stdio", command: desktopCommand, status: "not_requested" };
+  if (values["register-codex"]) {
+    try {
+      const service = web(runtime, "start");
+      const connection = serviceConnection(config);
+      if (service.ready !== true || service.endpoint !== connection.endpoint)
+        throw new Error("The configured OpenCut API service is not ready.");
+      desktopMcp.web_url = service.web_url;
+      desktopMcp.status = registerCodex(desktopCommand);
+    } catch (error) {
+      desktopMcp.status = "setup_failed";
+      desktopMcp.error = error.message;
+      process.exitCode = 1;
+    }
+  }
   console.log(
     JSON.stringify(
       {
@@ -150,8 +213,11 @@ try {
         runtime,
         database,
         marketplace: destination,
+        desktop_mcp: desktopMcp,
         command: "codex plugin marketplace add " + JSON.stringify(destination),
-        next: "Install opencut@opencut-plugin in the desktop Plugins page or with codex plugin add. Restart the client after installation. No client configuration was changed automatically.",
+        next: values["register-codex"]
+          ? "Check opencut_desktop in Codex MCP settings, then verify the project list in a new local task."
+          : "For standalone MCP, start the installed service and add the reported desktop_mcp command in Codex, or rerun with --register-codex. The marketplace route is available for plugin hosts.",
       },
       null,
       2,

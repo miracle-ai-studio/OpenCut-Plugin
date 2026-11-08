@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "opencut",
-  "version": "0.5.0-beta.6",
+  "version": "0.0.1-beta",
   "description": "Local video editing through shared OpenCut CLI, MCP and Web application services.",
   "author": {
     "name": "miracle-ai-studio"
@@ -32,7 +32,7 @@
       "interface": {
         "displayName": "OpenCut Plugin",
         "shortDescription": "Local video editing with MCP",
-        "longDescription": "Inspect projects and media, plan reversible timeline edits, preview and export on your computer. Requires a local desktop chat, Node.js 22.12+ and the matching native runtime from GitHub Releases. The supplied runtime targets macOS Intel. This community fork is independent of the upstream OpenCut project.",
+        "longDescription": "Inspect projects and media, plan reversible timeline edits, preview and export on your computer. Requires a local desktop chat and a native macOS runtime for your CPU from GitHub Releases. This community fork is independent of the upstream OpenCut project.",
         "developerName": "miracle-ai-studio",
         "category": "Creativity",
         "capabilities": [

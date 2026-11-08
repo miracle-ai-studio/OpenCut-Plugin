@@ -26,6 +26,8 @@ PUBLIC_UPSTREAM_FILES = {
     'bin/opencut-render-worker': (
         {
             'b889ce0f45abd017bc953d6172f70846acfc12b172cceadc0f0ca99f90e2e56a',
+            # 0.0.1-beta: same audited upstream Skia header literal; no developer home path.
+            '2e34bac2e04e6da923cc389ee52a90ae49589d7b38157731dc3cef459f872567',
             # beta.6 links the same literal from the upstream Skia bindings archive.
             'c2ef682ac81199be91544dfad285cad45a75a71a1c61b1815d956d5cb4722921',
         },
@@ -123,7 +125,6 @@ def package(runtime_archive, output):
                 raise ValueError('Plugin components must not be symlinks')
         for name in ('README.md', 'README.zh-CN.md', 'LICENSE'):
             shutil.copy2(ROOT / name, stage / name)
-        shutil.copytree(ROOT / 'docs/images', stage / 'docs/images')
         # Retain a compatibility overlay; the portable root remains authoritative.
         compatibility = {key: metadata[key] for key in ('name', 'version', 'description', 'author')}
         compatibility.update(skills='./skills/', mcpServers='./.mcp.json', interface=interface)

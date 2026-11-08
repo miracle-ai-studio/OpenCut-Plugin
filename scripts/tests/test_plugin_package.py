@@ -25,6 +25,8 @@ class PluginPackageTests(unittest.TestCase):
                 self.assertTrue(compatibility['requires_local_executor'])
                 self.assertEqual(manifest['version'], compatibility['version'])
                 self.assertIn('opencut/scripts/launch.sh', archive.namelist())
+                self.assertIn('opencut/scripts/desktop-mcp.sh', archive.namelist())
+                self.assertIn('opencut/scripts/codex.mjs', archive.namelist())
                 self.assertIn('opencut/skills/setup/SKILL.md', archive.namelist())
                 self.assertNotIn('opencut/runtime.tar.gz', archive.namelist())
                 self.assertNotIn('opencut/release.json', archive.namelist())

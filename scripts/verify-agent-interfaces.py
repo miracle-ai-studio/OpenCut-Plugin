@@ -15,9 +15,6 @@ import subprocess
 import time
 import wave
 
-from jsonschema import Draft202012Validator
-
-
 class Mcp:
     def __init__(self, config):
         self.process = subprocess.Popen([config['command'], *config['args']],
@@ -78,7 +75,9 @@ class Mcp:
         self.selector.close()
 
 
-def verify(binary, root):
+def verify(binary, root, *, api_mcp=False):
+    from jsonschema import Draft202012Validator
+
     db, service = root / 'workspace.sqlite', root / 'service'
     owner = root / 'interface-workspace.json'
     identity = {'format': 'opencut.agent-interface-acceptance', 'database': str(db)}
@@ -123,7 +122,16 @@ def verify(binary, root):
         configs = [json.loads((bundle / client / 'plugins/opencut/.mcp.json').read_text())['mcpServers']['opencut']
                    for client in ('codex', 'claude')]
         assert configs[0] == configs[1] and '--with-worker' not in configs[0]['args']
-        c = Mcp(configs[0]); clients.append(c)
+        if api_mcp:
+            # The same fixture and assertions exercise API-backed stdio. An
+            # intentionally absent local DB proves no SQLite fallback is opened.
+            unused_mcp_database = root / 'api-mcp-must-not-open' / 'workspace.sqlite'
+            api_config = {'command': str(binary), 'args': [
+                '--database', str(unused_mcp_database), *remote, 'mcp', 'serve']}
+            active_configs = [api_config, api_config]
+        else:
+            active_configs = configs
+        c = Mcp(active_configs[0]); clients.append(c)
         tools = c.request('tools/list', {})['tools']
         catalog = run(['system', 'domains'])
         validators = {}
@@ -175,11 +183,26 @@ def verify(binary, root):
         validators['opencut_edit'].validate({'action': 'apply', 'input': {'project_id': pid, **change}})
         broken = json.loads(json.dumps(change)); broken['operations'][0]['name'] = 9
         assert not validators['opencut_edit'].is_valid({'action': 'apply', 'input': {'project_id': pid, **broken}})
-        applied = run(['edit', 'apply', '--project', pid, '--input', '-'], change, True)
+        if api_mcp:
+            request = {'name': 'opencut_edit', 'arguments': {
+                'action': 'apply', 'input': {'project_id': pid, **change}}}
+            result = c.request('tools/call', request)
+            assert not result.get('isError'), result
+            applied = result['structuredContent']['data']
+            replay = c.request('tools/call', request)
+            assert not replay.get('isError') and replay['structuredContent']['data'] == applied
+        else:
+            applied = run(['edit', 'apply', '--project', pid, '--input', '-'], change, True)
         c.updated(head)
         current = run(['project', 'inspect', pid], network=True)
         assert c.resource(head)['payload']['data']['summary']['revision'] == current['snapshot']['revision']
         assert c.resource(frozen_uri) == frozen
+        if api_mcp:
+            prompt = c.request('prompts/get', {'name': 'caption_review', 'arguments': {
+                'project_id': pid, 'revision': current['snapshot']['revision'], 'sequence_id': 'main'}})
+            assert prompt['messages']
+            assert not unused_mcp_database.parent.exists()
+            checks.append('API-backed stdio tools, fixed resources, prompts and bounded subscriptions preserve writes/replay without opening the local database')
         assert run(['edit', 'apply', '--project', pid, '--input', '-'], change, True) == applied
         run(['edit', 'apply', '--project', pid, '--input', '-'],
             {**change, 'idempotency_key': 'stale'}, True, error='REVISION_CONFLICT')
@@ -212,7 +235,7 @@ def verify(binary, root):
 
         c.close()
         assert server('status')['instance'] == state['instance']
-        second = Mcp(configs[1]); clients.append(second); second.close()
+        second = Mcp(active_configs[1]); clients.append(second); second.close()
         assert server('status')['ready'] is True
         # Work submitted after both Agent sessions exit still has an independent Worker.
         wav = root / 'probe.wav'
@@ -252,7 +275,7 @@ def verify(binary, root):
         assert absent.returncode != 0 and 'SERVICE_NOT_READY' in absent.stderr
         checks.append('Mismatched startup build, wrong workspace and unavailable service reject attachment before opening another database')
         return {'status': 'passed', 'binary': str(binary), 'binary_sha256': hashlib.sha256(binary.read_bytes()).hexdigest(),
-                'workspace': str(db), 'checks': checks, 'domain_tools': len(tools),
+                'workspace': str(db), 'api_mcp': api_mcp, 'checks': checks, 'domain_tools': len(tools),
                 'advertised_actions': sum(len(t['inputSchema']['oneOf']) for t in tools),
                 'compact_tools_json_bytes': len(json.dumps(tools, ensure_ascii=False, separators=(',', ':')).encode()),
                 'probe_job_id': job['job_id'], 'limitations': ['Protocol clients only; real model/client compatibility is not accepted',
@@ -269,8 +292,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--binary', type=Path, required=True)
     parser.add_argument('--artifacts-dir', type=Path, required=True)
+    parser.add_argument('--api-mcp', action='store_true', help='Exercise API-backed stdio against the same owned service; never opens the client-side database')
     options = parser.parse_args()
     root = options.artifacts_dir.resolve(); root.mkdir(parents=True, exist_ok=True)
-    report = verify(options.binary.resolve(strict=True), root)
+    report = verify(options.binary.resolve(strict=True), root, api_mcp=options.api_mcp)
     (root / 'report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n')
     print(json.dumps(report, ensure_ascii=False, indent=2))

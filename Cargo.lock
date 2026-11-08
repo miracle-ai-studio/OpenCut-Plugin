@@ -4668,7 +4668,7 @@ dependencies = [
 
 [[package]]
 name = "opencut-api-contracts"
-version = "0.1.0"
+version = "0.0.1-beta"
 dependencies = [
  "opencut-contracts",
  "opencut-job-contracts",
@@ -4680,7 +4680,7 @@ dependencies = [
 
 [[package]]
 name = "opencut-asset-store"
-version = "0.1.0"
+version = "0.0.1-beta"
 dependencies = [
  "fs2",
  "libc",
@@ -4698,7 +4698,7 @@ dependencies = [
 
 [[package]]
 name = "opencut-automation"
-version = "0.1.0"
+version = "0.0.1-beta"
 dependencies = [
  "opencut-api-contracts",
  "opencut-contracts",
@@ -4711,7 +4711,7 @@ dependencies = [
 
 [[package]]
 name = "opencut-cli"
-version = "0.1.0"
+version = "0.0.1-beta"
 dependencies = [
  "async-trait",
  "axum",
@@ -4734,7 +4734,7 @@ dependencies = [
 
 [[package]]
 name = "opencut-composition"
-version = "0.1.0"
+version = "0.0.1-beta"
 dependencies = [
  "opencut-contracts",
  "opencut-editor-core",
@@ -4747,7 +4747,7 @@ dependencies = [
 
 [[package]]
 name = "opencut-contracts"
-version = "0.1.0"
+version = "0.0.1-beta"
 dependencies = [
  "schemars",
  "serde",
@@ -4756,14 +4756,14 @@ dependencies = [
 
 [[package]]
 name = "opencut-desktop"
-version = "0.1.0"
+version = "0.0.1-beta"
 dependencies = [
  "gpui",
 ]
 
 [[package]]
 name = "opencut-editor-application"
-version = "0.1.0"
+version = "0.0.1-beta"
 dependencies = [
  "opencut-api-contracts",
  "opencut-composition",
@@ -4783,7 +4783,7 @@ dependencies = [
 
 [[package]]
 name = "opencut-editor-core"
-version = "0.1.0"
+version = "0.0.1-beta"
 dependencies = [
  "opencut-contracts",
  "opencut-time",
@@ -4792,7 +4792,7 @@ dependencies = [
 
 [[package]]
 name = "opencut-host-runtime"
-version = "0.1.0"
+version = "0.0.1-beta"
 dependencies = [
  "blake3",
  "opencut-api-contracts",
@@ -4821,7 +4821,7 @@ dependencies = [
 
 [[package]]
 name = "opencut-job-contracts"
-version = "0.1.0"
+version = "0.0.1-beta"
 dependencies = [
  "opencut-contracts",
  "opencut-media-contracts",
@@ -4832,7 +4832,7 @@ dependencies = [
 
 [[package]]
 name = "opencut-job-execution"
-version = "0.1.0"
+version = "0.0.1-beta"
 dependencies = [
  "opencut-contracts",
  "opencut-media-contracts",
@@ -4843,7 +4843,7 @@ dependencies = [
 
 [[package]]
 name = "opencut-job-runtime"
-version = "0.1.0"
+version = "0.0.1-beta"
 dependencies = [
  "opencut-contracts",
  "opencut-editor-application",
@@ -4853,7 +4853,7 @@ dependencies = [
 
 [[package]]
 name = "opencut-media"
-version = "0.1.0"
+version = "0.0.1-beta"
 dependencies = [
  "cosmic-text 0.19.0",
  "ffmpeg-next",
@@ -4871,7 +4871,7 @@ dependencies = [
 
 [[package]]
 name = "opencut-media-contracts"
-version = "0.1.0"
+version = "0.0.1-beta"
 dependencies = [
  "schemars",
  "serde",
@@ -4880,7 +4880,7 @@ dependencies = [
 
 [[package]]
 name = "opencut-native-services"
-version = "0.1.0"
+version = "0.0.1-beta"
 dependencies = [
  "flate2",
  "libc",
@@ -4910,7 +4910,7 @@ dependencies = [
 
 [[package]]
 name = "opencut-plugin-host"
-version = "0.1.0"
+version = "0.0.1-beta"
 dependencies = [
  "fs2",
  "jsonschema",
@@ -4932,7 +4932,7 @@ dependencies = [
 
 [[package]]
 name = "opencut-project-render"
-version = "0.1.0"
+version = "0.0.1-beta"
 dependencies = [
  "image",
  "opencut-api-contracts",
@@ -4949,14 +4949,14 @@ dependencies = [
 
 [[package]]
 name = "opencut-render-worker"
-version = "0.1.0"
+version = "0.0.1-beta"
 dependencies = [
  "opencut-native-services",
 ]
 
 [[package]]
 name = "opencut-renderer"
-version = "0.1.0"
+version = "0.0.1-beta"
 dependencies = [
  "opencut-contracts",
  "pollster 0.4.0",
@@ -4969,7 +4969,7 @@ dependencies = [
 
 [[package]]
 name = "opencut-sdk"
-version = "0.1.0"
+version = "0.0.1-beta"
 dependencies = [
  "opencut-api-contracts",
  "opencut-contracts",
@@ -4984,7 +4984,7 @@ dependencies = [
 
 [[package]]
 name = "opencut-sqlite-store"
-version = "0.1.0"
+version = "0.0.1-beta"
 dependencies = [
  "opencut-api-contracts",
  "opencut-asset-store",
@@ -5007,7 +5007,7 @@ dependencies = [
 
 [[package]]
 name = "opencut-storage-budget"
-version = "0.1.0"
+version = "0.0.1-beta"
 dependencies = [
  "fs2",
  "libc",
@@ -5022,7 +5022,7 @@ dependencies = [
 
 [[package]]
 name = "opencut-time"
-version = "0.1.0"
+version = "0.0.1-beta"
 dependencies = [
  "opencut-contracts",
 ]

@@ -1,5 +1,9 @@
 #!/bin/sh
 set -eu
+desktop=${OPENCUT_PLUGIN_DATA_DIR:-$HOME/.opencut-plugin}/opencut-mcp
+if [ -x "$desktop" ]; then
+  exec "$desktop"
+fi
 PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 export PATH
 command -v node >/dev/null 2>&1 || {

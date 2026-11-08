@@ -44,9 +44,10 @@ export const compareTime = (a: Time, b: Time) => {
   const right = BigInt(b.ticks) * BigInt(a.timebase);
   return left < right ? -1 : left > right ? 1 : 0;
 };
+export const decimalSecondsHelp = "Enter seconds from 0 with up to 6 decimal places, for example 1.25.";
 export const timeFromDecimalSeconds = (value: string): Time => {
   const match = /^(\d+)(?:\.(\d{0,6}))?$/.exec(value.trim());
-  if (!match) throw new Error("Time must be a non-negative decimal");
+  if (!match) throw new Error(decimalSecondsHelp);
   const fraction = match[2] ?? "",
     timebase = 10n ** BigInt(fraction.length),
     ticks = BigInt(match[1]) * timebase + BigInt(fraction || "0");

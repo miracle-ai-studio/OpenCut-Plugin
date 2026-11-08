@@ -175,6 +175,26 @@ it("cancels a seek draft without dispatch and clears it when the scene changes",
     expect(input.value).toBe("0.250000"); expect(seek).not.toHaveBeenCalled();
   } finally { controller.dispose(); }
 });
+it("explains invalid time input and retires preview when the editing cursor reaches the end", async () => {
+  const { controller } = await setup();
+  try {
+    render(<WorkspaceProvider controller={controller}><Product /></WorkspaceProvider>);
+    fireEvent.click(screen.getByLabelText("Go to time", { selector: "summary" }));
+    const input = screen.getByLabelText("Playhead (seconds)");
+    const previewSeek = vi.spyOn(controller.scene.audioPreview, "seek");
+    fireEvent.change(input, { target: { value: "00:12.00" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(input.getAttribute("aria-invalid")).toBe("true");
+    expect(screen.getByRole("alert").textContent).toContain("up to 6 decimal places");
+    expect(previewSeek).not.toHaveBeenCalled();
+
+    fireEvent.change(input, { target: { value: "12" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(input.hasAttribute("aria-invalid")).toBe(false);
+    expect(previewSeek).toHaveBeenCalledExactlyOnceWith(undefined);
+    expect(controller.getSnapshot().scene?.playhead).toEqual({ ticks: "12", timebase: 1 });
+  } finally { controller.dispose(); }
+});
 it("synchronizes the selected Scene URL without changing another project's route or navigation state", async () => {
   const originalUrl = location.href, originalState = history.state;
   const { controller, current } = await setup();

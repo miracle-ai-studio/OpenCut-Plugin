@@ -20,3 +20,9 @@ Chrome 中，实际界面通过素材导入与放置、超过 4 秒的原生连�
 尚缺 Finder/Gatekeeper 下载首启、另一台干净机器、真实 MCP 客户端剪辑会话和物理音频人工验收。桌面应用仅有 ad-hoc 签名，未进行 Developer ID 签名或公证。Apple Silicon 验证暂缓。
 
 公开状态仅保留当前产品的构建、验证范围和限制，不包含私人项目、工作区、机器目录或历史产物清单。详细状态见 [status.json](status.json)。
+
+## 工作区 Web 修复
+
+播放和暂停时跳到时间线末尾，原候选构建均返回 HTTP 400（`INVALID_ARGUMENT`）。修复复用音频会话的停止流程，将编辑播放头停在末尾，并在时间输入框旁显示秒数格式和示例。Web 构建通过。复用原 CLI、Worker 和隔离合成工程，在无界面 Chrome 验证两种末尾跳转、重新播放、范围内跳转及无效输入纠正。
+
+合并远端主分支后重新编译 Web 和桌面启动器。Web 构建与上述 Chrome 验收的构建逐文件一致。已替换本机运行时和桌面应用，原数据库上的服务已就绪，返回的 Web 文件哈希、工程列表读取和现有 Codex MCP 注册均已核对。`v0.0.1-beta` 采用这批包含修复的 Intel 安装包，哈希见 [status.json](status.json) 的 `workspace_web_fix.release_candidate`。

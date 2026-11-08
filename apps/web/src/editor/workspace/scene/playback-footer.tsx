@@ -1,8 +1,8 @@
-import {useEffect,useLayoutEffect,useRef,useState} from "react";
+import {useEffect,useId,useLayoutEffect,useRef,useState} from "react";
 import {useWorkspace} from "../context";
 import {Button,Field} from "../../shared/ui";
 import {t} from "../../shared/locale";
-import {formatTime,secondsForDisplay,timeFromDecimalSeconds} from "../../model/time";
+import {decimalSecondsHelp,formatTime,secondsForDisplay,timeFromDecimalSeconds} from "../../model/time";
 import {ChevronLeft,ChevronRight,Crosshair} from "lucide-react";
 import {addTime,subtractTime,compareTime,zero} from "../../model/time";
 import {sequenceContentEnd} from "./sequence-navigation";
@@ -13,6 +13,8 @@ import {AudioPreviewControls} from "./audio-preview-controls";
 export function PlaybackFooter({toolsRef}:{toolsRef?:(node:HTMLDivElement|null)=>void}={}) {
   const {controller,scene}=useWorkspace();
   const [seek,setSeek]=useState("0");
+  const [invalidSeek,setInvalidSeek]=useState(false);
+  const seekHelpId=useId();
   const intent=useRef({dirty:false,focused:false});
   const input=useRef<HTMLInputElement>(null),time=useRef<HTMLSpanElement>(null),seekTime=useRef<HTMLSpanElement>(null);
   useLayoutEffect(()=>{
@@ -29,6 +31,7 @@ export function PlaybackFooter({toolsRef}:{toolsRef?:(node:HTMLDivElement|null)=
   },[controller,scene?.playhead,scene?.audioPreview.phase]);
   useEffect(()=>{
     intent.current={dirty:false,focused:false};
+    setInvalidSeek(false);
     if(scene)setSeek(secondsForDisplay(scene.playhead).toFixed(6));
   },[scene?.head.project.id,scene?.head.revision,scene?.historical?.revision,scene?.sequenceId]);
   useEffect(()=>{
@@ -38,15 +41,20 @@ export function PlaybackFooter({toolsRef}:{toolsRef?:(node:HTMLDivElement|null)=
   const sequence=(scene.historical??scene.head).project.sequences.find(s=>s.id===scene.sequenceId)!;
   const cancel=()=>{
     intent.current={dirty:false,focused:false};
+    setInvalidSeek(false);
     setSeek(secondsForDisplay(controller.scene.currentPlayhead()).toFixed(6));
   };
   const submit=()=>{
     try {
       controller.scene.seek(timeFromDecimalSeconds(input.current?.value??seek));
       intent.current={dirty:false,focused:false};
+      setInvalidSeek(false);
       const current=controller.getSnapshot().scene;
       if(current)setSeek(secondsForDisplay(current.playhead).toFixed(6));
-    } catch(error){controller.report(error);}
+    } catch(error){
+      if(error instanceof Error && error.message===decimalSecondsHelp)setInvalidSeek(true);
+      else controller.report(error);
+    }
   };
   const step=async(direction:number)=>{
     try{
@@ -62,11 +70,13 @@ export function PlaybackFooter({toolsRef}:{toolsRef?:(node:HTMLDivElement|null)=
       <details className="workbench-seek-popover" onKeyDown={event=>event.stopPropagation()}><summary aria-label={t("Go to time")} title={t("Go to time")}><Crosshair size={13}/></summary>
       <div className="workbench-seek-control">
         <Field label={t("Playhead (seconds)")}><input ref={input} inputMode="decimal" value={seek}
+          aria-describedby={seekHelpId} aria-invalid={invalidSeek || undefined}
           onFocus={()=>{intent.current.focused=true;}}
           onBlur={()=>{intent.current.focused=false;if(!intent.current.dirty)setSeek(secondsForDisplay(controller.scene.currentPlayhead()).toFixed(6));}}
-          onChange={event=>{intent.current.dirty=true;setSeek(event.target.value);}}
+          onChange={event=>{intent.current.dirty=true;setSeek(event.target.value);setInvalidSeek(false);}}
           onKeyDown={event=>{if(event.key==="Enter"){event.preventDefault();submit();}if(event.key==="Escape"){event.preventDefault();cancel();event.currentTarget.closest("details")?.removeAttribute("open");}}}/></Field>
         <Button onClick={submit}>{t("Go to time")}</Button><span ref={seekTime}>{formatTime(scene.playhead)}</span>
+        <p id={seekHelpId} className="workbench-seek-help" role={invalidSeek ? "alert" : undefined}>{t(decimalSecondsHelp)}</p>
       </div></details>
     </div>
     <div className="workbench-transport-group"><Button aria-label={t("Previous frame")} title={t("Previous frame")} icon={<ChevronLeft size={17}/>} onClick={()=>void step(-1)}/><AudioPreviewControls compact/><Button aria-label={t("Next frame")} title={t("Next frame")} icon={<ChevronRight size={17}/>} onClick={()=>void step(1)}/></div>

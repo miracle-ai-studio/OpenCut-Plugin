@@ -2,6 +2,19 @@
   "format": "opencut.delivery-status.v1",
   "version": "0.0.1-beta",
   "delivery_ready": false,
+  "workspace_web_fix": {
+    "scope": "Timeline end seek and decimal-seconds input guidance",
+    "baseline": "HTTP 400 INVALID_ARGUMENT at the 8-second timeline end, both during playback and after pause",
+    "validation": "Web build, focused regression tests and headless Chrome on the existing isolated fixture with the release CLI and Worker: end seek, session retirement, replay, in-range seek and invalid input correction",
+    "included_in_release_assets": true,
+    "release_candidate": {
+      "platform_zip_sha256": "08f441b3cf3368dd5be07dd68a41b217007602c650b4516a854b1e077aeed490",
+      "desktop_zip_sha256": "1bf621e59bc38d017219ac600c03057151891343e96b946c84e85a9814a151bf",
+      "runtime_archive_sha256": "6c2217101889d43c32a8ba77c2398986364060f09a6adb376b8b044727c49575",
+      "editor_chunk_sha256": "9a48f4075055dc161279a95a1ca836eec39dc3227f8ecfc3f1236de8f36a88ad"
+    },
+    "local_upgrade": "Intel desktop and runtime replaced from the merged workspace build; service ready on the existing database, served Web asset identity and project list verified, existing Codex MCP registration confirmed"
+  },
   "implementation": {
     "release_version": "Rust workspace and plugin aligned",
     "installer": "Supports numbering reset and an opt-in Codex install that verifies the service, MCP registration and plugin enablement",
@@ -54,8 +67,8 @@
   "publication": {
     "source_branch": "release/0.0.1-beta",
     "runtime_source_base": "3dd5d2c7f831d79e93db65d17ff835f79796fdf4",
-    "source_candidate": "Intel prerelease with the accepted runtime and updated installer and documentation",
-    "github_release": "Draft created for v0.0.1-beta. Large ZIP uploads are pending.",
+    "source_candidate": "Intel prerelease with the accepted native runtime and the scoped Web fix",
+    "github_release": "v0.0.1-beta",
     "old_releases_removed": false
   },
   "limits": [

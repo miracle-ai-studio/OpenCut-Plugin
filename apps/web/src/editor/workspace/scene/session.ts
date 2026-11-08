@@ -16,6 +16,7 @@ import type { ToolInput } from "../../../lib/editor-sdk";
 import type { EditorApi } from "../api";
 import type { ProjectRef, Time } from "../../model/types";
 import { zero, compareTime } from "../../model/time";
+import { sequenceContentEnd } from "./sequence-navigation";
 import type {
   BookmarkOperation,
   SessionState,
@@ -492,9 +493,14 @@ export class Session {
     });
   }
   seek(playhead: Time) {
-    if (this.audioPreview.seek(playhead)) return;
     const { state } = this.active();
-    this.host.publish({ ...state, playhead });
+    const sequence = (state.historical ?? state.head).project.sequences.find(
+      (sequence) => sequence.id === state.sequenceId,
+    );
+    const atEnd = sequence && compareTime(playhead, sequenceContentEnd(sequence)) >= 0;
+    // The editing cursor can sit at the end, but audio needs a sample to start from.
+    if (this.audioPreview.seek(atEnd ? undefined : playhead)) return;
+    this.host.publish({ ...this.active().state, playhead });
   }
   /** Live user actions use the same output cursor as the picture; the saved
    * editing cursor is updated at explicit pause/seek/end boundaries. */

@@ -1502,6 +1502,7 @@ export const zh: Record<string, string> = {
   "Preview unavailable": "预览尚未接入",
   "Canvas notes": "画布备注",
   "Playhead (seconds)": "播放位置（秒）",
+  "Enter seconds from 0 with up to 6 decimal places, for example 1.25.": "请输入大于或等于 0 的秒数，最多六位小数，例如 1.25。",
   "Go to time": "定位到时间",
   Inspector: "检查器",
   Bookmark: "书签",

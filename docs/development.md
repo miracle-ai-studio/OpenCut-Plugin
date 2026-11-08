@@ -57,9 +57,9 @@ python3 scripts/verify-package-exchange.py --help
 
 在原生 Intel 或 Apple Silicon 构建机上运行 `sh scripts/build-desktop-release.sh TARGET native-media.json runtime.json dist/releases`。脚本构建 Rust CLI 和 Worker、组装 Web 与原生运行时，再用发布检查生成平台 ZIP 和校验文件。构建输入中的 FFmpeg 组件及来源记录需提前满足发布内容检查。
 
-手动触发 `Build OpenCut Desktop` 默认运行 Intel，勾选 `apple_silicon` 才同时运行 ARM64。专用构建机分别使用 `macOS`、`X64` 或 `ARM64` 及 `opencut-release` 标签，并配置 rustup、Node.js、Python 3.11+ 和验收用 FFmpeg。设置 `OPENCUT_RELEASE_INPUTS` 指向可信输入根目录，在对应目标三元组子目录中放置 `native-media.json` 和 `runtime.json`；设置 `OPENCUT_CHROME` 为 Chrome 可执行文件的绝对路径。当前媒体运行时、应用最低系统声明和安装器统一要求 macOS 26 或更新版本。
+手动触发 `Build OpenCut Desktop` 默认运行 Intel，勾选 `apple_silicon` 才同时运行 ARM64。专用构建机分别使用 `macOS`、`X64` 或 `ARM64` 及 `opencut-release` 标签，并配置 rustup、Node.js、Python 3.11+ 和验收用 FFmpeg。设置 `OPENCUT_RELEASE_INPUTS` 指向可信输入根目录，在对应目标三元组子目录中放置 `native-media.json` 和 `runtime.json`。当前媒体运行时、应用最低系统声明和安装器统一要求 macOS 26 或更新版本。
 
-工作流先用 `verify-plugin-release.py` 对确切 ZIP 做隔离安装、MCP 和原生导出验收，再串行运行 `apps/web/scripts/verify-desktop-release.mjs --archive ZIP --workspace 同一验收目录`，检查实际界面、连续画面、独立 PCM 对照、暂停/继续/跳转、撤销/重做、重新加载和服务重启。后者默认无界面；本机可加 `--headed` 保留可见浏览器模式。两者复用合成工程、检查点和原有导出，不写用户工作区；证据保存在仓库外。通过后上传平台产物及安装脚本，供后续发版使用。
+工作流用 `verify-plugin-release.py` 对确切 ZIP 做隔离安装、MCP 和原生导出验收，通过后上传平台产物及安装脚本。本地验收可在同一目录串行运行 `node apps/web/scripts/verify-desktop-release.mjs --archive ZIP --workspace 验收目录`，检查实际界面、连续画面、独立 PCM 对照、暂停/继续/跳转、撤销/重做、重新加载和服务重启。设置 `OPENCUT_CHROME` 指向 Chrome 可执行文件，默认无界面，可加 `--headed` 使用可见窗口。两者复用合成工程、检查点和原有导出，不写用户工作区，证据保存在仓库外。
 
 `--binary` 可复用已构建的 CLI，`--render-worker` 指定同批 worker，缺省取 CLI 的相邻文件。`--web-root` 和 `--reuse-sdk-dist` 复用已验证的构建。可选 `--runtime-spec` 使用 `opencut.native-runtime-input`，接受 FFmpeg/ffprobe、Node/Python 安装及原始再分发许可证；FFmpeg/ffprobe 还要求 `corresponding_sources` 列出组件根目录内的对应源码归档与构建记录（至少两个文件），发布清单保持这些相对路径和文件身份；不再接受旧 Chromium 构建输入。旧清单读取不构成后端回退。搬迁会改变程序和库哈希，生成契约检查使用装配后的确切 CLI，媒体验收也必须绑定实际分发身份。
 

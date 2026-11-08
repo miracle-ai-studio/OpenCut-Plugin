@@ -31,12 +31,6 @@ OpenCut Plugin 是基于 [OpenCut](https://github.com/OpenCut-app/OpenCut) 衍�
 
 用户提供的中文工作台截图。
 
-### English interface
-
-![OpenCut Plugin 英文界面](docs/images/interface-en.png)
-
-用户提供的英文工作台截图，展示海岸画面预览。
-
 ## 安装本地插件
 
 从 [GitHub Releases](https://github.com/miracle-ai-studio/OpenCut-Plugin/releases) 下载对应 ZIP 和 `.sha256`。ZIP 中包含标准插件和带校验清单的宿主运行包，不包含工作区数据库、凭据和原始素材，仅包含明确提供用于展示的文档截图。

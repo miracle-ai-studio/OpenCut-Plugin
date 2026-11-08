@@ -33,58 +33,49 @@ The external agent interprets creative requests. OpenCut executes typed operatio
 
 User-supplied Chinese workbench capture.
 
-## Install the local plugin
+## Install on macOS
 
-Download the matching ZIP and `.sha256` from [GitHub Releases](https://github.com/miracle-ai-studio/OpenCut-Plugin/releases). The ZIP contains a portable plugin and a checksummed host archive; it contains no workspace databases, credentials or original media files. Documentation screenshots were supplied for publication.
+The current `0.0.1-beta` package requires **macOS 26 or later on an Intel Mac**. Apple Silicon validation is deferred.
 
-Prerequisites for this prerelease:
+### Install for Codex
 
-- macOS Intel for the supplied executable; Node.js **22.12+** on PATH to run the installer and plugin launcher.
-- The platform package includes the Rust renderer, native media libraries, FFmpeg/ffprobe, Node for catalog tools, and Python/fontTools. Chromium is not a runtime dependency.
-- A desktop client supporting local stdio MCP plugins. Web/mobile chats cannot execute this local runtime.
-- Optional transcription needs a separately configured local model and executable.
-
-After installing Node.js with your package manager:
+After the [GitHub prerelease](https://github.com/miracle-ai-studio/OpenCut-Plugin/releases/tag/v0.0.1-beta) is public, paste this block into Terminal on an Intel Mac running macOS 26 or later with the Codex CLI installed. You can also ask a local Codex session to run it.
 
 ```sh
-shasum -a 256 -c opencut-plugin-0.5.0-beta.6-x86_64-apple-darwin.zip.sha256
-unzip opencut-plugin-0.5.0-beta.6-x86_64-apple-darwin.zip
-cd opencut
-node scripts/install.mjs
+(
+  installer=$(mktemp) && trap 'rm -f "$installer"' EXIT &&
+  curl -fsSL https://github.com/miracle-ai-studio/OpenCut-Plugin/releases/download/v0.0.1-beta/install-desktop.sh -o "$installer" &&
+  sh "$installer" install v0.0.1-beta --codex-plugin
+)
 ```
 
-The installer verifies archive/file identities, checks the current CPU and required executables, and installs a versioned runtime. It does not download dependencies or change client configuration automatically. Missing dependencies cause an explicit error. Automatic output budgets follow available storage while retaining database headroom; no fixed 512 MiB file cap is imposed. Existing explicit user quotas are preserved.
+The script verifies the platform package, starts the local service, registers MCP and enables **OpenCut Plugin**. Open a new local Codex conversation, select **OpenCut Plugin**, and ask it to list your OpenCut projects.
 
-Register the marketplace path printed by the installer:
+### Install the desktop app
+
+Download the `OpenCut-<version>-<chip>.zip` that matches your Mac, unzip it, and double-click `OpenCut.app`. Choose **Install Desktop App** to place the branded app in `~/Applications`, then **Install / Start** and **Open Editor**. The app installs its bundled runtime, starts the local service, and registers `opencut_desktop` when Codex is installed. Existing installations can use **Switch to Standard Workspace** to select the existing `~/.opencut/workspace.sqlite` database. Projects in the previous workspace remain there and its database is kept. The window displays the current Metal device status. To upgrade a running service, choose **Stop Service** before **Install / Start**. A public download with only local ad-hoc signing may require a manual macOS trust decision; a Developer ID signed and notarized release requires an Apple Developer account.
+
+After installation, opening OpenCut starts a stopped service automatically and reuses a ready service. **Install Desktop App** also replaces an existing OpenCut app of the same or an older version after checking the staged copy. The MCP entry is `opencut_desktop`, using stdio with the fixed executable `~/.opencut-plugin/opencut-mcp` and no arguments or environment variables. Open OpenCut before connecting your MCP client.
+
+You can also install from a downloaded platform ZIP with its `.sha256` file beside it. From a source checkout, use `scripts/install-desktop.sh` in place of `install-desktop.sh`.
 
 ```sh
-codex plugin marketplace add "<marketplace path printed by the installer>"
-codex plugin add opencut@opencut-plugin
+sh install-desktop.sh install --archive /path/to/opencut-release.zip
 ```
 
-Restart the desktop client, select **OpenCut Plugin** in a new local chat and ask it to inspect capabilities and list projects. This installs MCP tools plus the editing skill; adding only a bare MCP connection does not install the skill.
+Open the `web_url` in the installer output. To edit with an agent, open a new local Codex session and ask it to list your OpenCut projects. New installs use `~/.opencut/workspace.sqlite`. Upgrades keep the selected workspace.
 
-For a Git-backed marketplace, install the release runtime first, then use `codex plugin marketplace add miracle-ai-studio/OpenCut-Plugin`. The source marketplace contains plugin metadata and scripts, not prebuilt executable files.
+## Manage your installation
 
-Run `node scripts/doctor.mjs` from the installed plugin directory to check file integrity and basic prerequisites. This is not a complete rendering or physical audio acceptance test. Custom locations use `OPENCUT_PLUGIN_INSTALL_DIR` and `OPENCUT_PLUGIN_DATA_DIR`; configure the latter in the client environment too when using a non-default workspace.
+| Command | Purpose |
+|---|---|
+| `sh install-desktop.sh start` | Start the workbench and print its URL |
+| `sh install-desktop.sh check` | Check the service, project list, and Codex MCP registration |
+| `sh install-desktop.sh doctor` | Verify runtime integrity, architecture, and basic dependencies |
+| `sh install-desktop.sh stop` | Stop the local service |
+| `sh install-desktop.sh update v0.0.1-beta` | Install the selected version and start the service again |
 
-To start the packaged Web workbench from the installed plugin directory:
-
-```sh
-node scripts/web.mjs start
-node scripts/web.mjs status
-node scripts/web.mjs stop
-```
-
-Open the returned `web_url`; it binds to loopback on an available port and uses the same private workspace. Stopping an MCP chat does not stop a separately started Web service.
-
-The installer records one shared local workspace for MCP, Web and CLI commands without `--database`. To select an existing database, stop the current Web service with its original configuration, then run `node scripts/install.mjs --database /absolute/path/workspace.sqlite` and reload the plugin. A fresh installation defaults to `~/.opencut/workspace.sqlite`. `OPENCUT_PLUGIN_DATABASE` can seed a first installation. Running clients use the saved selection. CLI commands can still explicitly target an isolated workspace with `--database`.
-
-## Install as a personal plugin
-
-Download `opencut-plugin-0.5.0-beta.6-personal.zip` and its checksum from the same release. Ask Plugin Creator to import that ZIP into your own account, then run **OpenCut Plugin setup** in a local desktop chat. Setup installs the matching platform runtime and selects your workspace. The personal ZIP contains the skills and stdio launcher; the platform ZIP contains the native runtime. Importing the personal ZIP alone does not install the editor runtime.
-
-A private account plugin is not a public directory listing. Other users can download the same personal ZIP from GitHub and import it into their own accounts. Cloud and mobile chats cannot access local video files or launch this runtime.
+Finish active jobs and run `stop` before updating. `update --archive /path/to/opencut-release.zip` upgrades from a local ZIP. Run `check` after updating to verify the connection. [Operations guide](docs/operations.md)
 
 ## MCP and CLI capabilities
 
